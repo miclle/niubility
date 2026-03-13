@@ -11,8 +11,8 @@ import (
 
 // Config represents the application configuration.
 type Config struct {
-	Server   Server   `yaml:"server"`
-	Database Database `yaml:"database"`
+	Server   Server     `yaml:"server"`
+	Database Database   `yaml:"database"`
 	SSO      sso.Config `yaml:"sso"`
 }
 

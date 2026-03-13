@@ -1,11 +1,23 @@
-import { Outlet } from 'react-router-dom'
+import { useState } from 'react'
+import { RouterProvider, createBrowserRouter } from 'react-router-dom'
+import { Theme } from '@radix-ui/themes'
 
-function App() {
+import { AppContext } from 'src/context/app'
+import routes from './router'
+import type { User } from 'src/types/user'
+
+const router = createBrowserRouter(routes)
+
+// App is the root component wrapping providers and the router.
+function App({ initialUser }: { initialUser: User | null }) {
+  const [currentUser, setCurrentUser] = useState<User | null>(initialUser)
+
   return (
-    <div>
-      <h1>Niubility</h1>
-      <Outlet />
-    </div>
+    <AppContext.Provider value={{ currentUser, setCurrentUser }}>
+      <Theme accentColor="blue" radius="medium">
+        <RouterProvider router={router} />
+      </Theme>
+    </AppContext.Provider>
   )
 }
 
