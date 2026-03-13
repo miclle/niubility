@@ -14,14 +14,14 @@ function AdminLayout() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-[#fafafa]">
       {/* Sidebar */}
-      <aside className="w-60 bg-gray-900 text-white flex flex-col flex-shrink-0">
-        <div className="h-16 px-5 flex items-center border-b border-gray-700">
-          <NavLink to="/" className="text-lg font-bold text-white no-underline">
+      <aside className="w-60 bg-white border-r border-black/[0.06] flex flex-col flex-shrink-0">
+        <div className="h-16 px-5 flex items-center border-b border-black/[0.06]">
+          <NavLink to="/" className="text-lg font-bold gradient-text no-underline">
             Niubility
           </NavLink>
-          <span className="ml-2 text-xs text-gray-400">管理后台</span>
+          <span className="ml-2 text-xs text-zinc-400">管理后台</span>
         </div>
 
         <nav className="flex-1 py-4 px-3 flex flex-col gap-1">
@@ -29,7 +29,7 @@ function AdminLayout() {
             to="/admin/contents"
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-md text-sm no-underline transition-colors ${
-                isActive ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                isActive ? 'sidebar-active-accent bg-violet-50 text-violet-700' : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800'
               }`
             }
           >
@@ -40,7 +40,7 @@ function AdminLayout() {
             to="/admin/users"
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-md text-sm no-underline transition-colors ${
-                isActive ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                isActive ? 'sidebar-active-accent bg-violet-50 text-violet-700' : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800'
               }`
             }
           >
@@ -52,7 +52,7 @@ function AdminLayout() {
         <div className="px-3 pb-4">
           <NavLink
             to="/"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-gray-300 hover:bg-gray-800 hover:text-white no-underline transition-colors"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800 no-underline transition-colors"
           >
             <ArrowLeft size={18} />
             返回前台
@@ -62,17 +62,17 @@ function AdminLayout() {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col">
-        <header className="h-16 border-b border-gray-200 bg-white px-6 flex items-center justify-end">
+        <header className="h-16 border-b border-black/[0.06] bg-white/80 backdrop-blur-xl px-6 flex items-center justify-end">
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-              <button className="flex items-center gap-2 cursor-pointer bg-transparent border-0 p-1 rounded-full hover:bg-gray-100">
+              <button className="flex items-center gap-2 cursor-pointer bg-transparent border-0 p-1 rounded-full hover:bg-black/[0.04]">
                 <Avatar
                   size="2"
                   radius="full"
                   src={currentUser.avatar}
                   fallback={currentUser.name?.charAt(0) || currentUser.username.charAt(0)}
                 />
-                <span className="text-sm text-gray-700">{currentUser.name || currentUser.username}</span>
+                <span className="text-sm text-zinc-600">{currentUser.name || currentUser.username}</span>
               </button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="end">
@@ -89,7 +89,7 @@ function AdminLayout() {
           </DropdownMenu.Root>
         </header>
 
-        <main className="flex-1 p-6 bg-gray-50">
+        <main className="flex-1 p-6">
           <Outlet />
         </main>
       </div>

@@ -93,24 +93,24 @@ function ContentEditor() {
   }
 
   if (loading) {
-    return <div className="text-center py-20 text-gray-400">加载中...</div>
+    return <div className="text-center py-20 text-zinc-400">加载中...</div>
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">{isNew ? '新建内容' : '编辑内容'}</h1>
+      <h1 className="text-2xl font-bold text-zinc-800 mb-6">{isNew ? '新建内容' : '编辑内容'}</h1>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-gray-200 p-6 space-y-5">
+      <form onSubmit={handleSubmit} className="glass-surface p-6 space-y-5">
         {/* Title */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">标题 *</label>
+          <label className="block text-sm font-medium text-zinc-600 mb-1.5">标题 *</label>
           <TextField.Root size="2" placeholder="请输入标题" value={title} onChange={(e) => setTitle(e.target.value)} required />
         </div>
 
         {/* Type & Category */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">类型 *</label>
+            <label className="block text-sm font-medium text-zinc-600 mb-1.5">类型 *</label>
             <Select.Root size="2" value={type} onValueChange={(val) => setType(val as ContentType)}>
               <Select.Trigger className="w-full" />
               <Select.Content>
@@ -120,7 +120,7 @@ function ContentEditor() {
             </Select.Root>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">分类 *</label>
+            <label className="block text-sm font-medium text-zinc-600 mb-1.5">分类 *</label>
             <Select.Root size="2" value={category} onValueChange={(val) => setCategory(val as ContentCategory)}>
               <Select.Trigger className="w-full" />
               <Select.Content>
@@ -133,33 +133,33 @@ function ContentEditor() {
 
         {/* Summary */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">摘要</label>
+          <label className="block text-sm font-medium text-zinc-600 mb-1.5">摘要</label>
           <TextArea size="2" placeholder="请输入内容摘要" value={summary} onChange={(e) => setSummary(e.target.value)} rows={2} />
         </div>
 
         {/* Body */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">正文</label>
+          <label className="block text-sm font-medium text-zinc-600 mb-1.5">正文</label>
           <TextArea size="2" placeholder="请输入正文内容（支持 HTML）" value={body} onChange={(e) => setBody(e.target.value)} rows={10} />
         </div>
 
         {/* Cover URL */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">封面图 URL</label>
+          <label className="block text-sm font-medium text-zinc-600 mb-1.5">封面图 URL</label>
           <TextField.Root size="2" placeholder="https://example.com/cover.jpg" value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} />
         </div>
 
         {/* Video URL */}
         {type === 'video' && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">视频 URL</label>
+            <label className="block text-sm font-medium text-zinc-600 mb-1.5">视频 URL</label>
             <TextField.Root size="2" placeholder="https://example.com/video.mp4" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
           </div>
         )}
 
         {/* Tags */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">标签</label>
+          <label className="block text-sm font-medium text-zinc-600 mb-1.5">标签</label>
           <div className="flex items-center gap-2 mb-2">
             <TextField.Root
               size="2"
@@ -193,17 +193,17 @@ function ContentEditor() {
         {/* Speaker */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">主讲人</label>
+            <label className="block text-sm font-medium text-zinc-600 mb-1.5">主讲人</label>
             <TextField.Root size="2" placeholder="主讲人姓名" value={speaker} onChange={(e) => setSpeaker(e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">主讲人简介</label>
+            <label className="block text-sm font-medium text-zinc-600 mb-1.5">主讲人简介</label>
             <TextField.Root size="2" placeholder="主讲人简介" value={speakerBio} onChange={(e) => setSpeakerBio(e.target.value)} />
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
+        <div className="flex items-center gap-3 pt-4 border-t border-black/[0.06]">
           <Button type="submit" size="2" disabled={saving || !title.trim()}>
             <Save size={16} />
             {saving ? '保存中...' : '保存'}

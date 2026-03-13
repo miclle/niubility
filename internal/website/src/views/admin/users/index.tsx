@@ -51,9 +51,9 @@ function AdminUsers() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">用户管理</h1>
+      <h1 className="text-2xl font-bold text-zinc-800 mb-6">用户管理</h1>
 
-      <div className="bg-white rounded-lg border border-gray-200">
+      <div className="glass-surface overflow-hidden">
         <Table.Root>
           <Table.Header>
             <Table.Row>
@@ -68,13 +68,13 @@ function AdminUsers() {
           <Table.Body>
             {loading ? (
               <Table.Row>
-                <Table.Cell colSpan={6} className="text-center text-gray-400 py-8">
+                <Table.Cell colSpan={6} className="text-center text-zinc-400 py-8">
                   加载中...
                 </Table.Cell>
               </Table.Row>
             ) : users.length === 0 ? (
               <Table.Row>
-                <Table.Cell colSpan={6} className="text-center text-gray-400 py-8">
+                <Table.Cell colSpan={6} className="text-center text-zinc-400 py-8">
                   暂无用户
                 </Table.Cell>
               </Table.Row>
@@ -84,11 +84,11 @@ function AdminUsers() {
                   <Table.Cell>
                     <div className="flex items-center gap-2">
                       <Avatar size="2" radius="full" src={user.avatar} fallback={user.name?.charAt(0) || user.username.charAt(0)} />
-                      <span className="font-medium text-gray-900">{user.name || '-'}</span>
+                      <span className="font-medium text-zinc-800">{user.name || '-'}</span>
                     </div>
                   </Table.Cell>
-                  <Table.Cell className="text-gray-500">{user.username}</Table.Cell>
-                  <Table.Cell className="text-gray-500">{user.email || '-'}</Table.Cell>
+                  <Table.Cell className="text-zinc-500">{user.username}</Table.Cell>
+                  <Table.Cell className="text-zinc-500">{user.email || '-'}</Table.Cell>
                   <Table.Cell>
                     <Select.Root size="1" value={user.role} onValueChange={(val) => handleRoleChange(user.id, val as Role)}>
                       <Select.Trigger variant="ghost" />
@@ -115,7 +115,7 @@ function AdminUsers() {
                       </Select.Content>
                     </Select.Root>
                   </Table.Cell>
-                  <Table.Cell className="text-gray-500">{dayjs(user.created_at).format('YYYY-MM-DD')}</Table.Cell>
+                  <Table.Cell className="text-zinc-500">{dayjs(user.created_at).format('YYYY-MM-DD')}</Table.Cell>
                 </Table.Row>
               ))
             )}

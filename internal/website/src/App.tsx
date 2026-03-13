@@ -14,7 +14,7 @@ function App({ initialUser }: { initialUser: User | null }) {
 
   return (
     <AppContext.Provider value={{ currentUser, setCurrentUser }}>
-      <Theme accentColor="blue" radius="medium">
+      <Theme appearance="light" accentColor="violet" radius="medium" panelBackground="translucent">
         <RouterProvider router={router} />
       </Theme>
     </AppContext.Provider>

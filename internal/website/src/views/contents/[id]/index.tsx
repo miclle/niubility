@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Badge, Avatar } from '@radix-ui/themes'
+import { Avatar } from '@radix-ui/themes'
 import { ArrowLeft } from 'lucide-react'
 import dayjs from 'dayjs'
 
@@ -24,11 +24,11 @@ function ContentDetail() {
   }, [id])
 
   if (loading) {
-    return <div className="max-w-4xl mx-auto px-6 py-20 text-center text-gray-400">加载中...</div>
+    return <div className="max-w-4xl mx-auto px-6 py-20 text-center text-zinc-400">加载中...</div>
   }
 
   if (error || !content) {
-    return <div className="max-w-4xl mx-auto px-6 py-20 text-center text-gray-400">内容不存在</div>
+    return <div className="max-w-4xl mx-auto px-6 py-20 text-center text-zinc-400">内容不存在</div>
   }
 
   const categoryPath = content.category === 'culture' ? '/culture' : '/learning'
@@ -36,16 +36,16 @@ function ContentDetail() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-8">
       {/* Back link */}
-      <Link to={categoryPath} className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 no-underline mb-6">
+      <Link to={categoryPath} className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-zinc-800 no-underline mb-6 transition-colors">
         <ArrowLeft size={16} />
         返回列表
       </Link>
 
       {/* Title */}
-      <h1 className="text-3xl font-bold text-gray-900 mb-4">{content.title}</h1>
+      <h1 className="text-3xl font-bold text-zinc-800 mb-4">{content.title}</h1>
 
       {/* Meta */}
-      <div className="flex items-center gap-4 mb-6 text-sm text-gray-500">
+      <div className="flex items-center gap-4 mb-6 text-sm text-zinc-500">
         {content.author && (
           <div className="flex items-center gap-2">
             <Avatar size="1" radius="full" src={content.author.avatar} fallback={content.author.name?.charAt(0) || '?'} />
@@ -53,21 +53,21 @@ function ContentDetail() {
           </div>
         )}
         <span>{dayjs(content.created_at).format('YYYY-MM-DD HH:mm')}</span>
-        <Badge variant="soft">{content.type === 'video' ? '视频' : '图文'}</Badge>
+        <span className="glass-badge">{content.type === 'video' ? '视频' : '图文'}</span>
       </div>
 
       {/* Tags */}
       {content.tags?.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-6">
           {content.tags.map((tag) => (
-            <Badge key={tag} variant="outline" size="2">{tag}</Badge>
+            <span key={tag} className="glass-badge">{tag}</span>
           ))}
         </div>
       )}
 
       {/* Cover / Video */}
       {content.type === 'video' && content.video_url ? (
-        <div className="mb-8 rounded-lg overflow-hidden bg-black">
+        <div className="mb-8 rounded-lg overflow-hidden bg-black shadow-[0_0_30px_rgba(124,58,237,0.1)]">
           <video src={content.video_url} controls className="w-full" poster={content.cover_url || undefined} />
         </div>
       ) : content.cover_url ? (
@@ -78,15 +78,15 @@ function ContentDetail() {
 
       {/* Speaker info */}
       {content.speaker && (
-        <div className="bg-blue-50 rounded-lg p-4 mb-8">
-          <div className="text-sm font-medium text-blue-900 mb-1">主讲人：{content.speaker}</div>
-          {content.speaker_bio && <div className="text-sm text-blue-700">{content.speaker_bio}</div>}
+        <div className="glass-surface border-l-2 border-l-violet-500 p-4 mb-8">
+          <div className="text-sm font-medium text-zinc-700 mb-1">主讲人：{content.speaker}</div>
+          {content.speaker_bio && <div className="text-sm text-zinc-500">{content.speaker_bio}</div>}
         </div>
       )}
 
       {/* Body */}
       {content.body && (
-        <div className="prose prose-gray max-w-none" dangerouslySetInnerHTML={{ __html: content.body }} />
+        <div className="prose-dark" dangerouslySetInnerHTML={{ __html: content.body }} />
       )}
     </div>
   )

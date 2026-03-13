@@ -48,7 +48,7 @@ function AdminContents() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">内容管理</h1>
+        <h1 className="text-2xl font-bold text-zinc-800">内容管理</h1>
         <Button asChild size="2">
           <Link to="/admin/contents/new">
             <Plus size={16} />
@@ -57,7 +57,7 @@ function AdminContents() {
         </Button>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200">
+      <div className="glass-surface overflow-hidden">
         <Table.Root>
           <Table.Header>
             <Table.Row>
@@ -72,13 +72,13 @@ function AdminContents() {
           <Table.Body>
             {loading ? (
               <Table.Row>
-                <Table.Cell colSpan={6} className="text-center text-gray-400 py-8">
+                <Table.Cell colSpan={6} className="text-center text-zinc-400 py-8">
                   加载中...
                 </Table.Cell>
               </Table.Row>
             ) : contents.length === 0 ? (
               <Table.Row>
-                <Table.Cell colSpan={6} className="text-center text-gray-400 py-8">
+                <Table.Cell colSpan={6} className="text-center text-zinc-400 py-8">
                   暂无内容
                 </Table.Cell>
               </Table.Row>
@@ -86,7 +86,7 @@ function AdminContents() {
               contents.map((content) => (
                 <Table.Row key={content.id}>
                   <Table.Cell>
-                    <span className="font-medium text-gray-900 line-clamp-1">{content.title}</span>
+                    <span className="font-medium text-zinc-800 line-clamp-1">{content.title}</span>
                   </Table.Cell>
                   <Table.Cell>
                     <Badge variant="soft">{typeLabels[content.type]}</Badge>
@@ -94,8 +94,8 @@ function AdminContents() {
                   <Table.Cell>
                     <Badge variant="outline">{categoryLabels[content.category]}</Badge>
                   </Table.Cell>
-                  <Table.Cell className="text-gray-500">{content.author?.name || '-'}</Table.Cell>
-                  <Table.Cell className="text-gray-500">{dayjs(content.created_at).format('YYYY-MM-DD')}</Table.Cell>
+                  <Table.Cell className="text-zinc-500">{content.author?.name || '-'}</Table.Cell>
+                  <Table.Cell className="text-zinc-500">{dayjs(content.created_at).format('YYYY-MM-DD')}</Table.Cell>
                   <Table.Cell>
                     <Flex gap="2">
                       <Button variant="ghost" size="1" asChild>

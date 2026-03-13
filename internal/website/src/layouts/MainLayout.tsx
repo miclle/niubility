@@ -10,11 +10,11 @@ function MainLayout() {
   const navigate = useNavigate()
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <header className="border-b border-gray-200 bg-white sticky top-0 z-50">
+    <div className="flex flex-col min-h-screen bg-[#fafafa]">
+      <header className="glass-header sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           {/* Logo */}
-          <NavLink to="/" className="text-xl font-bold text-gray-900 no-underline">
+          <NavLink to="/" className="text-xl font-bold gradient-text no-underline">
             Niubility
           </NavLink>
 
@@ -23,8 +23,10 @@ function MainLayout() {
             <NavLink
               to="/learning"
               className={({ isActive }) =>
-                `px-4 py-2 rounded-md text-sm font-medium no-underline transition-colors ${
-                  isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                `px-4 py-2 rounded-md text-sm font-medium no-underline transition-all ${
+                  isActive
+                    ? 'bg-gradient-to-r from-violet-500/10 to-blue-500/10 border border-violet-500/20 text-violet-700 shadow-[0_0_12px_rgba(124,58,237,0.1)]'
+                    : 'text-zinc-500 hover:text-zinc-800 hover:bg-black/[0.03]'
                 }`
               }
             >
@@ -33,8 +35,10 @@ function MainLayout() {
             <NavLink
               to="/culture"
               className={({ isActive }) =>
-                `px-4 py-2 rounded-md text-sm font-medium no-underline transition-colors ${
-                  isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                `px-4 py-2 rounded-md text-sm font-medium no-underline transition-all ${
+                  isActive
+                    ? 'bg-gradient-to-r from-violet-500/10 to-blue-500/10 border border-violet-500/20 text-violet-700 shadow-[0_0_12px_rgba(124,58,237,0.1)]'
+                    : 'text-zinc-500 hover:text-zinc-800 hover:bg-black/[0.03]'
                 }`
               }
             >
@@ -46,7 +50,7 @@ function MainLayout() {
           {currentUser ? (
             <DropdownMenu.Root>
               <DropdownMenu.Trigger>
-                <button className="flex items-center gap-2 cursor-pointer bg-transparent border-0 p-1 rounded-full hover:bg-gray-100">
+                <button className="flex items-center gap-2 cursor-pointer bg-transparent border-0 p-1 rounded-full hover:bg-black/[0.04]">
                   <Avatar
                     size="2"
                     radius="full"
@@ -90,7 +94,8 @@ function MainLayout() {
         <Outlet />
       </main>
 
-      <footer className="border-t border-gray-200 py-6 text-center text-sm text-gray-500">
+      <footer className="py-6 text-center text-sm text-zinc-400">
+        <div className="gradient-separator mb-6" />
         &copy; {new Date().getFullYear()} Niubility
       </footer>
     </div>

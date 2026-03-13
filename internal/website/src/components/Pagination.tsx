@@ -20,8 +20,8 @@ function Pagination({ page, limit, total, onChange }: PaginationProps) {
         <ChevronLeft size={16} />
         上一页
       </Button>
-      <span className="text-sm text-gray-500 px-3">
-        {page} / {totalPages}
+      <span className="text-sm text-zinc-400 px-3">
+        <span className="gradient-text font-semibold">{page}</span> / {totalPages}
       </span>
       <Button variant="soft" size="2" disabled={page >= totalPages} onClick={() => onChange(page + 1)}>
         下一页
