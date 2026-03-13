@@ -54,11 +54,21 @@ func (s *Service) ListUsers(args entity.ListUsersArgs) ([]entity.User, int64, er
 }
 
 // UpsertUser creates a new user or updates the existing one by username.
-// New users are created with disabled status; existing users get email and name updated.
+// The first user is automatically set as admin. New users default to activated status.
 func (s *Service) UpsertUser(username, email string) (*entity.User, error) {
 	name, _, ok := strings.Cut(email, "@")
 	if !ok {
 		name = username
+	}
+
+	// first user becomes admin
+	role := entity.RoleUser
+	var count int64
+	if err := s.DB.Model(&entity.User{}).Count(&count).Error; err != nil {
+		return nil, fmt.Errorf("count users: %w", err)
+	}
+	if count == 0 {
+		role = entity.RoleAdmin
 	}
 
 	user := &entity.User{
@@ -66,7 +76,8 @@ func (s *Service) UpsertUser(username, email string) (*entity.User, error) {
 		Username: username,
 		Name:     name,
 		Email:    email,
-		Status:   entity.UserStatusDeactivated,
+		Role:     role,
+		Status:   entity.UserStatusActivated,
 	}
 
 	conds := clause.OnConflict{

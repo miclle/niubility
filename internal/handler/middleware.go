@@ -27,6 +27,9 @@ var skipPaths = []string{
 	"/health",
 
 	// website routes
+	"/forbidden",
+	"/404",
+	"/500",
 	"/assets",
 	"/favicon.ico",
 	"/robots.txt",
