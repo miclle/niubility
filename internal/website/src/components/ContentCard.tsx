@@ -1,51 +1,82 @@
 import { Link } from 'react-router-dom'
-import { PlayCircle } from 'lucide-react'
+import { Play } from 'lucide-react'
 import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+import 'dayjs/locale/zh-cn'
 
 import type { Content } from 'src/types/content'
 
-// ContentCard displays a content item as a card in the grid.
+dayjs.extend(relativeTime)
+dayjs.locale('zh-cn')
+
+// ContentCard displays a content item as a YouTube-style video card.
 function ContentCard({ content }: { content: Content }) {
   return (
     <Link
       to={`/contents/${content.id}`}
-      className="group block glass-card overflow-hidden no-underline text-inherit"
+      className="group block no-underline"
+      style={{ color: 'inherit' }}
     >
-      {/* Cover image */}
-      <div className="relative aspect-video bg-zinc-100 overflow-hidden">
-        {content.cover_url ? (
-          <>
-            <img src={content.cover_url} alt={content.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-            <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/30 to-transparent" />
-          </>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-zinc-400 text-sm">暂无封面</div>
-        )}
-        {content.type === 'video' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-            <PlayCircle size={48} className="text-white/90" />
-          </div>
-        )}
+      {/* Thumbnail - YouTube style */}
+      <div className="relative" style={{ borderRadius: 12, overflow: 'hidden' }}>
+        <div className="relative aspect-video bg-zinc-200">
+          {content.cover_url ? (
+            <img
+              src={content.cover_url}
+              alt={content.title}
+              className="w-full h-full object-cover"
+              style={{ transition: 'transform 0.3s' }}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center" style={{ color: '#909090' }}>
+              暂无封面
+            </div>
+          )}
+          {/* Video play icon overlay */}
+          {content.type === 'video' && (
+            <div
+              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              style={{ background: 'rgba(0,0,0,0.3)' }}
+            >
+              <div style={{ background: 'rgba(0,0,0,0.7)', borderRadius: '50%', padding: 12 }}>
+                <Play size={32} fill="white" style={{ color: 'white' }} />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Card body */}
-      <div className="p-4">
-        <h3 className="text-base font-semibold text-zinc-800 line-clamp-2 mb-2 group-hover:gradient-text transition-colors">{content.title}</h3>
-        {content.summary && <p className="text-sm text-zinc-500 line-clamp-2 mb-3">{content.summary}</p>}
-
-        {/* Tags */}
-        {content.tags?.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-3">
-            {content.tags.slice(0, 3).map((tag) => (
-              <span key={tag} className="glass-badge">{tag}</span>
-            ))}
+      {/* Card info - YouTube style: horizontal layout with avatar */}
+      <div className="flex gap-3 mt-3">
+        {/* Author avatar */}
+        <div className="flex-shrink-0">
+          <div
+            className="w-9 h-9 rounded-full bg-zinc-300 flex items-center justify-center text-sm font-medium"
+            style={{ color: '#0f0f0f' }}
+          >
+            {content.author?.name?.charAt(0) || '匿'}
           </div>
-        )}
+        </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between text-xs text-zinc-400">
-          <span>{content.author?.name || '未知作者'}</span>
-          <span>{dayjs(content.created_at).format('YYYY-MM-DD')}</span>
+        {/* Text content */}
+        <div className="flex-1 min-w-0">
+          {/* Title - max 2 lines */}
+          <h3
+            className="text-sm font-medium line-clamp-2 mb-1"
+            style={{ color: '#0f0f0f' }}
+          >
+            {content.title}
+          </h3>
+
+          {/* Author name */}
+          <div className="text-xs mb-0.5" style={{ color: '#606060' }}>
+            {content.author?.name || '未知作者'}
+          </div>
+
+          {/* Meta info */}
+          <div className="text-xs" style={{ color: '#606060' }}>
+            {dayjs(content.created_at).fromNow()}
+          </div>
         </div>
       </div>
     </Link>
