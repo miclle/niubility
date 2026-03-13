@@ -3,8 +3,10 @@ package service
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/miclle/niubility/internal/entity"
 )
@@ -49,6 +51,34 @@ func (s *Service) ListUsers(args entity.ListUsersArgs) ([]entity.User, int64, er
 	}
 
 	return users, total, nil
+}
+
+// UpsertUser creates a new user or updates the existing one by username.
+// New users are created with disabled status; existing users get email and name updated.
+func (s *Service) UpsertUser(username, email string) (*entity.User, error) {
+	name, _, ok := strings.Cut(email, "@")
+	if !ok {
+		name = username
+	}
+
+	user := &entity.User{
+		ID:       entity.ID(),
+		Username: username,
+		Name:     name,
+		Email:    email,
+		Status:   entity.UserStatusDeactivated,
+	}
+
+	conds := clause.OnConflict{
+		Columns:   []clause.Column{{Name: "username"}},
+		DoUpdates: clause.AssignmentColumns([]string{"email", "name"}),
+	}
+	if err := s.DB.Clauses(conds).Create(user).Error; err != nil {
+		return nil, fmt.Errorf("upsert user: %w", err)
+	}
+
+	// reload to get the actual record (in case it was an existing user)
+	return s.GetUserByUsername(username)
 }
 
 // CreateUser creates a new user record.

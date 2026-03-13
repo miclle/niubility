@@ -4,35 +4,45 @@ package handler
 import (
 	"github.com/fox-gonic/fox"
 
+	"github.com/miclle/niubility/internal/config"
 	"github.com/miclle/niubility/internal/service"
 	"github.com/miclle/niubility/internal/website"
+	"github.com/miclle/niubility/pkg/sso"
 )
 
 // Ctrl is the controller that holds service dependencies and registers routes.
 type Ctrl struct {
+	config  *config.Config
+	sso     *sso.Service
 	service *service.Service
-	secret  string // JWT signing secret
 }
 
 // New creates a new Ctrl instance.
-func New(svc *service.Service, secret string) *Ctrl {
+func New(cfg *config.Config, svc *service.Service) *Ctrl {
 	return &Ctrl{
+		config:  cfg,
+		sso:     sso.NewService(cfg.SSO),
 		service: svc,
-		secret:  secret,
 	}
 }
 
 // RegisterRoutes registers all API routes on the given engine.
 func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
+	// global auth middleware
+	r.Use(ctrl.AuthMiddleware)
+
 	// embed website assets
 	website.EmbedAssets(r)
 
-	// public routes
-	r.POST("/api/v1/login", ctrl.Login)
+	// SSO callback and logout
+	r.GET("/sso", ctrl.SSOCallback)
+	r.GET("/logout", ctrl.Logout)
+
+	// health check
 	r.GET("/health", ctrl.Health)
 
-	// authenticated routes
-	api := r.Group("/api/v1", ctrl.AuthMiddleware)
+	// API routes
+	api := r.Group("/api/v1")
 	api.GET("/boot", ctrl.Boot)
 
 	// content routes (authenticated users can read, admin can write)

@@ -27,7 +27,7 @@ func main() {
 	}
 
 	engine := fox.Default()
-	ctrl := handler.New(svc, cfg.Server.Secret)
+	ctrl := handler.New(cfg, svc)
 	ctrl.RegisterRoutes(engine)
 
 	log.Printf("server starting on %s", cfg.Server.Address)

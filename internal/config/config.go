@@ -5,18 +5,22 @@ import (
 	"fmt"
 
 	"github.com/spf13/viper"
+
+	"github.com/miclle/niubility/pkg/sso"
 )
 
 // Config represents the application configuration.
 type Config struct {
 	Server   Server   `yaml:"server"`
 	Database Database `yaml:"database"`
+	SSO      sso.Config `yaml:"sso"`
 }
 
 // Server holds HTTP server settings.
 type Server struct {
-	Address string `yaml:"address"` // listen address, e.g. "0.0.0.0:8080"
-	Secret  string `yaml:"secret"`  // JWT signing secret
+	Address      string `yaml:"address"`      // listen address, e.g. "0.0.0.0:9000"
+	Secret       string `yaml:"secret"`       // JWT signing secret
+	CookieSecure bool   `yaml:"cookieSecure"` // set Secure flag on cookies (HTTPS)
 }
 
 // Database holds database connection settings.

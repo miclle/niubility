@@ -1,87 +1,155 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/fox-gonic/fox"
 	"github.com/fox-gonic/fox/httperrors"
+	"github.com/fox-gonic/fox/render"
 	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/miclle/niubility/internal/entity"
 )
 
-// LoginArgs represents the login request body.
-type LoginArgs struct {
-	Username string `json:"username" binding:"required"`
+// AuthenticationState represents the authentication state.
+type AuthenticationState string
+
+const (
+	// AuthenticationStateAuthorized indicates the user is authenticated.
+	AuthenticationStateAuthorized AuthenticationState = "authorized"
+	// AuthenticationStateUnauthorized indicates the user is not authenticated.
+	AuthenticationStateUnauthorized AuthenticationState = "unauthorized"
+)
+
+// SSOCallbackArgs represents the SSO callback query parameters.
+type SSOCallbackArgs struct {
+	Token    string `query:"token"`
+	Redirect string `query:"redirect"`
 }
 
-// LoginResponse represents the login response.
-type LoginResponse struct {
-	User *entity.User `json:"user"`
-}
-
-// Login authenticates a user by username and sets a JWT cookie.
-// This is a simplified login for development; will be replaced by WeCom OAuth later.
-func (ctrl *Ctrl) Login(c *fox.Context, args LoginArgs) (*LoginResponse, error) {
-	user, err := ctrl.service.GetUserByUsername(args.Username)
+// SSOCallback handles the SSO login callback.
+func (ctrl *Ctrl) SSOCallback(c *fox.Context, args *SSOCallbackArgs) any {
+	userinfo, err := ctrl.sso.GetLoginUserInfo(c, args.Token)
 	if err != nil {
-		return nil, httperrors.ErrInternalServerError
+		c.Logger.Errorf("sso get login user info failed, error: %+v", err)
+		return render.Redirect{Code: 302, Location: "/500"}
 	}
 
-	// auto-create user if not exists (simplified for development)
-	if user == nil {
-		user = &entity.User{
-			Username: args.Username,
-			Name:     args.Username,
-			Role:     entity.RoleUser,
-			Status:   entity.UserStatusActivated,
-		}
-		if err := ctrl.service.CreateUser(user); err != nil {
-			return nil, httperrors.ErrInternalServerError
-		}
+	if len(userinfo.Username) == 0 {
+		c.Logger.Error("sso user username is empty")
+		return render.Redirect{Code: 302, Location: "/500"}
 	}
 
-	if user.Status != entity.UserStatusActivated {
-		return nil, httperrors.ErrForbidden
-	}
-
-	// generate JWT token
-	claims := &Claims{
-		UserID: user.ID,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenStr, err := token.SignedString([]byte(ctrl.secret))
+	user, err := ctrl.service.UpsertUser(userinfo.Username, userinfo.Email)
 	if err != nil {
-		return nil, httperrors.ErrInternalServerError
+		c.Logger.Errorf("upsert user failed, err: %+v", err)
+		return render.Redirect{Code: 302, Location: "/500"}
 	}
 
-	c.SetCookie(cookieName, tokenStr, 7*24*3600, "/", "", false, true)
+	var (
+		timeNow   = time.Now()
+		expiresAt = timeNow.Add(30 * 24 * time.Hour)
+	)
 
-	return &LoginResponse{User: user}, nil
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
+		Issuer:    user.Username,
+		IssuedAt:  jwt.NewNumericDate(timeNow),
+		ExpiresAt: jwt.NewNumericDate(expiresAt),
+	})
+
+	tokenString, err := jwtToken.SignedString([]byte(ctrl.config.Server.Secret))
+	if err != nil {
+		c.Logger.Errorf("create jwt token failed: %s", err.Error())
+		return render.Redirect{Code: 302, Location: "/500"}
+	}
+
+	cookie := &http.Cookie{
+		Name:     CookieName,
+		Value:    tokenString,
+		Path:     "/",
+		MaxAge:   int(expiresAt.Sub(timeNow).Seconds()),
+		Secure:   ctrl.config.Server.CookieSecure,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	}
+
+	if cookie.Secure {
+		cookie.SameSite = http.SameSiteNoneMode
+	}
+
+	http.SetCookie(c.Writer, cookie)
+
+	if args.Redirect == "" {
+		args.Redirect = "/"
+	}
+
+	return render.Redirect{Code: 302, Location: args.Redirect}
 }
 
-// BootResponse represents the boot response containing current user info.
+// BootResponse represents the boot response.
 type BootResponse struct {
-	User *entity.User `json:"user"`
+	Authentication AuthenticationState `json:"authentication"`
+	User           *entity.User        `json:"user,omitempty"`
 }
 
 // Boot returns the current authenticated user's information.
-func (ctrl *Ctrl) Boot(c *fox.Context) (*BootResponse, error) {
-	user := CurrentUser(c)
-	if user == nil {
-		return nil, httperrors.ErrUnauthorized
+func (ctrl *Ctrl) Boot(c *fox.Context) *BootResponse {
+	resp := &BootResponse{
+		Authentication: AuthenticationStateUnauthorized,
 	}
-	return &BootResponse{User: user}, nil
+
+	user := CurrentUser(c)
+	if user != nil {
+		resp.Authentication = AuthenticationStateAuthorized
+		resp.User = user
+	}
+
+	return resp
+}
+
+// LogoutArgs represents the logout query parameters.
+type LogoutArgs struct {
+	Redirect string `query:"redirect"`
+}
+
+// Logout clears the authentication cookie and redirects to SSO signout.
+func (ctrl *Ctrl) Logout(c *fox.Context, args *LogoutArgs) render.Redirect {
+	cookie := &http.Cookie{
+		Name:     CookieName,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		Secure:   ctrl.config.Server.CookieSecure,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	}
+
+	if cookie.Secure {
+		cookie.SameSite = http.SameSiteNoneMode
+	}
+
+	http.SetCookie(c.Writer, cookie)
+
+	if args.Redirect == "" {
+		args.Redirect = "/"
+	}
+
+	scheme := "https"
+	if c.Request.TLS == nil {
+		scheme = "http"
+	}
+
+	redirect := fmt.Sprintf("%s://%s/sso?redirect=%s", scheme, c.Request.Host, args.Redirect)
+	location := fmt.Sprintf("%s/signout?redirect=%s", ctrl.config.SSO.Host, redirect)
+
+	return render.Redirect{Code: 302, Location: location}
 }
 
 // ListUsersResponse represents the response for listing users.
 type ListUsersResponse struct {
-	Users      []entity.User    `json:"users"`
+	Users      []entity.User     `json:"users"`
 	Pagination entity.Pagination `json:"pagination"`
 }
 
@@ -113,10 +181,4 @@ func (ctrl *Ctrl) UpdateUser(c *fox.Context, args entity.UpdateUserArgs) (*entit
 	}
 
 	return user, nil
-}
-
-// Logout clears the authentication cookie.
-func (ctrl *Ctrl) Logout(c *fox.Context) {
-	c.SetCookie(cookieName, "", -1, "/", "", false, true)
-	c.Status(http.StatusNoContent)
 }
