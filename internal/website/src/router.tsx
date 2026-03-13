@@ -4,8 +4,9 @@ import MainLayout from 'src/layouts/MainLayout'
 import AdminLayout from 'src/layouts/AdminLayout'
 import Home from 'src/views/home'
 import ContentDetail from 'src/views/contents/[id]'
+import ContentEditor from 'src/views/contents/editor'
 import AdminContents from 'src/views/admin/contents'
-import ContentEditor from 'src/views/admin/contents/editor'
+import AdminContentEditor from 'src/views/admin/contents/editor'
 import AdminUsers from 'src/views/admin/users'
 import NotFound from 'src/views/errors/NotFound'
 import Forbidden from 'src/views/errors/Forbidden'
@@ -20,6 +21,8 @@ const routes: RouteObject[] = [
       { index: true, element: <Navigate to="/learning" replace /> },
       { path: 'learning', element: <Home /> },
       { path: 'culture', element: <Home /> },
+      { path: 'contents/new', element: <ContentEditor /> },
+      { path: 'contents/:id/edit', element: <ContentEditor /> },
       { path: 'contents/:id', element: <ContentDetail /> },
     ],
   },
@@ -30,8 +33,8 @@ const routes: RouteObject[] = [
     children: [
       { index: true, element: <Navigate to="/admin/contents" replace /> },
       { path: 'contents', element: <AdminContents /> },
-      { path: 'contents/new', element: <ContentEditor /> },
-      { path: 'contents/:id', element: <ContentEditor /> },
+      { path: 'contents/new', element: <AdminContentEditor /> },
+      { path: 'contents/:id', element: <AdminContentEditor /> },
       { path: 'users', element: <AdminUsers /> },
     ],
   },

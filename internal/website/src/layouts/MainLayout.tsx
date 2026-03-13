@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { DropdownMenu, Avatar } from '@radix-ui/themes'
-import { LogOut, Settings, User, Search, Menu, Home, Play, FileText, ChevronDown } from 'lucide-react'
+import { LogOut, Settings, User, Search, Menu, Home, Play, FileText, ChevronDown, Plus } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
 import type { ContentType, ContentCategory } from 'src/types/content'
@@ -65,10 +65,22 @@ function MainLayout() {
           </button>
         </div>
 
-        {/* Right: User menu */}
+        {/* Right: Create button + User menu */}
         <div className="flex items-center gap-2">
           {currentUser ? (
-            <DropdownMenu.Root>
+            <>
+              <NavLink
+                to="/contents/new"
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium no-underline transition-colors"
+                style={{
+                  background: '#0f0f0f',
+                  color: '#ffffff',
+                }}
+              >
+                <Plus size={16} />
+                创建
+              </NavLink>
+              <DropdownMenu.Root>
               <DropdownMenu.Trigger>
                 <button className="p-1 rounded-full hover:bg-zinc-100 transition-colors cursor-pointer border-0 bg-transparent">
                   <Avatar
@@ -101,6 +113,7 @@ function MainLayout() {
                 </DropdownMenu.Item>
               </DropdownMenu.Content>
             </DropdownMenu.Root>
+            </>
           ) : (
             <a
               href={'/sso?redirect=' + encodeURIComponent(window.location.pathname)}
