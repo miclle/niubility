@@ -24,6 +24,18 @@ profile.cov
 go.work
 go.work.sum
 
+# Build output
+bin/
+
+# Task runner cache
+.task/
+
+# OS
+.DS_Store
+
+# Local config (auto-copied from config.example.yaml)
+config.local.yaml
+
 # env file
 .env
 

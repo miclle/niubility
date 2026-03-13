@@ -1,0 +1,6 @@
+server:
+  address: "0.0.0.0:9000"
+  secret: "change-me-to-a-random-secret"
+
+database:
+  dsn: "host=localhost port=5432 user=postgres password=postgres dbname=niubility sslmode=disable"

@@ -1,0 +1,73 @@
+version: "3"
+
+vars:
+  WEBSITE_DIR: internal/website
+
+tasks:
+  init-config:
+    desc: Copy config.example.yaml to config.local.yaml if not exists
+    cmds:
+      - cp cmd/server/config.example.yaml cmd/server/config.local.yaml
+      - echo "Created cmd/server/config.local.yaml from config.example.yaml"
+    status:
+      - test -f cmd/server/config.local.yaml
+
+  website:install:
+    desc: Install website dependencies
+    dir: "{{.WEBSITE_DIR}}"
+    cmds:
+      - npm install
+    sources:
+      - package.json
+    generates:
+      - node_modules/.package-lock.json
+
+  website:build:
+    desc: Build website for production
+    dir: "{{.WEBSITE_DIR}}"
+    deps: [website:install]
+    cmds:
+      - npm run build
+
+  kill-website:
+    internal: true
+    desc: Kill running Vite dev server if any
+    cmds:
+      - |
+        ps aux | grep "[n]pm run dev" | grep "internal/website" | awk '{print $2}' | xargs kill -9 2>/dev/null || true
+        sleep 1
+
+  dev:
+    desc: Start Vite dev server and Go server with hot-reload
+    deps: [init-config, kill-website, website:install]
+    cmds:
+      - |
+        cd {{.WEBSITE_DIR}} && npm run dev &
+        sleep 1
+        reflex \
+          -d none -s \
+          -r '\.go$' \
+          -R 'internal/website/' \
+          -- go run -tags development ./cmd/server/ -c cmd/server/config.local.yaml
+
+  run:
+    desc: Run the server (production mode, requires website:build first)
+    deps: [init-config]
+    cmds:
+      - go run ./cmd/server/ -c cmd/server/config.local.yaml
+
+  build:
+    desc: Build the server binary with embedded website
+    deps: [website:build]
+    cmds:
+      - go build -o bin/niubility ./cmd/server/
+
+  fmt:
+    desc: Format Go source code
+    cmds:
+      - gofmt -w .
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
