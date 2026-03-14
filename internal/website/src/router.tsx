@@ -8,6 +8,7 @@ import ContentEditor from 'src/views/contents/editor'
 import AdminContents from 'src/views/admin/contents'
 import AdminContentEditor from 'src/views/admin/contents/editor'
 import AdminUsers from 'src/views/admin/users'
+import AdminImport from 'src/views/admin/import'
 import NotFound from 'src/views/errors/NotFound'
 import Forbidden from 'src/views/errors/Forbidden'
 import ServerError from 'src/views/errors/ServerError'
@@ -36,6 +37,7 @@ const routes: RouteObject[] = [
       { path: 'contents/new', element: <AdminContentEditor /> },
       { path: 'contents/:id', element: <AdminContentEditor /> },
       { path: 'users', element: <AdminUsers /> },
+      { path: 'import', element: <AdminImport /> },
     ],
   },
   // Error pages

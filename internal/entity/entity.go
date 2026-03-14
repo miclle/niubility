@@ -12,7 +12,7 @@ func ID() string {
 
 // Pagination represents pagination parameters for list queries.
 type Pagination struct {
-	Page  int   `json:"page" form:"page"`
+	Page  int   `json:"page"  form:"page"`
 	Limit int   `json:"limit" form:"limit"`
 	Total int64 `json:"total"`
 }

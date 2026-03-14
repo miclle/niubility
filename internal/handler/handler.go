@@ -52,6 +52,9 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	api.PUT("/contents/:id", ctrl.RequireAdmin, ctrl.UpdateContent)
 	api.DELETE("/contents/:id", ctrl.RequireAdmin, ctrl.DeleteContent)
 
+	// import routes (admin only)
+	api.POST("/import", ctrl.RequireAdmin, ctrl.ImportContents)
+
 	// admin-only user management
 	admin := api.Group("", ctrl.RequireAdmin)
 	admin.GET("/users", ctrl.ListUsers)

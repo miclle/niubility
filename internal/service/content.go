@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -130,4 +131,65 @@ func (s *Service) DeleteContent(id string) error {
 		return nil
 	}
 	return nil
+}
+
+// ImportContents imports contents from the legacy platform.
+// source: "sharing" (学习交流) or "training" (企业文化)
+func (s *Service) ImportContents(source string, talks []entity.LegacyTalk) (*entity.ImportResult, error) {
+	result := &entity.ImportResult{
+		Total: len(talks),
+	}
+
+	for _, talk := range talks {
+		// Check if content with this title already exists
+		var existing entity.Content
+		if err := s.DB.Where("title = ?", talk.Title).First(&existing).Error; err == nil {
+			result.Skipped++
+			continue
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			result.Errors = append(result.Errors, fmt.Sprintf("check existing %s: %v", talk.ID, err))
+			continue
+		}
+
+		// Determine category based on source
+		var category entity.ContentCategory
+		if source == "sharing" {
+			category = entity.CategoryLearning
+		} else {
+			category = entity.CategoryCulture
+		}
+
+		// Parse created_at time
+		var createdAt time.Time
+		if !talk.CreatedAt.IsZero() {
+			createdAt = talk.CreatedAt
+		} else {
+			createdAt = time.Now()
+		}
+
+		content := &entity.Content{
+			ID:         entity.ID(),
+			Title:      talk.Title,
+			Summary:    talk.Description,
+			Body:       talk.Description,
+			CoverURL:   talk.Cover,
+			VideoURL:   talk.Playback,
+			Type:       entity.ContentTypeVideo,
+			Category:   category,
+			Tags:       talk.Tags,
+			Speaker:    talk.Speaker,
+			SpeakerBio: talk.Bio,
+			CreatedAt:  createdAt,
+			UpdatedAt:  createdAt,
+		}
+
+		if err := s.DB.Create(content).Error; err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("create %s: %v", talk.ID, err))
+			continue
+		}
+
+		result.Imported++
+	}
+
+	return result, nil
 }

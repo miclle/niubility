@@ -73,3 +73,32 @@ export interface UpdateContentArgs {
   speaker?: string
   speaker_bio?: string
 }
+
+// LegacyTalk represents the data structure from the old platform.
+export interface LegacyTalk {
+  id: string
+  title: string
+  cover: string
+  description: string
+  tags: string[]
+  speaker: string
+  bio: string
+  playback: string
+  type: string
+  volume: string
+  created_at: string
+}
+
+// ImportContentsArgs represents the request body for importing contents.
+export interface ImportContentsArgs {
+  source: 'sharing' | 'training'
+  contents: LegacyTalk[]
+}
+
+// ImportResult represents the result of an import operation.
+export interface ImportResult {
+  total: number
+  imported: number
+  skipped: number
+  errors: string[]
+}
