@@ -4,9 +4,11 @@ import { Upload, FileJson, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 
 import { importContents } from 'src/api/content'
 import type { ImportResult, LegacyTalk } from 'src/types/content'
+import { useAppContext } from 'src/context/app'
 
 // AdminImport provides an interface for importing data from the legacy platform.
 function AdminImport() {
+  const { currentUser } = useAppContext()
   const [data, setData] = useState('')
   const [result, setResult] = useState<ImportResult | null>(null)
   const [loading, setLoading] = useState(false)
@@ -26,7 +28,7 @@ function AdminImport() {
       setError('')
     }
     reader.readAsText(file)
-    // Reset file input so the same file can be selected again
+    // Reset file input
     e.target.value = ''
   }
 
@@ -66,19 +68,8 @@ function AdminImport() {
       <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
         {/* File upload */}
         <div className="mb-4">
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".json"
-            className="hidden"
-            onChange={handleFileUpload}
-          />
-          <Button
-            variant="soft"
-            size="2"
-            onClick={() => fileRef.current?.click()}
-            style={{ borderRadius: '18px', background: '#f2f2f2', color: '#0f0f0f' }}
-          >
+          <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleFileUpload} />
+          <Button variant="soft" size="2" onClick={() => fileRef.current?.click()} style={{ borderRadius: '18px', background: '#f2f2f2', color: '#0f0f0f' }}>
             <Upload size={16} />
             选择 JSON 文件
           </Button>
