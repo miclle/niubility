@@ -24,14 +24,14 @@ type LegacyTalk struct {
 
 // ImportContentsArgs represents the request body for importing contents.
 type ImportContentsArgs struct {
-	Source   string        `json:"source"   binding:"required"` // "sharing" or "training"
-	Contents []LegacyTalk  `json:"contents" binding:"required"`
+	Category ContentCategory `json:"category" binding:"required"` // "learning" or "culture"
+	Contents []LegacyTalk    `json:"contents" binding:"required"`
 }
 
 // ImportResult represents the result of an import operation.
 type ImportResult struct {
-	Total     int      `json:"total"`
-	Imported  int      `json:"imported"`
-	Skipped   int      `json:"skipped"`
-	Errors    []string `json:"errors,omitempty"`
+	Total    int      `json:"total"`
+	Imported int      `json:"imported"`
+	Skipped  int      `json:"skipped"`
+	Errors   []string `json:"errors,omitempty"`
 }

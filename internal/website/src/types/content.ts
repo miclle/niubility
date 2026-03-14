@@ -79,19 +79,24 @@ export interface LegacyTalk {
   id: string
   title: string
   cover: string
+  start_at: string
   description: string
   tags: string[]
   speaker: string
+  staff: string
   bio: string
+  avatar: string
+  broadcast: string
   playback: string
-  type: string
-  volume: string
+  type: string      // "sharing" or "training"
+  volume: string    // e.g., "AI 赋能组织分享会"
   created_at: string
+  updated_at: string
 }
 
 // ImportContentsArgs represents the request body for importing contents.
 export interface ImportContentsArgs {
-  source: 'sharing' | 'training'
+  category: 'learning' | 'culture'
   contents: LegacyTalk[]
 }
 

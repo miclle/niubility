@@ -134,13 +134,19 @@ func (s *Service) DeleteContent(id string) error {
 }
 
 // ImportContents imports contents from the legacy platform.
-// source: "sharing" (学习交流) or "training" (企业文化)
-func (s *Service) ImportContents(source string, talks []entity.LegacyTalk) (*entity.ImportResult, error) {
+// category: "learning" (学习交流) or "culture" (企业文化)
+func (s *Service) ImportContents(category entity.ContentCategory, talks []entity.LegacyTalk) (*entity.ImportResult, error) {
 	result := &entity.ImportResult{
 		Total: len(talks),
 	}
 
 	for _, talk := range talks {
+		// Skip if title is empty
+		if talk.Title == "" {
+			result.Skipped++
+			continue
+		}
+
 		// Check if content with this title already exists
 		var existing entity.Content
 		if err := s.DB.Where("title = ?", talk.Title).First(&existing).Error; err == nil {
@@ -151,20 +157,10 @@ func (s *Service) ImportContents(source string, talks []entity.LegacyTalk) (*ent
 			continue
 		}
 
-		// Determine category based on source
-		var category entity.ContentCategory
-		if source == "sharing" {
-			category = entity.CategoryLearning
-		} else {
-			category = entity.CategoryCulture
-		}
-
 		// Parse created_at time
-		var createdAt time.Time
+		createdAt := time.Now()
 		if !talk.CreatedAt.IsZero() {
 			createdAt = talk.CreatedAt
-		} else {
-			createdAt = time.Now()
 		}
 
 		content := &entity.Content{
