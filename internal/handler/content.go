@@ -108,7 +108,8 @@ func (ctrl *Ctrl) DeleteContent(c *fox.Context) error {
 
 // ImportContents imports contents from the legacy platform (admin only).
 func (ctrl *Ctrl) ImportContents(c *fox.Context, args entity.ImportContentsArgs) (*entity.ImportResult, error) {
-	result, err := ctrl.service.ImportContents(args.Contents)
+	user := CurrentUser(c)
+	result, err := ctrl.service.ImportContents(user.ID, args.Contents)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}

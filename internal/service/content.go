@@ -135,7 +135,7 @@ func (s *Service) DeleteContent(id string) error {
 
 // ImportContents imports contents from the legacy platform.
 // Category is determined by each talk's "type" field: "sharing" → learning, "training" → culture
-func (s *Service) ImportContents(talks []entity.LegacyTalk) (*entity.ImportResult, error) {
+func (s *Service) ImportContents(authorID string, talks []entity.LegacyTalk) (*entity.ImportResult, error) {
 	result := &entity.ImportResult{
 		Total: len(talks),
 	}
@@ -173,6 +173,7 @@ func (s *Service) ImportContents(talks []entity.LegacyTalk) (*entity.ImportResul
 
 		content := &entity.Content{
 			ID:         entity.ID(),
+			AuthorID:   authorID,
 			Title:      talk.Title,
 			Summary:    talk.Description,
 			Body:       talk.Description,
