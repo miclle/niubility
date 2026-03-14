@@ -54,9 +54,9 @@ function ContentDetail() {
   const categoryLabel = content.category === 'culture' ? '七牛文化' : '学习分享'
 
   return (
-    <div className="flex gap-6 p-6 max-w-[2290px] mx-auto">
-      {/* Main content area - adaptive width */}
-      <div className="flex-1 min-w-0">
+    <div className="flex gap-6 p-6 max-w-[2290px] mx-auto w-full">
+      {/* Main content area - takes ~72% width like YouTube */}
+      <div className="flex-1 min-w-0" style={{ flexBasis: '0' }}>
         {/* Video / Cover player - YouTube style: responsive to viewport height */}
         {content.type === 'video' && content.video_url ? (
           <div
@@ -65,7 +65,6 @@ function ContentDetail() {
               width: '100%',
               aspectRatio: '16/9',
               maxHeight: 'calc(100vh - 200px)',
-              maxWidth: `calc((100vh - 200px) * 16 / 9)`,
             }}
           >
             <video
@@ -82,7 +81,6 @@ function ContentDetail() {
               width: '100%',
               aspectRatio: '16/9',
               maxHeight: 'calc(100vh - 200px)',
-              maxWidth: `calc((100vh - 200px) * 16 / 9)`,
             }}
           >
             <img
@@ -190,8 +188,8 @@ function ContentDetail() {
         </div>
       </div>
 
-      {/* Sidebar - Related contents */}
-      <div className="hidden xl:block w-[400px] flex-shrink-0">
+      {/* Sidebar - Related contents, ~28% width */}
+      <div className="hidden xl:block flex-shrink-0" style={{ width: '400px', minWidth: '300px' }}>
         {/* Back to list */}
         <Link
           to={categoryPath}
