@@ -5,8 +5,8 @@ go 1.24.0
 require (
 	github.com/fox-gonic/fox v0.0.9
 	github.com/golang-jwt/jwt/v5 v5.3.1
+	github.com/google/uuid v1.6.0
 	github.com/spf13/viper v1.21.0
-	go.mongodb.org/mongo-driver v1.17.9
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.1
 )

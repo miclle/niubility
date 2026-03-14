@@ -2,12 +2,12 @@
 package entity
 
 import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/google/uuid"
 )
 
-// ID generates a new unique identifier using MongoDB ObjectID hex string.
+// ID generates a new unique identifier using UUID v4.
 func ID() string {
-	return primitive.NewObjectID().Hex()
+	return uuid.New().String()
 }
 
 // Pagination represents pagination parameters for list queries.
