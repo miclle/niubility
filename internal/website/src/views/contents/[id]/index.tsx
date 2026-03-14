@@ -55,8 +55,8 @@ function ContentDetail() {
 
   return (
     <div className="flex gap-6 p-6 max-w-[2290px] mx-auto">
-      {/* Main content area - YouTube style: flexible width */}
-      <div className="flex-1 min-w-0" style={{ maxWidth: 1700 }}>
+      {/* Main content area - adaptive width */}
+      <div className="flex-1 min-w-0">
         {/* Video / Cover player */}
         {content.type === 'video' && content.video_url ? (
           <div className="relative bg-black rounded-xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
