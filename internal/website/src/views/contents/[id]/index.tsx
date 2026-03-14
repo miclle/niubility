@@ -54,9 +54,9 @@ function ContentDetail() {
   const categoryLabel = content.category === 'culture' ? '七牛文化' : '学习分享'
 
   return (
-    <div className="flex gap-6 p-6 max-w-[2000px] mx-auto">
-      {/* Main content area */}
-      <div className="flex-1 min-w-0">
+    <div className="flex gap-6 p-6">
+      {/* Main content area - YouTube style: max-width 1280px for video */}
+      <div className="flex-1 min-w-0" style={{ maxWidth: 1280 + 24 }}>
         {/* Video / Cover player */}
         {content.type === 'video' && content.video_url ? (
           <div className="relative bg-black rounded-xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
@@ -175,7 +175,7 @@ function ContentDetail() {
       </div>
 
       {/* Sidebar - Related contents */}
-      <div className="hidden lg:block w-[360px] flex-shrink-0">
+      <div className="hidden xl:block w-[400px] flex-shrink-0">
         {/* Back to list */}
         <Link
           to={categoryPath}
