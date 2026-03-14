@@ -20,18 +20,12 @@ function ContentCard({ content }: { content: Content }) {
       {/* Thumbnail - YouTube style */}
       <div className="relative" style={{ borderRadius: 12, overflow: 'hidden' }}>
         <div className="relative aspect-video bg-zinc-200">
-          {content.cover_url ? (
-            <img
-              src={content.cover_url}
-              alt={content.title}
-              className="w-full h-full object-cover"
-              style={{ transition: 'transform 0.3s' }}
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center" style={{ color: '#909090' }}>
-              暂无封面
-            </div>
-          )}
+          <img
+            src={content.cover_url || '/default-cover.svg'}
+            alt={content.title}
+            className="w-full h-full object-cover"
+            style={{ transition: 'transform 0.3s' }}
+          />
           {/* Video play icon overlay */}
           {content.type === 'video' && (
             <div
