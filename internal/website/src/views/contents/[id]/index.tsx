@@ -54,7 +54,7 @@ function ContentDetail() {
   const categoryLabel = content.category === 'culture' ? '七牛文化' : '学习分享'
 
   return (
-    <div className="flex gap-6 p-6 max-w-[1800px] mx-auto">
+    <div className="flex gap-6 p-6 max-w-[2000px] mx-auto">
       {/* Main content area */}
       <div className="flex-1 min-w-0">
         {/* Video / Cover player */}
@@ -175,7 +175,7 @@ function ContentDetail() {
       </div>
 
       {/* Sidebar - Related contents */}
-      <div className="hidden lg:block w-[400px] flex-shrink-0">
+      <div className="hidden lg:block w-[360px] flex-shrink-0">
         {/* Back to list */}
         <Link
           to={categoryPath}
