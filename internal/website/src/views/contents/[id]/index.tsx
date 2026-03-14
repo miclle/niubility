@@ -54,18 +54,14 @@ function ContentDetail() {
   const categoryLabel = content.category === 'culture' ? '七牛文化' : '学习分享'
 
   return (
-    <div className="flex gap-6 p-6 max-w-[2290px] mx-auto w-full">
-      {/* Main content area - takes ~72% width like YouTube */}
-      <div className="flex-1 min-w-0" style={{ flexBasis: '0' }}>
-        {/* Video / Cover player - YouTube style: responsive to viewport height */}
+    <div className="flex gap-6 p-6 justify-center">
+      {/* Main content area - width based on viewport height (16:9 ratio) */}
+      <div style={{ width: 'calc((100vh - 180px) * 16 / 9)', maxWidth: 'calc(100vw - 48px)' }}>
+        {/* Video / Cover player - height based on viewport */}
         {content.type === 'video' && content.video_url ? (
           <div
             className="relative bg-black rounded-xl overflow-hidden"
-            style={{
-              width: '100%',
-              aspectRatio: '16/9',
-              maxHeight: 'calc(100vh - 200px)',
-            }}
+            style={{ width: '100%', aspectRatio: '16/9' }}
           >
             <video
               src={content.video_url}
@@ -77,11 +73,7 @@ function ContentDetail() {
         ) : (
           <div
             className="relative rounded-xl overflow-hidden bg-zinc-100"
-            style={{
-              width: '100%',
-              aspectRatio: '16/9',
-              maxHeight: 'calc(100vh - 200px)',
-            }}
+            style={{ width: '100%', aspectRatio: '16/9' }}
           >
             <img
               src={content.cover_url || '/default-cover.svg'}
@@ -188,8 +180,8 @@ function ContentDetail() {
         </div>
       </div>
 
-      {/* Sidebar - Related contents, ~28% width */}
-      <div className="hidden xl:block flex-shrink-0" style={{ width: '400px', minWidth: '300px' }}>
+      {/* Sidebar - Related contents */}
+      <div className="hidden xl:block flex-shrink-0 w-[400px]">
         {/* Back to list */}
         <Link
           to={categoryPath}
