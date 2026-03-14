@@ -40,7 +40,7 @@ type Content struct {
 	CreatedAt  time.Time       `json:"created_at"`
 	UpdatedAt  time.Time       `json:"updated_at"`
 
-	Author *User `json:"author,omitempty" gorm:"foreignKey:AuthorID"`
+	Author *User `json:"author,omitempty" gorm:"foreignKey:AuthorID;constraint:OnDelete:SET NULL"`
 }
 
 // TableName specifies the database table name for Content.
