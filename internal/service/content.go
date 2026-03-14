@@ -41,12 +41,9 @@ func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, 
 		orderClause = "like_count DESC"
 	}
 
-	if err := query.Offset(args.Offset()).Limit(args.GetLimit()).Order(orderClause).Find(&contents).Error; err != nil {
+	if err := query.Preload("Author").Offset(args.Offset()).Limit(args.GetLimit()).Order(orderClause).Find(&contents).Error; err != nil {
 		return nil, 0, fmt.Errorf("list contents: %w", err)
 	}
-
-	// Manually load authors
-	s.loadAuthors(contents)
 
 	return contents, total, nil
 }
@@ -54,69 +51,13 @@ func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, 
 // GetContentByID retrieves a content by ID with author preloaded.
 func (s *Service) GetContentByID(id string) (*entity.Content, error) {
 	var content entity.Content
-	if err := s.DB.Where("id = ?", id).First(&content).Error; err != nil {
+	if err := s.DB.Preload("Author").Where("id = ?", id).First(&content).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("get content by id: %w", err)
 	}
-
-	// Manually load author
-	s.loadAuthor(&content)
-
 	return &content, nil
-}
-
-// loadAuthors loads author data for multiple contents.
-func (s *Service) loadAuthors(contents []entity.Content) {
-	if len(contents) == 0 {
-		return
-	}
-
-	// Collect unique author IDs
-	authorIDs := make(map[string]bool)
-	for _, c := range contents {
-		if c.AuthorID != "" {
-			authorIDs[c.AuthorID] = true
-		}
-	}
-
-	if len(authorIDs) == 0 {
-		return
-	}
-
-	// Fetch authors
-	var users []entity.User
-	ids := make([]string, 0, len(authorIDs))
-	for id := range authorIDs {
-		ids = append(ids, id)
-	}
-	s.DB.Where("id IN ?", ids).Find(&users)
-
-	// Build author map
-	authorMap := make(map[string]*entity.User)
-	for i := range users {
-		authorMap[users[i].ID] = &users[i]
-	}
-
-	// Assign authors to contents
-	for i := range contents {
-		if author, ok := authorMap[contents[i].AuthorID]; ok {
-			contents[i].Author = author
-		}
-	}
-}
-
-// loadAuthor loads author data for a single content.
-func (s *Service) loadAuthor(content *entity.Content) {
-	if content == nil || content.AuthorID == "" {
-		return
-	}
-
-	var user entity.User
-	if err := s.DB.Where("id = ?", content.AuthorID).First(&user).Error; err == nil {
-		content.Author = &user
-	}
 }
 
 // CreateContent creates a new content record.

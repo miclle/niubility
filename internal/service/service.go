@@ -17,7 +17,9 @@ type Service struct {
 
 // New creates a new Service instance with the given database DSN.
 func New(dsn string) (*Service, error) {
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		DisableForeignKeyConstraintWhenMigrating: true,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("connect to database: %w", err)
 	}
