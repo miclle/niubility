@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Button, TextArea, Select } from '@radix-ui/themes'
+import { Button, TextArea } from '@radix-ui/themes'
 import { Upload, FileJson, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 
 import { importContents } from 'src/api/content'
@@ -8,7 +8,6 @@ import type { ImportResult, LegacyTalk } from 'src/types/content'
 // AdminImport provides an interface for importing data from the legacy platform.
 function AdminImport() {
   const [data, setData] = useState('')
-  const [category, setCategory] = useState<'learning' | 'culture'>('learning')
   const [result, setResult] = useState<ImportResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -45,12 +44,12 @@ function AdminImport() {
         if (!Array.isArray(contents)) {
           throw new Error('Data must be an array')
         }
-      } catch (parseErr) {
+      } catch {
         setError('JSON 格式无效，请确保数据是数组格式')
         return
       }
 
-      const res = await importContents({ category, contents })
+      const res = await importContents({ contents })
       setResult(res)
     } catch (err) {
       setError('导入失败，请稍后重试')
@@ -65,20 +64,6 @@ function AdminImport() {
       <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>数据导入</h1>
 
       <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
-        {/* Category selector */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>
-            导入分类
-          </label>
-          <Select.Root value={category} onValueChange={(val) => setCategory(val as 'learning' | 'culture')}>
-            <Select.Trigger className="w-full" style={{ borderRadius: 8, maxWidth: 300 }} />
-            <Select.Content className="yt-dropdown-menu">
-              <Select.Item value="learning">学习交流</Select.Item>
-              <Select.Item value="culture">企业文化</Select.Item>
-            </Select.Content>
-          </Select.Root>
-        </div>
-
         {/* File upload */}
         <div className="mb-4">
           <input
@@ -184,9 +169,9 @@ function AdminImport() {
       >
         <h4 className="font-medium mb-2" style={{ color: '#0f0f0f' }}>导入说明</h4>
         <ul className="text-sm space-y-1" style={{ color: '#606060' }}>
-          <li>• 选择分类后上传对应的 JSON 文件</li>
-          <li>• <code className="px-1 py-0.5 rounded" style={{ background: '#e5e5e5' }}>talk-sharing.json</code> → 学习交流</li>
-          <li>• <code className="px-1 py-0.5 rounded" style={{ background: '#e5e5e5' }}>talk-training.json</code> → 企业文化</li>
+          <li>• 系统根据数据中的 <code className="px-1 py-0.5 rounded" style={{ background: '#e5e5e5' }}>type</code> 字段自动区分分类</li>
+          <li>• <code className="px-1 py-0.5 rounded" style={{ background: '#e5e5e5' }}>type: "sharing"</code> → 学习交流</li>
+          <li>• <code className="px-1 py-0.5 rounded" style={{ background: '#e5e5e5' }}>type: "training"</code> → 企业文化</li>
           <li>• 所有导入的内容类型为「视频」</li>
           <li>• 重复标题的内容会被跳过</li>
           <li>• 数据文件位于项目 <code className="px-1 py-0.5 rounded" style={{ background: '#e5e5e5' }}>tmp/</code> 目录</li>

@@ -24,8 +24,7 @@ type LegacyTalk struct {
 
 // ImportContentsArgs represents the request body for importing contents.
 type ImportContentsArgs struct {
-	Category ContentCategory `json:"category" binding:"required"` // "learning" or "culture"
-	Contents []LegacyTalk    `json:"contents" binding:"required"`
+	Contents []LegacyTalk `json:"contents" binding:"required"`
 }
 
 // ImportResult represents the result of an import operation.

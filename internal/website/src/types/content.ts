@@ -96,7 +96,6 @@ export interface LegacyTalk {
 
 // ImportContentsArgs represents the request body for importing contents.
 export interface ImportContentsArgs {
-  category: 'learning' | 'culture'
   contents: LegacyTalk[]
 }
 

@@ -134,8 +134,8 @@ func (s *Service) DeleteContent(id string) error {
 }
 
 // ImportContents imports contents from the legacy platform.
-// category: "learning" (学习交流) or "culture" (企业文化)
-func (s *Service) ImportContents(category entity.ContentCategory, talks []entity.LegacyTalk) (*entity.ImportResult, error) {
+// Category is determined by each talk's "type" field: "sharing" → learning, "training" → culture
+func (s *Service) ImportContents(talks []entity.LegacyTalk) (*entity.ImportResult, error) {
 	result := &entity.ImportResult{
 		Total: len(talks),
 	}
@@ -155,6 +155,14 @@ func (s *Service) ImportContents(category entity.ContentCategory, talks []entity
 		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 			result.Errors = append(result.Errors, fmt.Sprintf("check existing %s: %v", talk.ID, err))
 			continue
+		}
+
+		// Determine category from talk.Type: "sharing" → learning, "training" → culture
+		var category entity.ContentCategory
+		if talk.Type == "sharing" {
+			category = entity.CategoryLearning
+		} else {
+			category = entity.CategoryCulture
 		}
 
 		// Parse created_at time
