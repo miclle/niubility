@@ -57,9 +57,17 @@ function ContentDetail() {
     <div className="flex gap-6 p-6 max-w-[2290px] mx-auto">
       {/* Main content area - adaptive width */}
       <div className="flex-1 min-w-0">
-        {/* Video / Cover player */}
+        {/* Video / Cover player - YouTube style: responsive to viewport height */}
         {content.type === 'video' && content.video_url ? (
-          <div className="relative bg-black rounded-xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
+          <div
+            className="relative bg-black rounded-xl overflow-hidden"
+            style={{
+              width: '100%',
+              aspectRatio: '16/9',
+              maxHeight: 'calc(100vh - 200px)',
+              maxWidth: `calc((100vh - 200px) * 16 / 9)`,
+            }}
+          >
             <video
               src={content.video_url}
               controls
@@ -68,7 +76,15 @@ function ContentDetail() {
             />
           </div>
         ) : (
-          <div className="relative rounded-xl overflow-hidden bg-zinc-100" style={{ aspectRatio: '16/9' }}>
+          <div
+            className="relative rounded-xl overflow-hidden bg-zinc-100"
+            style={{
+              width: '100%',
+              aspectRatio: '16/9',
+              maxHeight: 'calc(100vh - 200px)',
+              maxWidth: `calc((100vh - 200px) * 16 / 9)`,
+            }}
+          >
             <img
               src={content.cover_url || '/default-cover.svg'}
               alt={content.title}
