@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { DropdownMenu, Avatar } from '@radix-ui/themes'
 import { LogOut, Settings, User, Search, Menu, Home, Play, FileText, ChevronDown, Plus } from 'lucide-react'
@@ -19,15 +19,21 @@ function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
 
+  // Remember user's manual sidebar state before auto-hide on detail page
+  const userSidebarStateRef = useRef(false)
+
   // Detect if on detail page
   const isDetailPage = /^\/contents\/[^/]+$/.test(location.pathname)
 
-  // Auto-hide sidebar on detail page, show on other pages
+  // Auto-hide sidebar on detail page, restore user's state on other pages
   useEffect(() => {
     if (isDetailPage) {
+      // Save current state before auto-hide
+      userSidebarStateRef.current = sidebarCollapsed
       setSidebarCollapsed(true)
     } else {
-      setSidebarCollapsed(false)
+      // Restore user's saved state
+      setSidebarCollapsed(userSidebarStateRef.current)
     }
   }, [isDetailPage])
 
