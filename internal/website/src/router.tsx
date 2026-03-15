@@ -8,6 +8,7 @@ import ContentEditor from 'src/views/contents/editor'
 import AdminContents from 'src/views/admin/contents'
 import AdminContentEditor from 'src/views/admin/contents/editor'
 import AdminUsers from 'src/views/admin/users'
+import AdminDepartments from 'src/views/admin/departments'
 import AdminImport from 'src/views/admin/import'
 import AdminSync from 'src/views/admin/sync'
 import AdminSettings from 'src/views/admin/settings'
@@ -39,6 +40,7 @@ const routes: RouteObject[] = [
       { path: 'contents/new', element: <AdminContentEditor /> },
       { path: 'contents/:id', element: <AdminContentEditor /> },
       { path: 'users', element: <AdminUsers /> },
+      { path: 'departments', element: <AdminDepartments /> },
       { path: 'import', element: <AdminImport /> },
       { path: 'sync', element: <AdminSync /> },
       { path: 'settings', element: <AdminSettings /> },

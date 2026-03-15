@@ -1,6 +1,6 @@
 import { Outlet, NavLink, Navigate } from 'react-router-dom'
 import { Avatar, DropdownMenu } from '@radix-ui/themes'
-import { FileText, Users, ArrowLeft, LogOut, Upload, RefreshCw, Settings } from 'lucide-react'
+import { FileText, Users, ArrowLeft, LogOut, Upload, RefreshCw, Settings, Building2 } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
 
@@ -56,6 +56,18 @@ function AdminLayout() {
           >
             <Users size={24} />
             <span className="text-sm">用户管理</span>
+          </NavLink>
+          <NavLink
+            to="/admin/departments"
+            className={({ isActive }) =>
+              `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+                isActive ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+              }`
+            }
+            style={{ color: '#0f0f0f' }}
+          >
+            <Building2 size={24} />
+            <span className="text-sm">部门管理</span>
           </NavLink>
           <NavLink
             to="/admin/import"
