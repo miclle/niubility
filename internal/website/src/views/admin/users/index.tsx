@@ -60,21 +60,23 @@ function AdminUsers() {
               <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>用户</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>用户名</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>邮箱</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>手机</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>角色</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>状态</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>注册时间</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>更新时间</Table.ColumnHeaderCell>
             </Table.Row>
           </Table.Header>
           <Table.Body>
             {loading ? (
               <Table.Row>
-                <Table.Cell colSpan={6} className="text-center py-8" style={{ color: '#909090' }}>
+                <Table.Cell colSpan={8} className="text-center py-8" style={{ color: '#909090' }}>
                   加载中...
                 </Table.Cell>
               </Table.Row>
             ) : users.length === 0 ? (
               <Table.Row>
-                <Table.Cell colSpan={6} className="text-center py-8" style={{ color: '#909090' }}>
+                <Table.Cell colSpan={8} className="text-center py-8" style={{ color: '#909090' }}>
                   暂无用户
                 </Table.Cell>
               </Table.Row>
@@ -95,6 +97,7 @@ function AdminUsers() {
                   </Table.Cell>
                   <Table.Cell style={{ color: '#606060' }}>{user.username}</Table.Cell>
                   <Table.Cell style={{ color: '#606060' }}>{user.email || '-'}</Table.Cell>
+                  <Table.Cell style={{ color: '#606060' }}>{user.mobile || '-'}</Table.Cell>
                   <Table.Cell>
                     <Select.Root size="1" value={user.role} onValueChange={(val) => handleRoleChange(user.id, val as Role)}>
                       <Select.Trigger variant="ghost" style={{ minWidth: 80 }} />
@@ -141,7 +144,8 @@ function AdminUsers() {
                       </Select.Content>
                     </Select.Root>
                   </Table.Cell>
-                  <Table.Cell style={{ color: '#606060' }}>{dayjs(user.created_at).format('YYYY-MM-DD')}</Table.Cell>
+                  <Table.Cell style={{ color: '#606060' }}>{dayjs(user.created_at).format('YYYY-MM-DD HH:mm')}</Table.Cell>
+                  <Table.Cell style={{ color: '#606060' }}>{dayjs(user.updated_at).format('YYYY-MM-DD HH:mm')}</Table.Cell>
                 </Table.Row>
               ))
             )}
