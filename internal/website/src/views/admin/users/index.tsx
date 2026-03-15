@@ -9,45 +9,46 @@ import type { User, Role, UserStatus, Department } from 'src/types/user'
 // AdminUsers displays the admin user management page with infinite scroll and search.
 function AdminUsers() {
   const [users, setUsers] = useState<User[]>([])
-  const [departments, setDepartments] = useState<Department[]>([])
   const [deptMap, setDeptMap] = useState<Map<number, string>>(new Map())
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [search, setSearch] = useState('')
-  const [searchDebounced, setSearchDebounced] = useState('')
   const limit = 20
   const observerRef = useRef<HTMLDivElement>(null)
+  const loadingRef = useRef(false)
 
   // Fetch departments once
-  const fetchDepartments = useCallback(async () => {
-    try {
-      const res = await listDepartments()
-      setDepartments(res.data.departments || [])
+  useEffect(() => {
+    listDepartments().then(res => {
       const map = new Map<number, string>()
       for (const dept of res.data.departments || []) {
         map.set(dept.id, dept.name)
       }
       setDeptMap(map)
-    } catch {
-      // Silently fail
-    }
+    }).catch(() => {})
   }, [])
 
-  // Fetch users with infinite scroll support
+  // Fetch users
   const fetchUsers = useCallback(async (pageNum: number, reset: boolean = false) => {
-    if (loading) return
-
+    if (loadingRef.current) return
+    loadingRef.current = true
     setLoading(true)
+
     try {
-      const res = await listUsers({ page: pageNum, limit, search: searchDebounced })
+      const res = await listUsers({ page: pageNum, limit, search })
       const newUsers = res.data.users || []
 
       if (reset) {
         setUsers(newUsers)
       } else {
-        setUsers(prev => [...prev, ...newUsers])
+        // Deduplicate by id
+        setUsers(prev => {
+          const existingIds = new Set(prev.map(u => u.id))
+          const uniqueNewUsers = newUsers.filter((u: User) => !existingIds.has(u.id))
+          return [...prev, ...uniqueNewUsers]
+        })
       }
 
       setTotal(res.data.pagination.total)
@@ -59,29 +60,20 @@ function AdminUsers() {
       setHasMore(false)
     } finally {
       setLoading(false)
+      loadingRef.current = false
     }
-  }, [searchDebounced, loading])
+  }, [search])
 
-  // Debounced search
+  // Search with debounce
   useEffect(() => {
     const timer = setTimeout(() => {
-      setSearchDebounced(search)
       setPage(1)
       setUsers([])
       setHasMore(true)
+      fetchUsers(1, true)
     }, 300)
     return () => clearTimeout(timer)
-  }, [search])
-
-  // Fetch departments on mount
-  useEffect(() => {
-    fetchDepartments()
-  }, [fetchDepartments])
-
-  // Fetch users when search changes
-  useEffect(() => {
-    fetchUsers(1, true)
-  }, [searchDebounced])
+  }, [search]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Infinite scroll observer
   useEffect(() => {
@@ -89,10 +81,12 @@ function AdminUsers() {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          const nextPage = page + 1
-          setPage(nextPage)
-          fetchUsers(nextPage)
+        if (entries[0].isIntersecting && !loadingRef.current) {
+          setPage(prev => {
+            const nextPage = prev + 1
+            fetchUsers(nextPage)
+            return nextPage
+          })
         }
       },
       { threshold: 0.1 }
@@ -103,7 +97,7 @@ function AdminUsers() {
     }
 
     return () => observer.disconnect()
-  }, [hasMore, loading, page, fetchUsers])
+  }, [hasMore, loading, fetchUsers])
 
   const handleRoleChange = async (userId: string, role: Role) => {
     try {
