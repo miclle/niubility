@@ -3,10 +3,10 @@ import type { ListSettingsResponse, UpdateSettingsRequest } from 'src/types/sett
 
 // listSettings fetches all settings (admin only).
 export function listSettings() {
-  return client.get<ListSettingsResponse>('/settings')
+  return client.get<ListSettingsResponse>('/admin/settings')
 }
 
 // updateSettings updates the settings (admin only).
 export function updateSettings(data: UpdateSettingsRequest) {
-  return client.patch<ListSettingsResponse>('/settings', data)
+  return client.patch<ListSettingsResponse>('/admin/settings', data)
 }

@@ -55,16 +55,12 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	// import routes (admin only)
 	api.POST("/import", ctrl.RequireAdmin, ctrl.ImportContents)
 
-	// admin-only user management
-	admin := api.Group("", ctrl.RequireAdmin)
+	// admin routes (all require admin role)
+	admin := api.Group("/admin", ctrl.RequireAdmin)
 	admin.GET("/users", ctrl.ListUsers)
 	admin.PATCH("/users/:id", ctrl.UpdateUser)
-
-	// settings management (admin only)
 	admin.GET("/settings", ctrl.ListSettings)
 	admin.PATCH("/settings", ctrl.UpdateSettings)
-
-	// wechat sync (admin only)
 	admin.POST("/sync-wechat", ctrl.SyncAllUsersFromWechat)
 }
 
