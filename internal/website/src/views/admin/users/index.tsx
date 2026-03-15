@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Table, Select, Avatar, TextField, Popover } from '@radix-ui/themes'
-import { Search, Loader2, X, ChevronDown, Building2, Check } from 'lucide-react'
+import { Table, Select, Avatar, TextField } from '@radix-ui/themes'
+import { Search, Loader2, X, Building2, Users } from 'lucide-react'
 import dayjs from 'dayjs'
 
 import { listUsers, updateUser, listDepartments } from 'src/api/user'
@@ -23,19 +23,21 @@ function buildDepartmentTree(items: Department[], parentId: number = 0): Departm
     }))
 }
 
-// DepartmentTreeSelect renders a tree-structured department selector
-function DepartmentTreeSelect({
+// DepartmentSidebar renders a tree-structured department list for the sidebar
+function DepartmentSidebar({
   departments,
-  value,
-  onChange,
+  selectedId,
+  onSelect,
 }: {
   departments: Department[]
-  value: string
-  onChange: (val: string) => void
+  selectedId: string
+  onSelect: (id: string) => void
 }) {
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set([1]))
   const tree = buildDepartmentTree(departments, 0)
-  const selectedDept = departments.find(d => String(d.id) === value)
+
+  // Count total users
+  const totalUsers = departments.reduce((sum, d) => sum + (d.user_count || 0), 0)
 
   const toggleExpand = (id: number, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -53,14 +55,17 @@ function DepartmentTreeSelect({
   const renderNode = (node: DepartmentNode, level: number = 0): React.ReactNode => {
     const hasChildren = node.children && node.children.length > 0
     const isExpanded = expandedIds.has(node.id)
-    const isSelected = String(node.id) === value
+    const isSelected = String(node.id) === selectedId
 
     return (
       <div key={node.id}>
         <div
-          className="flex items-center gap-1 py-1.5 px-2 cursor-pointer hover:bg-gray-100 rounded transition-colors"
-          style={{ paddingLeft: level * 16 + 8 }}
-          onClick={() => onChange(String(node.id))}
+          className="flex items-center gap-1 py-1.5 px-2 cursor-pointer rounded transition-colors"
+          style={{
+            paddingLeft: level * 16 + 8,
+            background: isSelected ? '#f2f2f2' : 'transparent',
+          }}
+          onClick={() => onSelect(String(node.id))}
         >
           <span
             className="w-4 h-4 flex items-center justify-center flex-shrink-0"
@@ -82,10 +87,12 @@ function DepartmentTreeSelect({
             )}
           </span>
           <Building2 size={14} style={{ color: '#606060', flexShrink: 0 }} />
-          <span className="text-sm flex-1 truncate" style={{ color: isSelected ? '#0f0f0f' : '#606060' }}>
+          <span className="text-sm flex-1 truncate" style={{ color: isSelected ? '#0f0f0f' : '#606060', fontWeight: isSelected ? 500 : 400 }}>
             {node.name}
           </span>
-          {isSelected && <Check size={14} style={{ color: '#0f0f0f' }} />}
+          <span className="text-xs" style={{ color: '#909090' }}>
+            {node.user_count || 0}
+          </span>
         </div>
         {hasChildren && isExpanded && (
           <div>
@@ -97,55 +104,36 @@ function DepartmentTreeSelect({
   }
 
   return (
-    <Popover.Root>
-      <Popover.Trigger>
-        <button
-          className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg text-sm border"
-          style={{
-            minWidth: 180,
-            background: '#ffffff',
-            borderColor: '#e5e5e5',
-            color: selectedDept ? '#0f0f0f' : '#909090',
-          }}
-        >
-          <span className="flex items-center gap-2">
-            <Building2 size={14} />
-            {selectedDept ? selectedDept.name : '选择部门'}
-          </span>
-          <ChevronDown size={14} style={{ color: '#909090' }} />
-        </button>
-      </Popover.Trigger>
-      <Popover.Content
-        style={{
-          background: '#ffffff',
-          border: '1px solid #e5e5e5',
-          borderRadius: 8,
-          padding: 8,
-          maxHeight: 320,
-          overflowY: 'auto',
-          minWidth: 240,
-        }}
-        sideOffset={4}
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid #e5e5e5' }}>
+        <Building2 size={16} style={{ color: '#606060' }} />
+        <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>部门</span>
+      </div>
+
+      {/* All departments */}
+      <div
+        className="flex items-center gap-2 py-2 px-3 cursor-pointer transition-colors"
+        style={{ background: !selectedId ? '#f2f2f2' : 'transparent' }}
+        onClick={() => onSelect('')}
       >
-        {/* All departments option */}
-        <div
-          className="flex items-center gap-2 py-1.5 px-2 cursor-pointer hover:bg-gray-100 rounded transition-colors"
-          onClick={() => onChange('')}
-        >
-          <span className="w-4 h-4" />
-          <span className="text-sm" style={{ color: !value ? '#0f0f0f' : '#606060' }}>
-            全部部门
-          </span>
-          {!value && <Check size={14} style={{ color: '#0f0f0f', marginLeft: 'auto' }} />}
-        </div>
-        <div style={{ borderTop: '1px solid #e5e5e5', margin: '4px 0' }} />
+        <span className="w-4 h-4" />
+        <Users size={14} style={{ color: '#606060', flexShrink: 0 }} />
+        <span className="text-sm flex-1" style={{ color: !selectedId ? '#0f0f0f' : '#606060', fontWeight: !selectedId ? 500 : 400 }}>
+          全部
+        </span>
+        <span className="text-xs" style={{ color: '#909090' }}>{totalUsers}</span>
+      </div>
+
+      {/* Department tree */}
+      <div className="flex-1 overflow-y-auto py-1">
         {tree.map(node => renderNode(node))}
-      </Popover.Content>
-    </Popover.Root>
+      </div>
+    </div>
   )
 }
 
-// AdminUsers displays the admin user management page with infinite scroll and search.
+// AdminUsers displays the admin user management page with department sidebar and user list.
 function AdminUsers() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [users, setUsers] = useState<User[]>([])
@@ -286,142 +274,159 @@ function AdminUsers() {
   }
 
   const hasFilters = search || departmentId
+  const selectedDept = departments.find(d => String(d.id) === departmentId)
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>用户管理</h1>
-        <div className="text-sm" style={{ color: '#606060' }}>
-          共 {total} 个用户
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <TextField.Root
-          placeholder="搜索用户名、姓名、邮箱或手机号..."
-          value={search}
-          onChange={(e) => updateFilters('search', e.target.value)}
-          size="2"
-          style={{ minWidth: 280 }}
-        >
-          <TextField.Slot>
-            <Search size={16} style={{ color: '#909090' }} />
-          </TextField.Slot>
-        </TextField.Root>
-
-        <DepartmentTreeSelect
+    <div className="flex gap-4 h-full">
+      {/* Left sidebar - Department tree */}
+      <div
+        className="flex-shrink-0 bg-white rounded-xl overflow-hidden"
+        style={{ width: 240, border: '1px solid #e5e5e5' }}
+      >
+        <DepartmentSidebar
           departments={departments}
-          value={departmentId}
-          onChange={(val) => updateFilters('department_id', val)}
+          selectedId={departmentId}
+          onSelect={(id) => updateFilters('department_id', id)}
         />
-
-        {hasFilters && (
-          <button
-            onClick={clearFilters}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-colors"
-            style={{ color: '#606060', background: '#f2f2f2' }}
-          >
-            <X size={14} />
-            清除筛选
-          </button>
-        )}
-
-        {loading && (
-          <Loader2 size={16} className="animate-spin" style={{ color: '#909090' }} />
-        )}
       </div>
 
-      <div className="bg-white rounded-xl overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
-        <Table.Root>
-          <Table.Header>
-            <Table.Row style={{ background: '#f9f9f9' }}>
-              <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>用户</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>用户名</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>邮箱</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>手机</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>部门</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>角色</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>状态</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>注册时间</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>更新时间</Table.ColumnHeaderCell>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-            {users.length === 0 && !loading ? (
-              <Table.Row>
-                <Table.Cell colSpan={9} className="text-center py-8" style={{ color: '#909090' }}>
-                  {hasFilters ? '未找到匹配的用户' : '暂无用户'}
-                </Table.Cell>
-              </Table.Row>
-            ) : (
-              users.map((user) => (
-                <Table.Row key={user.id} style={{ borderTop: '1px solid #e5e5e5' }}>
-                  <Table.Cell>
-                    <div className="flex items-center gap-3">
-                      <Avatar
-                        size="2"
-                        radius="full"
-                        src={user.avatar}
-                        fallback={user.name?.charAt(0) || user.username.charAt(0)}
-                        style={{ width: 32, height: 32 }}
-                      />
-                      <span className="font-medium" style={{ color: '#0f0f0f' }}>{user.name || '-'}</span>
-                    </div>
-                  </Table.Cell>
-                  <Table.Cell style={{ color: '#606060' }}>{user.username}</Table.Cell>
-                  <Table.Cell style={{ color: '#606060' }}>{user.email || '-'}</Table.Cell>
-                  <Table.Cell style={{ color: '#606060' }}>{user.mobile || '-'}</Table.Cell>
-                  <Table.Cell style={{ color: '#606060', maxWidth: 150 }}>
-                    <span className="text-xs" style={{ background: '#f2f2f2', padding: '2px 6px', borderRadius: 4, display: 'inline-block' }}>
-                      {getDepartmentNames(user.department_ids)}
-                    </span>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <Select.Root size="1" value={user.role} onValueChange={(val) => handleRoleChange(user.id, val as Role)}>
-                      <Select.Trigger variant="ghost" style={{ minWidth: 80 }} />
-                      <Select.Content style={{ background: '#ffffff', border: '1px solid #e5e5e5' }}>
-                        <Select.Item value="admin">
-                          <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#fef3c7', color: '#92400e' }}>管理员</span>
-                        </Select.Item>
-                        <Select.Item value="user">
-                          <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#f2f2f2', color: '#606060' }}>普通用户</span>
-                        </Select.Item>
-                      </Select.Content>
-                    </Select.Root>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <Select.Root size="1" value={user.status} onValueChange={(val) => handleStatusChange(user.id, val as UserStatus)}>
-                      <Select.Trigger variant="ghost" style={{ minWidth: 80 }} />
-                      <Select.Content style={{ background: '#ffffff', border: '1px solid #e5e5e5' }}>
-                        <Select.Item value="activated">
-                          <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#dcfce7', color: '#166534' }}>已激活</span>
-                        </Select.Item>
-                        <Select.Item value="deactivated">
-                          <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#fee2e2', color: '#991b1b' }}>已禁用</span>
-                        </Select.Item>
-                      </Select.Content>
-                    </Select.Root>
-                  </Table.Cell>
-                  <Table.Cell style={{ color: '#606060' }}>{dayjs(user.created_at).format('YYYY-MM-DD HH:mm')}</Table.Cell>
-                  <Table.Cell style={{ color: '#606060' }}>{dayjs(user.updated_at).format('YYYY-MM-DD HH:mm')}</Table.Cell>
-                </Table.Row>
-              ))
+      {/* Right side - User list */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>
+            用户管理
+            {selectedDept && (
+              <span className="text-base font-normal ml-2" style={{ color: '#606060' }}>
+                · {selectedDept.name}
+              </span>
             )}
-          </Table.Body>
-        </Table.Root>
+          </h1>
+          <div className="text-sm" style={{ color: '#606060' }}>
+            共 {total} 个用户
+          </div>
+        </div>
 
-        {/* Loading indicator */}
-        <div ref={observerRef} className="py-4 text-center">
-          {loading && hasMore && (
-            <div className="flex items-center justify-center gap-2" style={{ color: '#909090' }}>
-              <Loader2 size={16} className="animate-spin" />
-              <span className="text-sm">加载更多...</span>
-            </div>
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <TextField.Root
+            placeholder="搜索用户名、姓名、邮箱或手机号..."
+            value={search}
+            onChange={(e) => updateFilters('search', e.target.value)}
+            size="2"
+            style={{ minWidth: 280 }}
+          >
+            <TextField.Slot>
+              <Search size={16} style={{ color: '#909090' }} />
+            </TextField.Slot>
+          </TextField.Root>
+
+          {hasFilters && (
+            <button
+              onClick={clearFilters}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-colors"
+              style={{ color: '#606060', background: '#f2f2f2' }}
+            >
+              <X size={14} />
+              清除筛选
+            </button>
           )}
-          {!hasMore && users.length > 0 && (
-            <span className="text-sm" style={{ color: '#909090' }}>已加载全部用户</span>
+
+          {loading && (
+            <Loader2 size={16} className="animate-spin" style={{ color: '#909090' }} />
           )}
+        </div>
+
+        <div className="bg-white rounded-xl overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
+          <Table.Root>
+            <Table.Header>
+              <Table.Row style={{ background: '#f9f9f9' }}>
+                <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>用户</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>用户名</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>邮箱</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>手机</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>部门</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>角色</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>状态</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>注册时间</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>更新时间</Table.ColumnHeaderCell>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {users.length === 0 && !loading ? (
+                <Table.Row>
+                  <Table.Cell colSpan={9} className="text-center py-8" style={{ color: '#909090' }}>
+                    {hasFilters ? '未找到匹配的用户' : '暂无用户'}
+                  </Table.Cell>
+                </Table.Row>
+              ) : (
+                users.map((user) => (
+                  <Table.Row key={user.id} style={{ borderTop: '1px solid #e5e5e5' }}>
+                    <Table.Cell>
+                      <div className="flex items-center gap-3">
+                        <Avatar
+                          size="2"
+                          radius="full"
+                          src={user.avatar}
+                          fallback={user.name?.charAt(0) || user.username.charAt(0)}
+                          style={{ width: 32, height: 32 }}
+                        />
+                        <span className="font-medium" style={{ color: '#0f0f0f' }}>{user.name || '-'}</span>
+                      </div>
+                    </Table.Cell>
+                    <Table.Cell style={{ color: '#606060' }}>{user.username}</Table.Cell>
+                    <Table.Cell style={{ color: '#606060' }}>{user.email || '-'}</Table.Cell>
+                    <Table.Cell style={{ color: '#606060' }}>{user.mobile || '-'}</Table.Cell>
+                    <Table.Cell style={{ color: '#606060', maxWidth: 150 }}>
+                      <span className="text-xs" style={{ background: '#f2f2f2', padding: '2px 6px', borderRadius: 4, display: 'inline-block' }}>
+                        {getDepartmentNames(user.department_ids)}
+                      </span>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Select.Root size="1" value={user.role} onValueChange={(val) => handleRoleChange(user.id, val as Role)}>
+                        <Select.Trigger variant="ghost" style={{ minWidth: 80 }} />
+                        <Select.Content style={{ background: '#ffffff', border: '1px solid #e5e5e5' }}>
+                          <Select.Item value="admin">
+                            <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#fef3c7', color: '#92400e' }}>管理员</span>
+                          </Select.Item>
+                          <Select.Item value="user">
+                            <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#f2f2f2', color: '#606060' }}>普通用户</span>
+                          </Select.Item>
+                        </Select.Content>
+                      </Select.Root>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Select.Root size="1" value={user.status} onValueChange={(val) => handleStatusChange(user.id, val as UserStatus)}>
+                        <Select.Trigger variant="ghost" style={{ minWidth: 80 }} />
+                        <Select.Content style={{ background: '#ffffff', border: '1px solid #e5e5e5' }}>
+                          <Select.Item value="activated">
+                            <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#dcfce7', color: '#166534' }}>已激活</span>
+                          </Select.Item>
+                          <Select.Item value="deactivated">
+                            <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#fee2e2', color: '#991b1b' }}>已禁用</span>
+                          </Select.Item>
+                        </Select.Content>
+                      </Select.Root>
+                    </Table.Cell>
+                    <Table.Cell style={{ color: '#606060' }}>{dayjs(user.created_at).format('YYYY-MM-DD HH:mm')}</Table.Cell>
+                    <Table.Cell style={{ color: '#606060' }}>{dayjs(user.updated_at).format('YYYY-MM-DD HH:mm')}</Table.Cell>
+                  </Table.Row>
+                ))
+              )}
+            </Table.Body>
+          </Table.Root>
+
+          {/* Loading indicator */}
+          <div ref={observerRef} className="py-4 text-center">
+            {loading && hasMore && (
+              <div className="flex items-center justify-center gap-2" style={{ color: '#909090' }}>
+                <Loader2 size={16} className="animate-spin" />
+                <span className="text-sm">加载更多...</span>
+              </div>
+            )}
+            {!hasMore && users.length > 0 && (
+              <span className="text-sm" style={{ color: '#909090' }}>已加载全部用户</span>
+            )}
+          </div>
         </div>
       </div>
     </div>
