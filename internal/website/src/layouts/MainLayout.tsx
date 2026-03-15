@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
-import { DropdownMenu, Avatar } from '@radix-ui/themes'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { LogOut, Settings, User, Search, Menu, Home, Play, FileText, ChevronDown, Plus } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
@@ -110,39 +111,39 @@ function MainLayout() {
                 <Plus size={16} />
                 创建
               </NavLink>
-              <DropdownMenu.Root>
-              <DropdownMenu.Trigger>
-                <button className="p-1 rounded-full hover:bg-zinc-100 transition-colors cursor-pointer border-0 bg-transparent">
-                  <Avatar
-                    size="2"
-                    radius="full"
-                    src={currentUser.avatar}
-                    fallback={currentUser.name?.charAt(0) || currentUser.username.charAt(0)}
-                  />
-                </button>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content align="end" className="yt-dropdown-menu">
-                <DropdownMenu.Item disabled>
+              <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <button className="p-1 rounded-full hover:bg-zinc-100 transition-colors cursor-pointer border-0 bg-transparent">
+                    <Avatar>
+                      <AvatarImage src={currentUser.avatar} alt={currentUser.name || currentUser.username} />
+                      <AvatarFallback>{currentUser.name?.charAt(0) || currentUser.username.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                  </button>
+                }
+              />
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem disabled>
                   {currentUser.name || currentUser.username}
-                </DropdownMenu.Item>
-                <DropdownMenu.Separator />
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 {currentUser.role === 'admin' && (
-                  <DropdownMenu.Item onSelect={() => navigate('/admin')}>
+                  <DropdownMenuItem onClick={() => navigate('/admin')}>
                     <Settings size={16} />
                     管理后台
-                  </DropdownMenu.Item>
+                  </DropdownMenuItem>
                 )}
-                <DropdownMenu.Item
-                  color="red"
-                  onSelect={() => {
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => {
                     window.location.href = '/logout?redirect=' + encodeURIComponent(window.location.pathname)
                   }}
                 >
                   <LogOut size={16} />
                   退出登录
-                </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             </>
           ) : (
             <a

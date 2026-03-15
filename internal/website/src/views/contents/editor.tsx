@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { Button, TextField, TextArea, Select } from '@radix-ui/themes'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Save, X, Plus } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
@@ -124,13 +127,11 @@ function ContentEditor() {
         {/* Title */}
         <div>
           <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>标题 *</label>
-          <TextField.Root
-            size="2"
+          <Input
             placeholder="请输入标题"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
-            style={{ borderRadius: 8 }}
           />
         </div>
 
@@ -138,61 +139,59 @@ function ContentEditor() {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>类型 *</label>
-            <Select.Root size="2" value={type} onValueChange={(val) => setType(val as ContentType)}>
-              <Select.Trigger className="w-full" style={{ borderRadius: 8 }} />
-              <Select.Content className="yt-dropdown-menu">
-                <Select.Item value="article">图文</Select.Item>
-                <Select.Item value="video">视频</Select.Item>
-              </Select.Content>
-            </Select.Root>
+            <Select value={type} onValueChange={(val) => setType(val as ContentType)}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="article">图文</SelectItem>
+                <SelectItem value="video">视频</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>分类 *</label>
-            <Select.Root size="2" value={category} onValueChange={(val) => setCategory(val as ContentCategory)}>
-              <Select.Trigger className="w-full" style={{ borderRadius: 8 }} />
-              <Select.Content className="yt-dropdown-menu">
-                <Select.Item value="learning">学习交流</Select.Item>
-                <Select.Item value="culture">企业文化</Select.Item>
-              </Select.Content>
-            </Select.Root>
+            <Select value={category} onValueChange={(val) => setCategory(val as ContentCategory)}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="learning">学习交流</SelectItem>
+                <SelectItem value="culture">企业文化</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
         {/* Summary */}
         <div>
           <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>摘要</label>
-          <TextArea
-            size="2"
+          <Textarea
             placeholder="请输入内容摘要"
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
             rows={2}
-            style={{ borderRadius: 8 }}
           />
         </div>
 
         {/* Body */}
         <div>
           <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>正文</label>
-          <TextArea
-            size="2"
+          <Textarea
             placeholder="请输入正文内容（支持 HTML）"
             value={body}
             onChange={(e) => setBody(e.target.value)}
             rows={10}
-            style={{ borderRadius: 8 }}
           />
         </div>
 
         {/* Cover URL */}
         <div>
           <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>封面图 URL</label>
-          <TextField.Root
-            size="2"
+          <Input
             placeholder="https://example.com/cover.jpg"
             value={coverUrl}
             onChange={(e) => setCoverUrl(e.target.value)}
-            style={{ borderRadius: 8 }}
           />
         </div>
 
@@ -200,12 +199,10 @@ function ContentEditor() {
         {type === 'video' && (
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>视频 URL</label>
-            <TextField.Root
-              size="2"
+            <Input
               placeholder="https://example.com/video.mp4"
               value={videoUrl}
               onChange={(e) => setVideoUrl(e.target.value)}
-              style={{ borderRadius: 8 }}
             />
           </div>
         )}
@@ -214,8 +211,7 @@ function ContentEditor() {
         <div>
           <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>标签</label>
           <div className="flex items-center gap-2 mb-2">
-            <TextField.Root
-              size="2"
+            <Input
               placeholder="输入标签后按回车或点击添加"
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
@@ -226,14 +222,11 @@ function ContentEditor() {
                 }
               }}
               className="flex-1"
-              style={{ borderRadius: 8 }}
             />
             <Button
               type="button"
-              variant="soft"
-              size="2"
+              variant="outline"
               onClick={handleAddTag}
-              style={{ borderRadius: '18px', background: '#f2f2f2', color: '#0f0f0f' }}
             >
               <Plus size={14} />
               添加
@@ -259,22 +252,18 @@ function ContentEditor() {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>主讲人</label>
-            <TextField.Root
-              size="2"
+            <Input
               placeholder="主讲人姓名"
               value={speaker}
               onChange={(e) => setSpeaker(e.target.value)}
-              style={{ borderRadius: 8 }}
             />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>主讲人简介</label>
-            <TextField.Root
-              size="2"
+            <Input
               placeholder="主讲人简介"
               value={speakerBio}
               onChange={(e) => setSpeakerBio(e.target.value)}
-              style={{ borderRadius: 8 }}
             />
           </div>
         </div>
@@ -283,7 +272,6 @@ function ContentEditor() {
         <div className="flex items-center gap-3 pt-4" style={{ borderTop: '1px solid #e5e5e5' }}>
           <Button
             type="submit"
-            size="2"
             disabled={saving || !title.trim()}
             style={{
               background: '#0f0f0f',
@@ -296,11 +284,8 @@ function ContentEditor() {
           </Button>
           <Button
             type="button"
-            variant="soft"
-            color="gray"
-            size="2"
+            variant="outline"
             onClick={() => navigate(-1)}
-            style={{ borderRadius: '18px', background: '#f2f2f2', color: '#606060' }}
           >
             <X size={16} />
             取消

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { Table, Button, Badge, AlertDialog, Flex } from '@radix-ui/themes'
+import { Button } from '@/components/ui/button'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import dayjs from 'dayjs'
 
@@ -49,54 +50,52 @@ function AdminContents() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>内容管理</h1>
-        <Button
-          asChild
-          size="2"
-          style={{
-            background: '#0f0f0f',
-            color: '#ffffff',
-            borderRadius: '18px',
-          }}
-        >
-          <Link to="/admin/contents/new">
+        <Link to="/admin/contents/new">
+          <Button
+            style={{
+              background: '#0f0f0f',
+              color: '#ffffff',
+              borderRadius: '18px',
+            }}
+          >
             <Plus size={16} />
             新建内容
-          </Link>
-        </Button>
+          </Button>
+        </Link>
       </div>
 
       <div className="bg-white rounded-xl overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
-        <Table.Root>
-          <Table.Header>
-            <Table.Row style={{ background: '#f9f9f9' }}>
-              <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>标题</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>类型</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>分类</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>作者</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>创建时间</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>操作</Table.ColumnHeaderCell>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
+        <table className="w-full">
+          <thead>
+            <tr style={{ background: '#f9f9f9' }}>
+              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>标题</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>类型</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>分类</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>作者</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>创建时间</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>操作</th>
+            </tr>
+          </thead>
+          <tbody>
             {loading ? (
-              <Table.Row>
-                <Table.Cell colSpan={6} className="text-center py-8" style={{ color: '#909090' }}>
+              <tr>
+                <td colSpan={6} className="text-center py-8" style={{ color: '#909090' }}>
                   加载中...
-                </Table.Cell>
-              </Table.Row>
+                </td>
+              </tr>
             ) : contents.length === 0 ? (
-              <Table.Row>
-                <Table.Cell colSpan={6} className="text-center py-8" style={{ color: '#909090' }}>
+              <tr>
+                <td colSpan={6} className="text-center py-8" style={{ color: '#909090' }}>
                   暂无内容
-                </Table.Cell>
-              </Table.Row>
+                </td>
+              </tr>
             ) : (
               contents.map((content) => (
-                <Table.Row key={content.id} style={{ borderTop: '1px solid #e5e5e5' }}>
-                  <Table.Cell>
+                <tr key={content.id} style={{ borderTop: '1px solid #e5e5e5' }}>
+                  <td style={{ padding: '12px 16px' }}>
                     <span className="font-medium line-clamp-1" style={{ color: '#0f0f0f' }}>{content.title}</span>
-                  </Table.Cell>
-                  <Table.Cell>
+                  </td>
+                  <td style={{ padding: '12px 16px' }}>
                     <span
                       className="px-2 py-0.5 rounded text-xs"
                       style={{
@@ -106,8 +105,8 @@ function AdminContents() {
                     >
                       {typeLabels[content.type]}
                     </span>
-                  </Table.Cell>
-                  <Table.Cell>
+                  </td>
+                  <td style={{ padding: '12px 16px' }}>
                     <span
                       className="px-2 py-0.5 rounded text-xs"
                       style={{
@@ -117,56 +116,50 @@ function AdminContents() {
                     >
                       {categoryLabels[content.category]}
                     </span>
-                  </Table.Cell>
-                  <Table.Cell style={{ color: '#606060' }}>{content.author?.name || '-'}</Table.Cell>
-                  <Table.Cell style={{ color: '#606060' }}>{dayjs(content.created_at).format('YYYY-MM-DD')}</Table.Cell>
-                  <Table.Cell>
-                    <Flex gap="2">
-                      <Button
-                        variant="ghost"
-                        size="1"
-                        asChild
-                        style={{ color: '#606060' }}
-                      >
-                        <Link to={`/admin/contents/${content.id}`}>
+                  </td>
+                  <td style={{ padding: '12px 16px', color: '#606060' }}>{content.author?.name || '-'}</td>
+                  <td style={{ padding: '12px 16px', color: '#606060' }}>{dayjs(content.created_at).format('YYYY-MM-DD')}</td>
+                  <td style={{ padding: '12px 16px' }}>
+                    <div className="flex gap-2">
+                      <Link to={`/admin/contents/${content.id}`}>
+                        <Button variant="ghost" style={{ color: '#606060' }}>
                           <Pencil size={14} />
-                        </Link>
-                      </Button>
-                      <AlertDialog.Root>
-                        <AlertDialog.Trigger>
-                          <Button variant="ghost" size="1" style={{ color: '#cc0000' }}>
+                        </Button>
+                      </Link>
+                      <AlertDialog>
+                        <AlertDialogTrigger render={
+                          <Button variant="ghost" style={{ color: '#cc0000' }}>
                             <Trash2 size={14} />
                           </Button>
-                        </AlertDialog.Trigger>
-                        <AlertDialog.Content maxWidth="400px" style={{ background: '#ffffff', border: '1px solid #e5e5e5', borderRadius: 12 }}>
-                          <AlertDialog.Title style={{ color: '#0f0f0f' }}>确认删除</AlertDialog.Title>
-                          <AlertDialog.Description style={{ color: '#606060' }}>
+                        } />
+                        <AlertDialogContent>
+                          <AlertDialogTitle>确认删除</AlertDialogTitle>
+                          <AlertDialogDescription>
                             确定要删除「{content.title}」吗？此操作不可撤销。
-                          </AlertDialog.Description>
-                          <Flex gap="3" mt="4" justify="end">
-                            <AlertDialog.Cancel>
-                              <Button variant="soft" color="gray" style={{ borderRadius: '18px' }}>取消</Button>
-                            </AlertDialog.Cancel>
-                            <AlertDialog.Action>
+                          </AlertDialogDescription>
+                          <div className="flex justify-end gap-3 mt-4">
+                            <AlertDialogCancel>
+                              <Button variant="outline" style={{ borderRadius: '18px' }}>取消</Button>
+                            </AlertDialogCancel>
+                            <AlertDialogAction>
                               <Button
-                                variant="solid"
-                                color="red"
+                                variant="destructive"
                                 onClick={() => handleDelete(content.id)}
                                 style={{ borderRadius: '18px' }}
                               >
                                 确认删除
                               </Button>
-                            </AlertDialog.Action>
-                          </Flex>
-                        </AlertDialog.Content>
-                      </AlertDialog.Root>
-                    </Flex>
-                  </Table.Cell>
-                </Table.Row>
+                            </AlertDialogAction>
+                          </div>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </td>
+                </tr>
               ))
             )}
-          </Table.Body>
-        </Table.Root>
+          </tbody>
+        </table>
       </div>
 
       <Pagination page={page} limit={limit} total={total} onChange={setPage} />

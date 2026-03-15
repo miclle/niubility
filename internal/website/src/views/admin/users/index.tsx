@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Select, Avatar, TextField } from '@radix-ui/themes'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 import { Search, Loader2, X, Building2, Users } from 'lucide-react'
 import dayjs from 'dayjs'
 
@@ -308,17 +310,15 @@ function AdminUsers() {
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3 mb-4">
-          <TextField.Root
-            placeholder="搜索用户名、姓名、邮箱或手机号..."
-            value={search}
-            onChange={(e) => updateFilters('search', e.target.value)}
-            size="2"
-            style={{ minWidth: 280 }}
-          >
-            <TextField.Slot>
-              <Search size={16} style={{ color: '#909090' }} />
-            </TextField.Slot>
-          </TextField.Root>
+          <div className="relative" style={{ minWidth: 280 }}>
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#909090' }} />
+            <Input
+              placeholder="搜索用户名、姓名、邮箱或手机号..."
+              value={search}
+              onChange={(e) => updateFilters('search', e.target.value)}
+              className="pl-9"
+            />
+          </div>
 
           {hasFilters && (
             <button
@@ -365,13 +365,10 @@ function AdminUsers() {
                     <tr key={user.id} style={{ borderTop: '1px solid #e5e5e5' }}>
                       <td style={{ position: 'sticky', left: 0, zIndex: 10, background: '#ffffff', padding: '12px 16px', borderRight: '1px solid #e5e5e5' }}>
                         <div className="flex items-center gap-3">
-                          <Avatar
-                            size="2"
-                            radius="full"
-                            src={user.avatar}
-                            fallback={user.name?.charAt(0) || user.username.charAt(0)}
-                            style={{ width: 32, height: 32 }}
-                          />
+                          <Avatar className="size-8">
+                            <AvatarImage src={user.avatar} alt={user.name || user.username} />
+                            <AvatarFallback>{user.name?.charAt(0) || user.username.charAt(0)}</AvatarFallback>
+                          </Avatar>
                           <span className="font-medium" style={{ color: '#0f0f0f', whiteSpace: 'nowrap' }}>{user.name || '-'}</span>
                         </div>
                       </td>
@@ -384,30 +381,34 @@ function AdminUsers() {
                         </span>
                       </td>
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
-                        <Select.Root size="1" value={user.role} onValueChange={(val) => handleRoleChange(user.id, val as Role)}>
-                          <Select.Trigger variant="ghost" style={{ minWidth: 80 }} />
-                          <Select.Content style={{ background: '#ffffff', border: '1px solid #e5e5e5' }}>
-                            <Select.Item value="admin">
+                        <Select value={user.role} onValueChange={(val) => handleRoleChange(user.id, val as Role)}>
+                          <SelectTrigger size="sm" className="w-24 border-0 bg-transparent shadow-none">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="admin">
                               <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#fef3c7', color: '#92400e' }}>管理员</span>
-                            </Select.Item>
-                            <Select.Item value="user">
+                            </SelectItem>
+                            <SelectItem value="user">
                               <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#f2f2f2', color: '#606060' }}>普通用户</span>
-                            </Select.Item>
-                          </Select.Content>
-                        </Select.Root>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
                       </td>
                       <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
-                        <Select.Root size="1" value={user.status} onValueChange={(val) => handleStatusChange(user.id, val as UserStatus)}>
-                          <Select.Trigger variant="ghost" style={{ minWidth: 80 }} />
-                          <Select.Content style={{ background: '#ffffff', border: '1px solid #e5e5e5' }}>
-                            <Select.Item value="activated">
+                        <Select value={user.status} onValueChange={(val) => handleStatusChange(user.id, val as UserStatus)}>
+                          <SelectTrigger size="sm" className="w-24 border-0 bg-transparent shadow-none">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="activated">
                               <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#dcfce7', color: '#166534' }}>已激活</span>
-                            </Select.Item>
-                            <Select.Item value="deactivated">
+                            </SelectItem>
+                            <SelectItem value="deactivated">
                               <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#fee2e2', color: '#991b1b' }}>已禁用</span>
-                            </Select.Item>
-                          </Select.Content>
-                        </Select.Root>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
                       </td>
                       <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }}>{dayjs(user.created_at).format('YYYY-MM-DD HH:mm')}</td>
                       <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }}>{dayjs(user.updated_at).format('YYYY-MM-DD HH:mm')}</td>

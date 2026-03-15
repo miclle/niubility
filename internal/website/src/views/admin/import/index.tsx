@@ -1,14 +1,13 @@
 import { useState, useRef } from 'react'
-import { Button, TextArea } from '@radix-ui/themes'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import { Upload, FileJson, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 
 import { importContents } from 'src/api/content'
 import type { ImportResult, LegacyTalk } from 'src/types/content'
-import { useAppContext } from 'src/context/app'
 
 // AdminImport provides an interface for importing data from the legacy platform.
 function AdminImport() {
-  const { currentUser } = useAppContext()
   const [data, setData] = useState('')
   const [result, setResult] = useState<ImportResult | null>(null)
   const [loading, setLoading] = useState(false)
@@ -52,7 +51,7 @@ function AdminImport() {
       }
 
       const res = await importContents({ contents })
-      setResult(res)
+      setResult(res.data)
     } catch (err) {
       setError('导入失败，请稍后重试')
       console.error('Import error:', err)
@@ -69,7 +68,7 @@ function AdminImport() {
         {/* File upload */}
         <div className="mb-4">
           <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleFileUpload} />
-          <Button variant="soft" size="2" onClick={() => fileRef.current?.click()} style={{ borderRadius: '18px', background: '#f2f2f2', color: '#0f0f0f' }}>
+          <Button variant="outline" onClick={() => fileRef.current?.click()}>
             <Upload size={16} />
             选择 JSON 文件
           </Button>
@@ -80,8 +79,7 @@ function AdminImport() {
           <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>
             JSON 数据
           </label>
-          <TextArea
-            size="2"
+          <Textarea
             placeholder="粘贴 JSON 数据或上传文件..."
             value={data}
             onChange={(e) => {
@@ -90,7 +88,7 @@ function AdminImport() {
               setError('')
             }}
             rows={12}
-            style={{ borderRadius: 8, fontFamily: 'monospace', fontSize: 12 }}
+            className="font-mono text-xs"
           />
         </div>
 
@@ -130,7 +128,6 @@ function AdminImport() {
 
         {/* Import button */}
         <Button
-          size="2"
           disabled={loading || !data.trim()}
           onClick={handleImport}
           style={{

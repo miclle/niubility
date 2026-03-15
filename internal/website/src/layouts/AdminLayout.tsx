@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Outlet, NavLink, Navigate } from 'react-router-dom'
-import { Avatar, DropdownMenu, Tooltip } from '@radix-ui/themes'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { FileText, Users, ArrowLeft, LogOut, Upload, RefreshCw, Settings, Menu } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
@@ -58,8 +60,11 @@ function AdminLayout() {
               style={{ color: '#0f0f0f', justifyContent: sidebarCollapsed ? 'center' : 'flex-start' }}
             >
               {sidebarCollapsed ? (
-                <Tooltip content={item.label} side="right">
-                  <item.icon size={24} />
+                <Tooltip>
+                  <TooltipTrigger render={<button type="button" />}>
+                    <item.icon size={24} />
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{item.label}</TooltipContent>
                 </Tooltip>
               ) : (
                 <>
@@ -79,8 +84,11 @@ function AdminLayout() {
             style={{ color: '#0f0f0f', justifyContent: sidebarCollapsed ? 'center' : 'flex-start' }}
           >
             {sidebarCollapsed ? (
-              <Tooltip content="返回前台" side="right">
-                <ArrowLeft size={24} />
+              <Tooltip>
+                <TooltipTrigger render={<button type="button" />}>
+                  <ArrowLeft size={24} />
+                </TooltipTrigger>
+                <TooltipContent side="right">返回前台</TooltipContent>
               </Tooltip>
             ) : (
               <>
@@ -108,33 +116,32 @@ function AdminLayout() {
           </button>
 
           {/* User menu */}
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger>
-              <button className="flex items-center gap-2 cursor-pointer bg-transparent border-0 p-1 rounded-full hover:bg-black/5 transition-colors">
-                <Avatar
-                  size="2"
-                  radius="full"
-                  src={currentUser.avatar}
-                  fallback={currentUser.name?.charAt(0) || currentUser.username.charAt(0)}
-                  style={{ width: 32, height: 32 }}
-                />
-                <span className="text-sm" style={{ color: '#0f0f0f' }}>
-                  {currentUser.name || currentUser.username}
-                </span>
-              </button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content align="end" className="yt-dropdown-menu">
-              <DropdownMenu.Item
-                color="red"
-                onSelect={() => {
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <button className="flex items-center gap-2 cursor-pointer bg-transparent border-0 p-1 rounded-full hover:bg-black/5 transition-colors">
+                  <Avatar className="size-8">
+                    <AvatarImage src={currentUser.avatar} alt={currentUser.name || currentUser.username} />
+                    <AvatarFallback>{currentUser.name?.charAt(0) || currentUser.username.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm" style={{ color: '#0f0f0f' }}>
+                    {currentUser.name || currentUser.username}
+                  </span>
+                </button>
+              }
+            />
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => {
                   window.location.href = '/logout?redirect=' + encodeURIComponent(window.location.pathname)
                 }}
               >
                 <LogOut size={16} />
                 退出登录
-              </DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </header>
 
         {/* Content */}

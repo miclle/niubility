@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Button, TextField } from '@radix-ui/themes'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Settings, CheckCircle, XCircle, Loader2, Save, Shield } from 'lucide-react'
 
 import { listSettings, updateSettings } from 'src/api/setting'
@@ -118,7 +119,7 @@ function AdminSettings() {
             <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
               企业 ID (CorpID)
             </label>
-            <TextField.Root
+            <Input
               placeholder="请输入企业 ID"
               value={wechatForm.corp_id}
               onChange={(e) => setWechatForm({ ...wechatForm, corp_id: e.target.value })}
@@ -129,7 +130,7 @@ function AdminSettings() {
             <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
               应用 AgentID
             </label>
-            <TextField.Root
+            <Input
               placeholder="请输入应用 AgentID"
               value={wechatForm.app_agentid}
               onChange={(e) => setWechatForm({ ...wechatForm, app_agentid: e.target.value })}
@@ -143,7 +144,7 @@ function AdminSettings() {
                 <span className="ml-2 text-xs" style={{ color: '#166534' }}>(已设置，留空保持不变)</span>
               )}
             </label>
-            <TextField.Root
+            <Input
               type="password"
               placeholder={hasExistingSecret ? '留空保持现有密钥不变' : '请输入应用 Secret'}
               value={wechatForm.app_secret}
@@ -157,7 +158,6 @@ function AdminSettings() {
         {/* Save button */}
         <div className="mt-6">
           <Button
-            size="2"
             disabled={saving}
             onClick={handleSave}
             style={{

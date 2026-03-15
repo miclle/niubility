@@ -24,7 +24,7 @@ function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = fals
   const [volume, setVolume] = useState(1)
   const [mutedState, setMutedState] = useState(muted)
   const [fullscreen, setFullscreen] = useState(false)
-  const [isPiP, setIsPiP] = useState(false)
+  const [_isPiP, setIsPiP] = useState(false)
   const [playbackRate, setPlaybackRate] = useState(1)
   const [showSpeedMenu, setShowSpeedMenu] = useState(false)
   const [showControls, setShowControls] = useState(true)

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button } from '@radix-ui/themes'
+import { Button } from '@/components/ui/button'
 import { RefreshCw, CheckCircle, XCircle, Loader2, Users, Building2 } from 'lucide-react'
 
 import { syncWechat } from 'src/api/user'
@@ -81,7 +81,6 @@ function AdminSync() {
 
         {/* Sync button */}
         <Button
-          size="2"
           disabled={loading}
           onClick={handleSync}
           style={{

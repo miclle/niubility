@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { RouterProvider, createBrowserRouter } from 'react-router-dom'
-import { Theme } from '@radix-ui/themes'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 import { AppContext } from 'src/context/app'
 import routes from './router'
@@ -14,9 +14,9 @@ function App({ initialUser }: { initialUser: User | null }) {
 
   return (
     <AppContext.Provider value={{ currentUser, setCurrentUser }}>
-      <Theme appearance="light" accentColor="violet" radius="medium" panelBackground="translucent">
+      <TooltipProvider>
         <RouterProvider router={router} />
-      </Theme>
+      </TooltipProvider>
     </AppContext.Provider>
   )
 }
