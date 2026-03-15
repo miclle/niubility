@@ -39,17 +39,16 @@ func New(dsn string, wechatCfg *config.WechatConfig, encryptionKey string) (*Ser
 
 	svc := &Service{DB: db}
 
-	// Initialize encryptor if key is provided
-	if encryptionKey != "" {
-		enc, err := textencrypt.NewEncryptor(encryptionKey)
-		if err != nil {
-			return nil, fmt.Errorf("create encryptor: %w", err)
-		}
-		svc.Encryptor = enc
-		fmt.Println("[Service] Encryptor initialized for sensitive settings")
-	} else {
-		fmt.Println("[Service] Warning: No encryption key provided, settings will be stored in plaintext")
+	// Initialize encryptor (required for security)
+	if encryptionKey == "" {
+		return nil, fmt.Errorf("encryptionKey is required in server config, generate with: openssl rand -hex 32")
 	}
+	enc, err := textencrypt.NewEncryptor(encryptionKey)
+	if err != nil {
+		return nil, fmt.Errorf("create encryptor: %w", err)
+	}
+	svc.Encryptor = enc
+	fmt.Println("[Service] Encryptor initialized for sensitive settings")
 
 	// Initialize WeChat client
 	wechatApp := svc.initWechatClient(wechatCfg)
