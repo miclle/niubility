@@ -9,10 +9,13 @@ interface VideoPlayerProps {
   muted?: boolean
   theaterMode?: boolean
   onToggleTheater?: () => void
+  contentId?: string
 }
 
+const PLAYBACK_PROGRESS_KEY = 'video_playback_progress'
+
 // VideoPlayer uses native HTML5 video with custom controls.
-function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = false, theaterMode = false, onToggleTheater }: VideoPlayerProps) {
+function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = false, theaterMode = false, onToggleTheater, contentId }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [playing, setPlaying] = useState(false)
@@ -127,6 +130,28 @@ function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = fals
 
   const playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3]
 
+  // Save/restore playback progress
+  const saveProgress = (time: number) => {
+    if (!contentId) return
+    try {
+      const data = JSON.parse(localStorage.getItem(PLAYBACK_PROGRESS_KEY) || '{}')
+      data[contentId] = { time, savedAt: Date.now() }
+      localStorage.setItem(PLAYBACK_PROGRESS_KEY, JSON.stringify(data))
+    } catch {
+      // Ignore localStorage errors
+    }
+  }
+
+  const loadProgress = (): number | null => {
+    if (!contentId) return null
+    try {
+      const data = JSON.parse(localStorage.getItem(PLAYBACK_PROGRESS_KEY) || '{}')
+      return data[contentId]?.time ?? null
+    } catch {
+      return null
+    }
+  }
+
   // Show controls temporarily
   const showControlsTemporarily = () => {
     setShowControls(true)
@@ -145,9 +170,18 @@ function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = fals
     const video = videoRef.current
     if (!video) return
 
+    let lastSavedTime = 0
+
     const handlePlay = () => setPlaying(true)
     const handlePause = () => setPlaying(false)
-    const handleTimeUpdate = () => setCurrentTime(video.currentTime)
+    const handleTimeUpdate = () => {
+      setCurrentTime(video.currentTime)
+      // Save progress every 5 seconds
+      if (video.currentTime - lastSavedTime >= 5) {
+        saveProgress(video.currentTime)
+        lastSavedTime = video.currentTime
+      }
+    }
     const handleDurationChange = () => setDuration(video.duration)
     const handleVolumeChange = () => {
       setVolume(video.volume)
@@ -155,6 +189,25 @@ function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = fals
     }
     const handleEnterPiP = () => setIsPiP(true)
     const handleLeavePiP = () => setIsPiP(false)
+    const handleLoadedMetadata = () => {
+      // Restore playback position
+      const savedTime = loadProgress()
+      if (savedTime && savedTime < video.duration - 5) {
+        video.currentTime = savedTime
+      }
+    }
+    const handleEnded = () => {
+      // Clear saved progress when video ends
+      if (contentId) {
+        try {
+          const data = JSON.parse(localStorage.getItem(PLAYBACK_PROGRESS_KEY) || '{}')
+          delete data[contentId]
+          localStorage.setItem(PLAYBACK_PROGRESS_KEY, JSON.stringify(data))
+        } catch {
+          // Ignore
+        }
+      }
+    }
 
     video.addEventListener('play', handlePlay)
     video.addEventListener('pause', handlePause)
@@ -163,6 +216,8 @@ function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = fals
     video.addEventListener('volumechange', handleVolumeChange)
     video.addEventListener('enterpictureinpicture', handleEnterPiP)
     video.addEventListener('leavepictureinpicture', handleLeavePiP)
+    video.addEventListener('loadedmetadata', handleLoadedMetadata)
+    video.addEventListener('ended', handleEnded)
 
     return () => {
       video.removeEventListener('play', handlePlay)
@@ -172,8 +227,10 @@ function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = fals
       video.removeEventListener('volumechange', handleVolumeChange)
       video.removeEventListener('enterpictureinpicture', handleEnterPiP)
       video.removeEventListener('leavepictureinpicture', handleLeavePiP)
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata)
+      video.removeEventListener('ended', handleEnded)
     }
-  }, [])
+  }, [contentId])
 
   // Fullscreen change handler
   useEffect(() => {

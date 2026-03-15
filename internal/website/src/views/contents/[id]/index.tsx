@@ -69,6 +69,7 @@ function ContentDetail() {
               poster={content.cover_url || '/default-cover.svg'}
               theaterMode={theaterMode}
               onToggleTheater={() => setTheaterMode(!theaterMode)}
+              contentId={content.id}
             />
           </div>
         ) : (
