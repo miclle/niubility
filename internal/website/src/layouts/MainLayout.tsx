@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { DropdownMenu, Avatar } from '@radix-ui/themes'
-import { LogOut, Settings, User, Search, Menu, Home, Play, FileText, ChevronDown, Plus } from 'lucide-react'
+import { LogOut, Settings, User, Search, Menu, Home, Play, FileText, ChevronDown, Plus, X } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
 import type { ContentType, ContentCategory } from 'src/types/content'
@@ -17,6 +17,22 @@ function MainLayout() {
   const [searchValue, setSearchValue] = useState('')
   const [typeFilter, setTypeFilter] = useState<ContentType | ''>('')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  // Detect if on detail page
+  const isDetailPage = /^\/contents\/[^/]+$/.test(location.pathname)
+
+  // Auto-hide sidebar on detail page
+  useEffect(() => {
+    if (isDetailPage) {
+      setSidebarCollapsed(true)
+    }
+  }, [isDetailPage])
+
+  // Close drawer when route changes
+  useEffect(() => {
+    setDrawerOpen(false)
+  }, [location.pathname])
 
   // Derive category from current path
   const category: ContentCategory = location.pathname === '/culture' ? 'culture' : 'learning'
@@ -39,7 +55,13 @@ function MainLayout() {
         <div className="flex items-center gap-4">
           <button
             className="yt-icon-btn"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            onClick={() => {
+              if (isDetailPage) {
+                setDrawerOpen(!drawerOpen)
+              } else {
+                setSidebarCollapsed(!sidebarCollapsed)
+              }
+            }}
           >
             <Menu size={24} style={{ color: '#0f0f0f' }} />
           </button>
@@ -134,96 +156,203 @@ function MainLayout() {
 
       {/* Body: Sidebar + Main Content */}
       <div className="flex flex-1">
-        {/* Sidebar - YouTube style */}
-        <aside
-          className="flex-shrink-0 sticky top-14 overflow-y-auto bg-white transition-all duration-200"
-          style={{
-            width: sidebarCollapsed ? 0 : 240,
-            height: 'calc(100vh - 56px)',
-            overflowX: 'hidden',
-          }}
-        >
-          <nav className="py-3" style={{ width: 240 }}>
-            {/* Main navigation */}
-            <div className="px-3">
-              <NavLink
-                to="/learning"
-                className={({ isActive }) =>
-                  `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                    isActive && category === 'learning'
-                      ? 'bg-black/10 font-medium'
-                      : 'hover:bg-black/5'
-                  }`
-                }
-                style={({ isActive }) => ({
-                  color: isActive && category === 'learning' ? '#0f0f0f' : '#0f0f0f',
-                })}
-              >
-                <Home size={24} />
-                <span className="text-sm">学习交流</span>
-              </NavLink>
-              <NavLink
-                to="/culture"
-                className={({ isActive }) =>
-                  `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                    isActive && category === 'culture'
-                      ? 'bg-black/10 font-medium'
-                      : 'hover:bg-black/5'
-                  }`
-                }
-                style={({ isActive }) => ({
-                  color: isActive && category === 'culture' ? '#0f0f0f' : '#0f0f0f',
-                })}
-              >
-                <Play size={24} />
-                <span className="text-sm">企业文化</span>
-              </NavLink>
-            </div>
-
-            {/* Divider */}
-            <div className="my-3 mx-3 h-px" style={{ background: '#e5e5e5' }} />
-
-            {/* Type filter */}
-            <div className="px-3">
-              <div className="flex items-center justify-between px-3 py-1 mb-1 cursor-pointer">
-                <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>
-                  类型筛选
-                </span>
-                <ChevronDown size={16} style={{ color: '#0f0f0f' }} />
+        {/* Drawer overlay for detail page */}
+        {isDetailPage && drawerOpen && (
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/50 z-40 transition-opacity"
+              onClick={() => setDrawerOpen(false)}
+            />
+            {/* Drawer */}
+            <aside
+              className="fixed left-0 top-14 z-50 h-[calc(100vh-56px)] w-60 bg-white shadow-xl transform transition-transform duration-300"
+            >
+              <div className="flex items-center justify-between p-3 border-b" style={{ borderColor: '#e5e5e5' }}>
+                <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>导航</span>
+                <button
+                  onClick={() => setDrawerOpen(false)}
+                  className="p-1 rounded-full hover:bg-zinc-100 transition-colors cursor-pointer"
+                >
+                  <X size={20} style={{ color: '#606060' }} />
+                </button>
               </div>
-              <button
-                onClick={() => setTypeFilter('')}
-                className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                  typeFilter === '' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
-                }`}
-                style={{ color: '#0f0f0f' }}
-              >
-                <FileText size={24} />
-                <span className="text-sm">全部</span>
-              </button>
-              <button
-                onClick={() => setTypeFilter('article')}
-                className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                  typeFilter === 'article' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
-                }`}
-                style={{ color: '#0f0f0f' }}
-              >
-                <FileText size={24} />
-                <span className="text-sm">图文</span>
-              </button>
-              <button
-                onClick={() => setTypeFilter('video')}
-                className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                  typeFilter === 'video' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
-                }`}
-                style={{ color: '#0f0f0f' }}
-              >
-                <Play size={24} />
-                <span className="text-sm">视频</span>
-              </button>
-            </div>
-          </nav>
-        </aside>
+              <nav className="py-3 overflow-y-auto" style={{ height: 'calc(100% - 48px)' }}>
+                {/* Main navigation */}
+                <div className="px-3">
+                  <NavLink
+                    to="/learning"
+                    className={({ isActive }) =>
+                      `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+                        isActive && category === 'learning'
+                          ? 'bg-black/10 font-medium'
+                          : 'hover:bg-black/5'
+                      }`
+                    }
+                    style={({ isActive }) => ({
+                      color: isActive && category === 'learning' ? '#0f0f0f' : '#0f0f0f',
+                    })}
+                  >
+                    <Home size={24} />
+                    <span className="text-sm">学习交流</span>
+                  </NavLink>
+                  <NavLink
+                    to="/culture"
+                    className={({ isActive }) =>
+                      `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+                        isActive && category === 'culture'
+                          ? 'bg-black/10 font-medium'
+                          : 'hover:bg-black/5'
+                      }`
+                    }
+                    style={({ isActive }) => ({
+                      color: isActive && category === 'culture' ? '#0f0f0f' : '#0f0f0f',
+                    })}
+                  >
+                    <Play size={24} />
+                    <span className="text-sm">企业文化</span>
+                  </NavLink>
+                </div>
+
+                {/* Divider */}
+                <div className="my-3 mx-3 h-px" style={{ background: '#e5e5e5' }} />
+
+                {/* Type filter */}
+                <div className="px-3">
+                  <div className="flex items-center justify-between px-3 py-1 mb-1 cursor-pointer">
+                    <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>
+                      类型筛选
+                    </span>
+                    <ChevronDown size={16} style={{ color: '#0f0f0f' }} />
+                  </div>
+                  <button
+                    onClick={() => setTypeFilter('')}
+                    className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+                      typeFilter === '' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+                    }`}
+                    style={{ color: '#0f0f0f' }}
+                  >
+                    <FileText size={24} />
+                    <span className="text-sm">全部</span>
+                  </button>
+                  <button
+                    onClick={() => setTypeFilter('article')}
+                    className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+                      typeFilter === 'article' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+                    }`}
+                    style={{ color: '#0f0f0f' }}
+                  >
+                    <FileText size={24} />
+                    <span className="text-sm">图文</span>
+                  </button>
+                  <button
+                    onClick={() => setTypeFilter('video')}
+                    className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+                      typeFilter === 'video' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+                    }`}
+                    style={{ color: '#0f0f0f' }}
+                  >
+                    <Play size={24} />
+                    <span className="text-sm">视频</span>
+                  </button>
+                </div>
+              </nav>
+            </aside>
+          </>
+        )}
+
+        {/* Sidebar - YouTube style (hidden on detail page) */}
+        {!isDetailPage && (
+          <aside
+            className="flex-shrink-0 sticky top-14 overflow-y-auto bg-white transition-all duration-200"
+            style={{
+              width: sidebarCollapsed ? 0 : 240,
+              height: 'calc(100vh - 56px)',
+              overflowX: 'hidden',
+            }}
+          >
+            <nav className="py-3" style={{ width: 240 }}>
+              {/* Main navigation */}
+              <div className="px-3">
+                <NavLink
+                  to="/learning"
+                  className={({ isActive }) =>
+                    `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+                      isActive && category === 'learning'
+                        ? 'bg-black/10 font-medium'
+                        : 'hover:bg-black/5'
+                    }`
+                  }
+                  style={({ isActive }) => ({
+                    color: isActive && category === 'learning' ? '#0f0f0f' : '#0f0f0f',
+                  })}
+                >
+                  <Home size={24} />
+                  <span className="text-sm">学习交流</span>
+                </NavLink>
+                <NavLink
+                  to="/culture"
+                  className={({ isActive }) =>
+                    `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+                      isActive && category === 'culture'
+                        ? 'bg-black/10 font-medium'
+                        : 'hover:bg-black/5'
+                    }`
+                  }
+                  style={({ isActive }) => ({
+                    color: isActive && category === 'culture' ? '#0f0f0f' : '#0f0f0f',
+                  })}
+                >
+                  <Play size={24} />
+                  <span className="text-sm">企业文化</span>
+                </NavLink>
+              </div>
+
+              {/* Divider */}
+              <div className="my-3 mx-3 h-px" style={{ background: '#e5e5e5' }} />
+
+              {/* Type filter */}
+              <div className="px-3">
+                <div className="flex items-center justify-between px-3 py-1 mb-1 cursor-pointer">
+                  <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>
+                    类型筛选
+                  </span>
+                  <ChevronDown size={16} style={{ color: '#0f0f0f' }} />
+                </div>
+                <button
+                  onClick={() => setTypeFilter('')}
+                  className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+                    typeFilter === '' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+                  }`}
+                  style={{ color: '#0f0f0f' }}
+                >
+                  <FileText size={24} />
+                  <span className="text-sm">全部</span>
+                </button>
+                <button
+                  onClick={() => setTypeFilter('article')}
+                  className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+                    typeFilter === 'article' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+                  }`}
+                  style={{ color: '#0f0f0f' }}
+                >
+                  <FileText size={24} />
+                  <span className="text-sm">图文</span>
+                </button>
+                <button
+                  onClick={() => setTypeFilter('video')}
+                  className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+                    typeFilter === 'video' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+                  }`}
+                  style={{ color: '#0f0f0f' }}
+                >
+                  <Play size={24} />
+                  <span className="text-sm">视频</span>
+                </button>
+              </div>
+            </nav>
+          </aside>
+        )}
 
         {/* Main content */}
         <main className="flex-1 min-w-0 bg-white">
