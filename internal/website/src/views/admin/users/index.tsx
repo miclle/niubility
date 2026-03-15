@@ -61,6 +61,7 @@ function AdminUsers() {
               <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>用户名</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>邮箱</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>手机</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>部门</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>角色</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>状态</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>注册时间</Table.ColumnHeaderCell>
@@ -70,13 +71,13 @@ function AdminUsers() {
           <Table.Body>
             {loading ? (
               <Table.Row>
-                <Table.Cell colSpan={8} className="text-center py-8" style={{ color: '#909090' }}>
+                <Table.Cell colSpan={9} className="text-center py-8" style={{ color: '#909090' }}>
                   加载中...
                 </Table.Cell>
               </Table.Row>
             ) : users.length === 0 ? (
               <Table.Row>
-                <Table.Cell colSpan={8} className="text-center py-8" style={{ color: '#909090' }}>
+                <Table.Cell colSpan={9} className="text-center py-8" style={{ color: '#909090' }}>
                   暂无用户
                 </Table.Cell>
               </Table.Row>
@@ -98,6 +99,13 @@ function AdminUsers() {
                   <Table.Cell style={{ color: '#606060' }}>{user.username}</Table.Cell>
                   <Table.Cell style={{ color: '#606060' }}>{user.email || '-'}</Table.Cell>
                   <Table.Cell style={{ color: '#606060' }}>{user.mobile || '-'}</Table.Cell>
+                  <Table.Cell style={{ color: '#606060' }}>
+                    {user.department_ids ? (
+                      <span className="text-xs" style={{ background: '#f2f2f2', padding: '2px 6px', borderRadius: 4 }}>
+                        {user.department_ids}
+                      </span>
+                    ) : '-'}
+                  </Table.Cell>
                   <Table.Cell>
                     <Select.Root size="1" value={user.role} onValueChange={(val) => handleRoleChange(user.id, val as Role)}>
                       <Select.Trigger variant="ghost" style={{ minWidth: 80 }} />

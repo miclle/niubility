@@ -12,6 +12,7 @@ export interface User {
   email: string
   mobile: string
   avatar: string
+  department_ids: string
   role: Role
   status: UserStatus
   created_at: string

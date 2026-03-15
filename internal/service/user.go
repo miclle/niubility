@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"gorm.io/gorm"
@@ -132,10 +133,18 @@ func (s *Service) SyncUserFromWechat(username string) (*entity.User, error) {
 	fmt.Printf("[WeChat Sync] UserID: %s, Name: %s, Mobile: %s, Avatar: %s\n",
 		info.UserID, info.Name, info.Mobile, info.AvatarURL)
 
+	// Convert department IDs to comma-separated string
+	var deptIDs []string
+	for _, dept := range info.Departments {
+		deptIDs = append(deptIDs, strconv.FormatInt(dept.DeptID, 10))
+	}
+	departmentIDs := strings.Join(deptIDs, ",")
+
 	updates := map[string]any{
-		"name":   info.Name,
-		"mobile": info.Mobile,
-		"avatar": info.AvatarURL,
+		"name":           info.Name,
+		"mobile":         info.Mobile,
+		"avatar":         info.AvatarURL,
+		"department_ids": departmentIDs,
 	}
 	if err := s.DB.Model(user).Updates(updates).Error; err != nil {
 		fmt.Printf("[WeChat Sync] Error updating database: %v\n", err)
