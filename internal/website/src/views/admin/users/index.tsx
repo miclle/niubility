@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Table, Select, Avatar, TextField } from '@radix-ui/themes'
-import { MagnifyingGlass, Loader2 } from 'lucide-react'
+import { Search, Loader2 } from 'lucide-react'
 import dayjs from 'dayjs'
 
 import { listUsers, updateUser, listDepartments } from 'src/api/user'
@@ -150,7 +150,7 @@ function AdminUsers() {
           style={{ maxWidth: 400 }}
         >
           <TextField.Slot>
-            <MagnifyingGlass size={16} style={{ color: '#909090' }} />
+            <Search size={16} style={{ color: '#909090' }} />
           </TextField.Slot>
           {loading && (
             <TextField.Slot>
