@@ -22,10 +22,12 @@ function MainLayout() {
   // Detect if on detail page
   const isDetailPage = /^\/contents\/[^/]+$/.test(location.pathname)
 
-  // Auto-hide sidebar on detail page
+  // Auto-hide sidebar on detail page, show on other pages
   useEffect(() => {
     if (isDetailPage) {
       setSidebarCollapsed(true)
+    } else {
+      setSidebarCollapsed(false)
     }
   }, [isDetailPage])
 
