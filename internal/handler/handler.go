@@ -60,6 +60,10 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	admin := api.Group("", ctrl.RequireAdmin)
 	admin.GET("/users", ctrl.ListUsers)
 	admin.PATCH("/users/:id", ctrl.UpdateUser)
+
+	// settings management (admin only)
+	admin.GET("/settings", ctrl.ListSettings)
+	admin.PATCH("/settings", ctrl.UpdateSettings)
 }
 
 // Health returns a simple health check response.

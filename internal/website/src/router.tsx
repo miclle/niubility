@@ -10,6 +10,7 @@ import AdminContentEditor from 'src/views/admin/contents/editor'
 import AdminUsers from 'src/views/admin/users'
 import AdminImport from 'src/views/admin/import'
 import AdminSync from 'src/views/admin/sync'
+import AdminSettings from 'src/views/admin/settings'
 import NotFound from 'src/views/errors/NotFound'
 import Forbidden from 'src/views/errors/Forbidden'
 import ServerError from 'src/views/errors/ServerError'
@@ -40,6 +41,7 @@ const routes: RouteObject[] = [
       { path: 'users', element: <AdminUsers /> },
       { path: 'import', element: <AdminImport /> },
       { path: 'sync', element: <AdminSync /> },
+      { path: 'settings', element: <AdminSettings /> },
     ],
   },
   // Error pages

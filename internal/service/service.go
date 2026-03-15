@@ -3,6 +3,7 @@ package service
 
 import (
 	"fmt"
+	"sync"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -16,9 +17,12 @@ import (
 type Service struct {
 	DB     *gorm.DB
 	Wechat *workwx.WorkwxApp
+
+	wechatMutex sync.RWMutex
 }
 
 // New creates a new Service instance with the given database DSN and WeChat config.
+// WeChat configuration is loaded from database first, falling back to file config.
 func New(dsn string, wechatCfg *config.WechatConfig) (*Service, error) {
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		DisableForeignKeyConstraintWhenMigrating: true,
@@ -27,23 +31,57 @@ func New(dsn string, wechatCfg *config.WechatConfig) (*Service, error) {
 		return nil, fmt.Errorf("connect to database: %w", err)
 	}
 
-	if err := db.AutoMigrate(&entity.User{}, &entity.Content{}); err != nil {
+	if err := db.AutoMigrate(&entity.User{}, &entity.Content{}, &entity.Setting{}); err != nil {
 		return nil, fmt.Errorf("auto migrate: %w", err)
 	}
 
-	var wechatApp *workwx.WorkwxApp
-	fmt.Printf("[Service] WechatConfig: %+v\n", wechatCfg)
-	if wechatCfg != nil && wechatCfg.CorpID != "" {
-		fmt.Printf("[Service] Initializing WeChat client with CorpID: %s\n", wechatCfg.CorpID)
-		wechatApp = workwx.New(wechatCfg.CorpID).WithApp(wechatCfg.AppSecret, wechatCfg.AppAgentID)
-	} else {
-		fmt.Printf("[Service] WeChat client not initialized: wechatCfg=%v, CorpID=%s\n", wechatCfg != nil, func() string {
-			if wechatCfg != nil {
-				return wechatCfg.CorpID
-			}
-			return ""
-		}())
+	svc := &Service{DB: db}
+
+	// Initialize WeChat client
+	wechatApp := svc.initWechatClient(wechatCfg)
+	svc.Wechat = wechatApp
+
+	return svc, nil
+}
+
+// initWechatClient initializes the WeChat client from database or file config.
+// Database config takes priority over file config.
+func (s *Service) initWechatClient(fileCfg *config.WechatConfig) *workwx.WorkwxApp {
+	// Try to load from database first
+	dbCfg, err := s.GetWechatConfig()
+	if err == nil && dbCfg != nil && dbCfg.CorpID != "" {
+		fmt.Printf("[Service] Initializing WeChat client from database: CorpID=%s\n", dbCfg.CorpID)
+		return workwx.New(dbCfg.CorpID).WithApp(dbCfg.AppSecret, dbCfg.AppAgentID)
 	}
 
-	return &Service{DB: db, Wechat: wechatApp}, nil
+	// Fall back to file config
+	if fileCfg != nil && fileCfg.CorpID != "" {
+		fmt.Printf("[Service] Initializing WeChat client from config file: CorpID=%s\n", fileCfg.CorpID)
+		return workwx.New(fileCfg.CorpID).WithApp(fileCfg.AppSecret, fileCfg.AppAgentID)
+	}
+
+	fmt.Println("[Service] WeChat client not initialized: no valid configuration found")
+	return nil
+}
+
+// RefreshWechatClient re-initializes the WeChat client from database settings.
+// Call this after updating WeChat configuration in the database.
+func (s *Service) RefreshWechatClient() error {
+	s.wechatMutex.Lock()
+	defer s.wechatMutex.Unlock()
+
+	dbCfg, err := s.GetWechatConfig()
+	if err != nil {
+		return fmt.Errorf("get wechat config from database: %w", err)
+	}
+
+	if dbCfg == nil || dbCfg.CorpID == "" {
+		s.Wechat = nil
+		fmt.Println("[Service] WeChat client disabled: no configuration in database")
+		return nil
+	}
+
+	s.Wechat = workwx.New(dbCfg.CorpID).WithApp(dbCfg.AppSecret, dbCfg.AppAgentID)
+	fmt.Printf("[Service] WeChat client refreshed: CorpID=%s\n", dbCfg.CorpID)
+	return nil
 }
