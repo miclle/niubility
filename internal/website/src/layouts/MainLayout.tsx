@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { DropdownMenu, Avatar } from '@radix-ui/themes'
-import { LogOut, Settings, User, Search, Menu, Home, Play, FileText, ChevronDown, Plus, X } from 'lucide-react'
+import { LogOut, Settings, User, Search, Menu, Home, Play, FileText, ChevronDown, Plus } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
 import type { ContentType, ContentCategory } from 'src/types/content'
@@ -157,25 +157,31 @@ function MainLayout() {
       {/* Body: Sidebar + Main Content */}
       <div className="flex flex-1">
         {/* Drawer overlay for detail page */}
-        {isDetailPage && drawerOpen && (
+        {isDetailPage && (
           <>
             {/* Backdrop */}
             <div
-              className="fixed inset-0 bg-black/50 z-40 transition-opacity"
+              className={`fixed inset-0 z-40 transition-opacity duration-300 ${
+                drawerOpen ? 'bg-black/50 opacity-100' : 'bg-black/50 opacity-0 pointer-events-none'
+              }`}
               onClick={() => setDrawerOpen(false)}
             />
             {/* Drawer */}
             <aside
-              className="fixed left-0 top-0 z-50 h-screen w-60 bg-white shadow-xl transform transition-transform duration-300"
+              className={`fixed left-0 top-0 z-50 h-screen w-60 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${
+                drawerOpen ? 'translate-x-0' : '-translate-x-full'
+              }`}
             >
-              <div className="flex items-center justify-between p-3 h-14 border-b" style={{ borderColor: '#e5e5e5' }}>
-                <span className="text-lg font-semibold" style={{ color: '#0f0f0f' }}>Niubility</span>
+              <div className="flex items-center gap-4 h-14 px-4 border-b" style={{ borderColor: '#e5e5e5' }}>
                 <button
                   onClick={() => setDrawerOpen(false)}
-                  className="p-1 rounded-full hover:bg-zinc-100 transition-colors cursor-pointer"
+                  className="yt-icon-btn"
                 >
-                  <X size={20} style={{ color: '#606060' }} />
+                  <Menu size={24} style={{ color: '#0f0f0f' }} />
                 </button>
+                <span className="text-xl font-semibold" style={{ color: '#0f0f0f', letterSpacing: '-0.5px' }}>
+                  Niubility
+                </span>
               </div>
               <nav className="py-3 overflow-y-auto" style={{ height: 'calc(100% - 56px)' }}>
                 {/* Main navigation */}
