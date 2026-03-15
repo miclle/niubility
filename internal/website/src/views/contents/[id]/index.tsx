@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ThumbsUp, Share2, ArrowLeft, MoreVertical } from 'lucide-react'
+import { ThumbsUp, Share2, ArrowLeft } from 'lucide-react'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
 
 import { getContent, listContents } from 'src/api/content'
-import ContentCard from 'src/components/ContentCard'
+import VideoPlayer from 'src/components/VideoPlayer'
 import type { Content } from 'src/types/content'
 
 dayjs.extend(relativeTime)
@@ -63,10 +63,8 @@ function ContentDetail() {
             className="relative bg-black rounded-xl overflow-hidden"
             style={{ width: '100%', aspectRatio: '16/9' }}
           >
-            <video
+            <VideoPlayer
               src={content.video_url}
-              controls
-              className="w-full h-full"
               poster={content.cover_url || '/default-cover.svg'}
             />
           </div>
