@@ -33,7 +33,7 @@ func New(dsn string, wechatCfg *config.WechatConfig, encryptionKey string) (*Ser
 		return nil, fmt.Errorf("connect to database: %w", err)
 	}
 
-	if err := db.AutoMigrate(&entity.User{}, &entity.Content{}, &entity.Setting{}); err != nil {
+	if err := db.AutoMigrate(&entity.User{}, &entity.Content{}, &entity.Setting{}, &entity.Department{}); err != nil {
 		return nil, fmt.Errorf("auto migrate: %w", err)
 	}
 

@@ -2,17 +2,33 @@ import { useState, useEffect, useCallback } from 'react'
 import { Table, Select, Avatar } from '@radix-ui/themes'
 import dayjs from 'dayjs'
 
-import { listUsers, updateUser } from 'src/api/user'
+import { listUsers, updateUser, listDepartments } from 'src/api/user'
 import Pagination from 'src/components/Pagination'
-import type { User, Role, UserStatus } from 'src/types/user'
+import type { User, Role, UserStatus, Department } from 'src/types/user'
 
 // AdminUsers displays the admin user management page with YouTube-style design.
 function AdminUsers() {
   const [users, setUsers] = useState<User[]>([])
+  const [departments, setDepartments] = useState<Department[]>([])
+  const [deptMap, setDeptMap] = useState<Map<number, string>>(new Map())
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const limit = 20
+
+  const fetchDepartments = useCallback(async () => {
+    try {
+      const res = await listDepartments()
+      setDepartments(res.data.departments || [])
+      const map = new Map<number, string>()
+      for (const dept of res.data.departments || []) {
+        map.set(dept.id, dept.name)
+      }
+      setDeptMap(map)
+    } catch {
+      // Silently fail
+    }
+  }, [])
 
   const fetchUsers = useCallback(async () => {
     setLoading(true)
@@ -26,6 +42,10 @@ function AdminUsers() {
       setLoading(false)
     }
   }, [page])
+
+  useEffect(() => {
+    fetchDepartments()
+  }, [fetchDepartments])
 
   useEffect(() => {
     fetchUsers()
@@ -47,6 +67,14 @@ function AdminUsers() {
     } catch {
       // Silently fail
     }
+  }
+
+  // getDepartmentNames converts comma-separated department IDs to names
+  const getDepartmentNames = (deptIDs: string): string => {
+    if (!deptIDs) return '-'
+    const ids = deptIDs.split(',').map(id => parseInt(id.trim(), 10))
+    const names = ids.map(id => deptMap.get(id) || `#${id}`).filter(Boolean)
+    return names.join(', ') || '-'
   }
 
   return (
@@ -99,12 +127,10 @@ function AdminUsers() {
                   <Table.Cell style={{ color: '#606060' }}>{user.username}</Table.Cell>
                   <Table.Cell style={{ color: '#606060' }}>{user.email || '-'}</Table.Cell>
                   <Table.Cell style={{ color: '#606060' }}>{user.mobile || '-'}</Table.Cell>
-                  <Table.Cell style={{ color: '#606060' }}>
-                    {user.department_ids ? (
-                      <span className="text-xs" style={{ background: '#f2f2f2', padding: '2px 6px', borderRadius: 4 }}>
-                        {user.department_ids}
-                      </span>
-                    ) : '-'}
+                  <Table.Cell style={{ color: '#606060', maxWidth: 150 }}>
+                    <span className="text-xs" style={{ background: '#f2f2f2', padding: '2px 6px', borderRadius: 4, display: 'inline-block' }}>
+                      {getDepartmentNames(user.department_ids)}
+                    </span>
                   </Table.Cell>
                   <Table.Cell>
                     <Select.Root size="1" value={user.role} onValueChange={(val) => handleRoleChange(user.id, val as Role)}>

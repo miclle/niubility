@@ -180,6 +180,91 @@ func (s *Service) SyncAllUsersFromWechat() (synced int, failed int, err error) {
 	return synced, failed, nil
 }
 
+// SyncAllWechatUsers fetches all users from WeChat Work and syncs them to database.
+// This will create new users and update existing ones.
+func (s *Service) SyncAllWechatUsers() (synced int, failed int, err error) {
+	if s.Wechat == nil {
+		return 0, 0, fmt.Errorf("wechat client not configured")
+	}
+
+	// Get all departments first
+	deptList, err := s.Wechat.ListAllDepts()
+	if err != nil {
+		return 0, 0, fmt.Errorf("list departments: %w", err)
+	}
+
+	fmt.Printf("[WeChat Sync] Found %d departments, fetching users...\n", len(deptList))
+
+	// Track synced user IDs to avoid duplicates
+	seenUsers := make(map[string]bool)
+
+	// Fetch users from each department
+	for _, dept := range deptList {
+		users, err := s.Wechat.ListUsersByDeptID(dept.ID, true)
+		if err != nil {
+			fmt.Printf("[WeChat Sync] Failed to list users in dept %d: %v\n", dept.ID, err)
+			continue
+		}
+
+		for _, info := range users {
+			// Skip if already synced
+			if seenUsers[info.UserID] {
+				continue
+			}
+			seenUsers[info.UserID] = true
+
+			// Convert department IDs to comma-separated string
+			var deptIDs []string
+			for _, dept := range info.Departments {
+				deptIDs = append(deptIDs, strconv.FormatInt(dept.DeptID, 10))
+			}
+			departmentIDs := strings.Join(deptIDs, ",")
+
+			// Upsert user
+			user := &entity.User{
+				Username:      info.UserID,
+				Name:          info.Name,
+				Email:         info.Email,
+				Mobile:        info.Mobile,
+				Avatar:        info.AvatarURL,
+				DepartmentIDs: departmentIDs,
+				Status:        entity.UserStatusActivated,
+			}
+
+			// Check if user exists to determine role
+			existingUser, _ := s.GetUserByUsername(info.UserID)
+			if existingUser != nil {
+				user.Role = existingUser.Role
+				user.ID = existingUser.ID
+			} else {
+				// First user becomes admin
+				var count int64
+				s.DB.Model(&entity.User{}).Count(&count)
+				if count == 0 {
+					user.Role = entity.RoleAdmin
+				} else {
+					user.Role = entity.RoleUser
+				}
+				user.ID = entity.ID()
+			}
+
+			conds := clause.OnConflict{
+				Columns:   []clause.Column{{Name: "username"}},
+				DoUpdates: clause.AssignmentColumns([]string{"name", "email", "mobile", "avatar", "department_ids"}),
+			}
+			if err := s.DB.Clauses(conds).Create(user).Error; err != nil {
+				fmt.Printf("[WeChat Sync] Failed to upsert user %s: %v\n", info.UserID, err)
+				failed++
+			} else {
+				synced++
+			}
+		}
+	}
+
+	fmt.Printf("[WeChat Sync] Synced %d users, %d failed\n", synced, failed)
+	return synced, failed, nil
+}
+
 // CreateUser creates a new user record.
 func (s *Service) CreateUser(user *entity.User) error {
 	user.ID = entity.ID()

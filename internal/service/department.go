@@ -1,0 +1,78 @@
+package service
+
+import (
+	"fmt"
+
+	"gorm.io/gorm/clause"
+
+	"github.com/miclle/niubility/internal/entity"
+)
+
+// SyncDepartmentsFromWechat syncs all departments from WeChat Work.
+func (s *Service) SyncDepartmentsFromWechat() (int, error) {
+	if s.Wechat == nil {
+		return 0, fmt.Errorf("wechat client not configured")
+	}
+
+	// Get all departments from WeChat
+	deptList, err := s.Wechat.ListAllDepts()
+	if err != nil {
+		return 0, fmt.Errorf("list departments from wechat: %w", err)
+	}
+
+	fmt.Printf("[WeChat Sync] Found %d departments\n", len(deptList))
+
+	// Upsert each department
+	for _, dept := range deptList {
+		d := &entity.Department{
+			ID:       dept.ID,
+			Name:     dept.Name,
+			NameEn:   dept.NameEn,
+			ParentID: dept.ParentID,
+			Order:    dept.Order,
+		}
+
+		conds := clause.OnConflict{
+			Columns:   []clause.Column{{Name: "id"}},
+			DoUpdates: clause.AssignmentColumns([]string{"name", "name_en", "parent_id", "order"}),
+		}
+		if err := s.DB.Clauses(conds).Create(d).Error; err != nil {
+			fmt.Printf("[WeChat Sync] Error upserting department %d: %v\n", dept.ID, err)
+			continue
+		}
+	}
+
+	return len(deptList), nil
+}
+
+// GetDepartmentByID retrieves a department by ID.
+func (s *Service) GetDepartmentByID(id int64) (*entity.Department, error) {
+	var dept entity.Department
+	if err := s.DB.Where("id = ?", id).First(&dept).Error; err != nil {
+		return nil, err
+	}
+	return &dept, nil
+}
+
+// ListDepartments retrieves all departments.
+func (s *Service) ListDepartments() ([]entity.Department, error) {
+	var departments []entity.Department
+	if err := s.DB.Order("parent_id, \"order\"").Find(&departments).Error; err != nil {
+		return nil, err
+	}
+	return departments, nil
+}
+
+// GetDepartmentNamesMap returns a map of department ID to name.
+func (s *Service) GetDepartmentNamesMap() (map[int64]string, error) {
+	departments, err := s.ListDepartments()
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[int64]string)
+	for _, dept := range departments {
+		result[dept.ID] = dept.Name
+	}
+	return result, nil
+}

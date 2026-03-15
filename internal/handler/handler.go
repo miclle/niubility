@@ -61,7 +61,8 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	admin.PATCH("/users/:id", ctrl.UpdateUser)
 	admin.GET("/settings", ctrl.ListSettings)
 	admin.PATCH("/settings", ctrl.UpdateSettings)
-	admin.POST("/sync-wechat", ctrl.SyncAllUsersFromWechat)
+	admin.POST("/sync-wechat", ctrl.SyncFromWechat)
+	admin.GET("/departments", ctrl.ListDepartments)
 }
 
 // Health returns a simple health check response.

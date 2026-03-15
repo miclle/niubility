@@ -19,6 +19,17 @@ export interface User {
   updated_at: string
 }
 
+// Department represents a department synced from WeChat Work.
+export interface Department {
+  id: number
+  name: string
+  name_en: string
+  parent_id: number
+  order: number
+  created_at: string
+  updated_at: string
+}
+
 // Pagination represents pagination parameters for list queries.
 export interface Pagination {
   page: number
@@ -44,8 +55,14 @@ export interface UpdateUserArgs {
   status?: UserStatus
 }
 
-// SyncWechatResponse represents the response for syncing users from WeChat.
+// SyncWechatResponse represents the response for syncing from WeChat.
 export interface SyncWechatResponse {
-  synced: number
-  failed: number
+  departments_synced: number
+  users_synced: number
+  users_failed: number
+}
+
+// ListDepartmentsResponse represents the response for listing departments.
+export interface ListDepartmentsResponse {
+  departments: Department[]
 }

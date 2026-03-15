@@ -201,17 +201,44 @@ func (ctrl *Ctrl) SyncUserFromWechat(c *fox.Context) (*entity.User, error) {
 	return updatedUser, nil
 }
 
-// SyncAllUsersFromWechatResponse represents the response for syncing all users.
-type SyncAllUsersFromWechatResponse struct {
-	Synced int `json:"synced"`
-	Failed int `json:"failed"`
+// SyncFromWechatResponse represents the response for syncing from WeChat.
+type SyncFromWechatResponse struct {
+	DepartmentsSynced int `json:"departments_synced"`
+	UsersSynced       int `json:"users_synced"`
+	UsersFailed       int `json:"users_failed"`
 }
 
-// SyncAllUsersFromWechat syncs all users' info from WeChat (admin only).
-func (ctrl *Ctrl) SyncAllUsersFromWechat(c *fox.Context) (*SyncAllUsersFromWechatResponse, error) {
-	synced, failed, err := ctrl.service.SyncAllUsersFromWechat()
+// SyncFromWechat syncs departments and all users from WeChat Work (admin only).
+func (ctrl *Ctrl) SyncFromWechat(c *fox.Context) (*SyncFromWechatResponse, error) {
+	// Sync departments first
+	deptCount, err := ctrl.service.SyncDepartmentsFromWechat()
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
-	return &SyncAllUsersFromWechatResponse{Synced: synced, Failed: failed}, nil
+
+	// Sync all users from WeChat
+	userSynced, userFailed, err := ctrl.service.SyncAllWechatUsers()
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+
+	return &SyncFromWechatResponse{
+		DepartmentsSynced: deptCount,
+		UsersSynced:       userSynced,
+		UsersFailed:       userFailed,
+	}, nil
+}
+
+// ListDepartmentsResponse represents the response for listing departments.
+type ListDepartmentsResponse struct {
+	Departments []entity.Department `json:"departments"`
+}
+
+// ListDepartments returns all departments (admin only).
+func (ctrl *Ctrl) ListDepartments(c *fox.Context) (*ListDepartmentsResponse, error) {
+	departments, err := ctrl.service.ListDepartments()
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+	return &ListDepartmentsResponse{Departments: departments}, nil
 }

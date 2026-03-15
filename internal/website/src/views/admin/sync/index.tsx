@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { Button } from '@radix-ui/themes'
-import { RefreshCw, CheckCircle, XCircle, Loader2, Users } from 'lucide-react'
+import { RefreshCw, CheckCircle, XCircle, Loader2, Users, Building2 } from 'lucide-react'
 
 import { syncWechat } from 'src/api/user'
 
-// AdminSync provides an interface for syncing all users from WeChat Work.
+// AdminSync provides an interface for syncing data from WeChat Work.
 function AdminSync() {
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<{ synced: number; failed: number } | null>(null)
+  const [result, setResult] = useState<{ departments_synced: number; users_synced: number; users_failed: number } | null>(null)
   const [error, setError] = useState('')
 
   const handleSync = async () => {
@@ -31,27 +31,42 @@ function AdminSync() {
       <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>企业微信同步</h1>
 
       <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
-        <div className="flex items-center gap-2 mb-6">
-          <Users size={20} style={{ color: '#0f0f0f' }} />
-          <h3 className="font-medium" style={{ color: '#0f0f0f' }}>同步所有用户</h3>
-        </div>
+        <h3 className="font-medium mb-4" style={{ color: '#0f0f0f' }}>同步企业和用户数据</h3>
 
         <p className="text-sm mb-4" style={{ color: '#606060' }}>
-          从企业微信同步所有用户的姓名、手机号和头像信息到系统。
+          从企业微信同步所有部门和用户信息到系统。包括部门架构、用户姓名、手机号、头像等信息。
         </p>
 
         {/* Result message */}
         {result && (
-          <div className="mb-4 p-3 rounded-lg" style={{ background: result.failed > 0 ? '#fef3c7' : '#dcfce7' }}>
-            <div className="flex items-center gap-2 mb-2">
-              <CheckCircle size={16} style={{ color: result.failed > 0 ? '#92400e' : '#166534' }} />
-              <span className="text-sm font-medium" style={{ color: result.failed > 0 ? '#92400e' : '#166534' }}>
+          <div className="mb-4 p-4 rounded-lg" style={{ background: result.users_failed > 0 ? '#fef3c7' : '#dcfce7' }}>
+            <div className="flex items-center gap-2 mb-3">
+              <CheckCircle size={16} style={{ color: result.users_failed > 0 ? '#92400e' : '#166534' }} />
+              <span className="text-sm font-medium" style={{ color: result.users_failed > 0 ? '#92400e' : '#166534' }}>
                 同步完成
               </span>
             </div>
-            <div className="text-sm ml-6" style={{ color: result.failed > 0 ? '#92400e' : '#166534' }}>
-              成功: {result.synced} 个用户
-              {result.failed > 0 && <span className="ml-2">失败: {result.failed} 个用户</span>}
+            <div className="grid grid-cols-3 gap-4 ml-6">
+              <div className="flex items-center gap-2">
+                <Building2 size={14} style={{ color: '#606060' }} />
+                <span className="text-sm" style={{ color: '#606060' }}>
+                  部门: <span className="font-medium" style={{ color: '#0f0f0f' }}>{result.departments_synced}</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Users size={14} style={{ color: '#606060' }} />
+                <span className="text-sm" style={{ color: '#606060' }}>
+                  用户: <span className="font-medium" style={{ color: '#166534' }}>{result.users_synced}</span>
+                </span>
+              </div>
+              {result.users_failed > 0 && (
+                <div className="flex items-center gap-2">
+                  <XCircle size={14} style={{ color: '#991b1b' }} />
+                  <span className="text-sm" style={{ color: '#991b1b' }}>
+                    失败: {result.users_failed}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -83,7 +98,7 @@ function AdminSync() {
           ) : (
             <>
               <RefreshCw size={16} />
-              同步所有用户
+              同步企业和用户
             </>
           )}
         </Button>
@@ -96,8 +111,10 @@ function AdminSync() {
       >
         <h4 className="font-medium mb-2" style={{ color: '#0f0f0f' }}>同步说明</h4>
         <ul className="text-sm space-y-1" style={{ color: '#606060' }}>
-          <li>• 点击同步按钮将从企业微信获取所有用户的最新信息</li>
-          <li>• 用户登录时也会自动同步其个人信息</li>
+          <li>• 点击同步按钮将从企业微信获取所有部门和用户信息</li>
+          <li>• 部门信息包括：部门名称、父部门关系</li>
+          <li>• 用户信息包括：姓名、邮箱、手机、头像、所属部门</li>
+          <li>• 新用户会自动创建，已有用户会更新信息</li>
           <li>• 请确保已在「系统配置」中正确配置企业微信</li>
         </ul>
       </div>
