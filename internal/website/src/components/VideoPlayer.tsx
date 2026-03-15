@@ -1,4 +1,7 @@
-import { useRef, useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+import videojs from 'video.js'
+import type Player from 'video.js/dist/types/player'
+import 'video.js/dist/video-js.css'
 
 interface VideoPlayerProps {
   src: string
@@ -8,62 +11,55 @@ interface VideoPlayerProps {
   muted?: boolean
 }
 
-// VideoPlayer uses native HTML5 video with custom controls styling.
+// VideoPlayer wraps Video.js for video playback with HLS support.
 function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = false }: VideoPlayerProps) {
-  const videoRef = useRef<HTMLVideoElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const playerRef = useRef<Player | null>(null)
 
   useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
+    if (!containerRef.current) return
 
-    const handleError = (e: Event) => {
-      const target = e.target as HTMLVideoElement
-      console.error('Video error:', {
-        code: target.error?.code,
-        message: target.error?.message,
-        networkState: target.networkState,
-        readyState: target.readyState,
-        currentSrc: target.currentSrc,
-      })
-    }
+    // Create video element programmatically
+    const videoElement = document.createElement('video')
+    videoElement.className = 'video-js vjs-big-play-centered vjs-fluid'
+    videoElement.setAttribute('playsinline', 'true')
+    containerRef.current.appendChild(videoElement)
 
-    const handleLoadedMetadata = () => {
-      console.log('Video loaded:', {
-        duration: video.duration,
-        videoWidth: video.videoWidth,
-        videoHeight: video.videoHeight,
-      })
-    }
+    // Initialize Video.js
+    const player = videojs(videoElement, {
+      controls: true,
+      autoplay,
+      loop,
+      muted,
+      poster: poster || '',
+      responsive: true,
+      playbackRates: [0.5, 1, 1.25, 1.5, 2],
+      controlBar: {
+        children: [
+          'playToggle',
+          'volumePanel',
+          'currentTimeDisplay',
+          'timeDivider',
+          'durationDisplay',
+          'progressControl',
+          'playbackRateMenuButton',
+          'fullscreenToggle',
+        ],
+      },
+      sources: [{ src }],
+    })
 
-    video.addEventListener('error', handleError)
-    video.addEventListener('loadedmetadata', handleLoadedMetadata)
-
-    // Force reload
-    video.load()
+    playerRef.current = player
 
     return () => {
-      video.removeEventListener('error', handleError)
-      video.removeEventListener('loadedmetadata', handleLoadedMetadata)
+      if (playerRef.current && !playerRef.current.isDisposed()) {
+        playerRef.current.dispose()
+        playerRef.current = null
+      }
     }
-  }, [src])
+  }, [src, poster, autoplay, loop, muted])
 
-  return (
-    <video
-      ref={videoRef}
-      poster={poster}
-      autoPlay={autoplay}
-      loop={loop}
-      muted={muted}
-      controls
-      playsInline
-      preload="metadata"
-      className="w-full h-full bg-black"
-      style={{ objectFit: 'contain' }}
-    >
-      <source src={src} type="video/mp4" />
-      您的浏览器不支持视频播放
-    </video>
-  )
+  return <div ref={containerRef} className="w-full h-full video-js-container" />
 }
 
 export default VideoPlayer
