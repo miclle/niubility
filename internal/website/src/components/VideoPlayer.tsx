@@ -13,42 +13,34 @@ interface VideoPlayerProps {
 
 // VideoPlayer wraps Video.js for video playback with HLS support.
 function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = false }: VideoPlayerProps) {
-  const videoRef = useRef<HTMLVideoElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const playerRef = useRef<Player | null>(null)
 
   useEffect(() => {
-    if (!videoRef.current || !src) return
+    if (!containerRef.current || !src) return
+
+    // Create video element
+    const videoElement = document.createElement('video')
+    videoElement.className = 'video-js vjs-big-play-centered vjs-fluid'
+    videoElement.setAttribute('playsinline', 'true')
+    videoElement.setAttribute('crossorigin', 'anonymous')
+    containerRef.current.appendChild(videoElement)
 
     // Initialize Video.js player
-    const player = videojs(videoRef.current, {
+    const player = videojs(videoElement, {
       controls: true,
       autoplay,
       loop,
       muted,
       poster: poster || '',
-      fluid: true,
       responsive: true,
       playbackRates: [0.5, 1, 1.25, 1.5, 2],
-      controlBar: {
-        children: [
-          'playToggle',
-          'volumePanel',
-          'currentTimeDisplay',
-          'timeDivider',
-          'durationDisplay',
-          'progressControl',
-          'playbackRateMenuButton',
-          'fullscreenToggle',
-        ],
-      },
       html5: {
         vhs: {
-          overrideNative: true,
+          overrideNative: false,
         },
-        nativeVideoTracks: false,
-        nativeAudioTracks: false,
-        nativeTextTracks: false,
       },
+      sources: [{ src, type: 'video/mp4' }],
     })
 
     playerRef.current = player
@@ -59,20 +51,14 @@ function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = fals
         playerRef.current.dispose()
         playerRef.current = null
       }
+      // Remove video element if still in DOM
+      if (videoElement.parentNode) {
+        videoElement.parentNode.removeChild(videoElement)
+      }
     }
   }, [src, poster, autoplay, loop, muted])
 
-  return (
-    <div data-vjs-player>
-      <video
-        ref={videoRef}
-        className="video-js vjs-big-play-centered vjs-theme-fantasy"
-        playsInline
-      >
-        <source src={src} />
-      </video>
-    </div>
-  )
+  return <div ref={containerRef} className="w-full h-full" data-vjs-player />
 }
 
 export default VideoPlayer
