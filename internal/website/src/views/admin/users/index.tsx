@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Table, Select, Avatar, TextField } from '@radix-ui/themes'
-import { Search, Loader2 } from 'lucide-react'
+import { Search, Loader2, X } from 'lucide-react'
 import dayjs from 'dayjs'
 
 import { listUsers, updateUser, listDepartments } from 'src/api/user'
@@ -8,20 +9,26 @@ import type { User, Role, UserStatus, Department } from 'src/types/user'
 
 // AdminUsers displays the admin user management page with infinite scroll and search.
 function AdminUsers() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [users, setUsers] = useState<User[]>([])
+  const [departments, setDepartments] = useState<Department[]>([])
   const [deptMap, setDeptMap] = useState<Map<number, string>>(new Map())
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(true)
-  const [search, setSearch] = useState('')
   const limit = 20
   const observerRef = useRef<HTMLDivElement>(null)
   const loadingRef = useRef(false)
 
+  // Get filters from URL
+  const search = searchParams.get('search') || ''
+  const departmentId = searchParams.get('department_id') || ''
+
   // Fetch departments once
   useEffect(() => {
     listDepartments().then(res => {
+      setDepartments(res.data.departments || [])
       const map = new Map<number, string>()
       for (const dept of res.data.departments || []) {
         map.set(dept.id, dept.name)
@@ -37,13 +44,17 @@ function AdminUsers() {
     setLoading(true)
 
     try {
-      const res = await listUsers({ page: pageNum, limit, search })
+      const res = await listUsers({
+        page: pageNum,
+        limit,
+        search,
+        department_id: departmentId ? parseInt(departmentId, 10) : undefined,
+      })
       const newUsers = res.data.users || []
 
       if (reset) {
         setUsers(newUsers)
       } else {
-        // Deduplicate by id
         setUsers(prev => {
           const existingIds = new Set(prev.map(u => u.id))
           const uniqueNewUsers = newUsers.filter((u: User) => !existingIds.has(u.id))
@@ -62,18 +73,15 @@ function AdminUsers() {
       setLoading(false)
       loadingRef.current = false
     }
-  }, [search])
+  }, [search, departmentId])
 
-  // Search with debounce
+  // Reset and fetch when filters change
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setPage(1)
-      setUsers([])
-      setHasMore(true)
-      fetchUsers(1, true)
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [search]) // eslint-disable-line react-hooks/exhaustive-deps
+    setPage(1)
+    setUsers([])
+    setHasMore(true)
+    fetchUsers(1, true)
+  }, [search, departmentId])
 
   // Infinite scroll observer
   useEffect(() => {
@@ -82,11 +90,9 @@ function AdminUsers() {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !loadingRef.current) {
-          setPage(prev => {
-            const nextPage = prev + 1
-            fetchUsers(nextPage)
-            return nextPage
-          })
+          const nextPage = page + 1
+          setPage(nextPage)
+          fetchUsers(nextPage)
         }
       },
       { threshold: 0.1 }
@@ -97,7 +103,18 @@ function AdminUsers() {
     }
 
     return () => observer.disconnect()
-  }, [hasMore, loading, fetchUsers])
+  }, [hasMore, loading, page, fetchUsers])
+
+  // Update URL params
+  const updateFilters = (key: string, value: string) => {
+    const params = new URLSearchParams(searchParams)
+    if (value) {
+      params.set(key, value)
+    } else {
+      params.delete(key)
+    }
+    setSearchParams(params, { replace: true })
+  }
 
   const handleRoleChange = async (userId: string, role: Role) => {
     try {
@@ -125,6 +142,13 @@ function AdminUsers() {
     return names.join(', ') || '-'
   }
 
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchParams({}, { replace: true })
+  }
+
+  const hasFilters = search || departmentId
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -134,24 +158,52 @@ function AdminUsers() {
         </div>
       </div>
 
-      {/* Search bar */}
-      <div className="mb-4">
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
         <TextField.Root
           placeholder="搜索用户名、姓名、邮箱或手机号..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => updateFilters('search', e.target.value)}
           size="2"
-          style={{ maxWidth: 400 }}
+          style={{ minWidth: 280 }}
         >
           <TextField.Slot>
             <Search size={16} style={{ color: '#909090' }} />
           </TextField.Slot>
-          {loading && (
-            <TextField.Slot>
-              <Loader2 size={16} className="animate-spin" style={{ color: '#909090' }} />
-            </TextField.Slot>
-          )}
         </TextField.Root>
+
+        <Select.Root
+          value={departmentId}
+          onValueChange={(val) => updateFilters('department_id', val)}
+        >
+          <Select.Trigger
+            placeholder="选择部门"
+            style={{ minWidth: 180 }}
+          />
+          <Select.Content style={{ background: '#ffffff', border: '1px solid #e5e5e5' }}>
+            <Select.Item value="">全部部门</Select.Item>
+            {departments.map(dept => (
+              <Select.Item key={dept.id} value={String(dept.id)}>
+                {dept.name}
+              </Select.Item>
+            ))}
+          </Select.Content>
+        </Select.Root>
+
+        {hasFilters && (
+          <button
+            onClick={clearFilters}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-colors"
+            style={{ color: '#606060', background: '#f2f2f2' }}
+          >
+            <X size={14} />
+            清除筛选
+          </button>
+        )}
+
+        {loading && (
+          <Loader2 size={16} className="animate-spin" style={{ color: '#909090' }} />
+        )}
       </div>
 
       <div className="bg-white rounded-xl overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
@@ -173,7 +225,7 @@ function AdminUsers() {
             {users.length === 0 && !loading ? (
               <Table.Row>
                 <Table.Cell colSpan={9} className="text-center py-8" style={{ color: '#909090' }}>
-                  {search ? '未找到匹配的用户' : '暂无用户'}
+                  {hasFilters ? '未找到匹配的用户' : '暂无用户'}
                 </Table.Cell>
               </Table.Row>
             ) : (
@@ -233,7 +285,7 @@ function AdminUsers() {
           </Table.Body>
         </Table.Root>
 
-        {/* Loading indicator and intersection observer target */}
+        {/* Loading indicator */}
         <div ref={observerRef} className="py-4 text-center">
           {loading && hasMore && (
             <div className="flex items-center justify-center gap-2" style={{ color: '#909090' }}>

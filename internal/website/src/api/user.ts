@@ -7,7 +7,7 @@ export function boot() {
 }
 
 // listUsers fetches a paginated list of users with optional search (admin only).
-export function listUsers(params?: { page?: number; limit?: number; search?: string }) {
+export function listUsers(params?: { page?: number; limit?: number; search?: string; department_id?: number }) {
   return client.get<ListUsersResponse>('/admin/users', { params })
 }
 

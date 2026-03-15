@@ -52,6 +52,13 @@ func (s *Service) ListUsers(args entity.ListUsersArgs) ([]entity.User, int64, er
 		)
 	}
 
+	// Apply department filter
+	if args.DepartmentID > 0 {
+		// Match department ID in comma-separated string (at start, middle, or end)
+		deptPattern := fmt.Sprintf("%%,%d,%%|^%d,%%|%%,%d$|^%d$", args.DepartmentID, args.DepartmentID, args.DepartmentID, args.DepartmentID)
+		query = query.Where("department_ids ~ ?", deptPattern)
+	}
+
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, fmt.Errorf("count users: %w", err)
 	}

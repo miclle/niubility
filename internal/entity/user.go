@@ -50,7 +50,8 @@ func (u *User) IsAdmin() bool {
 // ListUsersArgs represents the query parameters for listing users.
 type ListUsersArgs struct {
 	Pagination
-	Search string `form:"search"` // search by name, username, email, or mobile
+	Search       string `form:"search"`       // search by name, username, email, or mobile
+	DepartmentID int64  `form:"department_id"` // filter by department ID
 }
 
 // UpdateUserArgs represents the fields that can be updated for a user.
