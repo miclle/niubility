@@ -40,7 +40,7 @@ function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = fals
           overrideNative: false,
         },
       },
-      sources: [{ src, type: 'video/mp4' }],
+      sources: [{ src }],
     })
 
     playerRef.current = player
