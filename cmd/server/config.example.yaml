@@ -10,3 +10,8 @@ sso:
   host: http://bo-staging-sso-internal.jfcs-k8s-qa1.qiniu.io
   clientID: niubility
   secret: BCR0nzlmnvwWIjIxc8Ij0MfOTfc5Udh6
+
+wechat:
+  corp_id: "your-corp-id"
+  app_agentid: 0
+  app_secret: "your-app-secret"

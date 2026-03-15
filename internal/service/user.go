@@ -55,6 +55,7 @@ func (s *Service) ListUsers(args entity.ListUsersArgs) ([]entity.User, int64, er
 
 // UpsertUser creates a new user or updates the existing one by username.
 // The first user is automatically set as admin. New users default to activated status.
+// It also syncs user info from WeChat if available.
 func (s *Service) UpsertUser(username, email string) (*entity.User, error) {
 	name, _, ok := strings.Cut(email, "@")
 	if !ok {
@@ -80,15 +81,53 @@ func (s *Service) UpsertUser(username, email string) (*entity.User, error) {
 		Status:   entity.UserStatusActivated,
 	}
 
+	// Try to sync user info from WeChat before creating
+	if s.Wechat != nil {
+		if info, err := s.Wechat.GetUser(username); err == nil {
+			user.Name = info.Name
+			user.Avatar = info.AvatarURL
+		}
+	}
+
 	conds := clause.OnConflict{
 		Columns:   []clause.Column{{Name: "username"}},
-		DoUpdates: clause.AssignmentColumns([]string{"email", "name"}),
+		DoUpdates: clause.AssignmentColumns([]string{"email", "name", "avatar"}),
 	}
 	if err := s.DB.Clauses(conds).Create(user).Error; err != nil {
 		return nil, fmt.Errorf("upsert user: %w", err)
 	}
 
 	// reload to get the actual record (in case it was an existing user)
+	return s.GetUserByUsername(username)
+}
+
+// SyncUserFromWechat syncs user info from WeChat by username.
+func (s *Service) SyncUserFromWechat(username string) (*entity.User, error) {
+	user, err := s.GetUserByUsername(username)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, nil
+	}
+
+	if s.Wechat == nil {
+		return user, nil
+	}
+
+	info, err := s.Wechat.GetUser(username)
+	if err != nil {
+		return nil, fmt.Errorf("get wechat user info: %w", err)
+	}
+
+	updates := map[string]any{
+		"name":   info.Name,
+		"avatar": info.AvatarURL,
+	}
+	if err := s.DB.Model(user).Updates(updates).Error; err != nil {
+		return nil, fmt.Errorf("update user from wechat: %w", err)
+	}
+
 	return s.GetUserByUsername(username)
 }
 

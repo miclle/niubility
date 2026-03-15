@@ -182,3 +182,21 @@ func (ctrl *Ctrl) UpdateUser(c *fox.Context, args entity.UpdateUserArgs) (*entit
 
 	return user, nil
 }
+
+// SyncUserFromWechat syncs the current user's info from WeChat.
+func (ctrl *Ctrl) SyncUserFromWechat(c *fox.Context) (*entity.User, error) {
+	user := CurrentUser(c)
+	if user == nil {
+		return nil, httperrors.ErrUnauthorized
+	}
+
+	updatedUser, err := ctrl.service.SyncUserFromWechat(user.Username)
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+	if updatedUser == nil {
+		return nil, httperrors.ErrNotFound
+	}
+
+	return updatedUser, nil
+}

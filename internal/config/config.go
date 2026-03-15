@@ -11,9 +11,17 @@ import (
 
 // Config represents the application configuration.
 type Config struct {
-	Server   Server     `yaml:"server"`
-	Database Database   `yaml:"database"`
-	SSO      sso.Config `yaml:"sso"`
+	Server   Server       `yaml:"server"`
+	Database Database     `yaml:"database"`
+	SSO      sso.Config   `yaml:"sso"`
+	Wechat   WechatConfig `yaml:"wechat"`
+}
+
+// WechatConfig holds enterprise WeChat configuration.
+type WechatConfig struct {
+	CorpID     string `yaml:"corp_id"`     // Enterprise ID
+	AppAgentID int64  `yaml:"app_agentid"` // Application agent ID
+	AppSecret  string `yaml:"app_secret"`  // Application secret
 }
 
 // Server holds HTTP server settings.
