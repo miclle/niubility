@@ -166,10 +166,10 @@ function MainLayout() {
             />
             {/* Drawer */}
             <aside
-              className="fixed left-0 top-14 z-50 h-[calc(100vh-56px)] w-60 bg-white shadow-xl transform transition-transform duration-300"
+              className="fixed left-0 top-0 z-50 h-screen w-60 bg-white shadow-xl transform transition-transform duration-300"
             >
-              <div className="flex items-center justify-between p-3 border-b" style={{ borderColor: '#e5e5e5' }}>
-                <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>导航</span>
+              <div className="flex items-center justify-between p-3 h-14 border-b" style={{ borderColor: '#e5e5e5' }}>
+                <span className="text-lg font-semibold" style={{ color: '#0f0f0f' }}>Niubility</span>
                 <button
                   onClick={() => setDrawerOpen(false)}
                   className="p-1 rounded-full hover:bg-zinc-100 transition-colors cursor-pointer"
@@ -177,7 +177,7 @@ function MainLayout() {
                   <X size={20} style={{ color: '#606060' }} />
                 </button>
               </div>
-              <nav className="py-3 overflow-y-auto" style={{ height: 'calc(100% - 48px)' }}>
+              <nav className="py-3 overflow-y-auto" style={{ height: 'calc(100% - 56px)' }}>
                 {/* Main navigation */}
                 <div className="px-3">
                   <NavLink
