@@ -42,3 +42,15 @@ export interface UpdateUserArgs {
   role?: Role
   status?: UserStatus
 }
+
+// SyncWechatResponse represents the response for syncing users from WeChat.
+export interface SyncWechatResponse {
+  synced: number
+  failed: number
+}
+
+// SyncWechatResponse represents the response for syncing users from WeChat.
+export interface SyncWechatResponse {
+  synced: number
+  failed: number
+}

@@ -1,5 +1,5 @@
 import client from './client'
-import type { BootResponse, ListUsersResponse, UpdateUserArgs, User } from 'src/types/user'
+import type { BootResponse, ListUsersResponse, UpdateUserArgs, User, SyncWechatResponse } from 'src/types/user'
 
 // boot fetches the current user's authentication state.
 export function boot() {
@@ -16,7 +16,7 @@ export function updateUser(id: string, data: UpdateUserArgs) {
   return client.patch<User>(`/users/${id}`, data)
 }
 
-// syncWechat syncs the current user's info from WeChat Work.
+// syncWechat syncs all users' info from WeChat Work (admin only).
 export function syncWechat() {
-  return client.post<User>('/sync-wechat')
+  return client.post<SyncWechatResponse>('/sync-wechat')
 }

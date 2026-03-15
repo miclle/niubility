@@ -200,3 +200,18 @@ func (ctrl *Ctrl) SyncUserFromWechat(c *fox.Context) (*entity.User, error) {
 
 	return updatedUser, nil
 }
+
+// SyncAllUsersFromWechatResponse represents the response for syncing all users.
+type SyncAllUsersFromWechatResponse struct {
+	Synced int `json:"synced"`
+	Failed int `json:"failed"`
+}
+
+// SyncAllUsersFromWechat syncs all users' info from WeChat (admin only).
+func (ctrl *Ctrl) SyncAllUsersFromWechat(c *fox.Context) (*SyncAllUsersFromWechatResponse, error) {
+	synced, failed, err := ctrl.service.SyncAllUsersFromWechat()
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+	return &SyncAllUsersFromWechatResponse{Synced: synced, Failed: failed}, nil
+}

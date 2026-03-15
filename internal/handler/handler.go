@@ -44,7 +44,6 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	// API routes
 	api := r.Group("/api/v1")
 	api.GET("/boot", ctrl.Boot)
-	api.POST("/sync-wechat", ctrl.SyncUserFromWechat)
 
 	// content routes (authenticated users can read, admin can write)
 	api.GET("/contents", ctrl.ListContents)
@@ -64,6 +63,9 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	// settings management (admin only)
 	admin.GET("/settings", ctrl.ListSettings)
 	admin.PATCH("/settings", ctrl.UpdateSettings)
+
+	// wechat sync (admin only)
+	admin.POST("/sync-wechat", ctrl.SyncAllUsersFromWechat)
 }
 
 // Health returns a simple health check response.

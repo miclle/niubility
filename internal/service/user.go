@@ -146,6 +146,31 @@ func (s *Service) SyncUserFromWechat(username string) (*entity.User, error) {
 	return s.GetUserByUsername(username)
 }
 
+// SyncAllUsersFromWechat syncs all users' info from WeChat.
+// Returns the count of successfully synced users and any errors encountered.
+func (s *Service) SyncAllUsersFromWechat() (synced int, failed int, err error) {
+	if s.Wechat == nil {
+		return 0, 0, fmt.Errorf("wechat client not configured")
+	}
+
+	var users []entity.User
+	if err := s.DB.Find(&users).Error; err != nil {
+		return 0, 0, fmt.Errorf("list users: %w", err)
+	}
+
+	for _, user := range users {
+		_, err := s.SyncUserFromWechat(user.Username)
+		if err != nil {
+			fmt.Printf("[WeChat Sync] Failed to sync user %s: %v\n", user.Username, err)
+			failed++
+		} else {
+			synced++
+		}
+	}
+
+	return synced, failed, nil
+}
+
 // CreateUser creates a new user record.
 func (s *Service) CreateUser(user *entity.User) error {
 	user.ID = entity.ID()
