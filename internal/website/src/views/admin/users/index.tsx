@@ -277,11 +277,11 @@ function AdminUsers() {
   const selectedDept = departments.find(d => String(d.id) === departmentId)
 
   return (
-    <div className="flex gap-4 h-full">
-      {/* Left sidebar - Department tree */}
+    <div className="flex gap-4">
+      {/* Left sidebar - Department tree (sticky) */}
       <div
-        className="flex-shrink-0 bg-white rounded-xl overflow-hidden"
-        style={{ width: 240, border: '1px solid #e5e5e5' }}
+        className="flex-shrink-0 bg-white rounded-xl overflow-hidden sticky top-4 self-start"
+        style={{ width: 240, border: '1px solid #e5e5e5', maxHeight: 'calc(100vh - 32px)' }}
       >
         <DepartmentSidebar
           departments={departments}
