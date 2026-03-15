@@ -10,20 +10,22 @@ import (
 
 	"github.com/miclle/niubility/internal/config"
 	"github.com/miclle/niubility/internal/entity"
+	"github.com/miclle/niubility/pkg/textencrypt"
 	"github.com/xen0n/go-workwx/v2"
 )
 
 // Service holds the database connection and provides business logic methods.
 type Service struct {
-	DB     *gorm.DB
-	Wechat *workwx.WorkwxApp
+	DB        *gorm.DB
+	Wechat    *workwx.WorkwxApp
+	Encryptor *textencrypt.Encryptor
 
 	wechatMutex sync.RWMutex
 }
 
-// New creates a new Service instance with the given database DSN and WeChat config.
+// New creates a new Service instance with the given config.
 // WeChat configuration is loaded from database first, falling back to file config.
-func New(dsn string, wechatCfg *config.WechatConfig) (*Service, error) {
+func New(dsn string, wechatCfg *config.WechatConfig, encryptionKey string) (*Service, error) {
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		DisableForeignKeyConstraintWhenMigrating: true,
 	})
@@ -36,6 +38,18 @@ func New(dsn string, wechatCfg *config.WechatConfig) (*Service, error) {
 	}
 
 	svc := &Service{DB: db}
+
+	// Initialize encryptor if key is provided
+	if encryptionKey != "" {
+		enc, err := textencrypt.NewEncryptor(encryptionKey)
+		if err != nil {
+			return nil, fmt.Errorf("create encryptor: %w", err)
+		}
+		svc.Encryptor = enc
+		fmt.Println("[Service] Encryptor initialized for sensitive settings")
+	} else {
+		fmt.Println("[Service] Warning: No encryption key provided, settings will be stored in plaintext")
+	}
 
 	// Initialize WeChat client
 	wechatApp := svc.initWechatClient(wechatCfg)

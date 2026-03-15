@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Button, TextField } from '@radix-ui/themes'
-import { Settings, CheckCircle, XCircle, Loader2, Save } from 'lucide-react'
+import { Settings, CheckCircle, XCircle, Loader2, Save, Shield } from 'lucide-react'
 
 import { listSettings, updateSettings } from 'src/api/setting'
 import type { WechatSettings } from 'src/types/setting'
+
+// MASKED_VALUE is the placeholder returned by backend for sensitive values
+const MASKED_VALUE = '******'
 
 // AdminSettings provides an interface for managing system settings.
 function AdminSettings() {
@@ -11,6 +14,7 @@ function AdminSettings() {
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+  const [hasExistingSecret, setHasExistingSecret] = useState(false)
   const [wechatForm, setWechatForm] = useState<WechatSettings>({
     corp_id: '',
     app_agentid: '',
@@ -30,7 +34,15 @@ function AdminSettings() {
       for (const s of res.data.settings) {
         if (s.key === 'wechat.corp_id') form.corp_id = s.value
         if (s.key === 'wechat.app_agentid') form.app_agentid = s.value
-        if (s.key === 'wechat.app_secret') form.app_secret = s.value
+        if (s.key === 'wechat.app_secret') {
+          // Check if there's an existing encrypted secret
+          if (s.value === MASKED_VALUE) {
+            setHasExistingSecret(true)
+            form.app_secret = ''
+          } else {
+            form.app_secret = s.value
+          }
+        }
       }
       setWechatForm(form)
     } catch (err) {
@@ -46,13 +58,17 @@ function AdminSettings() {
     setSuccess(false)
 
     try {
-      await updateSettings({
-        settings: {
-          'wechat.corp_id': wechatForm.corp_id,
-          'wechat.app_agentid': wechatForm.app_agentid,
-          'wechat.app_secret': wechatForm.app_secret,
-        },
-      })
+      // Build settings object, skip empty secret if there's an existing one
+      const settings: Record<string, string> = {
+        'wechat.corp_id': wechatForm.corp_id,
+        'wechat.app_agentid': wechatForm.app_agentid,
+      }
+      // Only include secret if user entered a new value
+      if (wechatForm.app_secret || !hasExistingSecret) {
+        settings['wechat.app_secret'] = wechatForm.app_secret
+      }
+
+      await updateSettings({ settings })
       setSuccess(true)
       loadSettings()
     } catch (err) {
@@ -123,12 +139,17 @@ function AdminSettings() {
           <div>
             <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
               应用 Secret
+              {hasExistingSecret && (
+                <span className="ml-2 text-xs" style={{ color: '#166534' }}>(已设置，留空保持不变)</span>
+              )}
             </label>
             <TextField.Root
               type="password"
-              placeholder="请输入应用 Secret"
+              placeholder={hasExistingSecret ? '留空保持现有密钥不变' : '请输入应用 Secret'}
               value={wechatForm.app_secret}
-              onChange={(e) => setWechatForm({ ...wechatForm, app_secret: e.target.value })}
+              onChange={(e) => {
+                setWechatForm({ ...wechatForm, app_secret: e.target.value })
+              }}
             />
           </div>
         </div>
@@ -171,6 +192,10 @@ function AdminSettings() {
           <li>• 企业 ID 和应用信息可在企业微信管理后台获取</li>
           <li>• 配置完成后可前往「微信同步」页面测试同步功能</li>
         </ul>
+        <div className="mt-3 pt-3 flex items-center gap-2" style={{ borderTop: '1px solid #e5e5e5' }}>
+          <Shield size={14} style={{ color: '#166534' }} />
+          <span className="text-xs" style={{ color: '#166534' }}>敏感信息（如 Secret）使用 AES-256-GCM 加密存储</span>
+        </div>
       </div>
     </div>
   )

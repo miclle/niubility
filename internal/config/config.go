@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/miclle/niubility/pkg/sso"
+	"github.com/miclle/niubility/pkg/textencrypt/sec"
 )
 
 // Config represents the application configuration.
@@ -26,9 +27,10 @@ type WechatConfig struct {
 
 // Server holds HTTP server settings.
 type Server struct {
-	Address      string `mapstructure:"address"`      // listen address, e.g. "0.0.0.0:9000"
-	Secret       string `mapstructure:"secret"`       // JWT signing secret
-	CookieSecure bool   `mapstructure:"cookieSecure"` // set Secure flag on cookies (HTTPS)
+	Address       string    `mapstructure:"address"`       // listen address, e.g. "0.0.0.0:9000"
+	Secret        string    `mapstructure:"secret"`        // JWT signing secret
+	CookieSecure  bool      `mapstructure:"cookieSecure"`  // set Secure flag on cookies (HTTPS)
+	EncryptionKey sec.Secret `mapstructure:"encryptionKey"` // 32-byte hex key for AES-256-GCM encryption
 }
 
 // Database holds database connection settings.

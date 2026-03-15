@@ -21,7 +21,7 @@ func main() {
 		log.Fatalf("load config: %v", err)
 	}
 
-	svc, err := service.New(cfg.Database.DSN, &cfg.Wechat)
+	svc, err := service.New(cfg.Database.DSN, &cfg.Wechat, cfg.Server.EncryptionKey.Value())
 	if err != nil {
 		log.Fatalf("init service: %v", err)
 	}

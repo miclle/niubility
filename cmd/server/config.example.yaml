@@ -2,6 +2,9 @@ server:
   address: "0.0.0.0:9000"
   secret: "change-me-to-a-random-secret"
   cookieSecure: false
+  # 32-byte hex key for AES-256-GCM encryption of sensitive settings
+  # Generate with: openssl rand -hex 32
+  encryptionKey: "0000000000000000000000000000000000000000000000000000000000000000"
 
 database:
   dsn: "host=localhost port=5432 user=postgres password=postgres dbname=niubility sslmode=disable"
@@ -11,7 +14,9 @@ sso:
   clientID: niubility
   secret: BCR0nzlmnvwWIjIxc8Ij0MfOTfc5Udh6
 
+# WeChat config is now managed in admin settings page (/admin/settings)
+# These values are used as fallback if database config is not set
 wechat:
-  corp_id: "your-corp-id"
+  corp_id: ""
   app_agentid: 0
-  app_secret: "your-app-secret"
+  app_secret: ""
