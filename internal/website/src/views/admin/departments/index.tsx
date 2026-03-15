@@ -112,8 +112,16 @@ function AdminDepartments() {
             </span>
           )}
 
+          {/* User count */}
+          <span
+            className="text-xs px-2 py-0.5 rounded ml-auto"
+            style={{ background: '#e0f2fe', color: '#0369a1' }}
+          >
+            {dept.user_count} 人
+          </span>
+
           {/* Department ID */}
-          <span className="text-xs ml-auto" style={{ color: '#909090' }}>
+          <span className="text-xs" style={{ color: '#909090' }}>
             ID: {dept.id}
           </span>
         </div>
@@ -121,7 +129,7 @@ function AdminDepartments() {
         {/* Children */}
         {hasChildren && isExpanded && (
           <div>
-            {dept.children.map(child => renderDepartment(child, level + 1))}
+            {dept.children?.map(child => renderDepartment(child, level + 1))}
           </div>
         )}
       </div>

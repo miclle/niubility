@@ -231,7 +231,13 @@ func (ctrl *Ctrl) SyncFromWechat(c *fox.Context) (*SyncFromWechatResponse, error
 
 // ListDepartmentsResponse represents the response for listing departments.
 type ListDepartmentsResponse struct {
-	Departments []entity.Department `json:"departments"`
+	Departments []DepartmentWithCount `json:"departments"`
+}
+
+// DepartmentWithCount represents a department with user count.
+type DepartmentWithCount struct {
+	entity.Department
+	UserCount int `json:"user_count"`
 }
 
 // ListDepartments returns all departments (admin only).
@@ -240,5 +246,21 @@ func (ctrl *Ctrl) ListDepartments(c *fox.Context) (*ListDepartmentsResponse, err
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
-	return &ListDepartmentsResponse{Departments: departments}, nil
+
+	// Get user counts per department
+	userCounts, err := ctrl.service.GetDepartmentUserCounts()
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+
+	// Build response with user counts
+	result := make([]DepartmentWithCount, len(departments))
+	for i, dept := range departments {
+		result[i] = DepartmentWithCount{
+			Department: dept,
+			UserCount:  userCounts[dept.ID],
+		}
+	}
+
+	return &ListDepartmentsResponse{Departments: result}, nil
 }

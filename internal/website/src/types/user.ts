@@ -26,6 +26,7 @@ export interface Department {
   name_en: string
   parent_id: number
   order: number
+  user_count: number
   created_at: string
   updated_at: string
 }
