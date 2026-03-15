@@ -23,7 +23,8 @@ function AdminUsers() {
 
   // Get filters from URL
   const search = searchParams.get('search') || ''
-  const departmentId = searchParams.get('department_id') || ''
+  const departmentIdParam = searchParams.get('department_id') || ''
+  const departmentId = departmentIdParam  // for API call
 
   // Fetch departments once
   useEffect(() => {
@@ -173,15 +174,15 @@ function AdminUsers() {
         </TextField.Root>
 
         <Select.Root
-          value={departmentId}
-          onValueChange={(val) => updateFilters('department_id', val)}
+          value={departmentIdParam || 'all'}
+          onValueChange={(val) => updateFilters('department_id', val === 'all' ? '' : val)}
         >
           <Select.Trigger
             placeholder="选择部门"
             style={{ minWidth: 180 }}
           />
           <Select.Content style={{ background: '#ffffff', border: '1px solid #e5e5e5' }}>
-            <Select.Item value="">全部部门</Select.Item>
+            <Select.Item value="all">全部部门</Select.Item>
             {departments.map(dept => (
               <Select.Item key={dept.id} value={String(dept.id)}>
                 {dept.name}
