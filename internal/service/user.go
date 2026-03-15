@@ -85,13 +85,14 @@ func (s *Service) UpsertUser(username, email string) (*entity.User, error) {
 	if s.Wechat != nil {
 		if info, err := s.Wechat.GetUser(username); err == nil {
 			user.Name = info.Name
+			user.Mobile = info.Mobile
 			user.Avatar = info.AvatarURL
 		}
 	}
 
 	conds := clause.OnConflict{
 		Columns:   []clause.Column{{Name: "username"}},
-		DoUpdates: clause.AssignmentColumns([]string{"email", "name", "avatar"}),
+		DoUpdates: clause.AssignmentColumns([]string{"email", "name", "mobile", "avatar"}),
 	}
 	if err := s.DB.Clauses(conds).Create(user).Error; err != nil {
 		return nil, fmt.Errorf("upsert user: %w", err)
@@ -103,31 +104,45 @@ func (s *Service) UpsertUser(username, email string) (*entity.User, error) {
 
 // SyncUserFromWechat syncs user info from WeChat by username.
 func (s *Service) SyncUserFromWechat(username string) (*entity.User, error) {
+	fmt.Printf("[WeChat Sync] Starting sync for username: %s\n", username)
+
 	user, err := s.GetUserByUsername(username)
 	if err != nil {
+		fmt.Printf("[WeChat Sync] Error getting user: %v\n", err)
 		return nil, err
 	}
 	if user == nil {
+		fmt.Printf("[WeChat Sync] User not found\n")
 		return nil, nil
 	}
 
 	if s.Wechat == nil {
+		fmt.Printf("[WeChat Sync] WeChat client is nil, skipping sync\n")
 		return user, nil
 	}
 
+	fmt.Printf("[WeChat Sync] Calling WeChat GetUser API...\n")
 	info, err := s.Wechat.GetUser(username)
 	if err != nil {
+		fmt.Printf("[WeChat Sync] Error calling WeChat API: %v\n", err)
 		return nil, fmt.Errorf("get wechat user info: %w", err)
 	}
 
+	// Log the info retrieved from WeChat for debugging
+	fmt.Printf("[WeChat Sync] UserID: %s, Name: %s, Mobile: %s, Avatar: %s\n",
+		info.UserID, info.Name, info.Mobile, info.AvatarURL)
+
 	updates := map[string]any{
 		"name":   info.Name,
+		"mobile": info.Mobile,
 		"avatar": info.AvatarURL,
 	}
 	if err := s.DB.Model(user).Updates(updates).Error; err != nil {
+		fmt.Printf("[WeChat Sync] Error updating database: %v\n", err)
 		return nil, fmt.Errorf("update user from wechat: %w", err)
 	}
 
+	fmt.Printf("[WeChat Sync] Successfully updated user\n")
 	return s.GetUserByUsername(username)
 }
 

@@ -1,6 +1,6 @@
 import { Outlet, NavLink, Navigate } from 'react-router-dom'
 import { Avatar, DropdownMenu } from '@radix-ui/themes'
-import { FileText, Users, ArrowLeft, LogOut, Upload } from 'lucide-react'
+import { FileText, Users, ArrowLeft, LogOut, Upload, RefreshCw } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
 
@@ -68,6 +68,18 @@ function AdminLayout() {
           >
             <Upload size={24} />
             <span className="text-sm">数据导入</span>
+          </NavLink>
+          <NavLink
+            to="/admin/sync"
+            className={({ isActive }) =>
+              `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+                isActive ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+              }`
+            }
+            style={{ color: '#0f0f0f' }}
+          >
+            <RefreshCw size={24} />
+            <span className="text-sm">微信同步</span>
           </NavLink>
         </nav>
 

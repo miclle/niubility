@@ -10,6 +10,7 @@ export interface User {
   username: string
   name: string
   email: string
+  mobile: string
   avatar: string
   role: Role
   status: UserStatus

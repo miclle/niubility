@@ -11,29 +11,29 @@ import (
 
 // Config represents the application configuration.
 type Config struct {
-	Server   Server       `yaml:"server"`
-	Database Database     `yaml:"database"`
-	SSO      sso.Config   `yaml:"sso"`
-	Wechat   WechatConfig `yaml:"wechat"`
+	Server   Server       `mapstructure:"server"`
+	Database Database     `mapstructure:"database"`
+	SSO      sso.Config   `mapstructure:"sso"`
+	Wechat   WechatConfig `mapstructure:"wechat"`
 }
 
 // WechatConfig holds enterprise WeChat configuration.
 type WechatConfig struct {
-	CorpID     string `yaml:"corp_id"`     // Enterprise ID
-	AppAgentID int64  `yaml:"app_agentid"` // Application agent ID
-	AppSecret  string `yaml:"app_secret"`  // Application secret
+	CorpID     string `mapstructure:"corp_id"`     // Enterprise ID
+	AppAgentID int64  `mapstructure:"app_agentid"` // Application agent ID
+	AppSecret  string `mapstructure:"app_secret"`  // Application secret
 }
 
 // Server holds HTTP server settings.
 type Server struct {
-	Address      string `yaml:"address"`      // listen address, e.g. "0.0.0.0:9000"
-	Secret       string `yaml:"secret"`       // JWT signing secret
-	CookieSecure bool   `yaml:"cookieSecure"` // set Secure flag on cookies (HTTPS)
+	Address      string `mapstructure:"address"`      // listen address, e.g. "0.0.0.0:9000"
+	Secret       string `mapstructure:"secret"`       // JWT signing secret
+	CookieSecure bool   `mapstructure:"cookieSecure"` // set Secure flag on cookies (HTTPS)
 }
 
 // Database holds database connection settings.
 type Database struct {
-	DSN string `yaml:"dsn"` // PostgreSQL connection string
+	DSN string `mapstructure:"dsn"` // PostgreSQL connection string
 }
 
 // Load reads configuration from the given file path.

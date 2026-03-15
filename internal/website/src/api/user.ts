@@ -15,3 +15,8 @@ export function listUsers(params?: { page?: number; limit?: number }) {
 export function updateUser(id: string, data: UpdateUserArgs) {
   return client.patch<User>(`/users/${id}`, data)
 }
+
+// syncWechat syncs the current user's info from WeChat Work.
+export function syncWechat() {
+  return client.post<User>('/sync-wechat')
+}

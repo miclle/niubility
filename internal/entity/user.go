@@ -28,6 +28,7 @@ type User struct {
 	Username  string     `json:"username"   gorm:"column:username;uniqueIndex:uniq_users_username"`
 	Name      string     `json:"name"       gorm:"column:name"`
 	Email     string     `json:"email"      gorm:"column:email"`
+	Mobile    string     `json:"mobile"     gorm:"column:mobile"`
 	Avatar    string     `json:"avatar"     gorm:"column:avatar"`
 	Role      Role       `json:"role"       gorm:"column:role;default:user"`
 	Status    UserStatus `json:"status"     gorm:"column:status;default:activated"`

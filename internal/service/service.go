@@ -32,8 +32,17 @@ func New(dsn string, wechatCfg *config.WechatConfig) (*Service, error) {
 	}
 
 	var wechatApp *workwx.WorkwxApp
+	fmt.Printf("[Service] WechatConfig: %+v\n", wechatCfg)
 	if wechatCfg != nil && wechatCfg.CorpID != "" {
+		fmt.Printf("[Service] Initializing WeChat client with CorpID: %s\n", wechatCfg.CorpID)
 		wechatApp = workwx.New(wechatCfg.CorpID).WithApp(wechatCfg.AppSecret, wechatCfg.AppAgentID)
+	} else {
+		fmt.Printf("[Service] WeChat client not initialized: wechatCfg=%v, CorpID=%s\n", wechatCfg != nil, func() string {
+			if wechatCfg != nil {
+				return wechatCfg.CorpID
+			}
+			return ""
+		}())
 	}
 
 	return &Service{DB: db, Wechat: wechatApp}, nil
