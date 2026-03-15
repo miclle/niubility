@@ -21,7 +21,8 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5173,
       strictPort: true,
-      host: "0.0.0.0"
+      host: "0.0.0.0",
+      allowedHosts: ["mars-local.qiniu.io"]
     }
   }
 })
