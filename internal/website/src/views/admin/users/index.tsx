@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
-import { Table, Select, Avatar } from '@radix-ui/themes'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { Table, Select, Avatar, TextField } from '@radix-ui/themes'
+import { MagnifyingGlass, Loader2 } from 'lucide-react'
 import dayjs from 'dayjs'
 
 import { listUsers, updateUser, listDepartments } from 'src/api/user'
-import Pagination from 'src/components/Pagination'
 import type { User, Role, UserStatus, Department } from 'src/types/user'
 
-// AdminUsers displays the admin user management page with YouTube-style design.
+// AdminUsers displays the admin user management page with infinite scroll and search.
 function AdminUsers() {
   const [users, setUsers] = useState<User[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
@@ -14,8 +14,13 @@ function AdminUsers() {
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
+  const [search, setSearch] = useState('')
+  const [searchDebounced, setSearchDebounced] = useState('')
   const limit = 20
+  const observerRef = useRef<HTMLDivElement>(null)
 
+  // Fetch departments once
   const fetchDepartments = useCallback(async () => {
     try {
       const res = await listDepartments()
@@ -30,31 +35,80 @@ function AdminUsers() {
     }
   }, [])
 
-  const fetchUsers = useCallback(async () => {
+  // Fetch users with infinite scroll support
+  const fetchUsers = useCallback(async (pageNum: number, reset: boolean = false) => {
+    if (loading) return
+
     setLoading(true)
     try {
-      const res = await listUsers({ page, limit })
-      setUsers(res.data.users || [])
+      const res = await listUsers({ page: pageNum, limit, search: searchDebounced })
+      const newUsers = res.data.users || []
+
+      if (reset) {
+        setUsers(newUsers)
+      } else {
+        setUsers(prev => [...prev, ...newUsers])
+      }
+
       setTotal(res.data.pagination.total)
+      setHasMore(newUsers.length === limit && (pageNum * limit) < res.data.pagination.total)
     } catch {
-      setUsers([])
+      if (reset) {
+        setUsers([])
+      }
+      setHasMore(false)
     } finally {
       setLoading(false)
     }
-  }, [page])
+  }, [searchDebounced, loading])
 
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchDebounced(search)
+      setPage(1)
+      setUsers([])
+      setHasMore(true)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  // Fetch departments on mount
   useEffect(() => {
     fetchDepartments()
   }, [fetchDepartments])
 
+  // Fetch users when search changes
   useEffect(() => {
-    fetchUsers()
-  }, [fetchUsers])
+    fetchUsers(1, true)
+  }, [searchDebounced])
+
+  // Infinite scroll observer
+  useEffect(() => {
+    if (!hasMore || loading) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          const nextPage = page + 1
+          setPage(nextPage)
+          fetchUsers(nextPage)
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    if (observerRef.current) {
+      observer.observe(observerRef.current)
+    }
+
+    return () => observer.disconnect()
+  }, [hasMore, loading, page, fetchUsers])
 
   const handleRoleChange = async (userId: string, role: Role) => {
     try {
       await updateUser(userId, { role })
-      fetchUsers()
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, role } : u))
     } catch {
       // Silently fail
     }
@@ -63,7 +117,7 @@ function AdminUsers() {
   const handleStatusChange = async (userId: string, status: UserStatus) => {
     try {
       await updateUser(userId, { status })
-      fetchUsers()
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, status } : u))
     } catch {
       // Silently fail
     }
@@ -79,7 +133,32 @@ function AdminUsers() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>用户管理</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>用户管理</h1>
+        <div className="text-sm" style={{ color: '#606060' }}>
+          共 {total} 个用户
+        </div>
+      </div>
+
+      {/* Search bar */}
+      <div className="mb-4">
+        <TextField.Root
+          placeholder="搜索用户名、姓名、邮箱或手机号..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          size="2"
+          style={{ maxWidth: 400 }}
+        >
+          <TextField.Slot>
+            <MagnifyingGlass size={16} style={{ color: '#909090' }} />
+          </TextField.Slot>
+          {loading && (
+            <TextField.Slot>
+              <Loader2 size={16} className="animate-spin" style={{ color: '#909090' }} />
+            </TextField.Slot>
+          )}
+        </TextField.Root>
+      </div>
 
       <div className="bg-white rounded-xl overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
         <Table.Root>
@@ -97,16 +176,10 @@ function AdminUsers() {
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {loading ? (
+            {users.length === 0 && !loading ? (
               <Table.Row>
                 <Table.Cell colSpan={9} className="text-center py-8" style={{ color: '#909090' }}>
-                  加载中...
-                </Table.Cell>
-              </Table.Row>
-            ) : users.length === 0 ? (
-              <Table.Row>
-                <Table.Cell colSpan={9} className="text-center py-8" style={{ color: '#909090' }}>
-                  暂无用户
+                  {search ? '未找到匹配的用户' : '暂无用户'}
                 </Table.Cell>
               </Table.Row>
             ) : (
@@ -137,20 +210,10 @@ function AdminUsers() {
                       <Select.Trigger variant="ghost" style={{ minWidth: 80 }} />
                       <Select.Content style={{ background: '#ffffff', border: '1px solid #e5e5e5' }}>
                         <Select.Item value="admin">
-                          <span
-                            className="px-2 py-0.5 rounded text-xs"
-                            style={{ background: '#fef3c7', color: '#92400e' }}
-                          >
-                            管理员
-                          </span>
+                          <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#fef3c7', color: '#92400e' }}>管理员</span>
                         </Select.Item>
                         <Select.Item value="user">
-                          <span
-                            className="px-2 py-0.5 rounded text-xs"
-                            style={{ background: '#f2f2f2', color: '#606060' }}
-                          >
-                            普通用户
-                          </span>
+                          <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#f2f2f2', color: '#606060' }}>普通用户</span>
                         </Select.Item>
                       </Select.Content>
                     </Select.Root>
@@ -160,20 +223,10 @@ function AdminUsers() {
                       <Select.Trigger variant="ghost" style={{ minWidth: 80 }} />
                       <Select.Content style={{ background: '#ffffff', border: '1px solid #e5e5e5' }}>
                         <Select.Item value="activated">
-                          <span
-                            className="px-2 py-0.5 rounded text-xs"
-                            style={{ background: '#dcfce7', color: '#166534' }}
-                          >
-                            已激活
-                          </span>
+                          <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#dcfce7', color: '#166534' }}>已激活</span>
                         </Select.Item>
                         <Select.Item value="deactivated">
-                          <span
-                            className="px-2 py-0.5 rounded text-xs"
-                            style={{ background: '#fee2e2', color: '#991b1b' }}
-                          >
-                            已禁用
-                          </span>
+                          <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#fee2e2', color: '#991b1b' }}>已禁用</span>
                         </Select.Item>
                       </Select.Content>
                     </Select.Root>
@@ -185,9 +238,20 @@ function AdminUsers() {
             )}
           </Table.Body>
         </Table.Root>
-      </div>
 
-      <Pagination page={page} limit={limit} total={total} onChange={setPage} />
+        {/* Loading indicator and intersection observer target */}
+        <div ref={observerRef} className="py-4 text-center">
+          {loading && hasMore && (
+            <div className="flex items-center justify-center gap-2" style={{ color: '#909090' }}>
+              <Loader2 size={16} className="animate-spin" />
+              <span className="text-sm">加载更多...</span>
+            </div>
+          )}
+          {!hasMore && users.length > 0 && (
+            <span className="text-sm" style={{ color: '#909090' }}>已加载全部用户</span>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

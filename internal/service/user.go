@@ -36,12 +36,21 @@ func (s *Service) GetUserByID(id string) (*entity.User, error) {
 	return &user, nil
 }
 
-// ListUsers retrieves a paginated list of users.
+// ListUsers retrieves a paginated list of users with optional search.
 func (s *Service) ListUsers(args entity.ListUsersArgs) ([]entity.User, int64, error) {
 	var users []entity.User
 	var total int64
 
 	query := s.DB.Model(&entity.User{})
+
+	// Apply search filter
+	if args.Search != "" {
+		searchPattern := "%" + args.Search + "%"
+		query = query.Where(
+			"name ILIKE ? OR username ILIKE ? OR email ILIKE ? OR mobile ILIKE ?",
+			searchPattern, searchPattern, searchPattern, searchPattern,
+		)
+	}
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, fmt.Errorf("count users: %w", err)
