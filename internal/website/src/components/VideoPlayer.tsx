@@ -1,7 +1,4 @@
-import { useEffect, useRef } from 'react'
-import videojs from 'video.js'
-import type Player from 'video.js/dist/types/player'
-import 'video.js/dist/video-js.css'
+import { useRef, useEffect } from 'react'
 
 interface VideoPlayerProps {
   src: string
@@ -11,54 +8,39 @@ interface VideoPlayerProps {
   muted?: boolean
 }
 
-// VideoPlayer wraps Video.js for video playback with HLS support.
+// VideoPlayer uses native HTML5 video with custom controls styling.
 function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = false }: VideoPlayerProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const playerRef = useRef<Player | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
-    if (!containerRef.current || !src) return
+    // Log video events for debugging
+    const video = videoRef.current
+    if (!video) return
 
-    // Create video element
-    const videoElement = document.createElement('video')
-    videoElement.className = 'video-js vjs-big-play-centered vjs-fluid'
-    videoElement.setAttribute('playsinline', 'true')
-    videoElement.setAttribute('crossorigin', 'anonymous')
-    containerRef.current.appendChild(videoElement)
-
-    // Initialize Video.js player
-    const player = videojs(videoElement, {
-      controls: true,
-      autoplay,
-      loop,
-      muted,
-      poster: poster || '',
-      responsive: true,
-      playbackRates: [0.5, 1, 1.25, 1.5, 2],
-      html5: {
-        vhs: {
-          overrideNative: false,
-        },
-      },
-      sources: [{ src }],
-    })
-
-    playerRef.current = player
-
-    // Cleanup on unmount
-    return () => {
-      if (playerRef.current && !playerRef.current.isDisposed()) {
-        playerRef.current.dispose()
-        playerRef.current = null
-      }
-      // Remove video element if still in DOM
-      if (videoElement.parentNode) {
-        videoElement.parentNode.removeChild(videoElement)
-      }
+    const handleError = () => {
+      console.error('Video error:', video.error)
     }
-  }, [src, poster, autoplay, loop, muted])
 
-  return <div ref={containerRef} className="w-full h-full" data-vjs-player />
+    video.addEventListener('error', handleError)
+    return () => video.removeEventListener('error', handleError)
+  }, [])
+
+  return (
+    <video
+      ref={videoRef}
+      src={src}
+      poster={poster}
+      autoPlay={autoplay}
+      loop={loop}
+      muted={muted}
+      controls
+      playsInline
+      className="w-full h-full bg-black"
+      style={{ objectFit: 'contain' }}
+    >
+      您的浏览器不支持视频播放
+    </video>
+  )
 }
 
 export default VideoPlayer
