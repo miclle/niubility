@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Table, Select, Avatar, TextField } from '@radix-ui/themes'
+import { Select, Avatar, TextField } from '@radix-ui/themes'
 import { Search, Loader2, X, Building2, Users } from 'lucide-react'
 import dayjs from 'dayjs'
 
@@ -337,83 +337,86 @@ function AdminUsers() {
         </div>
 
         <div className="bg-white rounded-xl overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
-          <Table.Root>
-            <Table.Header>
-              <Table.Row style={{ background: '#f9f9f9' }}>
-                <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>用户</Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>用户名</Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>邮箱</Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>手机</Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>部门</Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>角色</Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>状态</Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>注册时间</Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell style={{ color: '#606060', fontWeight: 500 }}>更新时间</Table.ColumnHeaderCell>
-              </Table.Row>
-            </Table.Header>
-            <Table.Body>
-              {users.length === 0 && !loading ? (
-                <Table.Row>
-                  <Table.Cell colSpan={9} className="text-center py-8" style={{ color: '#909090' }}>
-                    {hasFilters ? '未找到匹配的用户' : '暂无用户'}
-                  </Table.Cell>
-                </Table.Row>
-              ) : (
-                users.map((user) => (
-                  <Table.Row key={user.id} style={{ borderTop: '1px solid #e5e5e5' }}>
-                    <Table.Cell>
-                      <div className="flex items-center gap-3">
-                        <Avatar
-                          size="2"
-                          radius="full"
-                          src={user.avatar}
-                          fallback={user.name?.charAt(0) || user.username.charAt(0)}
-                          style={{ width: 32, height: 32 }}
-                        />
-                        <span className="font-medium" style={{ color: '#0f0f0f' }}>{user.name || '-'}</span>
-                      </div>
-                    </Table.Cell>
-                    <Table.Cell style={{ color: '#606060' }}>{user.username}</Table.Cell>
-                    <Table.Cell style={{ color: '#606060' }}>{user.email || '-'}</Table.Cell>
-                    <Table.Cell style={{ color: '#606060' }}>{user.mobile || '-'}</Table.Cell>
-                    <Table.Cell style={{ color: '#606060', maxWidth: 150 }}>
-                      <span className="text-xs" style={{ background: '#f2f2f2', padding: '2px 6px', borderRadius: 4, display: 'inline-block' }}>
-                        {getDepartmentNames(user.department_ids)}
-                      </span>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Select.Root size="1" value={user.role} onValueChange={(val) => handleRoleChange(user.id, val as Role)}>
-                        <Select.Trigger variant="ghost" style={{ minWidth: 80 }} />
-                        <Select.Content style={{ background: '#ffffff', border: '1px solid #e5e5e5' }}>
-                          <Select.Item value="admin">
-                            <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#fef3c7', color: '#92400e' }}>管理员</span>
-                          </Select.Item>
-                          <Select.Item value="user">
-                            <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#f2f2f2', color: '#606060' }}>普通用户</span>
-                          </Select.Item>
-                        </Select.Content>
-                      </Select.Root>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Select.Root size="1" value={user.status} onValueChange={(val) => handleStatusChange(user.id, val as UserStatus)}>
-                        <Select.Trigger variant="ghost" style={{ minWidth: 80 }} />
-                        <Select.Content style={{ background: '#ffffff', border: '1px solid #e5e5e5' }}>
-                          <Select.Item value="activated">
-                            <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#dcfce7', color: '#166534' }}>已激活</span>
-                          </Select.Item>
-                          <Select.Item value="deactivated">
-                            <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#fee2e2', color: '#991b1b' }}>已禁用</span>
-                          </Select.Item>
-                        </Select.Content>
-                      </Select.Root>
-                    </Table.Cell>
-                    <Table.Cell style={{ color: '#606060' }}>{dayjs(user.created_at).format('YYYY-MM-DD HH:mm')}</Table.Cell>
-                    <Table.Cell style={{ color: '#606060' }}>{dayjs(user.updated_at).format('YYYY-MM-DD HH:mm')}</Table.Cell>
-                  </Table.Row>
-                ))
-              )}
-            </Table.Body>
-          </Table.Root>
+          {/* Horizontal scroll container */}
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ minWidth: 1200, borderCollapse: 'collapse', width: '100%' }}>
+              <thead>
+                <tr style={{ background: '#f9f9f9' }}>
+                  <th style={{ position: 'sticky', left: 0, zIndex: 10, background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, minWidth: 180, borderRight: '1px solid #e5e5e5' }}>用户</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap' }}>用户名</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap' }}>邮箱</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap' }}>手机</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap' }}>部门</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap' }}>角色</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap' }}>状态</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap' }}>注册时间</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap' }}>更新时间</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.length === 0 && !loading ? (
+                  <tr>
+                    <td colSpan={9} style={{ textAlign: 'center', padding: 32, color: '#909090' }}>
+                      {hasFilters ? '未找到匹配的用户' : '暂无用户'}
+                    </td>
+                  </tr>
+                ) : (
+                  users.map((user) => (
+                    <tr key={user.id} style={{ borderTop: '1px solid #e5e5e5' }}>
+                      <td style={{ position: 'sticky', left: 0, zIndex: 10, background: '#ffffff', padding: '12px 16px', borderRight: '1px solid #e5e5e5' }}>
+                        <div className="flex items-center gap-3">
+                          <Avatar
+                            size="2"
+                            radius="full"
+                            src={user.avatar}
+                            fallback={user.name?.charAt(0) || user.username.charAt(0)}
+                            style={{ width: 32, height: 32 }}
+                          />
+                          <span className="font-medium" style={{ color: '#0f0f0f', whiteSpace: 'nowrap' }}>{user.name || '-'}</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }}>{user.username}</td>
+                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }}>{user.email || '-'}</td>
+                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }}>{user.mobile || '-'}</td>
+                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }}>
+                        <span className="text-xs" style={{ background: '#f2f2f2', padding: '2px 6px', borderRadius: 4, display: 'inline-block' }}>
+                          {getDepartmentNames(user.department_ids)}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
+                        <Select.Root size="1" value={user.role} onValueChange={(val) => handleRoleChange(user.id, val as Role)}>
+                          <Select.Trigger variant="ghost" style={{ minWidth: 80 }} />
+                          <Select.Content style={{ background: '#ffffff', border: '1px solid #e5e5e5' }}>
+                            <Select.Item value="admin">
+                              <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#fef3c7', color: '#92400e' }}>管理员</span>
+                            </Select.Item>
+                            <Select.Item value="user">
+                              <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#f2f2f2', color: '#606060' }}>普通用户</span>
+                            </Select.Item>
+                          </Select.Content>
+                        </Select.Root>
+                      </td>
+                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
+                        <Select.Root size="1" value={user.status} onValueChange={(val) => handleStatusChange(user.id, val as UserStatus)}>
+                          <Select.Trigger variant="ghost" style={{ minWidth: 80 }} />
+                          <Select.Content style={{ background: '#ffffff', border: '1px solid #e5e5e5' }}>
+                            <Select.Item value="activated">
+                              <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#dcfce7', color: '#166534' }}>已激活</span>
+                            </Select.Item>
+                            <Select.Item value="deactivated">
+                              <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#fee2e2', color: '#991b1b' }}>已禁用</span>
+                            </Select.Item>
+                          </Select.Content>
+                        </Select.Root>
+                      </td>
+                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }}>{dayjs(user.created_at).format('YYYY-MM-DD HH:mm')}</td>
+                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }}>{dayjs(user.updated_at).format('YYYY-MM-DD HH:mm')}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
           {/* Loading indicator */}
           <div ref={observerRef} className="py-4 text-center">

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Outlet, NavLink, Navigate } from 'react-router-dom'
 import { Avatar, DropdownMenu, Tooltip } from '@radix-ui/themes'
-import { FileText, Users, ArrowLeft, LogOut, Upload, RefreshCw, Settings, Building2, Menu } from 'lucide-react'
+import { FileText, Users, ArrowLeft, LogOut, Upload, RefreshCw, Settings, Menu } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
 
@@ -19,7 +19,6 @@ function AdminLayout() {
   const navItems = [
     { to: '/admin/contents', icon: FileText, label: '内容管理' },
     { to: '/admin/users', icon: Users, label: '用户管理' },
-    { to: '/admin/departments', icon: Building2, label: '部门管理' },
     { to: '/admin/import', icon: Upload, label: '数据导入' },
     { to: '/admin/sync', icon: RefreshCw, label: '微信同步' },
     { to: '/admin/settings', icon: Settings, label: '系统配置' },
