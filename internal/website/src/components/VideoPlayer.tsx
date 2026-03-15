@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
-import { Play, Pause, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react'
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, RectangleHorizontal, RectangleVertical } from 'lucide-react'
 
 interface VideoPlayerProps {
   src: string
@@ -7,10 +7,12 @@ interface VideoPlayerProps {
   autoplay?: boolean
   loop?: boolean
   muted?: boolean
+  theaterMode?: boolean
+  onToggleTheater?: () => void
 }
 
 // VideoPlayer uses native HTML5 video with custom controls.
-function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = false }: VideoPlayerProps) {
+function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = false, theaterMode = false, onToggleTheater }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [playing, setPlaying] = useState(false)
@@ -216,8 +218,14 @@ function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = fals
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Theater mode */}
+              {onToggleTheater && (
+                <button onClick={onToggleTheater} className="text-white hover:text-gray-300 transition-colors" title={theaterMode ? '退出影院模式' : '影院模式'}>
+                  {theaterMode ? <RectangleVertical size={20} /> : <RectangleHorizontal size={20} />}
+                </button>
+              )}
               {/* Fullscreen */}
-              <button onClick={toggleFullscreen} className="text-white hover:text-gray-300 transition-colors">
+              <button onClick={toggleFullscreen} className="text-white hover:text-gray-300 transition-colors" title={fullscreen ? '退出全屏' : '全屏'}>
                 {fullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
               </button>
             </div>

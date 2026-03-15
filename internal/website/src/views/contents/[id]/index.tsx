@@ -20,6 +20,7 @@ function ContentDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [descExpanded, setDescExpanded] = useState(false)
+  const [theaterMode, setTheaterMode] = useState(false)
 
   // Fetch main content
   useEffect(() => {
@@ -54,23 +55,25 @@ function ContentDetail() {
   const categoryLabel = content.category === 'culture' ? '七牛文化' : '学习分享'
 
   return (
-    <div className="flex gap-6 p-6 justify-center">
-      {/* Main content area - width based on viewport height (16:9 ratio), with min height constraint */}
-      <div style={{ width: 'max(640px, min(calc((100vh - 180px) * 16 / 9), calc(100vw - 48px)))' }}>
-        {/* Video / Cover player - height based on viewport */}
+    <div className={`flex gap-6 p-6 ${theaterMode ? '' : 'justify-center'}`}>
+      {/* Main content area */}
+      <div style={{ width: theaterMode ? '100%' : 'max(640px, min(calc((100vh - 180px) * 16 / 9), calc(100vw - 48px)))' }}>
+        {/* Video / Cover player */}
         {content.type === 'video' && content.video_url ? (
           <div
-            className="relative bg-black rounded-xl overflow-hidden"
+            className={`relative bg-black overflow-hidden ${theaterMode ? 'rounded-none' : 'rounded-xl'}`}
             style={{ width: '100%', aspectRatio: '16/9' }}
           >
             <VideoPlayer
               src={content.video_url}
               poster={content.cover_url || '/default-cover.svg'}
+              theaterMode={theaterMode}
+              onToggleTheater={() => setTheaterMode(!theaterMode)}
             />
           </div>
         ) : (
           <div
-            className="relative rounded-xl overflow-hidden bg-zinc-100"
+            className={`relative overflow-hidden bg-zinc-100 ${theaterMode ? 'rounded-none' : 'rounded-xl'}`}
             style={{ width: '100%', aspectRatio: '16/9' }}
           >
             <img
@@ -178,7 +181,8 @@ function ContentDetail() {
         </div>
       </div>
 
-      {/* Sidebar - Related contents */}
+      {/* Sidebar - Related contents (hidden in theater mode) */}
+      {!theaterMode && (
       <div className="hidden xl:block flex-shrink-0 w-[400px]">
         {/* Back to list */}
         <Link
@@ -238,6 +242,7 @@ function ContentDetail() {
           )}
         </div>
       </div>
+      )}
     </div>
   )
 }
