@@ -55,8 +55,8 @@ function ContentDetail() {
 
   return (
     <div className="flex gap-6 p-6 justify-center">
-      {/* Main content area - width based on viewport height (16:9 ratio) */}
-      <div style={{ width: 'calc((100vh - 180px) * 16 / 9)', maxWidth: 'calc(100vw - 48px)' }}>
+      {/* Main content area - width based on viewport height (16:9 ratio), with min height constraint */}
+      <div style={{ width: 'max(640px, min(calc((100vh - 180px) * 16 / 9), calc(100vw - 48px)))' }}>
         {/* Video / Cover player - height based on viewport */}
         {content.type === 'video' && content.video_url ? (
           <div
