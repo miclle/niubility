@@ -1,11 +1,149 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Table, Select, Avatar, TextField } from '@radix-ui/themes'
-import { Search, Loader2, X } from 'lucide-react'
+import { Table, Select, Avatar, TextField, Popover } from '@radix-ui/themes'
+import { Search, Loader2, X, ChevronDown, Building2, Check } from 'lucide-react'
 import dayjs from 'dayjs'
 
 import { listUsers, updateUser, listDepartments } from 'src/api/user'
 import type { User, Role, UserStatus, Department } from 'src/types/user'
+
+// DepartmentNode extends Department with children for tree structure
+interface DepartmentNode extends Department {
+  children?: DepartmentNode[]
+}
+
+// buildDepartmentTree converts flat list to tree structure
+function buildDepartmentTree(items: Department[], parentId: number = 0): DepartmentNode[] {
+  return items
+    .filter(item => item.parent_id === parentId)
+    .sort((a, b) => a.order - b.order)
+    .map(item => ({
+      ...item,
+      children: buildDepartmentTree(items, item.id),
+    }))
+}
+
+// DepartmentTreeSelect renders a tree-structured department selector
+function DepartmentTreeSelect({
+  departments,
+  value,
+  onChange,
+}: {
+  departments: Department[]
+  value: string
+  onChange: (val: string) => void
+}) {
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set([1]))
+  const tree = buildDepartmentTree(departments, 0)
+  const selectedDept = departments.find(d => String(d.id) === value)
+
+  const toggleExpand = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setExpandedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  const renderNode = (node: DepartmentNode, level: number = 0): React.ReactNode => {
+    const hasChildren = node.children && node.children.length > 0
+    const isExpanded = expandedIds.has(node.id)
+    const isSelected = String(node.id) === value
+
+    return (
+      <div key={node.id}>
+        <div
+          className="flex items-center gap-1 py-1.5 px-2 cursor-pointer hover:bg-gray-100 rounded transition-colors"
+          style={{ paddingLeft: level * 16 + 8 }}
+          onClick={() => onChange(String(node.id))}
+        >
+          <span
+            className="w-4 h-4 flex items-center justify-center flex-shrink-0"
+            onClick={(e) => hasChildren && toggleExpand(node.id, e)}
+          >
+            {hasChildren ? (
+              <span
+                className="text-xs transition-transform"
+                style={{
+                  color: '#909090',
+                  display: 'inline-block',
+                  transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                }}
+              >
+                ▶
+              </span>
+            ) : (
+              <span style={{ width: 8 }} />
+            )}
+          </span>
+          <Building2 size={14} style={{ color: '#606060', flexShrink: 0 }} />
+          <span className="text-sm flex-1 truncate" style={{ color: isSelected ? '#0f0f0f' : '#606060' }}>
+            {node.name}
+          </span>
+          {isSelected && <Check size={14} style={{ color: '#0f0f0f' }} />}
+        </div>
+        {hasChildren && isExpanded && (
+          <div>
+            {node.children?.map(child => renderNode(child, level + 1))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <Popover.Root>
+      <Popover.Trigger>
+        <button
+          className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg text-sm border"
+          style={{
+            minWidth: 180,
+            background: '#ffffff',
+            borderColor: '#e5e5e5',
+            color: selectedDept ? '#0f0f0f' : '#909090',
+          }}
+        >
+          <span className="flex items-center gap-2">
+            <Building2 size={14} />
+            {selectedDept ? selectedDept.name : '选择部门'}
+          </span>
+          <ChevronDown size={14} style={{ color: '#909090' }} />
+        </button>
+      </Popover.Trigger>
+      <Popover.Content
+        style={{
+          background: '#ffffff',
+          border: '1px solid #e5e5e5',
+          borderRadius: 8,
+          padding: 8,
+          maxHeight: 320,
+          overflowY: 'auto',
+          minWidth: 240,
+        }}
+        sideOffset={4}
+      >
+        {/* All departments option */}
+        <div
+          className="flex items-center gap-2 py-1.5 px-2 cursor-pointer hover:bg-gray-100 rounded transition-colors"
+          onClick={() => onChange('')}
+        >
+          <span className="w-4 h-4" />
+          <span className="text-sm" style={{ color: !value ? '#0f0f0f' : '#606060' }}>
+            全部部门
+          </span>
+          {!value && <Check size={14} style={{ color: '#0f0f0f', marginLeft: 'auto' }} />}
+        </div>
+        <div style={{ borderTop: '1px solid #e5e5e5', margin: '4px 0' }} />
+        {tree.map(node => renderNode(node))}
+      </Popover.Content>
+    </Popover.Root>
+  )
+}
 
 // AdminUsers displays the admin user management page with infinite scroll and search.
 function AdminUsers() {
@@ -23,8 +161,7 @@ function AdminUsers() {
 
   // Get filters from URL
   const search = searchParams.get('search') || ''
-  const departmentIdParam = searchParams.get('department_id') || ''
-  const departmentId = departmentIdParam  // for API call
+  const departmentId = searchParams.get('department_id') || ''
 
   // Fetch departments once
   useEffect(() => {
@@ -173,23 +310,11 @@ function AdminUsers() {
           </TextField.Slot>
         </TextField.Root>
 
-        <Select.Root
-          value={departmentIdParam || 'all'}
-          onValueChange={(val) => updateFilters('department_id', val === 'all' ? '' : val)}
-        >
-          <Select.Trigger
-            placeholder="选择部门"
-            style={{ minWidth: 180 }}
-          />
-          <Select.Content style={{ background: '#ffffff', border: '1px solid #e5e5e5' }}>
-            <Select.Item value="all">全部部门</Select.Item>
-            {departments.map(dept => (
-              <Select.Item key={dept.id} value={String(dept.id)}>
-                {dept.name}
-              </Select.Item>
-            ))}
-          </Select.Content>
-        </Select.Root>
+        <DepartmentTreeSelect
+          departments={departments}
+          value={departmentId}
+          onChange={(val) => updateFilters('department_id', val)}
+        />
 
         {hasFilters && (
           <button
