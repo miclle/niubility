@@ -36,6 +36,9 @@ bin/
 # Local config (auto-copied from config.example.yaml)
 config.local.yaml
 
+# Temporary files
+tmp/
+
 # env file
 .env
 
