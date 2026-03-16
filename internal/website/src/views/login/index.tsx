@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Navigate, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Loader2 } from 'lucide-react'
+import { Loader2, ServerOff } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
 import { login } from 'src/api/user'
@@ -19,10 +19,14 @@ function Login() {
   // If not initialized, show prompt instead of login form
   if (!initialized) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white px-4">
-        <div className="text-center">
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#f8f8f8' }}>
+        <div className="text-center px-8 py-10 rounded-2xl bg-white" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-5" style={{ background: '#f2f2f2' }}>
+            <ServerOff size={28} style={{ color: '#909090' }} />
+          </div>
           <h1 className="text-2xl font-semibold mb-2" style={{ color: '#0f0f0f' }}>Niubility</h1>
-          <p className="text-sm" style={{ color: '#606060' }}>系统尚未初始化，请联系管理员完成初始设置</p>
+          <p className="text-sm mb-1" style={{ color: '#606060' }}>系统尚未初始化</p>
+          <p className="text-xs" style={{ color: '#909090' }}>请联系管理员完成初始设置</p>
         </div>
       </div>
     )

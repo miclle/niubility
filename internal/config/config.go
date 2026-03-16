@@ -37,5 +37,12 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("unmarshal config: %w", err)
 	}
 
+	if cfg.Server.Address == "" {
+		return nil, fmt.Errorf("server.address is required")
+	}
+	if cfg.Database.DSN == "" {
+		return nil, fmt.Errorf("database.dsn is required")
+	}
+
 	return &cfg, nil
 }

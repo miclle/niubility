@@ -18,10 +18,14 @@ var sensitiveKeys = map[string]bool{
 // GetSetting retrieves a setting value by key.
 // Automatically decrypts sensitive values if encryption is enabled.
 func (s *Service) GetSetting(key string) (string, error) {
-	var setting entity.Setting
-	if err := s.DB.Where("key = ?", key).First(&setting).Error; err != nil {
+	var settings []entity.Setting
+	if err := s.DB.Where("key = ?", key).Limit(1).Find(&settings).Error; err != nil {
 		return "", err
 	}
+	if len(settings) == 0 {
+		return "", nil
+	}
+	setting := settings[0]
 
 	// Decrypt if it's a sensitive key and encryption is enabled
 	if sensitiveKeys[key] && s.Encryptor != nil && textencrypt.IsEncrypted(setting.Value) {
