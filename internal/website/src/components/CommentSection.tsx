@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
-import { ThumbsUp, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { ThumbsUp, MessageCircle, ChevronDown, ChevronUp, Smile } from 'lucide-react'
 import dayjs from 'dayjs'
 
 import { listComments, createComment, likeComment as likeCommentAPI } from 'src/api/content'
@@ -26,6 +26,36 @@ function CommentSection({ contentID, commentCount, onCommentCountChange }: Comme
   const [replyTo, setReplyTo] = useState<{ commentID: string; parentID: string; userName: string } | null>(null)
   const [replyText, setReplyText] = useState('')
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set())
+  const [emojiPickerFor, setEmojiPickerFor] = useState<'new' | 'reply' | null>(null)
+  const emojiPickerRef = useRef<HTMLDivElement>(null)
+
+  // Close emoji picker on outside click
+  useEffect(() => {
+    if (!emojiPickerFor) return
+    const handleClick = (e: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+        setEmojiPickerFor(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [emojiPickerFor])
+
+  const commonEmojis = [
+    '😀', '😂', '🤣', '😊', '😍', '🥰', '😘', '😎',
+    '🤔', '😮', '😢', '😭', '😡', '🥺', '😱', '🤗',
+    '👍', '👎', '👏', '🙌', '🎉', '🔥', '❤️', '💯',
+    '✅', '⭐', '💪', '🙏', '😄', '😁', '🤩', '😇',
+  ]
+
+  const insertEmoji = (emoji: string, target: 'new' | 'reply') => {
+    if (target === 'new') {
+      setNewComment((prev) => prev + emoji)
+    } else {
+      setReplyText((prev) => prev + emoji)
+    }
+    setEmojiPickerFor(null)
+  }
 
   const fetchComments = useCallback((pageNum: number) => {
     setLoading(true)
@@ -203,10 +233,10 @@ function CommentSection({ contentID, commentCount, onCommentCountChange }: Comme
 
           {/* Reply input for this comment */}
           {replyTo?.commentID === comment.id && (
-            <div className="flex gap-2 mt-3">
+            <div className="mt-3">
               <input
                 type="text"
-                className="flex-1 border-b text-sm py-1 outline-none bg-transparent"
+                className="w-full border-b text-sm py-1 outline-none bg-transparent"
                 style={{ borderColor: '#065fd4', color: '#0f0f0f' }}
                 placeholder={`回复 @${replyTo.userName}`}
                 value={replyText}
@@ -214,21 +244,52 @@ function CommentSection({ contentID, commentCount, onCommentCountChange }: Comme
                 onKeyDown={(e) => e.key === 'Enter' && handleReply()}
                 autoFocus
               />
-              <button
-                className="text-xs px-3 py-1 rounded-full"
-                style={{ color: '#606060' }}
-                onClick={() => setReplyTo(null)}
-              >
-                取消
-              </button>
-              <button
-                className="text-xs px-3 py-1 rounded-full text-white disabled:opacity-50"
-                style={{ background: '#065fd4' }}
-                disabled={!replyText.trim() || submitting}
-                onClick={handleReply}
-              >
-                回复
-              </button>
+              <div className="flex items-center justify-between mt-2">
+                <div className="relative" ref={emojiPickerFor === 'reply' ? emojiPickerRef : undefined}>
+                  <button
+                    type="button"
+                    className="p-1.5 rounded-full hover:bg-black/5 transition-colors"
+                    style={{ color: '#606060' }}
+                    onClick={() => setEmojiPickerFor(emojiPickerFor === 'reply' ? null : 'reply')}
+                  >
+                    <Smile size={16} />
+                  </button>
+                  {emojiPickerFor === 'reply' && (
+                    <div
+                      className="absolute left-0 bottom-full mb-1 grid grid-cols-8 gap-0.5 p-2 rounded-lg shadow-lg border z-50"
+                      style={{ background: '#fff', borderColor: '#e5e5e5' }}
+                    >
+                      {commonEmojis.map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          className="w-8 h-8 flex items-center justify-center rounded hover:bg-black/5 text-lg cursor-pointer"
+                          onClick={() => insertEmoji(emoji, 'reply')}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    className="text-xs px-3 py-1 rounded-full"
+                    style={{ color: '#606060' }}
+                    onClick={() => setReplyTo(null)}
+                  >
+                    取消
+                  </button>
+                  <button
+                    className="text-xs px-3 py-1 rounded-full text-white disabled:opacity-50"
+                    style={{ background: '#065fd4' }}
+                    disabled={!replyText.trim() || submitting}
+                    onClick={handleReply}
+                  >
+                    回复
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -262,22 +323,51 @@ function CommentSection({ contentID, commentCount, onCommentCountChange }: Comme
               onBlur={(e) => { if (!newComment) e.target.style.borderColor = '#e5e5e5' }}
             />
             {newComment && (
-              <div className="flex justify-end gap-2 mt-2">
-                <button
-                  className="text-sm px-3 py-1.5 rounded-full"
-                  style={{ color: '#606060' }}
-                  onClick={() => setNewComment('')}
-                >
-                  取消
-                </button>
-                <button
-                  className="text-sm px-3 py-1.5 rounded-full text-white disabled:opacity-50"
-                  style={{ background: '#065fd4' }}
-                  disabled={!newComment.trim() || submitting}
-                  onClick={handleSubmit}
-                >
-                  评论
-                </button>
+              <div className="flex items-center justify-between mt-2">
+                <div className="relative" ref={emojiPickerFor === 'new' ? emojiPickerRef : undefined}>
+                  <button
+                    type="button"
+                    className="p-1.5 rounded-full hover:bg-black/5 transition-colors"
+                    style={{ color: '#606060' }}
+                    onClick={() => setEmojiPickerFor(emojiPickerFor === 'new' ? null : 'new')}
+                  >
+                    <Smile size={18} />
+                  </button>
+                  {emojiPickerFor === 'new' && (
+                    <div
+                      className="absolute left-0 bottom-full mb-1 grid grid-cols-8 gap-0.5 p-2 rounded-lg shadow-lg border z-50"
+                      style={{ background: '#fff', borderColor: '#e5e5e5' }}
+                    >
+                      {commonEmojis.map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          className="w-8 h-8 flex items-center justify-center rounded hover:bg-black/5 text-lg cursor-pointer"
+                          onClick={() => insertEmoji(emoji, 'new')}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    className="text-sm px-3 py-1.5 rounded-full"
+                    style={{ color: '#606060' }}
+                    onClick={() => setNewComment('')}
+                  >
+                    取消
+                  </button>
+                  <button
+                    className="text-sm px-3 py-1.5 rounded-full text-white disabled:opacity-50"
+                    style={{ background: '#065fd4' }}
+                    disabled={!newComment.trim() || submitting}
+                    onClick={handleSubmit}
+                  >
+                    评论
+                  </button>
+                </div>
               </div>
             )}
           </div>
