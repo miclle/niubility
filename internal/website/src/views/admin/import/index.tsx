@@ -88,7 +88,7 @@ function AdminImport() {
               setError('')
             }}
             rows={12}
-            className="font-mono text-xs"
+            className="font-mono text-xs max-h-96 overflow-y-auto"
           />
         </div>
 

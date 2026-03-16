@@ -101,10 +101,10 @@ function AdminLayout() {
       </aside>
 
       {/* Main content - offset by sidebar width */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden transition-all duration-200" style={{ marginLeft: sidebarCollapsed ? 72 : 240 }}>
+      <div className="flex-1 min-w-0 h-screen overflow-y-auto transition-all duration-200" style={{ marginLeft: sidebarCollapsed ? 72 : 240 }}>
         {/* Header */}
         <header
-          className="h-14 shrink-0 px-6 flex items-center justify-between bg-white z-20"
+          className="sticky top-0 h-14 px-6 flex items-center justify-between bg-white z-20"
           style={{ borderBottom: '1px solid #e5e5e5' }}
         >
           {/* Toggle button */}
@@ -145,7 +145,7 @@ function AdminLayout() {
         </header>
 
         {/* Content */}
-        <main className="flex-1 flex flex-col p-6 min-h-0">
+        <main className="p-6">
           <Outlet />
         </main>
       </div>
