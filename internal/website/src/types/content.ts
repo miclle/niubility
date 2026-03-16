@@ -24,9 +24,11 @@ export interface Content {
   speaker: string
   speaker_bio: string
   like_count: number
+  comment_count: number
   created_at: string
   updated_at: string
   author?: User
+  liked?: boolean
 }
 
 // ListContentsArgs represents the query parameters for listing contents.
@@ -105,4 +107,40 @@ export interface ImportResult {
   imported: number
   skipped: number
   errors: string[]
+}
+
+// Comment represents a comment on a content item.
+export interface Comment {
+  id: string
+  content_id: string
+  user_id: string
+  parent_id: string
+  reply_to_id: string
+  body: string
+  like_count: number
+  created_at: string
+  updated_at: string
+  user?: User
+  reply_to?: Comment
+  replies?: Comment[]
+}
+
+// ListCommentsResponse represents the response for listing comments.
+export interface ListCommentsResponse {
+  comments: Comment[]
+  pagination: Pagination
+  liked_comment_ids: string[]
+}
+
+// CreateCommentArgs represents the fields required to create a comment.
+export interface CreateCommentArgs {
+  body: string
+  parent_id?: string
+  reply_to_id?: string
+}
+
+// LikeResponse represents the response after toggling a like.
+export interface LikeResponse {
+  liked: boolean
+  like_count: number
 }

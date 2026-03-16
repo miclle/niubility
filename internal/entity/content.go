@@ -36,9 +36,10 @@ type Content struct {
 	Tags       []string        `json:"tags"        gorm:"column:tags;serializer:json"`
 	Speaker    string          `json:"speaker"     gorm:"column:speaker"`
 	SpeakerBio string          `json:"speaker_bio" gorm:"column:speaker_bio"`
-	LikeCount  int64           `json:"like_count"  gorm:"column:like_count;default:0"`
-	CreatedAt  time.Time       `json:"created_at"`
-	UpdatedAt  time.Time       `json:"updated_at"`
+	LikeCount    int64           `json:"like_count"    gorm:"column:like_count;default:0"`
+	CommentCount int64           `json:"comment_count" gorm:"column:comment_count;default:0"`
+	CreatedAt    time.Time       `json:"created_at"`
+	UpdatedAt    time.Time       `json:"updated_at"`
 
 	Author *User `json:"author,omitempty" gorm:"foreignKey:AuthorID"`
 }

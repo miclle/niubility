@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ThumbsUp, Share2, ArrowLeft } from 'lucide-react'
+import { ThumbsUp, Share2, ArrowLeft, MessageCircle } from 'lucide-react'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
 
-import { getContent, listContents } from 'src/api/content'
+import { getContent, listContents, likeContent } from 'src/api/content'
 import VideoPlayer from 'src/components/VideoPlayer'
+import CommentSection from 'src/components/CommentSection'
 import type { Content } from 'src/types/content'
 
 dayjs.extend(relativeTime)
@@ -21,6 +22,9 @@ function ContentDetail() {
   const [error, setError] = useState(false)
   const [descExpanded, setDescExpanded] = useState(false)
   const [theaterMode, setTheaterMode] = useState(false)
+  const [liked, setLiked] = useState(false)
+  const [likeCount, setLikeCount] = useState(0)
+  const [commentCount, setCommentCount] = useState(0)
 
   // Fetch main content
   useEffect(() => {
@@ -29,6 +33,9 @@ function ContentDetail() {
     getContent(id)
       .then((res) => {
         setContent(res.data)
+        setLiked(!!res.data.liked)
+        setLikeCount(res.data.like_count || 0)
+        setCommentCount(res.data.comment_count || 0)
         // Fetch related contents from same category
         return listContents({
           category: res.data.category,
@@ -114,11 +121,28 @@ function ContentDetail() {
           <div className="flex items-center gap-2">
             <button
               className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
+              style={{
+                background: liked ? 'rgba(6,95,212,0.1)' : 'rgba(0,0,0,0.05)',
+                color: liked ? '#065fd4' : '#0f0f0f',
+              }}
+              onClick={() => {
+                likeContent(content.id).then((res) => {
+                  setLiked(res.data.liked)
+                  setLikeCount(res.data.like_count)
+                })
+              }}
+            >
+              <ThumbsUp size={18} fill={liked ? 'currentColor' : 'none'} />
+              <span>{likeCount || 0}</span>
+            </button>
+            <a
+              href="#comments"
+              className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors no-underline"
               style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}
             >
-              <ThumbsUp size={18} />
-              <span>{content.like_count || 0}</span>
-            </button>
+              <MessageCircle size={18} />
+              <span>{commentCount || 0}</span>
+            </a>
             <button
               className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
               style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}
@@ -179,6 +203,15 @@ function ContentDetail() {
               {descExpanded ? '收起' : '展开'}
             </button>
           )}
+        </div>
+
+        {/* Comment section */}
+        <div id="comments">
+          <CommentSection
+            contentID={content.id}
+            commentCount={commentCount}
+            onCommentCountChange={setCommentCount}
+          />
         </div>
       </div>
 

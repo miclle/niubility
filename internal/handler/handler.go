@@ -45,9 +45,15 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	// content routes (authenticated users can read, admin can write)
 	api.GET("/contents", ctrl.ListContents)
 	api.GET("/contents/:id", ctrl.GetContent)
+	api.POST("/contents/:id/comments", ctrl.CreateComment)
+	api.GET("/contents/:id/comments", ctrl.ListComments)
+	api.POST("/contents/:id/like", ctrl.LikeContent)
 	api.POST("/contents", ctrl.RequireAdmin, ctrl.CreateContent)
 	api.PUT("/contents/:id", ctrl.RequireAdmin, ctrl.UpdateContent)
 	api.DELETE("/contents/:id", ctrl.RequireAdmin, ctrl.DeleteContent)
+
+	// comment routes
+	api.POST("/comments/:id/like", ctrl.LikeComment)
 
 	// import routes (admin only)
 	api.POST("/import", ctrl.RequireAdmin, ctrl.ImportContents)

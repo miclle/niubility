@@ -30,8 +30,14 @@ func (ctrl *Ctrl) ListContents(c *fox.Context, args entity.ListContentsArgs) (*L
 	}, nil
 }
 
-// GetContent returns a single content by ID.
-func (ctrl *Ctrl) GetContent(c *fox.Context) (*entity.Content, error) {
+// GetContentResponse represents the response for getting a single content.
+type GetContentResponse struct {
+	*entity.Content
+	Liked bool `json:"liked"`
+}
+
+// GetContent returns a single content by ID, including the current user's liked status.
+func (ctrl *Ctrl) GetContent(c *fox.Context) (*GetContentResponse, error) {
 	id := c.Param("id")
 
 	content, err := ctrl.service.GetContentByID(id)
@@ -42,7 +48,38 @@ func (ctrl *Ctrl) GetContent(c *fox.Context) (*entity.Content, error) {
 		return nil, httperrors.ErrNotFound
 	}
 
-	return content, nil
+	resp := &GetContentResponse{Content: content}
+
+	if user := CurrentUser(c); user != nil {
+		liked, _ := ctrl.service.IsLiked(user.ID, id, entity.TargetTypeContent)
+		resp.Liked = liked
+	}
+
+	return resp, nil
+}
+
+// LikeContent toggles like on a content item.
+func (ctrl *Ctrl) LikeContent(c *fox.Context) (*entity.LikeResponse, error) {
+	contentID := c.Param("id")
+	user := CurrentUser(c)
+	if user == nil {
+		return nil, httperrors.ErrUnauthorized
+	}
+
+	content, err := ctrl.service.GetContentByID(contentID)
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+	if content == nil {
+		return nil, httperrors.ErrNotFound
+	}
+
+	resp, err := ctrl.service.ToggleLike(user.ID, contentID, entity.TargetTypeContent)
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+
+	return resp, nil
 }
 
 // CreateContent creates a new content (admin only).
