@@ -9,6 +9,18 @@ import dayjs from 'dayjs'
 import { listUsers, updateUser, listDepartments } from 'src/api/user'
 import type { User, Role, UserStatus, Department } from 'src/types/user'
 
+// roleLabels maps role values to Chinese display labels with styles
+const roleLabels: Record<Role, { label: string; bg: string; color: string }> = {
+  admin: { label: '管理员', bg: '#fef3c7', color: '#92400e' },
+  user: { label: '普通用户', bg: '#f2f2f2', color: '#606060' },
+}
+
+// statusLabels maps status values to Chinese display labels with styles
+const statusLabels: Record<UserStatus, { label: string; bg: string; color: string }> = {
+  activated: { label: '已激活', bg: '#dcfce7', color: '#166534' },
+  deactivated: { label: '已禁用', bg: '#fee2e2', color: '#991b1b' },
+}
+
 // DepartmentNode extends Department with children for tree structure
 interface DepartmentNode extends Department {
   children?: DepartmentNode[]
@@ -297,8 +309,8 @@ function AdminUsers() {
       <div className="flex gap-4">
       {/* Left sidebar - Department tree (sticky) */}
       <div
-        className="flex-shrink-0 bg-white rounded-xl overflow-hidden sticky top-4 self-start"
-        style={{ width: 240, border: '1px solid #e5e5e5', maxHeight: 'calc(100vh - 32px)' }}
+        className="flex-shrink-0 bg-white rounded-xl overflow-hidden sticky top-0 self-start"
+        style={{ width: 240, border: '1px solid #e5e5e5', maxHeight: 'calc(100vh - 80px)' }}
       >
         <DepartmentSidebar
           departments={departments}
@@ -338,21 +350,19 @@ function AdminUsers() {
           )}
         </div>
 
-        <div className="bg-white rounded-xl overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
-          {/* Horizontal scroll container */}
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ minWidth: 1200, borderCollapse: 'collapse', width: '100%' }}>
-              <thead>
-                <tr style={{ background: '#f9f9f9' }}>
-                  <th style={{ position: 'sticky', left: 0, zIndex: 10, background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, minWidth: 180, borderRight: '1px solid #e5e5e5' }}>用户</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap' }}>用户名</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap' }}>邮箱</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap' }}>手机</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap' }}>部门</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap' }}>角色</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap' }}>状态</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap' }}>注册时间</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap' }}>更新时间</th>
+        <div className="bg-white rounded-xl" style={{ border: '1px solid #e5e5e5' }}>
+            <table style={{ minWidth: 1200, borderCollapse: 'separate', borderSpacing: 0, width: '100%' }}>
+              <thead className="sticky top-0 z-20">
+                <tr>
+                  <th style={{ position: 'sticky', left: 0, zIndex: 20, background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, minWidth: 180, borderRight: '1px solid #e5e5e5', borderBottom: '1px solid #e5e5e5' }}>用户</th>
+                  <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>用户名</th>
+                  <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>邮箱</th>
+                  <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>手机</th>
+                  <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>部门</th>
+                  <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>角色</th>
+                  <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>状态</th>
+                  <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>注册时间</th>
+                  <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>更新时间</th>
                 </tr>
               </thead>
               <tbody>
@@ -364,8 +374,8 @@ function AdminUsers() {
                   </tr>
                 ) : (
                   users.map((user) => (
-                    <tr key={user.id} style={{ borderTop: '1px solid #e5e5e5' }}>
-                      <td style={{ position: 'sticky', left: 0, zIndex: 10, background: '#ffffff', padding: '12px 16px', borderRight: '1px solid #e5e5e5' }}>
+                    <tr key={user.id}>
+                      <td style={{ position: 'sticky', left: 0, zIndex: 10, background: '#ffffff', padding: '12px 16px', borderRight: '1px solid #e5e5e5', borderTop: '1px solid #e5e5e5' }}>
                         <div className="flex items-center gap-3">
                           <Avatar className="size-8">
                             <AvatarImage src={user.avatar} alt={user.name || user.username} />
@@ -374,65 +384,66 @@ function AdminUsers() {
                           <span className="font-medium" style={{ color: '#0f0f0f', whiteSpace: 'nowrap' }}>{user.name || '-'}</span>
                         </div>
                       </td>
-                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }}>{user.username}</td>
-                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }}>{user.email || '-'}</td>
-                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }}>{user.mobile || '-'}</td>
-                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>{user.username}</td>
+                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>{user.email || '-'}</td>
+                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>{user.mobile || '-'}</td>
+                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>
                         <span className="text-xs" style={{ background: '#f2f2f2', padding: '2px 6px', borderRadius: 4, display: 'inline-block' }}>
                           {getDepartmentNames(user.department_ids)}
                         </span>
                       </td>
-                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>
                         <Select value={user.role} onValueChange={(val) => handleRoleChange(user.id, val as Role)}>
                           <SelectTrigger size="sm" className="w-24 border-0 bg-transparent shadow-none">
-                            <SelectValue />
+                            <SelectValue>
+                              {(() => { const r = roleLabels[user.role]; return r ? <span className="px-2 py-0.5 rounded text-xs" style={{ background: r.bg, color: r.color }}>{r.label}</span> : user.role })()}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="admin">
-                              <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#fef3c7', color: '#92400e' }}>管理员</span>
-                            </SelectItem>
-                            <SelectItem value="user">
-                              <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#f2f2f2', color: '#606060' }}>普通用户</span>
-                            </SelectItem>
+                            {(Object.entries(roleLabels) as [Role, typeof roleLabels[Role]][]).map(([value, { label, bg, color }]) => (
+                              <SelectItem key={value} value={value}>
+                                <span className="px-2 py-0.5 rounded text-xs" style={{ background: bg, color }}>{label}</span>
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </td>
-                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>
                         <Select value={user.status} onValueChange={(val) => handleStatusChange(user.id, val as UserStatus)}>
                           <SelectTrigger size="sm" className="w-24 border-0 bg-transparent shadow-none">
-                            <SelectValue />
+                            <SelectValue>
+                              {(() => { const s = statusLabels[user.status]; return s ? <span className="px-2 py-0.5 rounded text-xs" style={{ background: s.bg, color: s.color }}>{s.label}</span> : user.status })()}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="activated">
-                              <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#dcfce7', color: '#166534' }}>已激活</span>
-                            </SelectItem>
-                            <SelectItem value="deactivated">
-                              <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#fee2e2', color: '#991b1b' }}>已禁用</span>
-                            </SelectItem>
+                            {(Object.entries(statusLabels) as [UserStatus, typeof statusLabels[UserStatus]][]).map(([value, { label, bg, color }]) => (
+                              <SelectItem key={value} value={value}>
+                                <span className="px-2 py-0.5 rounded text-xs" style={{ background: bg, color }}>{label}</span>
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </td>
-                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }}>{dayjs(user.created_at).format('YYYY-MM-DD HH:mm')}</td>
-                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }}>{dayjs(user.updated_at).format('YYYY-MM-DD HH:mm')}</td>
+                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>{dayjs(user.created_at).format('YYYY-MM-DD HH:mm')}</td>
+                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>{dayjs(user.updated_at).format('YYYY-MM-DD HH:mm')}</td>
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
-          </div>
 
-          {/* Loading indicator */}
-          <div ref={observerRef} className="py-4 text-center">
-            {loading && hasMore && (
-              <div className="flex items-center justify-center gap-2" style={{ color: '#909090' }}>
-                <Loader2 size={16} className="animate-spin" />
-                <span className="text-sm">加载更多...</span>
-              </div>
-            )}
-            {!hasMore && users.length > 0 && (
-              <span className="text-sm" style={{ color: '#909090' }}>已加载全部用户</span>
-            )}
-          </div>
+            {/* Loading indicator */}
+            <div ref={observerRef} className="py-4 text-center">
+              {loading && hasMore && (
+                <div className="flex items-center justify-center gap-2" style={{ color: '#909090' }}>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span className="text-sm">加载更多...</span>
+                </div>
+              )}
+              {!hasMore && users.length > 0 && (
+                <span className="text-sm" style={{ color: '#909090' }}>已加载全部用户</span>
+              )}
+            </div>
         </div>
       </div>
       </div>
