@@ -58,6 +58,12 @@ function CommentSection({ contentID, commentCount, onCommentCountChange }: Comme
     setEmojiPickerFor(null)
   }
 
+  // Auto-resize textarea to fit content
+  const autoResize = (el: HTMLTextAreaElement) => {
+    el.style.height = 'auto'
+    el.style.height = el.scrollHeight + 'px'
+  }
+
   const fetchComments = useCallback((pageNum: number) => {
     setLoading(true)
     listComments(contentID, { page: pageNum, limit: 20 })
@@ -235,14 +241,14 @@ function CommentSection({ contentID, commentCount, onCommentCountChange }: Comme
           {/* Reply input for this comment */}
           {replyTo?.commentID === comment.id && (
             <div className="mt-3">
-              <input
-                type="text"
-                className="w-full border-b text-sm py-1 outline-none bg-transparent"
+              <textarea
+                rows={1}
+                className="w-full border-b text-sm py-1 outline-none bg-transparent resize-none overflow-hidden"
                 style={{ borderColor: '#065fd4', color: '#0f0f0f' }}
                 placeholder={`回复 @${replyTo.userName}`}
                 value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleReply()}
+                onChange={(e) => { setReplyText(e.target.value); autoResize(e.target) }}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReply() } }}
                 autoFocus
               />
               <div className="flex items-center justify-between mt-2">
@@ -312,14 +318,14 @@ function CommentSection({ contentID, commentCount, onCommentCountChange }: Comme
             <AvatarFallback>{currentUser.name?.charAt(0) || '我'}</AvatarFallback>
           </Avatar>
           <div className="flex-1">
-            <input
-              type="text"
-              className="w-full border-b text-sm py-1 outline-none bg-transparent"
+            <textarea
+              rows={1}
+              className="w-full border-b text-sm py-1 outline-none bg-transparent resize-none overflow-hidden"
               style={{ borderColor: commentFocused ? '#0f0f0f' : '#e5e5e5', color: '#0f0f0f' }}
               placeholder="添加评论..."
               value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+              onChange={(e) => { setNewComment(e.target.value); autoResize(e.target) }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit() } }}
               onFocus={() => setCommentFocused(true)}
             />
             {commentFocused && (
