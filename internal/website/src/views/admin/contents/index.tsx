@@ -93,7 +93,7 @@ function AdminContents() {
               contents.map((content) => (
                 <tr key={content.id} style={{ borderTop: '1px solid #e5e5e5' }}>
                   <td style={{ padding: '12px 16px' }}>
-                    <span className="font-medium line-clamp-1" style={{ color: '#0f0f0f' }}>{content.title}</span>
+                    <Link to={`/contents/${content.id}`} target="_blank" className="font-medium line-clamp-1 hover:underline" style={{ color: '#0f0f0f' }}>{content.title}</Link>
                   </td>
                   <td style={{ padding: '12px 16px' }}>
                     <span

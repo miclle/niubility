@@ -28,9 +28,9 @@ function AdminLayout() {
 
   return (
     <div className="flex min-h-screen bg-white">
-      {/* Sidebar - YouTube style with collapse support */}
+      {/* Sidebar - fixed, does not scroll with page */}
       <aside
-        className="flex flex-col flex-shrink-0 bg-white transition-all duration-200"
+        className="fixed top-0 left-0 h-screen flex flex-col bg-white transition-all duration-200 z-30"
         style={{
           width: sidebarCollapsed ? 72 : 240,
           borderRight: '1px solid #e5e5e5',
@@ -100,11 +100,11 @@ function AdminLayout() {
         </div>
       </aside>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Main content - offset by sidebar width */}
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden transition-all duration-200" style={{ marginLeft: sidebarCollapsed ? 72 : 240 }}>
         {/* Header */}
         <header
-          className="h-14 px-6 flex items-center justify-between bg-white"
+          className="h-14 shrink-0 px-6 flex items-center justify-between bg-white z-20"
           style={{ borderBottom: '1px solid #e5e5e5' }}
         >
           {/* Toggle button */}
@@ -145,7 +145,7 @@ function AdminLayout() {
         </header>
 
         {/* Content */}
-        <main className="flex-1 p-6 overflow-auto">
+        <main className="flex-1 flex flex-col p-6 min-h-0">
           <Outlet />
         </main>
       </div>

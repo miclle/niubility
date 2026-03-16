@@ -291,8 +291,9 @@ function AdminUsers() {
   const selectedDept = departments.find(d => String(d.id) === departmentId)
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="flex flex-col flex-1 min-h-0">
+      {/* Title */}
+      <div className="flex items-center justify-between mb-4 shrink-0">
         <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>
           用户管理
           {selectedDept && (
@@ -306,146 +307,144 @@ function AdminUsers() {
         </div>
       </div>
 
-      <div className="flex gap-4">
-      {/* Left sidebar - Department tree (sticky) */}
-      <div
-        className="flex-shrink-0 bg-white rounded-xl overflow-hidden sticky top-0 self-start"
-        style={{ width: 240, border: '1px solid #e5e5e5', maxHeight: 'calc(100vh - 80px)' }}
-      >
-        <DepartmentSidebar
-          departments={departments}
-          selectedId={departmentId}
-          onSelect={(id) => updateFilters('department_id', id)}
-        />
-      </div>
-
-      {/* Right side - User list */}
-      <div className="flex-1 min-w-0">
-
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3 mb-4">
-          <div className="relative" style={{ minWidth: 280 }}>
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#909090' }} />
-            <Input
-              placeholder="搜索用户名、姓名、邮箱或手机号..."
-              value={search}
-              onChange={(e) => updateFilters('search', e.target.value)}
-              className="pl-9"
-            />
-          </div>
-
-          {hasFilters && (
-            <button
-              onClick={clearFilters}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-colors"
-              style={{ color: '#606060', background: '#f2f2f2' }}
-            >
-              <X size={14} />
-              清除筛选
-            </button>
-          )}
-
-          {loading && (
-            <Loader2 size={16} className="animate-spin" style={{ color: '#909090' }} />
-          )}
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3 mb-4 shrink-0">
+        <div className="relative" style={{ minWidth: 280 }}>
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#909090' }} />
+          <Input
+            placeholder="搜索用户名、姓名、邮箱或手机号..."
+            value={search}
+            onChange={(e) => updateFilters('search', e.target.value)}
+            className="pl-9"
+          />
         </div>
 
-        <div className="bg-white rounded-xl" style={{ border: '1px solid #e5e5e5' }}>
-            <table style={{ minWidth: 1200, borderCollapse: 'separate', borderSpacing: 0, width: '100%' }}>
-              <thead className="sticky top-0 z-20">
+        {hasFilters && (
+          <button
+            onClick={clearFilters}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-colors"
+            style={{ color: '#606060', background: '#f2f2f2' }}
+          >
+            <X size={14} />
+            清除筛选
+          </button>
+        )}
+
+        {loading && (
+          <Loader2 size={16} className="animate-spin" style={{ color: '#909090' }} />
+        )}
+      </div>
+
+      {/* Content area: sidebar + table, fills remaining height */}
+      <div className="flex gap-4 flex-1 min-h-0">
+        {/* Left sidebar - Department tree */}
+        <div
+          className="shrink-0 bg-white rounded-xl overflow-y-auto"
+          style={{ width: 240, border: '1px solid #e5e5e5' }}
+        >
+          <DepartmentSidebar
+            departments={departments}
+            selectedId={departmentId}
+            onSelect={(id) => updateFilters('department_id', id)}
+          />
+        </div>
+
+        {/* Right side - Table with contained scroll */}
+        <div className="flex-1 min-w-0 bg-white rounded-xl overflow-auto" style={{ border: '1px solid #e5e5e5' }}>
+          <table style={{ minWidth: 1200, borderCollapse: 'separate', borderSpacing: 0, width: '100%' }}>
+            <thead className="sticky top-0 z-20">
+              <tr>
+                <th style={{ position: 'sticky', left: 0, zIndex: 20, background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, minWidth: 180, borderRight: '1px solid #e5e5e5', borderBottom: '1px solid #e5e5e5' }}>用户</th>
+                <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>用户名</th>
+                <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>邮箱</th>
+                <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>手机</th>
+                <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>部门</th>
+                <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>角色</th>
+                <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>状态</th>
+                <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>注册时间</th>
+                <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>更新时间</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.length === 0 && !loading ? (
                 <tr>
-                  <th style={{ position: 'sticky', left: 0, zIndex: 20, background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, minWidth: 180, borderRight: '1px solid #e5e5e5', borderBottom: '1px solid #e5e5e5' }}>用户</th>
-                  <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>用户名</th>
-                  <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>邮箱</th>
-                  <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>手机</th>
-                  <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>部门</th>
-                  <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>角色</th>
-                  <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>状态</th>
-                  <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>注册时间</th>
-                  <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>更新时间</th>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: 32, color: '#909090' }}>
+                    {hasFilters ? '未找到匹配的用户' : '暂无用户'}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {users.length === 0 && !loading ? (
-                  <tr>
-                    <td colSpan={9} style={{ textAlign: 'center', padding: 32, color: '#909090' }}>
-                      {hasFilters ? '未找到匹配的用户' : '暂无用户'}
+              ) : (
+                users.map((user) => (
+                  <tr key={user.id}>
+                    <td style={{ position: 'sticky', left: 0, zIndex: 10, background: '#ffffff', padding: '12px 16px', borderRight: '1px solid #e5e5e5', borderTop: '1px solid #e5e5e5' }}>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="size-8">
+                          <AvatarImage src={user.avatar} alt={user.name || user.username} />
+                          <AvatarFallback>{user.name?.charAt(0) || user.username.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium" style={{ color: '#0f0f0f', whiteSpace: 'nowrap' }}>{user.name || '-'}</span>
+                      </div>
                     </td>
+                    <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>{user.username}</td>
+                    <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>{user.email || '-'}</td>
+                    <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>{user.mobile || '-'}</td>
+                    <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>
+                      <span className="text-xs" style={{ background: '#f2f2f2', padding: '2px 6px', borderRadius: 4, display: 'inline-block' }}>
+                        {getDepartmentNames(user.department_ids)}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>
+                      <Select value={user.role} onValueChange={(val) => handleRoleChange(user.id, val as Role)}>
+                        <SelectTrigger size="sm" className="w-24 border-0 bg-transparent shadow-none">
+                          <SelectValue>
+                            {(() => { const r = roleLabels[user.role]; return r ? <span className="px-2 py-0.5 rounded text-xs" style={{ background: r.bg, color: r.color }}>{r.label}</span> : user.role })()}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(Object.entries(roleLabels) as [Role, typeof roleLabels[Role]][]).map(([value, { label, bg, color }]) => (
+                            <SelectItem key={value} value={value}>
+                              <span className="px-2 py-0.5 rounded text-xs" style={{ background: bg, color }}>{label}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>
+                      <Select value={user.status} onValueChange={(val) => handleStatusChange(user.id, val as UserStatus)}>
+                        <SelectTrigger size="sm" className="w-24 border-0 bg-transparent shadow-none">
+                          <SelectValue>
+                            {(() => { const s = statusLabels[user.status]; return s ? <span className="px-2 py-0.5 rounded text-xs" style={{ background: s.bg, color: s.color }}>{s.label}</span> : user.status })()}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(Object.entries(statusLabels) as [UserStatus, typeof statusLabels[UserStatus]][]).map(([value, { label, bg, color }]) => (
+                            <SelectItem key={value} value={value}>
+                              <span className="px-2 py-0.5 rounded text-xs" style={{ background: bg, color }}>{label}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>{dayjs(user.created_at).format('YYYY-MM-DD HH:mm')}</td>
+                    <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>{dayjs(user.updated_at).format('YYYY-MM-DD HH:mm')}</td>
                   </tr>
-                ) : (
-                  users.map((user) => (
-                    <tr key={user.id}>
-                      <td style={{ position: 'sticky', left: 0, zIndex: 10, background: '#ffffff', padding: '12px 16px', borderRight: '1px solid #e5e5e5', borderTop: '1px solid #e5e5e5' }}>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="size-8">
-                            <AvatarImage src={user.avatar} alt={user.name || user.username} />
-                            <AvatarFallback>{user.name?.charAt(0) || user.username.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium" style={{ color: '#0f0f0f', whiteSpace: 'nowrap' }}>{user.name || '-'}</span>
-                        </div>
-                      </td>
-                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>{user.username}</td>
-                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>{user.email || '-'}</td>
-                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>{user.mobile || '-'}</td>
-                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>
-                        <span className="text-xs" style={{ background: '#f2f2f2', padding: '2px 6px', borderRadius: 4, display: 'inline-block' }}>
-                          {getDepartmentNames(user.department_ids)}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>
-                        <Select value={user.role} onValueChange={(val) => handleRoleChange(user.id, val as Role)}>
-                          <SelectTrigger size="sm" className="w-24 border-0 bg-transparent shadow-none">
-                            <SelectValue>
-                              {(() => { const r = roleLabels[user.role]; return r ? <span className="px-2 py-0.5 rounded text-xs" style={{ background: r.bg, color: r.color }}>{r.label}</span> : user.role })()}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(Object.entries(roleLabels) as [Role, typeof roleLabels[Role]][]).map(([value, { label, bg, color }]) => (
-                              <SelectItem key={value} value={value}>
-                                <span className="px-2 py-0.5 rounded text-xs" style={{ background: bg, color }}>{label}</span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>
-                        <Select value={user.status} onValueChange={(val) => handleStatusChange(user.id, val as UserStatus)}>
-                          <SelectTrigger size="sm" className="w-24 border-0 bg-transparent shadow-none">
-                            <SelectValue>
-                              {(() => { const s = statusLabels[user.status]; return s ? <span className="px-2 py-0.5 rounded text-xs" style={{ background: s.bg, color: s.color }}>{s.label}</span> : user.status })()}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(Object.entries(statusLabels) as [UserStatus, typeof statusLabels[UserStatus]][]).map(([value, { label, bg, color }]) => (
-                              <SelectItem key={value} value={value}>
-                                <span className="px-2 py-0.5 rounded text-xs" style={{ background: bg, color }}>{label}</span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>{dayjs(user.created_at).format('YYYY-MM-DD HH:mm')}</td>
-                      <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>{dayjs(user.updated_at).format('YYYY-MM-DD HH:mm')}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                ))
+              )}
+            </tbody>
+          </table>
 
-            {/* Loading indicator */}
-            <div ref={observerRef} className="py-4 text-center">
-              {loading && hasMore && (
-                <div className="flex items-center justify-center gap-2" style={{ color: '#909090' }}>
-                  <Loader2 size={16} className="animate-spin" />
-                  <span className="text-sm">加载更多...</span>
-                </div>
-              )}
-              {!hasMore && users.length > 0 && (
-                <span className="text-sm" style={{ color: '#909090' }}>已加载全部用户</span>
-              )}
-            </div>
+          {/* Loading indicator */}
+          <div ref={observerRef} className="py-4 text-center">
+            {loading && hasMore && (
+              <div className="flex items-center justify-center gap-2" style={{ color: '#909090' }}>
+                <Loader2 size={16} className="animate-spin" />
+                <span className="text-sm">加载更多...</span>
+              </div>
+            )}
+            {!hasMore && users.length > 0 && (
+              <span className="text-sm" style={{ color: '#909090' }}>已加载全部用户</span>
+            )}
+          </div>
         </div>
-      </div>
       </div>
     </div>
   )
