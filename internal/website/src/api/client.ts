@@ -6,12 +6,16 @@ const client = axios.create({
   withCredentials: true,
 })
 
-// Intercept 401 responses to redirect to SSO login.
+// Intercept 401 responses to redirect to login page.
 client.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      window.location.href = '/sso?redirect=' + encodeURIComponent(window.location.pathname)
+      // Only redirect if not already on auth-related pages
+      const path = window.location.pathname
+      if (path !== '/login' && path !== '/init' && path !== '/register') {
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   },

@@ -2,13 +2,14 @@
 package service
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"sync"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/miclle/niubility/internal/config"
 	"github.com/miclle/niubility/internal/entity"
 	"github.com/miclle/niubility/pkg/textencrypt"
 	"github.com/xen0n/go-workwx/v2"
@@ -20,12 +21,13 @@ type Service struct {
 	Wechat    *workwx.WorkwxApp
 	Encryptor *textencrypt.Encryptor
 
+	jwtSecret   string
 	wechatMutex sync.RWMutex
 }
 
-// New creates a new Service instance with the given config.
-// WeChat configuration is loaded from database first, falling back to file config.
-func New(dsn string, wechatCfg *config.WechatConfig, encryptionKey string) (*Service, error) {
+// New creates a new Service instance with the given DSN.
+// It auto-generates jwt_secret and encryption_key on first boot, loading them from DB on subsequent boots.
+func New(dsn string) (*Service, error) {
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		DisableForeignKeyConstraintWhenMigrating: true,
 	})
@@ -39,38 +41,111 @@ func New(dsn string, wechatCfg *config.WechatConfig, encryptionKey string) (*Ser
 
 	svc := &Service{DB: db}
 
-	// Initialize encryptor (required for security)
-	if encryptionKey == "" {
-		return nil, fmt.Errorf("encryptionKey is required in server config, generate with: openssl rand -hex 32")
+	// Initialize encryption key (auto-generate on first boot)
+	encKey, err := svc.ensureSetting(entity.SettingEncryptionKey, func() (string, error) {
+		return generateHexKey(32)
+	})
+	if err != nil {
+		return nil, fmt.Errorf("ensure encryption key: %w", err)
 	}
-	enc, err := textencrypt.NewEncryptor(encryptionKey)
+
+	enc, err := textencrypt.NewEncryptor(encKey)
 	if err != nil {
 		return nil, fmt.Errorf("create encryptor: %w", err)
 	}
 	svc.Encryptor = enc
-	fmt.Println("[Service] Encryptor initialized for sensitive settings")
+	fmt.Println("[Service] Encryptor initialized")
 
-	// Initialize WeChat client
-	wechatApp := svc.initWechatClient(wechatCfg)
+	// Initialize JWT secret (auto-generate on first boot)
+	jwtSecret, err := svc.ensureSetting(entity.SettingJWTSecret, func() (string, error) {
+		return generateHexKey(64)
+	})
+	if err != nil {
+		return nil, fmt.Errorf("ensure jwt secret: %w", err)
+	}
+	svc.jwtSecret = jwtSecret
+	fmt.Println("[Service] JWT secret loaded")
+
+	// Initialize WeChat client from database config
+	wechatApp := svc.initWechatClient()
 	svc.Wechat = wechatApp
 
 	return svc, nil
 }
 
-// initWechatClient initializes the WeChat client from database or file config.
-// Database config takes priority over file config.
-func (s *Service) initWechatClient(fileCfg *config.WechatConfig) *workwx.WorkwxApp {
-	// Try to load from database first
+// GetJWTSecret returns the JWT signing secret.
+func (s *Service) GetJWTSecret() string {
+	return s.jwtSecret
+}
+
+// IsInitialized checks whether the system has been initialized with a super admin.
+func (s *Service) IsInitialized() bool {
+	val, err := s.GetSetting(entity.SettingInitialized)
+	if err != nil {
+		return false
+	}
+	return val == "true"
+}
+
+// IsRegistrationEnabled checks whether user self-registration is enabled.
+func (s *Service) IsRegistrationEnabled() bool {
+	val, err := s.GetSetting(entity.SettingRegistrationEnabled)
+	if err != nil {
+		return false
+	}
+	return val == "true"
+}
+
+// IsSSOEnabled checks whether SSO login is enabled.
+func (s *Service) IsSSOEnabled() bool {
+	val, err := s.GetSetting(entity.SettingSSOEnabled)
+	if err != nil {
+		return false
+	}
+	return val == "true"
+}
+
+// IsCookieSecure checks whether the Secure flag should be set on cookies.
+func (s *Service) IsCookieSecure() bool {
+	val, err := s.GetSetting(entity.SettingCookieSecure)
+	if err != nil {
+		return false
+	}
+	return val == "true"
+}
+
+// ensureSetting ensures a setting key exists in the database.
+// If not present, it calls the generator to create a value and stores it.
+func (s *Service) ensureSetting(key string, generate func() (string, error)) (string, error) {
+	var setting entity.Setting
+	err := s.DB.Where("key = ?", key).First(&setting).Error
+	if err == nil {
+		return setting.Value, nil
+	}
+
+	val, err := generate()
+	if err != nil {
+		return "", fmt.Errorf("generate value for %s: %w", key, err)
+	}
+
+	setting = entity.Setting{Key: key, Value: val}
+	if err := s.DB.Create(&setting).Error; err != nil {
+		// Another instance may have created it concurrently, try reading again
+		if err := s.DB.Where("key = ?", key).First(&setting).Error; err != nil {
+			return "", fmt.Errorf("get setting %s after create conflict: %w", key, err)
+		}
+		return setting.Value, nil
+	}
+
+	return val, nil
+}
+
+// initWechatClient initializes the WeChat client from database config.
+func (s *Service) initWechatClient() *workwx.WorkwxApp {
 	dbCfg, err := s.GetWechatConfig()
 	if err == nil && dbCfg != nil && dbCfg.CorpID != "" {
 		fmt.Printf("[Service] Initializing WeChat client from database: CorpID=%s\n", dbCfg.CorpID)
 		return workwx.New(dbCfg.CorpID).WithApp(dbCfg.AppSecret, dbCfg.AppAgentID)
-	}
-
-	// Fall back to file config
-	if fileCfg != nil && fileCfg.CorpID != "" {
-		fmt.Printf("[Service] Initializing WeChat client from config file: CorpID=%s\n", fileCfg.CorpID)
-		return workwx.New(fileCfg.CorpID).WithApp(fileCfg.AppSecret, fileCfg.AppAgentID)
 	}
 
 	fmt.Println("[Service] WeChat client not initialized: no valid configuration found")
@@ -97,4 +172,13 @@ func (s *Service) RefreshWechatClient() error {
 	s.Wechat = workwx.New(dbCfg.CorpID).WithApp(dbCfg.AppSecret, dbCfg.AppAgentID)
 	fmt.Printf("[Service] WeChat client refreshed: CorpID=%s\n", dbCfg.CorpID)
 	return nil
+}
+
+// generateHexKey generates a random key of n bytes and returns it as a hex string.
+func generateHexKey(n int) (string, error) {
+	b := make([]byte, n)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("generate random bytes: %w", err)
+	}
+	return hex.EncodeToString(b), nil
 }

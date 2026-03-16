@@ -12,6 +12,7 @@ import (
 // sensitiveKeys are setting keys that should be encrypted in storage.
 var sensitiveKeys = map[string]bool{
 	entity.SettingWechatAppSecret: true,
+	entity.SettingSSOSecret:       true,
 }
 
 // GetSetting retrieves a setting value by key.

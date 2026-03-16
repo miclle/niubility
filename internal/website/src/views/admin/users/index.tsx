@@ -11,6 +11,7 @@ import type { User, Role, UserStatus, Department } from 'src/types/user'
 
 // roleLabels maps role values to Chinese display labels with styles
 const roleLabels: Record<Role, { label: string; bg: string; color: string }> = {
+  super_admin: { label: '超级管理员', bg: '#fde68a', color: '#78350f' },
   admin: { label: '管理员', bg: '#fef3c7', color: '#92400e' },
   user: { label: '普通用户', bg: '#f2f2f2', color: '#606060' },
 }

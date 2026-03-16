@@ -3,14 +3,14 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"time"
+	"net/url"
 
 	"github.com/fox-gonic/fox"
 	"github.com/fox-gonic/fox/httperrors"
 	"github.com/fox-gonic/fox/render"
-	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/miclle/niubility/internal/entity"
+	"github.com/miclle/niubility/pkg/sso"
 )
 
 // AuthenticationState represents the authentication state.
@@ -30,8 +30,19 @@ type SSOCallbackArgs struct {
 }
 
 // SSOCallback handles the SSO login callback.
+// Only available when SSO is enabled.
 func (ctrl *Ctrl) SSOCallback(c *fox.Context, args *SSOCallbackArgs) any {
-	userinfo, err := ctrl.sso.GetLoginUserInfo(c, args.Token)
+	if !ctrl.service.IsSSOEnabled() {
+		return render.Redirect{Code: 302, Location: "/login"}
+	}
+
+	ssoSvc := ctrl.getSSOService()
+	if ssoSvc == nil {
+		c.Logger.Error("sso service not configured")
+		return render.Redirect{Code: 302, Location: "/500"}
+	}
+
+	userinfo, err := ssoSvc.GetLoginUserInfo(c, args.Token)
 	if err != nil {
 		c.Logger.Errorf("sso get login user info failed, error: %+v", err)
 		return render.Redirect{Code: 302, Location: "/500"}
@@ -48,38 +59,13 @@ func (ctrl *Ctrl) SSOCallback(c *fox.Context, args *SSOCallbackArgs) any {
 		return render.Redirect{Code: 302, Location: "/500"}
 	}
 
-	var (
-		timeNow   = time.Now()
-		expiresAt = timeNow.Add(30 * 24 * time.Hour)
-	)
-
-	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
-		Issuer:    user.Username,
-		IssuedAt:  jwt.NewNumericDate(timeNow),
-		ExpiresAt: jwt.NewNumericDate(expiresAt),
-	})
-
-	tokenString, err := jwtToken.SignedString([]byte(ctrl.config.Server.Secret))
+	tokenString, err := ctrl.issueToken(user.Username)
 	if err != nil {
 		c.Logger.Errorf("create jwt token failed: %s", err.Error())
 		return render.Redirect{Code: 302, Location: "/500"}
 	}
 
-	cookie := &http.Cookie{
-		Name:     CookieName,
-		Value:    tokenString,
-		Path:     "/",
-		MaxAge:   int(expiresAt.Sub(timeNow).Seconds()),
-		Secure:   ctrl.config.Server.CookieSecure,
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-	}
-
-	if cookie.Secure {
-		cookie.SameSite = http.SameSiteNoneMode
-	}
-
-	http.SetCookie(c.Writer, cookie)
+	ctrl.setAuthCookie(c, tokenString)
 
 	if args.Redirect == "" {
 		args.Redirect = "/"
@@ -90,14 +76,28 @@ func (ctrl *Ctrl) SSOCallback(c *fox.Context, args *SSOCallbackArgs) any {
 
 // BootResponse represents the boot response.
 type BootResponse struct {
-	Authentication AuthenticationState `json:"authentication"`
-	User           *entity.User        `json:"user,omitempty"`
+	Initialized         bool                `json:"initialized"`
+	Authentication      AuthenticationState `json:"authentication"`
+	User                *entity.User        `json:"user,omitempty"`
+	RegistrationEnabled bool                `json:"registration_enabled"`
+	SSOEnabled          bool                `json:"sso_enabled"`
+	SSOLoginURL         string              `json:"sso_login_url,omitempty"`
 }
 
-// Boot returns the current authenticated user's information.
+// Boot returns the current system and authentication state.
 func (ctrl *Ctrl) Boot(c *fox.Context) *BootResponse {
+	initialized := ctrl.service.IsInitialized()
+
 	resp := &BootResponse{
-		Authentication: AuthenticationStateUnauthorized,
+		Initialized:         initialized,
+		Authentication:      AuthenticationStateUnauthorized,
+		RegistrationEnabled: ctrl.service.IsRegistrationEnabled(),
+		SSOEnabled:          ctrl.service.IsSSOEnabled(),
+	}
+
+	// Build SSO login URL if SSO is enabled
+	if resp.SSOEnabled {
+		resp.SSOLoginURL = ctrl.buildSSOLoginURL(c)
 	}
 
 	user := CurrentUser(c)
@@ -114,14 +114,16 @@ type LogoutArgs struct {
 	Redirect string `query:"redirect"`
 }
 
-// Logout clears the authentication cookie and redirects to SSO signout.
+// Logout clears the authentication cookie and redirects.
 func (ctrl *Ctrl) Logout(c *fox.Context, args *LogoutArgs) render.Redirect {
+	secure := ctrl.service.IsCookieSecure()
+
 	cookie := &http.Cookie{
 		Name:     CookieName,
 		Value:    "",
 		Path:     "/",
 		MaxAge:   -1,
-		Secure:   ctrl.config.Server.CookieSecure,
+		Secure:   secure,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	}
@@ -133,18 +135,61 @@ func (ctrl *Ctrl) Logout(c *fox.Context, args *LogoutArgs) render.Redirect {
 	http.SetCookie(c.Writer, cookie)
 
 	if args.Redirect == "" {
-		args.Redirect = "/"
+		args.Redirect = "/login"
+	}
+
+	// If SSO is enabled, redirect to SSO signout
+	if ctrl.service.IsSSOEnabled() {
+		ssoHost, _ := ctrl.service.GetSetting(entity.SettingSSOHost)
+		if ssoHost != "" {
+			scheme := "https"
+			if c.Request.TLS == nil {
+				scheme = "http"
+			}
+			redirect := fmt.Sprintf("%s://%s/sso?redirect=%s", scheme, c.Request.Host, args.Redirect)
+			location := fmt.Sprintf("%s/signout?redirect=%s", ssoHost, redirect)
+			return render.Redirect{Code: 302, Location: location}
+		}
+	}
+
+	return render.Redirect{Code: 302, Location: args.Redirect}
+}
+
+// getSSOService creates an SSO service from database settings.
+func (ctrl *Ctrl) getSSOService() *sso.Service {
+	host, _ := ctrl.service.GetSetting(entity.SettingSSOHost)
+	clientID, _ := ctrl.service.GetSetting(entity.SettingSSOClientID)
+	secret, _ := ctrl.service.GetSetting(entity.SettingSSOSecret)
+
+	if host == "" || clientID == "" || secret == "" {
+		return nil
+	}
+
+	return sso.NewService(sso.Config{
+		Host:     host,
+		ClientID: clientID,
+		Secret:   secret,
+	})
+}
+
+// buildSSOLoginURL constructs the SSO login redirect URL.
+func (ctrl *Ctrl) buildSSOLoginURL(c *fox.Context) string {
+	ssoSvc := ctrl.getSSOService()
+	if ssoSvc == nil {
+		return ""
 	}
 
 	scheme := "https"
 	if c.Request.TLS == nil {
 		scheme = "http"
 	}
+	callbackURL := fmt.Sprintf("%s://%s/sso", scheme, c.Request.Host)
 
-	redirect := fmt.Sprintf("%s://%s/sso?redirect=%s", scheme, c.Request.Host, args.Redirect)
-	location := fmt.Sprintf("%s/signout?redirect=%s", ctrl.config.SSO.Host, redirect)
+	query := url.Values{}
+	query.Set("client_id", ssoSvc.ClientID)
+	query.Set("redirect", callbackURL)
 
-	return render.Redirect{Code: 302, Location: location}
+	return fmt.Sprintf("%s?%s", ssoSvc.Host, query.Encode())
 }
 
 // ListUsersResponse represents the response for listing users.

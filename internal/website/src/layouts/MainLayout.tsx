@@ -9,9 +9,21 @@ import type { ContentType, ContentCategory } from 'src/types/content'
 
 // MainLayout provides YouTube-style layout with top nav and left sidebar.
 function MainLayout() {
-  const { currentUser } = useAppContext()
+  const { initialized, currentUser } = useAppContext()
   const navigate = useNavigate()
   const location = useLocation()
+
+  // If system is not initialized, show prompt instead of normal content
+  if (!initialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white px-4">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold mb-2" style={{ color: '#0f0f0f' }}>Niubility</h1>
+          <p className="text-sm" style={{ color: '#606060' }}>系统尚未初始化，请联系管理员完成初始设置</p>
+        </div>
+      </div>
+    )
+  }
 
   // Filter state managed in layout, passed to child via outlet context
   const [keyword, setKeyword] = useState('')
@@ -127,7 +139,7 @@ function MainLayout() {
                   {currentUser.name || currentUser.username}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                {currentUser.role === 'admin' && (
+                {(currentUser.role === 'admin' || currentUser.role === 'super_admin') && (
                   <DropdownMenuItem onClick={() => navigate('/admin')}>
                     <Settings size={16} />
                     管理后台
@@ -147,7 +159,7 @@ function MainLayout() {
             </>
           ) : (
             <a
-              href={'/sso?redirect=' + encodeURIComponent(window.location.pathname)}
+              href="/login"
               className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium no-underline"
               style={{
                 borderColor: '#065fd4',

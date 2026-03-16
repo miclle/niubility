@@ -1,5 +1,5 @@
 // Role represents a user's role in the system.
-export type Role = 'admin' | 'user'
+export type Role = 'super_admin' | 'admin' | 'user'
 
 // UserStatus represents the status of a user account.
 export type UserStatus = 'activated' | 'deactivated'
@@ -40,8 +40,12 @@ export interface Pagination {
 
 // BootResponse represents the boot response.
 export interface BootResponse {
+  initialized: boolean
   authentication: 'authorized' | 'unauthorized'
   user?: User
+  registration_enabled: boolean
+  sso_enabled: boolean
+  sso_login_url?: string
 }
 
 // ListUsersResponse represents the response for listing users.

@@ -16,8 +16,8 @@ type LegacyTalk struct {
 	Avatar      string    `json:"avatar"`
 	Broadcast   string    `json:"broadcast"`
 	Playback    string    `json:"playback"`
-	Type        string    `json:"type"`     // "sharing" or "training"
-	Volume      string    `json:"volume"`   // e.g., "AI 赋能组织分享会"
+	Type        string    `json:"type"`   // "sharing" or "training"
+	Volume      string    `json:"volume"` // e.g., "AI 赋能组织分享会"
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }

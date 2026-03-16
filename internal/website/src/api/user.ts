@@ -1,9 +1,24 @@
 import client from './client'
 import type { BootResponse, ListUsersResponse, UpdateUserArgs, User, SyncWechatResponse, ListDepartmentsResponse } from 'src/types/user'
 
-// boot fetches the current user's authentication state.
+// boot fetches the current system and authentication state.
 export function boot() {
   return client.get<BootResponse>('/boot')
+}
+
+// initSystem sets up the initial super admin account.
+export function initSystem(data: { username: string; email: string; password: string }) {
+  return client.post<User>('/init', data)
+}
+
+// login authenticates with username and password.
+export function login(data: { username: string; password: string }) {
+  return client.post<{ user: User }>('/login', data)
+}
+
+// register creates a new user account.
+export function register(data: { username: string; email: string; password: string }) {
+  return client.post<User>('/register', data)
 }
 
 // listUsers fetches a paginated list of users with optional search (admin only).

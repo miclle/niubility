@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
@@ -315,4 +316,96 @@ func (s *Service) UpdateUser(id string, args entity.UpdateUserArgs) (*entity.Use
 	}
 
 	return user, nil
+}
+
+// InitSuperAdmin creates the initial super admin user and marks the system as initialized.
+func (s *Service) InitSuperAdmin(username, email, password string) (*entity.User, error) {
+	if s.IsInitialized() {
+		return nil, fmt.Errorf("system is already initialized")
+	}
+
+	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, fmt.Errorf("hash password: %w", err)
+	}
+
+	user := &entity.User{
+		ID:       entity.ID(),
+		Username: username,
+		Name:     username,
+		Email:    email,
+		Password: string(hashed),
+		Role:     entity.RoleSuperAdmin,
+		Status:   entity.UserStatusActivated,
+	}
+
+	if err := s.DB.Create(user).Error; err != nil {
+		return nil, fmt.Errorf("create super admin: %w", err)
+	}
+
+	// Mark system as initialized
+	if err := s.SetSetting(entity.SettingInitialized, "true"); err != nil {
+		return nil, fmt.Errorf("set initialized flag: %w", err)
+	}
+
+	return user, nil
+}
+
+// RegisterUser creates a new user account with password. New users default to deactivated status.
+func (s *Service) RegisterUser(username, email, password string) (*entity.User, error) {
+	// Check if username already exists
+	existing, err := s.GetUserByUsername(username)
+	if err != nil {
+		return nil, fmt.Errorf("check existing user: %w", err)
+	}
+	if existing != nil {
+		return nil, fmt.Errorf("username already exists")
+	}
+
+	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, fmt.Errorf("hash password: %w", err)
+	}
+
+	name, _, ok := strings.Cut(email, "@")
+	if !ok {
+		name = username
+	}
+
+	user := &entity.User{
+		ID:       entity.ID(),
+		Username: username,
+		Name:     name,
+		Email:    email,
+		Password: string(hashed),
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusDeactivated,
+	}
+
+	if err := s.DB.Create(user).Error; err != nil {
+		return nil, fmt.Errorf("create user: %w", err)
+	}
+
+	return user, nil
+}
+
+// AuthenticateUser verifies a username and password, returning the user if valid.
+func (s *Service) AuthenticateUser(username, password string) (*entity.User, error) {
+	var user entity.User
+	if err := s.DB.Where("username = ?", username).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("invalid username or password")
+		}
+		return nil, fmt.Errorf("get user: %w", err)
+	}
+
+	if user.Password == "" {
+		return nil, fmt.Errorf("invalid username or password")
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		return nil, fmt.Errorf("invalid username or password")
+	}
+
+	return &user, nil
 }

@@ -12,8 +12,8 @@ function AdminLayout() {
   const { currentUser } = useAppContext()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
-  // Require admin role
-  if (!currentUser || currentUser.role !== 'admin') {
+  // Require admin or super_admin role
+  if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'super_admin')) {
     return <Navigate to="/forbidden" replace />
   }
 

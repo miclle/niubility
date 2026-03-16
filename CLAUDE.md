@@ -10,8 +10,8 @@ Niubility is an internal learning and culture platform for Qiniu (七牛), combi
 
 - **Backend**: Go 1.24 + [fox-gonic/fox](https://github.com/fox-gonic/fox) (Gin fork) + GORM + PostgreSQL
 - **Frontend**: React 18 + TypeScript + Vite + Tailwind CSS 4 + [shadcn/ui](https://ui.shadcn.com/) (Base UI)
-- **Auth**: SSO + JWT (cookie-based)
-- **Integration**: WeChat Work (企业微信) for department/user sync
+- **Auth**: Password login + optional SSO + JWT (cookie-based)
+- **Integration**: WeChat Work (企业微信) for department/user sync (optional, configured via admin settings)
 
 ## Development Commands
 
@@ -43,13 +43,25 @@ task website:build
 ```
 cmd/server/
 ├── main.go                  # Entry point, loads config and starts server
-├── config.example.yaml      # Configuration template
+├── config.example.yaml      # Configuration template (only server.address + database.dsn)
 └── config.local.yaml        # Local config (gitignored)
 internal/
-├── config/                  # Configuration loading (YAML via Viper)
+├── config/                  # Configuration loading (YAML via Viper, minimal: server + database)
 ├── entity/                  # Data models (User, Content, Department, Setting)
 ├── handler/                 # HTTP handlers, route registration, middleware
+│   ├── handler.go           # Ctrl struct, route registration
+│   ├── middleware.go         # AuthMiddleware, RequireAdmin
+│   ├── auth.go              # Login, Register, JWT helpers
+│   ├── init.go              # System initialization handler
+│   ├── user.go              # SSO callback, Boot, Logout, user CRUD, sync
+│   ├── content.go           # Content CRUD
+│   └── setting.go           # Settings CRUD
 ├── service/                 # Business logic and database operations
+│   ├── service.go           # Service init (auto-generates keys, loads from DB)
+│   ├── user.go              # User CRUD, auth, registration, super admin init
+│   ├── setting.go           # Settings with encryption for sensitive values
+│   ├── content.go           # Content operations
+│   └── department.go        # Department operations
 └── website/                 # React frontend (Vite + TypeScript)
     └── src/
         ├── api/             # API client functions (client.ts, content.ts, user.ts, setting.ts)
@@ -58,6 +70,9 @@ internal/
         ├── layouts/         # MainLayout, AdminLayout
         ├── types/           # TypeScript type definitions
         ├── views/           # Page components
+        │   ├── init/        # System initialization page
+        │   ├── login/       # Login page
+        │   ├── register/    # User registration page
         │   ├── home/        # Home page (content list for learning/culture)
         │   ├── contents/    # Content detail & editor
         │   ├── admin/       # Admin pages (contents, users, import, sync, settings)
@@ -75,24 +90,35 @@ pkg/
 - GORM auto-migration for database schema
 - Routes in `handler/handler.go` with middleware for auth (`AuthMiddleware`) and admin checks (`RequireAdmin`)
 - Admin routes grouped under `/api/v1/admin/` with `RequireAdmin` middleware
-- Configuration via YAML file (`cmd/server/config.local.yaml`) loaded by Viper
-- Sensitive settings (WeChat secrets) encrypted with AES-256-GCM in database
+- **Minimal config**: Only `server.address` and `database.dsn` in YAML; all other settings (JWT secret, encryption key, SSO, WeChat, etc.) are stored in the `settings` database table
+- JWT secret and encryption key are auto-generated on first boot and persisted in database
+- Sensitive settings (SSO secret, WeChat secret) encrypted with AES-256-GCM in database
+- System initialization flow: first deployment requires super admin setup via `/api/v1/init`
 
 ### Frontend
 - React Router with layouts (MainLayout for users, AdminLayout for admin)
 - shadcn/ui components (Base UI primitives) in `src/components/ui/`
-- App context (`src/context/app.ts`) for global state (current user)
+- App context (`src/context/app.ts`) for global state (current user, initialized, SSO/registration flags)
 - API calls via axios client in `src/api/client.ts`
 - Two content categories: `learning` and `culture`, accessible via `/learning` and `/culture` routes
+- Boot flow: `/api/v1/boot` → if not initialized → `/init`; if not logged in → `/login`
 
 ## Data Models
 
 | Model | Table | Description |
 |-------|-------|-------------|
-| User | `users` | User accounts with role (admin/user) and status (activated/deactivated) |
+| User | `users` | User accounts with role (super_admin/admin/user), password (bcrypt), and status (activated/deactivated) |
 | Content | `contents` | Articles and videos with category (learning/culture) |
 | Department | `departments` | Departments synced from WeChat Work |
-| Setting | `settings` | Key-value configuration (WeChat credentials, etc.) |
+| Setting | `settings` | Key-value configuration (JWT secret, encryption key, SSO, WeChat, feature flags, etc.) |
+
+## User Roles
+
+| Role | Description |
+|------|-------------|
+| `super_admin` | Created during system initialization, full access |
+| `admin` | Administrator, can manage content and users |
+| `user` | Regular user, can view content |
 
 ## Content Types
 
@@ -104,9 +130,12 @@ pkg/
 | Route | Method | Auth | Description |
 |-------|--------|------|-------------|
 | `/health` | GET | Public | Health check |
-| `/sso` | GET | Public | SSO callback |
+| `/sso` | GET | Public | SSO callback (only when SSO enabled) |
 | `/logout` | GET | Public | Logout |
-| `/api/v1/boot` | GET | Authenticated | Boot info (current user) |
+| `/api/v1/boot` | GET | Public | System state + auth state |
+| `/api/v1/init` | POST | Public | Initialize super admin (first boot only) |
+| `/api/v1/login` | POST | Public | Username + password login |
+| `/api/v1/register` | POST | Public | User registration (when enabled) |
 | `/api/v1/contents` | GET | Authenticated | List contents |
 | `/api/v1/contents/:id` | GET | Authenticated | Get content |
 | `/api/v1/contents` | POST | Admin | Create content |
@@ -122,6 +151,9 @@ pkg/
 
 | Path | Layout | Component | Description |
 |------|--------|-----------|-------------|
+| `/init` | None | Init | System initialization (first boot) |
+| `/login` | None | Login | User login |
+| `/register` | None | Register | User registration (when enabled) |
 | `/learning` | MainLayout | Home | Learning content list |
 | `/culture` | MainLayout | Home | Culture content list |
 | `/contents/:id` | MainLayout | ContentDetail | Content detail page |
@@ -139,8 +171,6 @@ pkg/
 
 Copy `cmd/server/config.example.yaml` to `cmd/server/config.local.yaml` and configure:
 - `server.address`: Listen address (e.g., `0.0.0.0:9000`)
-- `server.secret`: JWT signing secret
-- `server.cookieSecure`: Enable Secure flag on cookies (set true for HTTPS)
-- `server.encryptionKey`: 32-byte hex key for AES-256-GCM encryption (generate with `openssl rand -hex 32`)
 - `database.dsn`: PostgreSQL connection string
-- `sso`: SSO provider settings (host, clientID, secret)
+
+All other configuration (JWT secret, encryption key, SSO, WeChat, feature flags) is managed through the admin settings UI and stored in the database. JWT secret and encryption key are auto-generated on first boot.

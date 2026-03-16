@@ -21,13 +21,13 @@ func main() {
 		log.Fatalf("load config: %v", err)
 	}
 
-	svc, err := service.New(cfg.Database.DSN, &cfg.Wechat, cfg.Server.EncryptionKey.Value())
+	svc, err := service.New(cfg.Database.DSN)
 	if err != nil {
 		log.Fatalf("init service: %v", err)
 	}
 
 	engine := fox.Default()
-	ctrl := handler.New(cfg, svc)
+	ctrl := handler.New(svc)
 	ctrl.RegisterRoutes(engine)
 
 	log.Printf("server starting on %s", cfg.Server.Address)

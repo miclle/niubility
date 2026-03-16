@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"fmt"
-	"net/url"
 	"strings"
 
 	"github.com/fox-gonic/fox"
@@ -20,11 +18,14 @@ const (
 	currentUserKey = "_current_user"
 )
 
-// skipPaths are paths that bypass authentication.
+// skipPaths are paths that bypass authentication entirely.
 var skipPaths = []string{
 	"/sso",
 	"/logout",
 	"/health",
+	"/api/v1/init",
+	"/api/v1/login",
+	"/api/v1/register",
 
 	// website routes
 	"/forbidden",
@@ -42,13 +43,27 @@ var skipPaths = []string{
 	"/src",
 }
 
-// AuthMiddleware validates the JWT cookie and redirects unauthenticated browser requests to SSO.
+// softPaths are API paths that attempt authentication but allow unauthenticated access.
+var softPaths = []string{
+	"/api/v1/boot",
+}
+
+// AuthMiddleware validates the JWT cookie.
+// Unauthenticated API requests receive 401; browser requests are let through for the frontend to handle.
 func (ctrl *Ctrl) AuthMiddleware(c *fox.Context) (res any) {
 	path := c.Request.URL.Path
 	for _, prefix := range skipPaths {
 		if strings.HasPrefix(path, prefix) {
 			return nil
 		}
+	}
+
+	// If system is not initialized, let frontend handle navigation
+	if !ctrl.service.IsInitialized() {
+		if strings.HasPrefix(path, "/api") && !isSoftPath(path) {
+			return httperrors.ErrUnauthorized
+		}
+		return nil
 	}
 
 	var (
@@ -58,14 +73,14 @@ func (ctrl *Ctrl) AuthMiddleware(c *fox.Context) (res any) {
 	)
 
 	if len(token) == 0 {
-		goto redirect
+		goto unauthorized
 	}
 
 	_, err = jwt.ParseWithClaims(token, &claims, func(token *jwt.Token) (any, error) {
-		return []byte(ctrl.config.Server.Secret), nil
+		return []byte(ctrl.service.GetJWTSecret()), nil
 	})
 	if err != nil {
-		goto redirect
+		goto unauthorized
 	}
 
 	if len(claims.Issuer) > 0 {
@@ -82,25 +97,23 @@ func (ctrl *Ctrl) AuthMiddleware(c *fox.Context) (res any) {
 		}
 	}
 
-redirect:
-	if strings.HasPrefix(path, "/api") {
+unauthorized:
+	if strings.HasPrefix(path, "/api") && !isSoftPath(path) {
 		return httperrors.ErrUnauthorized
 	}
 
-	scheme := "https"
-	if c.Request.TLS == nil {
-		scheme = "http"
-	}
-	callbackURL := fmt.Sprintf("%s://%s/sso?redirect=%s", scheme, c.Request.Host, c.Request.RequestURI)
+	// Let the frontend handle login redirect
+	return nil
+}
 
-	query := url.Values{}
-	query.Set("client_id", ctrl.sso.ClientID)
-	query.Set("redirect", callbackURL)
-
-	return render.Redirect{
-		Code:     302,
-		Location: fmt.Sprintf("%s?%s", ctrl.sso.Host, query.Encode()),
+// isSoftPath checks if the path allows unauthenticated access.
+func isSoftPath(path string) bool {
+	for _, p := range softPaths {
+		if strings.HasPrefix(path, p) {
+			return true
+		}
 	}
+	return false
 }
 
 // RequireAdmin checks that the current user has admin role.

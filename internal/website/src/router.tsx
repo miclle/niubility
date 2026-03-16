@@ -11,11 +11,18 @@ import AdminUsers from 'src/views/admin/users'
 import AdminImport from 'src/views/admin/import'
 import AdminSync from 'src/views/admin/sync'
 import AdminSettings from 'src/views/admin/settings'
+import Init from 'src/views/init'
+import Login from 'src/views/login'
+import Register from 'src/views/register'
 import NotFound from 'src/views/errors/NotFound'
 import Forbidden from 'src/views/errors/Forbidden'
 import ServerError from 'src/views/errors/ServerError'
 
 const routes: RouteObject[] = [
+  // Auth routes (no layout)
+  { path: '/init', element: <Init /> },
+  { path: '/login', element: <Login /> },
+  { path: '/register', element: <Register /> },
   // Frontend routes
   {
     path: '/',

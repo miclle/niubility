@@ -6,6 +6,8 @@ import "time"
 type Role string
 
 const (
+	// RoleSuperAdmin indicates a super administrator user.
+	RoleSuperAdmin Role = "super_admin"
 	// RoleAdmin indicates an administrator user.
 	RoleAdmin Role = "admin"
 	// RoleUser indicates a regular user.
@@ -28,6 +30,7 @@ type User struct {
 	Username      string     `json:"username"       gorm:"column:username;uniqueIndex:uniq_users_username"`
 	Name          string     `json:"name"           gorm:"column:name"`
 	Email         string     `json:"email"          gorm:"column:email"`
+	Password      string     `json:"-"              gorm:"column:password"`
 	Mobile        string     `json:"mobile"         gorm:"column:mobile"`
 	Avatar        string     `json:"avatar"         gorm:"column:avatar"`
 	DepartmentIDs string     `json:"department_ids" gorm:"column:department_ids;type:text"` // comma-separated department IDs from WeChat
@@ -42,15 +45,20 @@ func (User) TableName() string {
 	return "users"
 }
 
-// IsAdmin checks if the user has admin role.
+// IsAdmin checks if the user has admin or super_admin role.
 func (u *User) IsAdmin() bool {
-	return u.Role == RoleAdmin
+	return u.Role == RoleAdmin || u.Role == RoleSuperAdmin
+}
+
+// IsSuperAdmin checks if the user has super_admin role.
+func (u *User) IsSuperAdmin() bool {
+	return u.Role == RoleSuperAdmin
 }
 
 // ListUsersArgs represents the query parameters for listing users.
 type ListUsersArgs struct {
 	Pagination
-	Search       string `form:"search"`       // search by name, username, email, or mobile
+	Search       string `form:"search"`        // search by name, username, email, or mobile
 	DepartmentID int64  `form:"department_id"` // filter by department ID
 }
 

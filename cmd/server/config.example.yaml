@@ -1,15 +1,5 @@
 server:
   address: "0.0.0.0:9000"
-  secret: ""
-  cookieSecure: false
-  # 32-byte hex key for AES-256-GCM encryption
-  # Generate with: openssl rand -hex 32
-  encryptionKey: ""
 
 database:
   dsn: "host=localhost port=5432 user=postgres password=postgres dbname=niubility sslmode=disable"
-
-sso:
-  host: ""
-  clientID: ""
-  secret: ""
