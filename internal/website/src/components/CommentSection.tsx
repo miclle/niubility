@@ -184,7 +184,7 @@ function CommentSection({ contentID, commentCount, onCommentCountChange }: Comme
     return (
       <div key={comment.id} className={`flex gap-3 ${isReply ? 'ml-12' : ''}`}>
         {/* Avatar */}
-        <Avatar size="sm">
+        <Avatar className="size-9">
           <AvatarImage src={comment.user?.avatar} alt={comment.user?.name || '匿名'} />
           <AvatarFallback>{comment.user?.name?.charAt(0) || '匿'}</AvatarFallback>
         </Avatar>
@@ -307,7 +307,7 @@ function CommentSection({ contentID, commentCount, onCommentCountChange }: Comme
       {/* New comment input */}
       {currentUser && (
         <div className="flex gap-3 mb-6">
-          <Avatar size="sm">
+          <Avatar className="size-9">
             <AvatarImage src={currentUser.avatar} alt={currentUser.name || currentUser.username} />
             <AvatarFallback>{currentUser.name?.charAt(0) || '我'}</AvatarFallback>
           </Avatar>
