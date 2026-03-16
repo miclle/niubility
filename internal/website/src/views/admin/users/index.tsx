@@ -279,7 +279,22 @@ function AdminUsers() {
   const selectedDept = departments.find(d => String(d.id) === departmentId)
 
   return (
-    <div className="flex gap-4">
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>
+          用户管理
+          {selectedDept && (
+            <span className="text-base font-normal ml-2" style={{ color: '#606060' }}>
+              · {selectedDept.name}
+            </span>
+          )}
+        </h1>
+        <div className="text-sm" style={{ color: '#606060' }}>
+          共 {total} 个用户
+        </div>
+      </div>
+
+      <div className="flex gap-4">
       {/* Left sidebar - Department tree (sticky) */}
       <div
         className="flex-shrink-0 bg-white rounded-xl overflow-hidden sticky top-4 self-start"
@@ -294,19 +309,6 @@ function AdminUsers() {
 
       {/* Right side - User list */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>
-            用户管理
-            {selectedDept && (
-              <span className="text-base font-normal ml-2" style={{ color: '#606060' }}>
-                · {selectedDept.name}
-              </span>
-            )}
-          </h1>
-          <div className="text-sm" style={{ color: '#606060' }}>
-            共 {total} 个用户
-          </div>
-        </div>
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3 mb-4">
@@ -432,6 +434,7 @@ function AdminUsers() {
             )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   )
