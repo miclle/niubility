@@ -8,6 +8,7 @@ import 'dayjs/locale/zh-cn'
 import { getContent, listContents, likeContent } from 'src/api/content'
 import VideoPlayer from 'src/components/VideoPlayer'
 import CommentSection from 'src/components/CommentSection'
+import { Avatar, AvatarImage, AvatarFallback } from 'src/components/ui/avatar'
 import type { Content } from 'src/types/content'
 
 dayjs.extend(relativeTime)
@@ -101,12 +102,10 @@ function ContentDetail() {
         <div className="flex items-center justify-between pb-4" style={{ borderBottom: '1px solid #e5e5e5' }}>
           {/* Channel info */}
           <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium"
-              style={{ background: '#e5e5e5', color: '#0f0f0f' }}
-            >
-              {content.author?.name?.charAt(0) || content.speaker?.charAt(0) || '匿'}
-            </div>
+            <Avatar size="lg">
+              <AvatarImage src={content.author?.avatar} alt={content.author?.name || content.speaker || '匿名'} />
+              <AvatarFallback>{content.author?.name?.charAt(0) || content.speaker?.charAt(0) || '匿'}</AvatarFallback>
+            </Avatar>
             <div>
               <div className="text-sm font-medium" style={{ color: '#0f0f0f' }}>
                 {content.author?.name || content.speaker || '未知作者'}

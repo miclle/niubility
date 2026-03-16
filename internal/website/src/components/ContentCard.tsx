@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
 
+import { Avatar, AvatarImage, AvatarFallback } from 'src/components/ui/avatar'
 import type { Content } from 'src/types/content'
 
 dayjs.extend(relativeTime)
@@ -44,12 +45,10 @@ function ContentCard({ content }: { content: Content }) {
       <div className="flex gap-3 mt-3">
         {/* Author avatar */}
         <div className="flex-shrink-0">
-          <div
-            className="w-9 h-9 rounded-full bg-zinc-300 flex items-center justify-center text-sm font-medium"
-            style={{ color: '#0f0f0f' }}
-          >
-            {content.author?.name?.charAt(0) || '匿'}
-          </div>
+          <Avatar>
+            <AvatarImage src={content.author?.avatar} alt={content.author?.name || '匿名'} />
+            <AvatarFallback>{content.author?.name?.charAt(0) || '匿'}</AvatarFallback>
+          </Avatar>
         </div>
 
         {/* Text content */}

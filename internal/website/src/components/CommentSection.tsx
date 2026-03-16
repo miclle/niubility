@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 
 import { listComments, createComment, likeComment as likeCommentAPI } from 'src/api/content'
 import { useAppContext } from 'src/context/app'
+import { Avatar, AvatarImage, AvatarFallback } from 'src/components/ui/avatar'
 import type { Comment, CreateCommentArgs } from 'src/types/content'
 
 interface CommentSectionProps {
@@ -152,12 +153,10 @@ function CommentSection({ contentID, commentCount, onCommentCountChange }: Comme
     return (
       <div key={comment.id} className={`flex gap-3 ${isReply ? 'ml-12' : ''}`}>
         {/* Avatar */}
-        <div
-          className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-medium"
-          style={{ background: '#e5e5e5', color: '#0f0f0f' }}
-        >
-          {comment.user?.name?.charAt(0) || '匿'}
-        </div>
+        <Avatar size="sm">
+          <AvatarImage src={comment.user?.avatar} alt={comment.user?.name || '匿名'} />
+          <AvatarFallback>{comment.user?.name?.charAt(0) || '匿'}</AvatarFallback>
+        </Avatar>
 
         <div className="flex-1 min-w-0">
           {/* Header */}
@@ -246,12 +245,10 @@ function CommentSection({ contentID, commentCount, onCommentCountChange }: Comme
       {/* New comment input */}
       {currentUser && (
         <div className="flex gap-3 mb-6">
-          <div
-            className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-medium"
-            style={{ background: '#e5e5e5', color: '#0f0f0f' }}
-          >
-            {currentUser.name?.charAt(0) || '我'}
-          </div>
+          <Avatar size="sm">
+            <AvatarImage src={currentUser.avatar} alt={currentUser.name || currentUser.username} />
+            <AvatarFallback>{currentUser.name?.charAt(0) || '我'}</AvatarFallback>
+          </Avatar>
           <div className="flex-1">
             <input
               type="text"
