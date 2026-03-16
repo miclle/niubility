@@ -26,6 +26,7 @@ function CommentSection({ contentID, commentCount, onCommentCountChange }: Comme
   const [replyTo, setReplyTo] = useState<{ commentID: string; parentID: string; userName: string } | null>(null)
   const [replyText, setReplyText] = useState('')
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set())
+  const [commentFocused, setCommentFocused] = useState(false)
   const [emojiPickerFor, setEmojiPickerFor] = useState<'new' | 'reply' | null>(null)
   const emojiPickerRef = useRef<HTMLDivElement>(null)
 
@@ -314,15 +315,14 @@ function CommentSection({ contentID, commentCount, onCommentCountChange }: Comme
             <input
               type="text"
               className="w-full border-b text-sm py-1 outline-none bg-transparent"
-              style={{ borderColor: '#e5e5e5', color: '#0f0f0f' }}
+              style={{ borderColor: commentFocused ? '#0f0f0f' : '#e5e5e5', color: '#0f0f0f' }}
               placeholder="添加评论..."
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-              onFocus={(e) => (e.target.style.borderColor = '#0f0f0f')}
-              onBlur={(e) => { if (!newComment) e.target.style.borderColor = '#e5e5e5' }}
+              onFocus={() => setCommentFocused(true)}
             />
-            {newComment && (
+            {commentFocused && (
               <div className="flex items-center justify-between mt-2">
                 <div className="relative" ref={emojiPickerFor === 'new' ? emojiPickerRef : undefined}>
                   <button
@@ -355,7 +355,7 @@ function CommentSection({ contentID, commentCount, onCommentCountChange }: Comme
                   <button
                     className="text-sm px-3 py-1.5 rounded-full"
                     style={{ color: '#606060' }}
-                    onClick={() => setNewComment('')}
+                    onClick={() => { setNewComment(''); setCommentFocused(false) }}
                   >
                     取消
                   </button>
