@@ -257,7 +257,7 @@ function CommentSection({ contentID, commentCount, onCommentCountChange }: Comme
                   </button>
                   {emojiPickerFor === 'reply' && (
                     <div
-                      className="absolute left-0 bottom-full mb-1 grid grid-cols-8 gap-0.5 p-2 rounded-lg shadow-lg border z-50"
+                      className="absolute left-0 bottom-full mb-1 w-[280px] grid grid-cols-8 gap-0.5 p-2 rounded-lg shadow-lg border z-50"
                       style={{ background: '#fff', borderColor: '#e5e5e5' }}
                     >
                       {commonEmojis.map((emoji) => (
@@ -335,7 +335,7 @@ function CommentSection({ contentID, commentCount, onCommentCountChange }: Comme
                   </button>
                   {emojiPickerFor === 'new' && (
                     <div
-                      className="absolute left-0 bottom-full mb-1 grid grid-cols-8 gap-0.5 p-2 rounded-lg shadow-lg border z-50"
+                      className="absolute left-0 bottom-full mb-1 w-[280px] grid grid-cols-8 gap-0.5 p-2 rounded-lg shadow-lg border z-50"
                       style={{ background: '#fff', borderColor: '#e5e5e5' }}
                     >
                       {commonEmojis.map((emoji) => (
