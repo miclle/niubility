@@ -21,7 +21,7 @@ func main() {
 		log.Fatalf("load config: %v", err)
 	}
 
-	svc, err := service.New(cfg.Database.DSN)
+	svc, err := service.New(cfg.DSN)
 	if err != nil {
 		log.Fatalf("init service: %v", err)
 	}
@@ -30,8 +30,8 @@ func main() {
 	ctrl := handler.New(svc)
 	ctrl.RegisterRoutes(engine)
 
-	log.Printf("server starting on %s", cfg.Server.Address)
-	if err := engine.Run(cfg.Server.Address); err != nil {
+	log.Printf("server starting on %s", cfg.Addr)
+	if err := engine.Run(cfg.Addr); err != nil {
 		log.Fatalf("server run: %v", err)
 	}
 }

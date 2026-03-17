@@ -9,18 +9,8 @@ import (
 
 // Config represents the application configuration.
 type Config struct {
-	Server   Server   `mapstructure:"server"`
-	Database Database `mapstructure:"database"`
-}
-
-// Server holds HTTP server settings.
-type Server struct {
-	Address string `mapstructure:"address"` // listen address, e.g. "0.0.0.0:9000"
-}
-
-// Database holds database connection settings.
-type Database struct {
-	DSN string `mapstructure:"dsn"` // PostgreSQL connection string
+	Addr string `mapstructure:"addr"` // listen address, e.g. "0.0.0.0:9000"
+	DSN     string `mapstructure:"dsn"`     // PostgreSQL connection string
 }
 
 // Load reads configuration from the given file path.
@@ -37,11 +27,11 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("unmarshal config: %w", err)
 	}
 
-	if cfg.Server.Address == "" {
-		return nil, fmt.Errorf("server.address is required")
+	if cfg.Addr == "" {
+		return nil, fmt.Errorf("addr is required")
 	}
-	if cfg.Database.DSN == "" {
-		return nil, fmt.Errorf("database.dsn is required")
+	if cfg.DSN == "" {
+		return nil, fmt.Errorf("dsn is required")
 	}
 
 	return &cfg, nil

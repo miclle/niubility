@@ -1,5 +1,2 @@
-server:
-  address: "0.0.0.0:9000"
-
-database:
-  dsn: "host=localhost port=5432 user=postgres password=postgres dbname=niubility sslmode=disable"
+addr: "0.0.0.0:9000"
+dsn: "host=localhost port=5432 user=postgres password=postgres dbname=niubility sslmode=disable"
