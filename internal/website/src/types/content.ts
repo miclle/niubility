@@ -3,8 +3,21 @@ import type { User, Pagination } from './user'
 // ContentType represents the type of content.
 export type ContentType = 'article' | 'video'
 
-// ContentCategory represents the category of content.
-export type ContentCategory = 'learning' | 'culture'
+// ContentCategory represents the category of content (dynamic, stored as slug string).
+export type ContentCategory = string
+
+// Category represents a content category managed in the database.
+export interface Category {
+  id: string
+  name: string
+  slug: string
+  icon: string
+  visible: boolean
+  sort_order: number
+  content_count: number
+  created_at: string
+  updated_at: string
+}
 
 // SortField represents the field to sort by.
 export type SortField = 'created_at' | 'like_count'

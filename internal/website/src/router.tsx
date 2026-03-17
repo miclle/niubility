@@ -11,6 +11,7 @@ import AdminUsers from 'src/views/admin/users'
 import AdminImport from 'src/views/admin/import'
 import AdminSync from 'src/views/admin/sync'
 import AdminSettings from 'src/views/admin/settings'
+import AdminCategories from 'src/views/admin/categories'
 import Init from 'src/views/init'
 import Login from 'src/views/login'
 import Register from 'src/views/register'
@@ -29,8 +30,7 @@ const routes: RouteObject[] = [
     element: <MainLayout />,
     children: [
       { index: true, element: <Navigate to="/learning" replace /> },
-      { path: 'learning', element: <Home /> },
-      { path: 'culture', element: <Home /> },
+      { path: ':category', element: <Home /> },
       { path: 'contents/new', element: <ContentEditor /> },
       { path: 'contents/:id/edit', element: <ContentEditor /> },
       { path: 'contents/:id', element: <ContentDetail /> },
@@ -46,6 +46,7 @@ const routes: RouteObject[] = [
       { path: 'contents/new', element: <AdminContentEditor /> },
       { path: 'contents/:id', element: <AdminContentEditor /> },
       { path: 'users', element: <AdminUsers /> },
+      { path: 'categories', element: <AdminCategories /> },
       { path: 'import', element: <AdminImport /> },
       { path: 'sync', element: <AdminSync /> },
       { path: 'settings', element: <AdminSettings /> },

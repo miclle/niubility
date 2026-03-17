@@ -38,11 +38,14 @@ export interface Pagination {
   total: number
 }
 
+import type { Category } from './content'
+
 // BootResponse represents the boot response.
 export interface BootResponse {
   initialized: boolean
   authentication: 'authorized' | 'unauthorized'
   user?: User
+  categories: Category[]
   registration_enabled: boolean
   sso_enabled: boolean
   sso_login_url?: string

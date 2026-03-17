@@ -169,11 +169,11 @@ func (s *Service) ImportContents(authorID string, talks []entity.LegacyTalk) (*e
 		}
 
 		// Determine category from talk.Type: "sharing" → learning, "training" → culture
-		var category entity.ContentCategory
+		var category string
 		if talk.Type == "sharing" {
-			category = entity.CategoryLearning
+			category = "learning"
 		} else {
-			category = entity.CategoryCulture
+			category = "culture"
 		}
 
 		// Parse created_at time
@@ -183,20 +183,20 @@ func (s *Service) ImportContents(authorID string, talks []entity.LegacyTalk) (*e
 		}
 
 		content := &entity.Content{
-			ID:         entity.ID(),
-			AuthorID:   authorID,
-			Title:      talk.Title,
-			Summary:    talk.Description,
-			Body:       talk.Description,
-			CoverURL:   talk.Cover,
-			VideoURL:   talk.Playback,
-			Type:       entity.ContentTypeVideo,
-			Category:   category,
-			Tags:       talk.Tags,
+			ID:          entity.ID(),
+			AuthorID:    authorID,
+			Title:       talk.Title,
+			Summary:     talk.Description,
+			Body:        talk.Description,
+			CoverURL:    talk.Cover,
+			VideoURL:    talk.Playback,
+			Type:        entity.ContentTypeVideo,
+			Category:    category,
+			Tags:        talk.Tags,
 			SpeakerName: talk.Speaker,
 			SpeakerBio:  talk.Bio,
-			CreatedAt:  createdAt,
-			UpdatedAt:  createdAt,
+			CreatedAt:   createdAt,
+			UpdatedAt:   createdAt,
 		}
 
 		if err := s.DB.Create(content).Error; err != nil {

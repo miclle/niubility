@@ -6,14 +6,17 @@ import { Plus, Pencil, Trash2 } from 'lucide-react'
 import dayjs from 'dayjs'
 
 import { listContents, deleteContent } from 'src/api/content'
+import { useAppContext } from 'src/context/app'
 import Pagination from 'src/components/Pagination'
 import type { Content } from 'src/types/content'
 
-const categoryLabels = { learning: '学习交流', culture: '企业文化' } as const
 const typeLabels = { article: '图文', video: '视频' } as const
 
 // AdminContents displays the admin content management page with YouTube-style design.
 function AdminContents() {
+  const { categories } = useAppContext()
+  const categoryLabels = Object.fromEntries(categories.map((c) => [c.slug, c.name]))
+
   const [contents, setContents] = useState<Content[]>([])
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
@@ -114,7 +117,7 @@ function AdminContents() {
                         color: '#606060',
                       }}
                     >
-                      {categoryLabels[content.category]}
+                      {categoryLabels[content.category] || content.category}
                     </span>
                   </td>
                   <td style={{ padding: '12px 16px', color: '#606060' }}>{content.author?.name || '-'}</td>

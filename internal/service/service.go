@@ -38,7 +38,7 @@ func New(dsn string) (*Service, error) {
 	// Rename speaker column to speaker_name before auto-migration (GORM doesn't support column rename)
 	db.Exec("ALTER TABLE contents RENAME COLUMN speaker TO speaker_name")
 
-	if err := db.AutoMigrate(&entity.User{}, &entity.Content{}, &entity.Setting{}, &entity.Department{}, &entity.Comment{}, &entity.Like{}); err != nil {
+	if err := db.AutoMigrate(&entity.User{}, &entity.Content{}, &entity.Setting{}, &entity.Department{}, &entity.Comment{}, &entity.Like{}, &entity.Category{}); err != nil {
 		return nil, fmt.Errorf("auto migrate: %w", err)
 	}
 
@@ -72,6 +72,11 @@ func New(dsn string) (*Service, error) {
 	// Initialize WeChat client from database config
 	wechatApp := svc.initWechatClient()
 	svc.Wechat = wechatApp
+
+	// Seed default categories if empty
+	if err := svc.seedCategories(); err != nil {
+		return nil, fmt.Errorf("seed categories: %w", err)
+	}
 
 	return svc, nil
 }

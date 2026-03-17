@@ -5,6 +5,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { AppContext } from 'src/context/app'
 import routes from './router'
 import type { User } from 'src/types/user'
+import type { Category } from 'src/types/content'
 
 const router = createBrowserRouter(routes)
 
@@ -12,19 +13,21 @@ const router = createBrowserRouter(routes)
 interface AppProps {
   initialUser: User | null
   initialized: boolean
+  categories: Category[]
   registrationEnabled: boolean
   ssoEnabled: boolean
   ssoLoginUrl: string
 }
 
 // App is the root component wrapping providers and the router.
-function App({ initialUser, initialized, registrationEnabled, ssoEnabled, ssoLoginUrl }: AppProps) {
+function App({ initialUser, initialized, categories, registrationEnabled, ssoEnabled, ssoLoginUrl }: AppProps) {
   const [currentUser, setCurrentUser] = useState<User | null>(initialUser)
 
   return (
     <AppContext.Provider value={{
       initialized,
       currentUser,
+      categories,
       registrationEnabled,
       ssoEnabled,
       ssoLoginUrl,

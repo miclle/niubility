@@ -1,0 +1,347 @@
+import { useState, useEffect, useCallback } from 'react'
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
+import { Plus, Pencil, Trash2, Save, X, GripVertical, Home, Play, FileText, BookOpen, GraduationCap, Heart, Star, Lightbulb, Trophy, Coffee, Briefcase, Globe, Flame, type LucideIcon } from 'lucide-react'
+
+import { listAllCategories, createCategory, updateCategory, reorderCategories, deleteCategory } from 'src/api/category'
+import type { Category } from 'src/types/content'
+
+// iconMap maps icon name strings to Lucide icon components.
+const iconMap: Record<string, LucideIcon> = {
+  Home, Play, FileText, BookOpen, GraduationCap,
+  Heart, Star, Lightbulb, Trophy, Coffee,
+  Briefcase, Globe, Flame,
+}
+
+// Available icon names for category selection.
+const iconOptions = Object.keys(iconMap)
+
+// SortableRow renders a single draggable table row.
+function SortableRow({ cat, onEdit, onDelete, onToggleVisible }: {
+  cat: Category
+  onEdit: (cat: Category) => void
+  onDelete: (id: string) => void
+  onToggleVisible: (id: string, visible: boolean) => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: cat.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    borderTop: '1px solid #e5e5e5',
+  }
+
+  const Icon = iconMap[cat.icon] || Home
+
+  return (
+    <tr ref={setNodeRef} style={style}>
+      <td style={{ padding: '12px 8px 12px 16px', width: 40 }}>
+        <button
+          className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-black/5 transition-colors"
+          style={{ color: '#909090', touchAction: 'none' }}
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical size={16} />
+        </button>
+      </td>
+      <td style={{ padding: '12px 16px', fontWeight: 500, color: '#0f0f0f' }}>{cat.name}</td>
+      <td style={{ padding: '12px 16px', color: '#606060' }}>
+        <code className="px-1.5 py-0.5 rounded text-xs" style={{ background: '#f2f2f2' }}>{cat.slug}</code>
+      </td>
+      <td style={{ padding: '12px 16px', color: '#606060' }}>
+        <span className="inline-flex items-center gap-1.5">
+          <Icon size={16} />
+          <span className="text-xs" style={{ color: '#909090' }}>{cat.icon}</span>
+        </span>
+      </td>
+      <td style={{ padding: '12px 16px', color: '#606060' }}>{cat.content_count ?? 0}</td>
+      <td style={{ padding: '12px 16px' }}>
+        <button
+          onClick={() => onToggleVisible(cat.id, !cat.visible)}
+          className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors"
+          style={{ background: cat.visible ? '#0f0f0f' : '#d4d4d4' }}
+        >
+          <span
+            className="inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform"
+            style={{ transform: cat.visible ? 'translateX(18px)' : 'translateX(3px)' }}
+          />
+        </button>
+      </td>
+      <td style={{ padding: '12px 16px' }}>
+        <div className="flex gap-2">
+          <Button variant="ghost" style={{ color: '#606060' }} onClick={() => onEdit(cat)}>
+            <Pencil size={14} />
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger render={
+              <Button variant="ghost" style={{ color: '#cc0000' }}>
+                <Trash2 size={14} />
+              </Button>
+            } />
+            <AlertDialogContent>
+              <AlertDialogTitle>确认删除</AlertDialogTitle>
+              <AlertDialogDescription>
+                确定要删除分类「{cat.name}」吗？如果该分类下有内容，将无法删除。
+              </AlertDialogDescription>
+              <div className="flex justify-end gap-3 mt-4">
+                <AlertDialogCancel>
+                  <Button variant="outline" style={{ borderRadius: '18px' }}>取消</Button>
+                </AlertDialogCancel>
+                <AlertDialogAction>
+                  <Button variant="destructive" onClick={() => onDelete(cat.id)} style={{ borderRadius: '18px' }}>
+                    确认删除
+                  </Button>
+                </AlertDialogAction>
+              </div>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </td>
+    </tr>
+  )
+}
+
+// AdminCategories displays the admin category management page with drag-and-drop sorting.
+function AdminCategories() {
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editing, setEditing] = useState<Category | null>(null)
+  const [error, setError] = useState('')
+
+  // Form state
+  const [formName, setFormName] = useState('')
+  const [formSlug, setFormSlug] = useState('')
+  const [formIcon, setFormIcon] = useState('Home')
+  const [saving, setSaving] = useState(false)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+
+  const fetchCategories = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await listAllCategories()
+      setCategories(res.data.categories || [])
+    } catch {
+      setCategories([])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchCategories()
+  }, [fetchCategories])
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = categories.findIndex((c) => c.id === active.id)
+    const newIndex = categories.findIndex((c) => c.id === over.id)
+    const reordered = arrayMove(categories, oldIndex, newIndex)
+
+    // Optimistic update
+    setCategories(reordered)
+
+    // Build reorder items with new sort_order values
+    const items = reordered.map((cat, i) => ({ id: cat.id, sort_order: i + 1 }))
+    try {
+      const res = await reorderCategories(items)
+      setCategories(res.data.categories || reordered)
+    } catch {
+      // Revert on failure
+      fetchCategories()
+    }
+  }
+
+  const handleToggleVisible = async (id: string, visible: boolean) => {
+    // Optimistic update
+    setCategories((prev) => prev.map((c) => c.id === id ? { ...c, visible } : c))
+    try {
+      await updateCategory(id, { visible })
+    } catch {
+      fetchCategories()
+    }
+  }
+
+  const openCreate = () => {
+    setEditing(null)
+    setFormName('')
+    setFormSlug('')
+    setFormIcon('Home')
+    setError('')
+    setDialogOpen(true)
+  }
+
+  const openEdit = (cat: Category) => {
+    setEditing(cat)
+    setFormName(cat.name)
+    setFormSlug(cat.slug)
+    setFormIcon(cat.icon || 'Home')
+    setError('')
+    setDialogOpen(true)
+  }
+
+  const handleSave = async () => {
+    if (!formName.trim() || !formSlug.trim()) {
+      setError('名称和 Slug 不能为空')
+      return
+    }
+    setSaving(true)
+    setError('')
+    try {
+      if (editing) {
+        await updateCategory(editing.id, { name: formName.trim(), icon: formIcon })
+      } else {
+        await createCategory({ name: formName.trim(), slug: formSlug.trim(), icon: formIcon, sort_order: categories.length + 1 })
+      }
+      setDialogOpen(false)
+      fetchCategories()
+    } catch {
+      setError('保存失败，请重试')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteCategory(id)
+      fetchCategories()
+    } catch (err: any) {
+      const msg = err?.response?.data?.meta || err?.response?.data?.error || '删除失败'
+      alert(typeof msg === 'string' ? msg : '该分类下有内容，无法删除')
+    }
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>分类管理</h1>
+        <Button onClick={openCreate} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
+          <Plus size={16} />
+          新建分类
+        </Button>
+      </div>
+
+      <div className="bg-white rounded-xl overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
+        <table className="w-full">
+          <thead>
+            <tr style={{ background: '#f9f9f9' }}>
+              <th style={{ padding: '12px 8px 12px 16px', width: 40 }} />
+              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>名称</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>Slug</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>图标</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>内容数</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>显示</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>操作</th>
+            </tr>
+          </thead>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={categories.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-8" style={{ color: '#909090' }}>加载中...</td>
+                  </tr>
+                ) : categories.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-8" style={{ color: '#909090' }}>暂无分类</td>
+                  </tr>
+                ) : (
+                  categories.map((cat) => (
+                    <SortableRow
+                      key={cat.id}
+                      cat={cat}
+                      onEdit={openEdit}
+                      onDelete={handleDelete}
+                      onToggleVisible={handleToggleVisible}
+                    />
+                  ))
+                )}
+              </tbody>
+            </SortableContext>
+          </DndContext>
+        </table>
+      </div>
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editing ? '编辑分类' : '新建分类'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>名称 *</label>
+              <Input placeholder="分类名称" value={formName} onChange={(e) => setFormName(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>
+                Slug *
+                {editing && <span className="text-xs font-normal ml-2" style={{ color: '#909090' }}>（编辑时不可修改）</span>}
+              </label>
+              <Input
+                placeholder="URL 路径段，如 learning"
+                value={formSlug}
+                onChange={(e) => setFormSlug(e.target.value)}
+                disabled={!!editing}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>图标</label>
+              <Select value={formIcon} onValueChange={(val) => val && setFormIcon(val)}>
+                <SelectTrigger className="w-full">
+                  <span className="inline-flex items-center gap-2">
+                    {iconMap[formIcon] && (() => { const Icon = iconMap[formIcon]; return <Icon size={16} /> })()}
+                    {formIcon}
+                  </span>
+                </SelectTrigger>
+                <SelectContent>
+                  {iconOptions.map((name) => {
+                    const Icon = iconMap[name]
+                    return (
+                      <SelectItem key={name} value={name}>
+                        <span className="inline-flex items-center gap-2">
+                          <Icon size={16} />
+                          {name}
+                        </span>
+                      </SelectItem>
+                    )
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            {error && <p className="text-sm" style={{ color: '#cc0000' }}>{error}</p>}
+          </div>
+          <DialogFooter>
+            <DialogClose render={
+              <Button variant="outline">
+                <X size={16} />
+                取消
+              </Button>
+            } />
+            <Button onClick={handleSave} disabled={saving} style={{ background: '#0f0f0f', color: '#ffffff' }}>
+              <Save size={16} />
+              {saving ? '保存中...' : '保存'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+export default AdminCategories

@@ -17,6 +17,7 @@ boot()
     renderApp({
       initialized: false,
       authentication: 'unauthorized',
+      categories: [],
       registration_enabled: false,
       sso_enabled: false,
     })
@@ -29,6 +30,7 @@ function renderApp(bootData: BootResponse) {
       <App
         initialUser={user}
         initialized={bootData.initialized}
+        categories={bootData.categories || []}
         registrationEnabled={bootData.registration_enabled}
         ssoEnabled={bootData.sso_enabled}
         ssoLoginUrl={bootData.sso_login_url || ''}

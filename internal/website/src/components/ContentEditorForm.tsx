@@ -8,7 +8,11 @@ import { Save, X, Plus } from 'lucide-react'
 
 import { getContent, createContent, updateContent } from 'src/api/content'
 import { searchUsers } from 'src/api/user'
-import type { ContentType, ContentCategory, CreateContentArgs } from 'src/types/content'
+import { useAppContext } from 'src/context/app'
+import ImageUpload from 'src/components/ImageUpload'
+import FileUpload from 'src/components/FileUpload'
+import RichTextEditor from 'src/components/RichTextEditor'
+import type { ContentType, CreateContentArgs } from 'src/types/content'
 import type { SearchUserItem } from 'src/types/user'
 
 // ContentEditorFormProps defines the configurable behavior of the editor form.
@@ -30,6 +34,7 @@ export interface ContentEditorFormProps {
 // ContentEditorForm is the shared form for creating or editing content.
 function ContentEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError, submitLabel = '保存' }: ContentEditorFormProps) {
   const isNew = !id
+  const { categories } = useAppContext()
 
   const [title, setTitle] = useState('')
   const [summary, setSummary] = useState('')
@@ -37,7 +42,7 @@ function ContentEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError,
   const [coverUrl, setCoverUrl] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
   const [type, setType] = useState<ContentType>('article')
-  const [category, setCategory] = useState<ContentCategory>('learning')
+  const [category, setCategory] = useState<string>(categories[0]?.slug || 'learning')
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
 
@@ -214,13 +219,14 @@ function ContentEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError,
         </div>
         <div>
           <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>分类 *</label>
-          <Select value={category} onValueChange={(val) => setCategory(val as ContentCategory)}>
+          <Select value={category} onValueChange={(val) => val && setCategory(val)}>
             <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="learning">学习交流</SelectItem>
-              <SelectItem value="culture">企业文化</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.slug} value={cat.slug}>{cat.name}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -240,32 +246,28 @@ function ContentEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError,
       {/* Body */}
       <div>
         <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>正文</label>
-        <Textarea
-          placeholder="请输入正文内容（支持 HTML）"
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          rows={10}
-        />
+        <RichTextEditor value={body} onChange={setBody} />
       </div>
 
-      {/* Cover URL */}
+      {/* Cover Image */}
       <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>封面图 URL</label>
-        <Input
-          placeholder="https://example.com/cover.jpg"
-          value={coverUrl}
-          onChange={(e) => setCoverUrl(e.target.value)}
-        />
+        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>封面图</label>
+        <ImageUpload value={coverUrl} onChange={setCoverUrl} category="covers" />
       </div>
 
-      {/* Video URL */}
+      {/* Video */}
       {type === 'video' && (
         <div>
-          <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>视频 URL</label>
-          <Input
-            placeholder="https://example.com/video.mp4"
+          <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>视频</label>
+          <FileUpload
+            accept="video/*"
+            category="videos"
             value={videoUrl}
-            onChange={(e) => setVideoUrl(e.target.value)}
+            onChange={setVideoUrl}
+            placeholder="拖拽视频到此处或点击选择"
+            renderPreview={(url) => (
+              <video src={url} controls className="max-h-48 rounded mx-auto" />
+            )}
           />
         </div>
       )}

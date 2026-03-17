@@ -55,11 +55,17 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	api.PUT("/contents/:id", ctrl.RequireAdmin, ctrl.UpdateContent)
 	api.DELETE("/contents/:id", ctrl.RequireAdmin, ctrl.DeleteContent)
 
+	// category routes (public read, admin write)
+	api.GET("/categories", ctrl.ListCategories)
+
 	// comment routes
 	api.POST("/comments/:id/like", ctrl.LikeComment)
 
 	// import routes (admin only)
 	api.POST("/import", ctrl.RequireAdmin, ctrl.ImportContents)
+
+	// upload routes (admin only)
+	api.POST("/upload/presign", ctrl.RequireAdmin, ctrl.GetPresignedURL)
 
 	// admin routes (all require admin role)
 	admin := api.Group("/admin", ctrl.RequireAdmin)
@@ -69,6 +75,11 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	admin.PATCH("/settings", ctrl.UpdateSettings)
 	admin.POST("/sync-wechat", ctrl.SyncFromWechat)
 	admin.GET("/departments", ctrl.ListDepartments)
+	admin.GET("/categories", ctrl.ListAllCategories)
+	admin.POST("/categories", ctrl.CreateCategory)
+	admin.POST("/categories/reorder", ctrl.ReorderCategories)
+	admin.PUT("/categories/:id", ctrl.UpdateCategory)
+	admin.DELETE("/categories/:id", ctrl.DeleteCategory)
 }
 
 // Health returns a simple health check response.

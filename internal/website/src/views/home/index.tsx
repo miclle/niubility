@@ -3,13 +3,13 @@ import { useOutletContext } from 'react-router-dom'
 
 import { listContents } from 'src/api/content'
 import ContentCard from 'src/components/ContentCard'
-import type { Content, ContentCategory, ContentType } from 'src/types/content'
+import type { Content, ContentType } from 'src/types/content'
 
 // Outlet context type from MainLayout
 interface HomeContext {
   keyword: string
   typeFilter: ContentType | ''
-  category: ContentCategory
+  category: string
 }
 
 // Home displays the content list page with infinite scroll, receiving filters from MainLayout.

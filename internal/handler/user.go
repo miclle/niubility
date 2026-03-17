@@ -79,6 +79,7 @@ type BootResponse struct {
 	Initialized         bool                `json:"initialized"`
 	Authentication      AuthenticationState `json:"authentication"`
 	User                *entity.User        `json:"user,omitempty"`
+	Categories          []entity.Category   `json:"categories"`
 	RegistrationEnabled bool                `json:"registration_enabled"`
 	SSOEnabled          bool                `json:"sso_enabled"`
 	SSOLoginURL         string              `json:"sso_login_url,omitempty"`
@@ -88,9 +89,15 @@ type BootResponse struct {
 func (ctrl *Ctrl) Boot(c *fox.Context) *BootResponse {
 	initialized := ctrl.service.IsInitialized()
 
+	categories, _ := ctrl.service.ListCategories(true)
+	if categories == nil {
+		categories = []entity.Category{}
+	}
+
 	resp := &BootResponse{
 		Initialized:         initialized,
 		Authentication:      AuthenticationStateUnauthorized,
+		Categories:          categories,
 		RegistrationEnabled: ctrl.service.IsRegistrationEnabled(),
 		SSOEnabled:          ctrl.service.IsSSOEnabled(),
 	}

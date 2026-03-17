@@ -1,17 +1,35 @@
 import { useState, useEffect, useRef } from 'react'
-import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate, useLocation, useParams } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { LogOut, Settings, User, Search, Menu, Home, Play, FileText, ChevronDown, Plus, ServerOff } from 'lucide-react'
+import { LogOut, Settings, User, Search, Menu, Home, Play, FileText, ChevronDown, Plus, ServerOff, BookOpen, GraduationCap, Heart, Star, Lightbulb, Trophy, Coffee, Briefcase, Globe, Flame, type LucideIcon } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
-import type { ContentType, ContentCategory } from 'src/types/content'
+import type { ContentType } from 'src/types/content'
+
+// iconMap maps icon name strings to Lucide icon components.
+const iconMap: Record<string, LucideIcon> = {
+  Home,
+  Play,
+  FileText,
+  BookOpen,
+  GraduationCap,
+  Heart,
+  Star,
+  Lightbulb,
+  Trophy,
+  Coffee,
+  Briefcase,
+  Globe,
+  Flame,
+}
 
 // MainLayout provides YouTube-style layout with top nav and left sidebar.
 function MainLayout() {
-  const { initialized, currentUser } = useAppContext()
+  const { initialized, currentUser, categories } = useAppContext()
   const navigate = useNavigate()
   const location = useLocation()
+  const { category: categoryParam } = useParams()
 
   // If system is not initialized, show prompt instead of normal content
   if (!initialized) {
@@ -59,8 +77,8 @@ function MainLayout() {
     setDrawerOpen(false)
   }, [location.pathname])
 
-  // Derive category from current path
-  const category: ContentCategory = location.pathname === '/culture' ? 'culture' : 'learning'
+  // Derive category from URL params or path
+  const category: string = categoryParam || location.pathname.split('/')[1] || (categories[0]?.slug ?? 'learning')
 
   const handleSearch = () => {
     setKeyword(searchValue)
@@ -71,6 +89,30 @@ function MainLayout() {
       handleSearch()
     }
   }
+
+  // Render category nav items
+  const renderCategoryNav = () => (
+    <div className="px-3">
+      {categories.map((cat) => {
+        const IconComponent = iconMap[cat.icon] || Home
+        return (
+          <NavLink
+            key={cat.slug}
+            to={`/${cat.slug}`}
+            className={() =>
+              `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+                category === cat.slug ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+              }`
+            }
+            style={{ color: '#0f0f0f' }}
+          >
+            <IconComponent size={24} />
+            <span className="text-sm">{cat.name}</span>
+          </NavLink>
+        )
+      })}
+    </div>
+  )
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -210,40 +252,7 @@ function MainLayout() {
               </div>
               <nav className="py-3 overflow-y-auto" style={{ height: 'calc(100% - 56px)' }}>
                 {/* Main navigation */}
-                <div className="px-3">
-                  <NavLink
-                    to="/learning"
-                    className={({ isActive }) =>
-                      `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                        isActive && category === 'learning'
-                          ? 'bg-black/10 font-medium'
-                          : 'hover:bg-black/5'
-                      }`
-                    }
-                    style={({ isActive }) => ({
-                      color: isActive && category === 'learning' ? '#0f0f0f' : '#0f0f0f',
-                    })}
-                  >
-                    <Home size={24} />
-                    <span className="text-sm">学习交流</span>
-                  </NavLink>
-                  <NavLink
-                    to="/culture"
-                    className={({ isActive }) =>
-                      `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                        isActive && category === 'culture'
-                          ? 'bg-black/10 font-medium'
-                          : 'hover:bg-black/5'
-                      }`
-                    }
-                    style={({ isActive }) => ({
-                      color: isActive && category === 'culture' ? '#0f0f0f' : '#0f0f0f',
-                    })}
-                  >
-                    <Play size={24} />
-                    <span className="text-sm">企业文化</span>
-                  </NavLink>
-                </div>
+                {renderCategoryNav()}
 
                 {/* Divider */}
                 <div className="my-3 mx-3 h-px" style={{ background: '#e5e5e5' }} />
@@ -304,40 +313,7 @@ function MainLayout() {
           >
             <nav className="py-3" style={{ width: 240 }}>
               {/* Main navigation */}
-              <div className="px-3">
-                <NavLink
-                  to="/learning"
-                  className={({ isActive }) =>
-                    `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                      isActive && category === 'learning'
-                        ? 'bg-black/10 font-medium'
-                        : 'hover:bg-black/5'
-                    }`
-                  }
-                  style={({ isActive }) => ({
-                    color: isActive && category === 'learning' ? '#0f0f0f' : '#0f0f0f',
-                  })}
-                >
-                  <Home size={24} />
-                  <span className="text-sm">学习交流</span>
-                </NavLink>
-                <NavLink
-                  to="/culture"
-                  className={({ isActive }) =>
-                    `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                      isActive && category === 'culture'
-                        ? 'bg-black/10 font-medium'
-                        : 'hover:bg-black/5'
-                    }`
-                  }
-                  style={({ isActive }) => ({
-                    color: isActive && category === 'culture' ? '#0f0f0f' : '#0f0f0f',
-                  })}
-                >
-                  <Play size={24} />
-                  <span className="text-sm">企业文化</span>
-                </NavLink>
-              </div>
+              {renderCategoryNav()}
 
               {/* Divider */}
               <div className="my-3 mx-3 h-px" style={{ background: '#e5e5e5' }} />
