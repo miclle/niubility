@@ -236,20 +236,20 @@ function AdminCategories() {
         </Button>
       </div>
 
-      <div className="bg-white rounded-xl overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
-        <table className="w-full">
-          <thead>
-            <tr style={{ background: '#f9f9f9' }}>
-              <th style={{ padding: '12px 8px 12px 16px', width: 40 }} />
-              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>名称</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>Slug</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>图标</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>内容数</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>显示</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>操作</th>
-            </tr>
-          </thead>
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <div className="bg-white rounded-xl overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
+          <table className="w-full">
+            <thead>
+              <tr style={{ background: '#f9f9f9' }}>
+                <th style={{ padding: '12px 8px 12px 16px', width: 40 }} />
+                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>名称</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>Slug</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>图标</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>内容数</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>显示</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>操作</th>
+              </tr>
+            </thead>
             <SortableContext items={categories.map((c) => c.id)} strategy={verticalListSortingStrategy}>
               <tbody>
                 {loading ? (
@@ -273,9 +273,9 @@ function AdminCategories() {
                 )}
               </tbody>
             </SortableContext>
-          </DndContext>
-        </table>
-      </div>
+          </table>
+        </div>
+      </DndContext>
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
