@@ -106,10 +106,9 @@ func (s *Service) UpdateContent(id string, args entity.UpdateContentArgs) (*enti
 	}
 	if args.SpeakerID != nil {
 		updates["speaker_id"] = *args.SpeakerID
-		// When setting a speaker from employees, clear manual speaker fields
+		// When setting a speaker from employees, clear manual speaker name
 		if *args.SpeakerID != "" {
 			updates["speaker_name"] = ""
-			updates["speaker_bio"] = ""
 		}
 	}
 	if args.SpeakerName != nil {

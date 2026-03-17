@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Save, X, Plus, Search, UserRound } from 'lucide-react'
+import { Save, X, Plus } from 'lucide-react'
 
 import { getContent, createContent, updateContent } from 'src/api/content'
 import { searchUsers } from 'src/api/user'
@@ -30,7 +29,6 @@ export interface ContentEditorFormProps {
 
 // ContentEditorForm is the shared form for creating or editing content.
 function ContentEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError, submitLabel = '保存' }: ContentEditorFormProps) {
-  const navigate = useNavigate()
   const isNew = !id
 
   const [title, setTitle] = useState('')
@@ -44,12 +42,10 @@ function ContentEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError,
   const [tagInput, setTagInput] = useState('')
 
   // Speaker state — optionally default to provided speaker for new content
-  const [speakerMode, setSpeakerMode] = useState<'employee' | 'manual'>('employee')
   const [speakerId, setSpeakerId] = useState(defaultSpeaker?.id || '')
   const [selectedSpeaker, setSelectedSpeaker] = useState<SearchUserItem | null>(defaultSpeaker || null)
-  const [speakerName, setSpeakerName] = useState('')
+  const [speakerInput, setSpeakerInput] = useState('')
   const [speakerBio, setSpeakerBio] = useState('')
-  const [speakerSearch, setSpeakerSearch] = useState('')
   const [speakerResults, setSpeakerResults] = useState<SearchUserItem[]>([])
   const [showSpeakerDropdown, setShowSpeakerDropdown] = useState(false)
   const speakerDropdownRef = useRef<HTMLDivElement>(null)
@@ -86,22 +82,25 @@ function ContentEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError,
         setTags(c.tags || [])
 
         if (c.speaker_id && c.speaker) {
-          setSpeakerMode('employee')
           setSpeakerId(c.speaker_id)
           setSelectedSpeaker({ id: c.speaker.id, name: c.speaker.name, avatar: c.speaker.avatar })
         } else if (c.speaker_name) {
-          setSpeakerMode('manual')
-          setSpeakerName(c.speaker_name)
-          setSpeakerBio(c.speaker_bio || '')
+          setSpeakerInput(c.speaker_name)
         }
+        setSpeakerBio(c.speaker_bio || '')
       })
       .catch(() => onLoadError())
       .finally(() => setLoading(false))
   }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Search users with debounce
-  const handleSpeakerSearchChange = (value: string) => {
-    setSpeakerSearch(value)
+  // Search users with debounce as user types speaker name
+  const handleSpeakerInputChange = (value: string) => {
+    setSpeakerInput(value)
+    // Clear employee selection when user edits the input
+    if (speakerId) {
+      setSpeakerId('')
+      setSelectedSpeaker(null)
+    }
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
 
     if (!value.trim()) {
@@ -113,7 +112,7 @@ function ContentEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError,
     searchTimerRef.current = setTimeout(() => {
       searchUsers(value.trim()).then((res) => {
         setSpeakerResults(res.data.users)
-        setShowSpeakerDropdown(true)
+        setShowSpeakerDropdown(res.data.users.length > 0)
       })
     }, 300)
   }
@@ -121,28 +120,15 @@ function ContentEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError,
   const handleSelectSpeaker = (user: SearchUserItem) => {
     setSpeakerId(user.id)
     setSelectedSpeaker(user)
-    setSpeakerSearch('')
+    setSpeakerInput('')
     setSpeakerResults([])
     setShowSpeakerDropdown(false)
-    setSpeakerName('')
-    setSpeakerBio('')
   }
 
   const handleClearSpeaker = () => {
     setSpeakerId('')
     setSelectedSpeaker(null)
-  }
-
-  const handleSwitchMode = (mode: 'employee' | 'manual') => {
-    setSpeakerMode(mode)
-    if (mode === 'employee') {
-      setSpeakerName('')
-      setSpeakerBio('')
-    } else {
-      setSpeakerId('')
-      setSelectedSpeaker(null)
-      setSpeakerSearch('')
-    }
+    setSpeakerInput('')
   }
 
   const handleAddTag = () => {
@@ -172,9 +158,9 @@ function ContentEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError,
         type,
         category,
         tags,
-        speaker_id: speakerMode === 'employee' ? speakerId : '',
-        speaker_name: speakerMode === 'manual' ? speakerName.trim() : '',
-        speaker_bio: speakerMode === 'manual' ? speakerBio.trim() : '',
+        speaker_id: speakerId || '',
+        speaker_name: speakerId ? '' : speakerInput.trim(),
+        speaker_bio: speakerBio.trim(),
       }
 
       if (isNew) {
@@ -322,116 +308,69 @@ function ContentEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError,
       </div>
 
       {/* Speaker */}
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <label className="block text-sm font-medium" style={{ color: '#606060' }}>主讲人</label>
-          <div className="flex gap-1">
-            <button
-              type="button"
-              className="px-2.5 py-1 rounded-full text-xs font-medium transition-colors"
-              style={{
-                background: speakerMode === 'employee' ? '#0f0f0f' : '#f2f2f2',
-                color: speakerMode === 'employee' ? '#ffffff' : '#606060',
-              }}
-              onClick={() => handleSwitchMode('employee')}
+      <div className="space-y-3">
+        <div>
+          <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>主讲人</label>
+          {selectedSpeaker ? (
+            <div
+              className="flex items-center gap-3 p-3 rounded-lg"
+              style={{ background: '#f8f8f8', border: '1px solid #e5e5e5' }}
             >
-              选择员工
-            </button>
-            <button
-              type="button"
-              className="px-2.5 py-1 rounded-full text-xs font-medium transition-colors"
-              style={{
-                background: speakerMode === 'manual' ? '#0f0f0f' : '#f2f2f2',
-                color: speakerMode === 'manual' ? '#ffffff' : '#606060',
-              }}
-              onClick={() => handleSwitchMode('manual')}
-            >
-              手动输入
-            </button>
-          </div>
-        </div>
-
-        {speakerMode === 'employee' ? (
-          <div>
-            {selectedSpeaker ? (
-              <div
-                className="flex items-center gap-3 p-3 rounded-lg"
-                style={{ background: '#f8f8f8', border: '1px solid #e5e5e5' }}
+              <Avatar size="sm">
+                <AvatarImage src={selectedSpeaker.avatar} alt={selectedSpeaker.name} />
+                <AvatarFallback>{selectedSpeaker.name?.charAt(0) || '?'}</AvatarFallback>
+              </Avatar>
+              <span className="text-sm font-medium flex-1" style={{ color: '#0f0f0f' }}>
+                {selectedSpeaker.name}
+              </span>
+              <button
+                type="button"
+                className="p-1 rounded-full hover:bg-gray-200 transition-colors"
+                onClick={handleClearSpeaker}
               >
-                <Avatar size="sm">
-                  <AvatarImage src={selectedSpeaker.avatar} alt={selectedSpeaker.name} />
-                  <AvatarFallback>{selectedSpeaker.name?.charAt(0) || '?'}</AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-medium flex-1" style={{ color: '#0f0f0f' }}>
-                  {selectedSpeaker.name}
-                </span>
-                <button
-                  type="button"
-                  className="p-1 rounded-full hover:bg-gray-200 transition-colors"
-                  onClick={handleClearSpeaker}
+                <X size={14} style={{ color: '#909090' }} />
+              </button>
+            </div>
+          ) : (
+            <div className="relative" ref={speakerDropdownRef}>
+              <Input
+                placeholder="输入主讲人姓名，可自动匹配员工"
+                value={speakerInput}
+                onChange={(e) => handleSpeakerInputChange(e.target.value)}
+                onFocus={() => { if (speakerResults.length > 0) setShowSpeakerDropdown(true) }}
+              />
+              {showSpeakerDropdown && speakerResults.length > 0 && (
+                <div
+                  className="absolute z-10 w-full mt-1 rounded-lg shadow-lg overflow-hidden"
+                  style={{ background: '#ffffff', border: '1px solid #e5e5e5', maxHeight: 240, overflowY: 'auto' }}
                 >
-                  <X size={14} style={{ color: '#909090' }} />
-                </button>
-              </div>
-            ) : (
-              <div className="relative" ref={speakerDropdownRef}>
-                <div className="relative">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#909090' }} />
-                  <Input
-                    placeholder="搜索员工姓名..."
-                    value={speakerSearch}
-                    onChange={(e) => handleSpeakerSearchChange(e.target.value)}
-                    onFocus={() => { if (speakerResults.length > 0) setShowSpeakerDropdown(true) }}
-                    className="pl-9"
-                  />
+                  {speakerResults.map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      className="flex items-center gap-3 w-full px-3 py-2.5 text-left hover:bg-gray-50 transition-colors"
+                      onClick={() => handleSelectSpeaker(user)}
+                    >
+                      <Avatar size="sm">
+                        <AvatarImage src={user.avatar} alt={user.name} />
+                        <AvatarFallback>{user.name?.charAt(0) || '?'}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm" style={{ color: '#0f0f0f' }}>{user.name}</span>
+                    </button>
+                  ))}
                 </div>
-                {showSpeakerDropdown && speakerResults.length > 0 && (
-                  <div
-                    className="absolute z-10 w-full mt-1 rounded-lg shadow-lg overflow-hidden"
-                    style={{ background: '#ffffff', border: '1px solid #e5e5e5', maxHeight: 240, overflowY: 'auto' }}
-                  >
-                    {speakerResults.map((user) => (
-                      <button
-                        key={user.id}
-                        type="button"
-                        className="flex items-center gap-3 w-full px-3 py-2.5 text-left hover:bg-gray-50 transition-colors"
-                        onClick={() => handleSelectSpeaker(user)}
-                      >
-                        <Avatar size="sm">
-                          <AvatarImage src={user.avatar} alt={user.name} />
-                          <AvatarFallback>{user.name?.charAt(0) || '?'}</AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm" style={{ color: '#0f0f0f' }}>{user.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {showSpeakerDropdown && speakerSearch.trim() && speakerResults.length === 0 && (
-                  <div
-                    className="absolute z-10 w-full mt-1 rounded-lg shadow-lg p-4 text-center"
-                    style={{ background: '#ffffff', border: '1px solid #e5e5e5' }}
-                  >
-                    <UserRound size={24} className="mx-auto mb-2" style={{ color: '#c0c0c0' }} />
-                    <div className="text-sm" style={{ color: '#909090' }}>未找到匹配的员工</div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              placeholder="主讲人姓名"
-              value={speakerName}
-              onChange={(e) => setSpeakerName(e.target.value)}
-            />
-            <Input
-              placeholder="主讲人简介"
-              value={speakerBio}
-              onChange={(e) => setSpeakerBio(e.target.value)}
-            />
-          </div>
-        )}
+              )}
+            </div>
+          )}
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>主讲人简介</label>
+          <Input
+            placeholder="主讲人简介"
+            value={speakerBio}
+            onChange={(e) => setSpeakerBio(e.target.value)}
+          />
+        </div>
       </div>
 
       {/* Actions */}
