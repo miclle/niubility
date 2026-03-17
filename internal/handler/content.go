@@ -87,14 +87,14 @@ func (ctrl *Ctrl) CreateContent(c *fox.Context, args entity.CreateContentArgs) (
 	user := CurrentUser(c)
 
 	content := &entity.Content{
-		AuthorID:   user.ID,
-		Title:      args.Title,
-		Summary:    args.Summary,
-		Body:       args.Body,
-		CoverURL:   args.CoverURL,
-		VideoURL:   args.VideoURL,
-		Type:       args.Type,
-		Category:   args.Category,
+		AuthorID:    user.ID,
+		Title:       args.Title,
+		Summary:     args.Summary,
+		Body:        args.Body,
+		CoverURL:    args.CoverURL,
+		VideoURL:    args.VideoURL,
+		Type:        args.Type,
+		Category:    args.Category,
 		Tags:        args.Tags,
 		SpeakerID:   args.SpeakerID,
 		SpeakerName: args.SpeakerName,

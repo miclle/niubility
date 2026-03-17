@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Settings, CheckCircle, XCircle, Loader2, Save, Shield, Globe, UserPlus } from 'lucide-react'
+import { Settings, CheckCircle, XCircle, Loader2, Save, Shield, Globe, UserPlus, HardDrive } from 'lucide-react'
 
 import { listSettings, updateSettings } from 'src/api/setting'
 
@@ -28,6 +28,10 @@ function AdminSettings() {
   const [hasExistingWechatSecret, setHasExistingWechatSecret] = useState(false)
   const [wechatForm, setWechatForm] = useState({ corp_id: '', app_agentid: '', app_secret: '' })
 
+  // S3 settings
+  const [hasExistingS3Secret, setHasExistingS3Secret] = useState(false)
+  const [s3Form, setS3Form] = useState({ endpoint: '', region: '', bucket: '', access_key: '', secret_key: '', public_url: '' })
+
   useEffect(() => {
     loadSettings()
   }, [])
@@ -38,6 +42,7 @@ function AdminSettings() {
       const res = await listSettings()
       const sso = { host: '', client_id: '', secret: '' }
       const wechat = { corp_id: '', app_agentid: '', app_secret: '' }
+      const s3 = { endpoint: '', region: '', bucket: '', access_key: '', secret_key: '', public_url: '' }
 
       for (const s of res.data.settings) {
         switch (s.key) {
@@ -76,10 +81,33 @@ function AdminSettings() {
               wechat.app_secret = s.value
             }
             break
+          case 's3.endpoint':
+            s3.endpoint = s.value
+            break
+          case 's3.region':
+            s3.region = s.value
+            break
+          case 's3.bucket':
+            s3.bucket = s.value
+            break
+          case 's3.access_key':
+            s3.access_key = s.value
+            break
+          case 's3.secret_key':
+            if (s.value === MASKED_VALUE) {
+              setHasExistingS3Secret(true)
+            } else {
+              s3.secret_key = s.value
+            }
+            break
+          case 's3.public_url':
+            s3.public_url = s.value
+            break
         }
       }
       setSSOForm(sso)
       setWechatForm(wechat)
+      setS3Form(s3)
     } catch (err) {
       console.error('Load settings error:', err)
     } finally {
@@ -101,6 +129,11 @@ function AdminSettings() {
         'sso_client_id': ssoForm.client_id,
         'wechat.corp_id': wechatForm.corp_id,
         'wechat.app_agentid': wechatForm.app_agentid,
+        's3.endpoint': s3Form.endpoint,
+        's3.region': s3Form.region,
+        's3.bucket': s3Form.bucket,
+        's3.access_key': s3Form.access_key,
+        's3.public_url': s3Form.public_url,
       }
 
       // Only include secrets if user entered a new value
@@ -109,6 +142,9 @@ function AdminSettings() {
       }
       if (wechatForm.app_secret || !hasExistingWechatSecret) {
         settings['wechat.app_secret'] = wechatForm.app_secret
+      }
+      if (s3Form.secret_key || !hasExistingS3Secret) {
+        settings['s3.secret_key'] = s3Form.secret_key
       }
 
       await updateSettings({ settings })
@@ -240,6 +276,74 @@ function AdminSettings() {
         </div>
       )}
 
+      {/* S3 storage settings */}
+      <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
+        <div className="flex items-center gap-2 mb-6">
+          <HardDrive size={20} style={{ color: '#0f0f0f' }} />
+          <h3 className="font-medium" style={{ color: '#0f0f0f' }}>存储配置 (S3)</h3>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>Endpoint</label>
+            <Input
+              placeholder="https://s3.amazonaws.com"
+              value={s3Form.endpoint}
+              onChange={(e) => setS3Form({ ...s3Form, endpoint: e.target.value })}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>Region</label>
+              <Input
+                placeholder="us-east-1"
+                value={s3Form.region}
+                onChange={(e) => setS3Form({ ...s3Form, region: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>Bucket</label>
+              <Input
+                placeholder="my-bucket"
+                value={s3Form.bucket}
+                onChange={(e) => setS3Form({ ...s3Form, bucket: e.target.value })}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>Access Key</label>
+            <Input
+              placeholder="请输入 Access Key"
+              value={s3Form.access_key}
+              onChange={(e) => setS3Form({ ...s3Form, access_key: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+              Secret Key
+              {hasExistingS3Secret && (
+                <span className="ml-2 text-xs" style={{ color: '#166534' }}>(已设置，留空保持不变)</span>
+              )}
+            </label>
+            <Input
+              type="password"
+              placeholder={hasExistingS3Secret ? '留空保持现有密钥不变' : '请输入 Secret Key'}
+              value={s3Form.secret_key}
+              onChange={(e) => setS3Form({ ...s3Form, secret_key: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>Public URL (可选)</label>
+            <Input
+              placeholder="https://cdn.example.com（留空则使用 Endpoint 拼接）"
+              value={s3Form.public_url}
+              onChange={(e) => setS3Form({ ...s3Form, public_url: e.target.value })}
+            />
+            <p className="text-xs mt-1" style={{ color: '#909090' }}>CDN 或自定义域名，用于生成文件的公开访问地址</p>
+          </div>
+        </div>
+      </div>
+
       {/* WeChat settings */}
       <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
         <div className="flex items-center gap-2 mb-6">
@@ -301,6 +405,7 @@ function AdminSettings() {
         <h4 className="font-medium mb-2" style={{ color: '#0f0f0f' }}>配置说明</h4>
         <ul className="text-sm space-y-1" style={{ color: '#606060' }}>
           <li>• 配置保存在数据库中，保存后立即生效，无需重启服务</li>
+          <li>• S3 存储配置完成后即可在内容编辑器中上传文件</li>
           <li>• SSO 和企业微信配置完成后可前往相应页面测试功能</li>
           <li>• 用户注册开放后，新注册用户需管理员在用户管理中审核激活</li>
         </ul>

@@ -10,7 +10,7 @@ import (
 // Config represents the application configuration.
 type Config struct {
 	Addr string `mapstructure:"addr"` // listen address, e.g. "0.0.0.0:9000"
-	DSN     string `mapstructure:"dsn"`     // PostgreSQL connection string
+	DSN  string `mapstructure:"dsn"`  // PostgreSQL connection string
 }
 
 // Load reads configuration from the given file path.

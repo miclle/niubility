@@ -21,3 +21,13 @@ export interface WechatSettings {
   app_agentid: string
   app_secret: string
 }
+
+// S3Settings represents the S3 storage configuration form data.
+export interface S3Settings {
+  endpoint: string
+  region: string
+  bucket: string
+  access_key: string
+  secret_key: string
+  public_url: string
+}

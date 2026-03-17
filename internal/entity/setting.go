@@ -44,9 +44,35 @@ const (
 	SettingWechatAppSecret  = "wechat.app_secret"
 )
 
+// Setting key constants for S3 storage configuration.
+const (
+	// SettingS3Endpoint is the S3-compatible endpoint URL.
+	SettingS3Endpoint = "s3.endpoint"
+	// SettingS3Region is the S3 bucket region.
+	SettingS3Region = "s3.region"
+	// SettingS3Bucket is the S3 bucket name.
+	SettingS3Bucket = "s3.bucket"
+	// SettingS3AccessKey is the S3 access key ID.
+	SettingS3AccessKey = "s3.access_key"
+	// SettingS3SecretKey is the S3 secret access key (encrypted in storage).
+	SettingS3SecretKey = "s3.secret_key"
+	// SettingS3PublicURL is the optional public URL prefix for accessing uploaded files (e.g., CDN domain).
+	SettingS3PublicURL = "s3.public_url"
+)
+
 // WechatConfig represents the WeChat Work configuration extracted from settings.
 type WechatConfig struct {
 	CorpID     string
 	AppAgentID int64
 	AppSecret  string
+}
+
+// S3Config represents the S3 storage configuration extracted from settings.
+type S3Config struct {
+	Endpoint  string
+	Region    string
+	Bucket    string
+	AccessKey string
+	SecretKey string
+	PublicURL string
 }

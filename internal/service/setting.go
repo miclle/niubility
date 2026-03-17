@@ -13,6 +13,7 @@ import (
 var sensitiveKeys = map[string]bool{
 	entity.SettingWechatAppSecret: true,
 	entity.SettingSSOSecret:       true,
+	entity.SettingS3SecretKey:     true,
 }
 
 // GetSetting retrieves a setting value by key.
@@ -121,5 +122,29 @@ func (s *Service) GetWechatConfig() (*entity.WechatConfig, error) {
 		CorpID:     corpID,
 		AppAgentID: appAgentID,
 		AppSecret:  appSecret,
+	}, nil
+}
+
+// GetS3Config retrieves the S3 storage configuration from settings.
+// Returns nil if endpoint is not configured.
+func (s *Service) GetS3Config() (*entity.S3Config, error) {
+	endpoint, err := s.GetSetting(entity.SettingS3Endpoint)
+	if err != nil || endpoint == "" {
+		return nil, err
+	}
+
+	region, _ := s.GetSetting(entity.SettingS3Region)
+	bucket, _ := s.GetSetting(entity.SettingS3Bucket)
+	accessKey, _ := s.GetSetting(entity.SettingS3AccessKey)
+	secretKey, _ := s.GetSetting(entity.SettingS3SecretKey)
+	publicURL, _ := s.GetSetting(entity.SettingS3PublicURL)
+
+	return &entity.S3Config{
+		Endpoint:  endpoint,
+		Region:    region,
+		Bucket:    bucket,
+		AccessKey: accessKey,
+		SecretKey: secretKey,
+		PublicURL: publicURL,
 	}, nil
 }
