@@ -1,5 +1,5 @@
 import client from './client'
-import type { BootResponse, ListUsersResponse, UpdateUserArgs, User, SyncWechatResponse, ListDepartmentsResponse } from 'src/types/user'
+import type { BootResponse, ListUsersResponse, UpdateUserArgs, User, SyncWechatResponse, ListDepartmentsResponse, SearchUsersResponse } from 'src/types/user'
 
 // boot fetches the current system and authentication state.
 export function boot() {
@@ -39,4 +39,9 @@ export function syncWechat() {
 // listDepartments fetches all departments (admin only).
 export function listDepartments() {
   return client.get<ListDepartmentsResponse>('/admin/departments')
+}
+
+// searchUsers searches users by keyword (authenticated users).
+export function searchUsers(q: string) {
+  return client.get<SearchUsersResponse>('/users/search', { params: { q } })
 }

@@ -41,7 +41,7 @@ func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, 
 		orderClause = "like_count DESC"
 	}
 
-	if err := query.Preload("Author").Offset(args.Offset()).Limit(args.GetLimit()).Order(orderClause).Find(&contents).Error; err != nil {
+	if err := query.Preload("Author").Preload("Speaker").Offset(args.Offset()).Limit(args.GetLimit()).Order(orderClause).Find(&contents).Error; err != nil {
 		return nil, 0, fmt.Errorf("list contents: %w", err)
 	}
 
@@ -51,7 +51,7 @@ func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, 
 // GetContentByID retrieves a content by ID with author preloaded.
 func (s *Service) GetContentByID(id string) (*entity.Content, error) {
 	var content entity.Content
-	if err := s.DB.Preload("Author").Where("id = ?", id).First(&content).Error; err != nil {
+	if err := s.DB.Preload("Author").Preload("Speaker").Where("id = ?", id).First(&content).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
@@ -104,8 +104,20 @@ func (s *Service) UpdateContent(id string, args entity.UpdateContentArgs) (*enti
 	if args.Tags != nil {
 		updates["tags"] = args.Tags
 	}
-	if args.Speaker != nil {
-		updates["speaker"] = *args.Speaker
+	if args.SpeakerID != nil {
+		updates["speaker_id"] = *args.SpeakerID
+		// When setting a speaker from employees, clear manual speaker fields
+		if *args.SpeakerID != "" {
+			updates["speaker_name"] = ""
+			updates["speaker_bio"] = ""
+		}
+	}
+	if args.SpeakerName != nil {
+		updates["speaker_name"] = *args.SpeakerName
+		// When setting manual speaker, clear employee speaker
+		if *args.SpeakerName != "" {
+			updates["speaker_id"] = ""
+		}
 	}
 	if args.SpeakerBio != nil {
 		updates["speaker_bio"] = *args.SpeakerBio
@@ -182,8 +194,8 @@ func (s *Service) ImportContents(authorID string, talks []entity.LegacyTalk) (*e
 			Type:       entity.ContentTypeVideo,
 			Category:   category,
 			Tags:       talk.Tags,
-			Speaker:    talk.Speaker,
-			SpeakerBio: talk.Bio,
+			SpeakerName: talk.Speaker,
+			SpeakerBio:  talk.Bio,
 			CreatedAt:  createdAt,
 			UpdatedAt:  createdAt,
 		}

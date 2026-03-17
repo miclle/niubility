@@ -95,9 +95,10 @@ func (ctrl *Ctrl) CreateContent(c *fox.Context, args entity.CreateContentArgs) (
 		VideoURL:   args.VideoURL,
 		Type:       args.Type,
 		Category:   args.Category,
-		Tags:       args.Tags,
-		Speaker:    args.Speaker,
-		SpeakerBio: args.SpeakerBio,
+		Tags:        args.Tags,
+		SpeakerID:   args.SpeakerID,
+		SpeakerName: args.SpeakerName,
+		SpeakerBio:  args.SpeakerBio,
 	}
 
 	if err := ctrl.service.CreateContent(content); err != nil {

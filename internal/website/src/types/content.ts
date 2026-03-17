@@ -21,13 +21,15 @@ export interface Content {
   type: ContentType
   category: ContentCategory
   tags: string[]
-  speaker: string
+  speaker_id: string
+  speaker_name: string
   speaker_bio: string
   like_count: number
   comment_count: number
   created_at: string
   updated_at: string
   author?: User
+  speaker?: User
   liked?: boolean
 }
 
@@ -58,7 +60,8 @@ export interface CreateContentArgs {
   type: ContentType
   category: ContentCategory
   tags?: string[]
-  speaker?: string
+  speaker_id?: string
+  speaker_name?: string
   speaker_bio?: string
 }
 
@@ -72,7 +75,8 @@ export interface UpdateContentArgs {
   type?: ContentType
   category?: ContentCategory
   tags?: string[]
-  speaker?: string
+  speaker_id?: string
+  speaker_name?: string
   speaker_bio?: string
 }
 

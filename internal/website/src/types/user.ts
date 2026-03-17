@@ -71,3 +71,15 @@ export interface SyncWechatResponse {
 export interface ListDepartmentsResponse {
   departments: Department[]
 }
+
+// SearchUserItem represents a simplified user item for search results.
+export interface SearchUserItem {
+  id: string
+  name: string
+  avatar: string
+}
+
+// SearchUsersResponse represents the response for searching users.
+export interface SearchUsersResponse {
+  users: SearchUserItem[]
+}

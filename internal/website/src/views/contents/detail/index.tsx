@@ -103,12 +103,12 @@ function ContentDetail() {
           {/* Channel info */}
           <div className="flex items-center gap-3">
             <Avatar size="lg">
-              <AvatarImage src={content.author?.avatar} alt={content.author?.name || content.speaker || '匿名'} />
-              <AvatarFallback>{content.author?.name?.charAt(0) || content.speaker?.charAt(0) || '匿'}</AvatarFallback>
+              <AvatarImage src={content.speaker?.avatar || content.author?.avatar} alt={content.speaker?.name || content.author?.name || content.speaker_name || '匿名'} />
+              <AvatarFallback>{content.speaker?.name?.charAt(0) || content.author?.name?.charAt(0) || content.speaker_name?.charAt(0) || '匿'}</AvatarFallback>
             </Avatar>
             <div>
               <div className="text-sm font-medium" style={{ color: '#0f0f0f' }}>
-                {content.author?.name || content.speaker || '未知作者'}
+                {content.speaker?.name || content.author?.name || content.speaker_name || '未知作者'}
               </div>
               <div className="text-xs" style={{ color: '#606060' }}>
                 {dayjs(content.created_at).fromNow()}
@@ -177,10 +177,10 @@ function ContentDetail() {
             </div>
           )}
 
-          {content.speaker && (
+          {(content.speaker_name || content.speaker) && (
             <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
               <span className="font-medium">主讲人：</span>
-              {content.speaker}
+              {content.speaker?.name || content.speaker_name}
               {content.speaker_bio && <span className="ml-2" style={{ color: '#606060' }}>- {content.speaker_bio}</span>}
             </div>
           )}

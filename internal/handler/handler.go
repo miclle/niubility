@@ -42,6 +42,9 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	api.POST("/login", ctrl.Login)
 	api.POST("/register", ctrl.Register)
 
+	// user search (authenticated users)
+	api.GET("/users/search", ctrl.SearchUsers)
+
 	// content routes (authenticated users can read, admin can write)
 	api.GET("/contents", ctrl.ListContents)
 	api.GET("/contents/:id", ctrl.GetContent)

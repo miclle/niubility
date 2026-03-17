@@ -192,6 +192,54 @@ func (ctrl *Ctrl) buildSSOLoginURL(c *fox.Context) string {
 	return fmt.Sprintf("%s?%s", ssoSvc.Host, query.Encode())
 }
 
+// SearchUsersArgs represents the query parameters for searching users.
+type SearchUsersArgs struct {
+	Q string `form:"q"`
+}
+
+// SearchUserItem represents a simplified user item for search results.
+type SearchUserItem struct {
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Avatar string `json:"avatar"`
+}
+
+// SearchUsersResponse represents the response for searching users.
+type SearchUsersResponse struct {
+	Users []SearchUserItem `json:"users"`
+}
+
+// SearchUsers returns a list of users matching the search query (authenticated users).
+func (ctrl *Ctrl) SearchUsers(c *fox.Context, args *SearchUsersArgs) (*SearchUsersResponse, error) {
+	user := CurrentUser(c)
+	if user == nil {
+		return nil, httperrors.ErrUnauthorized
+	}
+
+	if args.Q == "" {
+		return &SearchUsersResponse{Users: []SearchUserItem{}}, nil
+	}
+
+	users, _, err := ctrl.service.ListUsers(entity.ListUsersArgs{
+		Pagination: entity.Pagination{Limit: 20},
+		Search:     args.Q,
+	})
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+
+	items := make([]SearchUserItem, len(users))
+	for i, u := range users {
+		items[i] = SearchUserItem{
+			ID:     u.ID,
+			Name:   u.Name,
+			Avatar: u.Avatar,
+		}
+	}
+
+	return &SearchUsersResponse{Users: items}, nil
+}
+
 // ListUsersResponse represents the response for listing users.
 type ListUsersResponse struct {
 	Users      []entity.User     `json:"users"`
