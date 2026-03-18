@@ -20,7 +20,9 @@ const (
 
 // skipPaths are paths that bypass authentication entirely.
 var skipPaths = []string{
-	"/sso",
+	"/sso/callback",
+	"/sso/acs",
+	"/sso/metadata",
 	"/logout",
 	"/health",
 	"/api/v1/init",

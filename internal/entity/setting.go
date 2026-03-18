@@ -27,14 +27,26 @@ const (
 	SettingInitialized = "initialized"
 	// SettingRegistrationEnabled controls whether user self-registration is allowed.
 	SettingRegistrationEnabled = "registration_enabled"
-	// SettingSSOEnabled controls whether SSO login is available.
-	SettingSSOEnabled = "sso_enabled"
-	// SettingSSOHost is the SSO provider host URL.
-	SettingSSOHost = "sso_host"
-	// SettingSSOClientID is the SSO client ID.
-	SettingSSOClientID = "sso_client_id"
-	// SettingSSOSecret is the SSO secret key.
-	SettingSSOSecret = "sso_secret"
+	// SettingSSOType controls which SSO protocol is active ("disabled", "oidc", or "saml").
+	SettingSSOType = "sso_type"
+
+	// OIDC settings.
+	// SettingSSOOIDCIssuer is the OIDC provider issuer URL (e.g. "https://accounts.google.com").
+	SettingSSOOIDCIssuer = "sso_oidc_issuer"
+	// SettingSSOOIDCClientID is the OIDC client ID.
+	SettingSSOOIDCClientID = "sso_oidc_client_id"
+	// SettingSSOOIDCClientSecret is the OIDC client secret (encrypted in storage).
+	SettingSSOOIDCClientSecret = "sso_oidc_client_secret"
+
+	// SAML settings.
+	// SettingSSOSAMLIDPMetadataURL is the SAML IdP metadata URL.
+	SettingSSOSAMLIDPMetadataURL = "sso_saml_idp_metadata_url"
+	// SettingSSOSAMLIDPEntityID is the SAML IdP entity ID.
+	SettingSSOSAMLIDPEntityID = "sso_saml_idp_entity_id"
+	// SettingSSOSAMLIDPSSOURL is the SAML IdP SSO endpoint URL.
+	SettingSSOSAMLIDPSSOURL = "sso_saml_idp_sso_url"
+	// SettingSSOSAMLIDPCertificate is the SAML IdP signing certificate (PEM, encrypted in storage).
+	SettingSSOSAMLIDPCertificate = "sso_saml_idp_certificate"
 )
 
 // Setting key constants for WeChat configuration.
@@ -65,6 +77,21 @@ type WechatConfig struct {
 	CorpID     string
 	AppAgentID int64
 	AppSecret  string
+}
+
+// OIDCConfig represents the OIDC configuration extracted from settings.
+type OIDCConfig struct {
+	Issuer       string
+	ClientID     string
+	ClientSecret string
+}
+
+// SAMLConfig represents the SAML 2.0 configuration extracted from settings.
+type SAMLConfig struct {
+	IDPMetadataURL string
+	IDPEntityID    string
+	IDPSSOURL      string
+	IDPCertificate string
 }
 
 // S3Config represents the S3 storage configuration extracted from settings.

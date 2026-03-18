@@ -8,6 +8,9 @@ import { listSettings, updateSettings } from 'src/api/setting'
 // MASKED_VALUE is the placeholder returned by backend for sensitive values
 const MASKED_VALUE = '******'
 
+// SSOType represents the active SSO protocol.
+type SSOType = 'disabled' | 'oidc' | 'saml'
+
 // AdminSettings provides an interface for managing system settings.
 function AdminSettings() {
   const [loading, setLoading] = useState(true)
@@ -17,12 +20,14 @@ function AdminSettings() {
 
   // Auth settings
   const [registrationEnabled, setRegistrationEnabled] = useState(false)
-  const [ssoEnabled, setSSOEnabled] = useState(false)
   const [cookieSecure, setCookieSecure] = useState(false)
 
   // SSO settings
-  const [ssoForm, setSSOForm] = useState({ host: '', client_id: '', secret: '' })
-  const [hasExistingSSOSecret, setHasExistingSSOSecret] = useState(false)
+  const [ssoType, setSSOType] = useState<SSOType>('disabled')
+  const [oidcForm, setOidcForm] = useState({ issuer: '', client_id: '', client_secret: '' })
+  const [hasExistingOidcSecret, setHasExistingOidcSecret] = useState(false)
+  const [samlForm, setSamlForm] = useState({ idp_metadata_url: '', idp_entity_id: '', idp_sso_url: '', idp_certificate: '' })
+  const [hasExistingSamlCert, setHasExistingSamlCert] = useState(false)
 
   // WeChat settings
   const [hasExistingWechatSecret, setHasExistingWechatSecret] = useState(false)
@@ -40,7 +45,8 @@ function AdminSettings() {
     setLoading(true)
     try {
       const res = await listSettings()
-      const sso = { host: '', client_id: '', secret: '' }
+      const oidc = { issuer: '', client_id: '', client_secret: '' }
+      const saml = { idp_metadata_url: '', idp_entity_id: '', idp_sso_url: '', idp_certificate: '' }
       const wechat = { corp_id: '', app_agentid: '', app_secret: '' }
       const s3 = { endpoint: '', region: '', bucket: '', access_key: '', secret_key: '', public_url: '' }
 
@@ -49,23 +55,39 @@ function AdminSettings() {
           case 'registration_enabled':
             setRegistrationEnabled(s.value === 'true')
             break
-          case 'sso_enabled':
-            setSSOEnabled(s.value === 'true')
-            break
           case 'cookie_secure':
             setCookieSecure(s.value === 'true')
             break
-          case 'sso_host':
-            sso.host = s.value
+          case 'sso_type':
+            setSSOType((s.value || 'disabled') as SSOType)
             break
-          case 'sso_client_id':
-            sso.client_id = s.value
+          case 'sso_oidc_issuer':
+            oidc.issuer = s.value
             break
-          case 'sso_secret':
+          case 'sso_oidc_client_id':
+            oidc.client_id = s.value
+            break
+          case 'sso_oidc_client_secret':
             if (s.value === MASKED_VALUE) {
-              setHasExistingSSOSecret(true)
+              setHasExistingOidcSecret(true)
             } else {
-              sso.secret = s.value
+              oidc.client_secret = s.value
+            }
+            break
+          case 'sso_saml_idp_metadata_url':
+            saml.idp_metadata_url = s.value
+            break
+          case 'sso_saml_idp_entity_id':
+            saml.idp_entity_id = s.value
+            break
+          case 'sso_saml_idp_sso_url':
+            saml.idp_sso_url = s.value
+            break
+          case 'sso_saml_idp_certificate':
+            if (s.value === MASKED_VALUE) {
+              setHasExistingSamlCert(true)
+            } else {
+              saml.idp_certificate = s.value
             }
             break
           case 'wechat.corp_id':
@@ -105,7 +127,8 @@ function AdminSettings() {
             break
         }
       }
-      setSSOForm(sso)
+      setOidcForm(oidc)
+      setSamlForm(saml)
       setWechatForm(wechat)
       setS3Form(s3)
     } catch (err) {
@@ -123,10 +146,13 @@ function AdminSettings() {
     try {
       const settings: Record<string, string> = {
         'registration_enabled': registrationEnabled ? 'true' : 'false',
-        'sso_enabled': ssoEnabled ? 'true' : 'false',
         'cookie_secure': cookieSecure ? 'true' : 'false',
-        'sso_host': ssoForm.host,
-        'sso_client_id': ssoForm.client_id,
+        'sso_type': ssoType,
+        'sso_oidc_issuer': oidcForm.issuer,
+        'sso_oidc_client_id': oidcForm.client_id,
+        'sso_saml_idp_metadata_url': samlForm.idp_metadata_url,
+        'sso_saml_idp_entity_id': samlForm.idp_entity_id,
+        'sso_saml_idp_sso_url': samlForm.idp_sso_url,
         'wechat.corp_id': wechatForm.corp_id,
         'wechat.app_agentid': wechatForm.app_agentid,
         's3.endpoint': s3Form.endpoint,
@@ -137,8 +163,11 @@ function AdminSettings() {
       }
 
       // Only include secrets if user entered a new value
-      if (ssoForm.secret || !hasExistingSSOSecret) {
-        settings['sso_secret'] = ssoForm.secret
+      if (oidcForm.client_secret || !hasExistingOidcSecret) {
+        settings['sso_oidc_client_secret'] = oidcForm.client_secret
+      }
+      if (samlForm.idp_certificate || !hasExistingSamlCert) {
+        settings['sso_saml_idp_certificate'] = samlForm.idp_certificate
       }
       if (wechatForm.app_secret || !hasExistingWechatSecret) {
         settings['wechat.app_secret'] = wechatForm.app_secret
@@ -208,19 +237,6 @@ function AdminSettings() {
           <label className="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
-              checked={ssoEnabled}
-              onChange={(e) => setSSOEnabled(e.target.checked)}
-              className="w-4 h-4 rounded"
-            />
-            <div>
-              <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>启用 SSO 登录</span>
-              <p className="text-xs" style={{ color: '#606060' }}>允许用户通过 SSO 单点登录</p>
-            </div>
-          </label>
-
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
               checked={cookieSecure}
               onChange={(e) => setCookieSecure(e.target.checked)}
               className="w-4 h-4 rounded"
@@ -233,48 +249,132 @@ function AdminSettings() {
         </div>
       </div>
 
-      {/* SSO settings (shown when SSO is enabled) */}
-      {ssoEnabled && (
-        <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
-          <div className="flex items-center gap-2 mb-6">
-            <Globe size={20} style={{ color: '#0f0f0f' }} />
-            <h3 className="font-medium" style={{ color: '#0f0f0f' }}>SSO 配置</h3>
+      {/* SSO settings */}
+      <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
+        <div className="flex items-center gap-2 mb-6">
+          <Globe size={20} style={{ color: '#0f0f0f' }} />
+          <h3 className="font-medium" style={{ color: '#0f0f0f' }}>SSO 配置</h3>
+        </div>
+
+        <div className="space-y-4">
+          {/* SSO type selector */}
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: '#0f0f0f' }}>SSO 类型</label>
+            <div className="flex gap-4">
+              {([
+                { value: 'disabled', label: '关闭' },
+                { value: 'oidc', label: 'OIDC' },
+                { value: 'saml', label: 'SAML 2.0' },
+              ] as const).map((opt) => (
+                <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="sso_type"
+                    value={opt.value}
+                    checked={ssoType === opt.value}
+                    onChange={() => setSSOType(opt.value)}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm" style={{ color: '#0f0f0f' }}>{opt.label}</span>
+                </label>
+              ))}
+            </div>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>SSO Host</label>
-              <Input
-                placeholder="https://sso.example.com"
-                value={ssoForm.host}
-                onChange={(e) => setSSOForm({ ...ssoForm, host: e.target.value })}
-              />
+          {/* OIDC fields */}
+          {ssoType === 'oidc' && (
+            <div className="space-y-4 pt-2" style={{ borderTop: '1px solid #f0f0f0' }}>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>Issuer URL</label>
+                <Input
+                  placeholder="https://accounts.google.com"
+                  value={oidcForm.issuer}
+                  onChange={(e) => setOidcForm({ ...oidcForm, issuer: e.target.value })}
+                />
+                <p className="text-xs mt-1" style={{ color: '#909090' }}>OIDC 提供商的 Issuer URL，用于自动发现配置</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>Client ID</label>
+                <Input
+                  placeholder="请输入 Client ID"
+                  value={oidcForm.client_id}
+                  onChange={(e) => setOidcForm({ ...oidcForm, client_id: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                  Client Secret
+                  {hasExistingOidcSecret && (
+                    <span className="ml-2 text-xs" style={{ color: '#166534' }}>(已设置，留空保持不变)</span>
+                  )}
+                </label>
+                <Input
+                  type="password"
+                  placeholder={hasExistingOidcSecret ? '留空保持现有密钥不变' : '请输入 Client Secret'}
+                  value={oidcForm.client_secret}
+                  onChange={(e) => setOidcForm({ ...oidcForm, client_secret: e.target.value })}
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>Client ID</label>
-              <Input
-                placeholder="请输入 Client ID"
-                value={ssoForm.client_id}
-                onChange={(e) => setSSOForm({ ...ssoForm, client_id: e.target.value })}
-              />
+          )}
+
+          {/* SAML fields */}
+          {ssoType === 'saml' && (
+            <div className="space-y-4 pt-2" style={{ borderTop: '1px solid #f0f0f0' }}>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>IdP Metadata URL（可选）</label>
+                <Input
+                  placeholder="https://sso.example.com/metadata"
+                  value={samlForm.idp_metadata_url}
+                  onChange={(e) => setSamlForm({ ...samlForm, idp_metadata_url: e.target.value })}
+                />
+                <p className="text-xs mt-1" style={{ color: '#909090' }}>IdP 的 SAML Metadata URL，用于参考配置</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>IdP Entity ID</label>
+                <Input
+                  placeholder="https://sso.example.com"
+                  value={samlForm.idp_entity_id}
+                  onChange={(e) => setSamlForm({ ...samlForm, idp_entity_id: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>IdP SSO URL</label>
+                <Input
+                  placeholder="https://sso.example.com/saml/sso"
+                  value={samlForm.idp_sso_url}
+                  onChange={(e) => setSamlForm({ ...samlForm, idp_sso_url: e.target.value })}
+                />
+                <p className="text-xs mt-1" style={{ color: '#909090' }}>IdP 的 SAML 单点登录端点地址</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                  IdP Certificate (PEM)
+                  {hasExistingSamlCert && (
+                    <span className="ml-2 text-xs" style={{ color: '#166534' }}>(已设置，留空保持不变)</span>
+                  )}
+                </label>
+                <textarea
+                  className="w-full px-3 py-2 border rounded-md text-sm font-mono"
+                  style={{ borderColor: '#e5e5e5', minHeight: '120px' }}
+                  placeholder={hasExistingSamlCert ? '留空保持现有证书不变' : '-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----'}
+                  value={samlForm.idp_certificate}
+                  onChange={(e) => setSamlForm({ ...samlForm, idp_certificate: e.target.value })}
+                />
+              </div>
+              <div className="p-3 rounded-lg" style={{ background: '#f0f9ff', border: '1px solid #bae6fd' }}>
+                <p className="text-sm font-medium" style={{ color: '#0369a1' }}>SP Metadata</p>
+                <p className="text-xs mt-1" style={{ color: '#0369a1' }}>
+                  将以下地址提供给 IdP 以导入 SP 配置：
+                </p>
+                <code className="block text-xs mt-1 p-2 rounded" style={{ background: '#e0f2fe', color: '#0c4a6e' }}>
+                  {window.location.origin}/sso/metadata
+                </code>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
-                Secret
-                {hasExistingSSOSecret && (
-                  <span className="ml-2 text-xs" style={{ color: '#166534' }}>(已设置，留空保持不变)</span>
-                )}
-              </label>
-              <Input
-                type="password"
-                placeholder={hasExistingSSOSecret ? '留空保持现有密钥不变' : '请输入 Secret'}
-                value={ssoForm.secret}
-                onChange={(e) => setSSOForm({ ...ssoForm, secret: e.target.value })}
-              />
-            </div>
-          </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* S3 storage settings */}
       <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
@@ -405,13 +505,13 @@ function AdminSettings() {
         <h4 className="font-medium mb-2" style={{ color: '#0f0f0f' }}>配置说明</h4>
         <ul className="text-sm space-y-1" style={{ color: '#606060' }}>
           <li>• 配置保存在数据库中，保存后立即生效，无需重启服务</li>
+          <li>• SSO 支持 OIDC（Google、Azure AD、Okta 等）和 SAML 2.0（七牛 SSO、AD FS 等）协议</li>
           <li>• S3 存储配置完成后即可在内容编辑器中上传文件</li>
-          <li>• SSO 和企业微信配置完成后可前往相应页面测试功能</li>
           <li>• 用户注册开放后，新注册用户需管理员在用户管理中审核激活</li>
         </ul>
         <div className="mt-3 pt-3 flex items-center gap-2" style={{ borderTop: '1px solid #e5e5e5' }}>
           <Shield size={14} style={{ color: '#166534' }} />
-          <span className="text-xs" style={{ color: '#166534' }}>敏感信息（如 Secret）使用 AES-256-GCM 加密存储</span>
+          <span className="text-xs" style={{ color: '#166534' }}>敏感信息（如 Secret、Certificate）使用 AES-256-GCM 加密存储</span>
         </div>
       </div>
     </div>

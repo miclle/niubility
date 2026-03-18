@@ -28,8 +28,10 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	// embed website assets
 	website.EmbedAssets(r)
 
-	// SSO callback and logout
-	r.GET("/sso", ctrl.SSOCallback)
+	// SSO callbacks and logout
+	r.GET("/sso/callback", ctrl.SSOCallback) // OIDC callback
+	r.POST("/sso/acs", ctrl.SSOAcs)          // SAML ACS
+	r.GET("/sso/metadata", ctrl.SSOMetadata) // SAML SP metadata
 	r.GET("/logout", ctrl.Logout)
 
 	// health check

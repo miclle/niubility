@@ -11,9 +11,10 @@ import (
 
 // sensitiveKeys are setting keys that should be encrypted in storage.
 var sensitiveKeys = map[string]bool{
-	entity.SettingWechatAppSecret: true,
-	entity.SettingSSOSecret:       true,
-	entity.SettingS3SecretKey:     true,
+	entity.SettingWechatAppSecret:    true,
+	entity.SettingSSOOIDCClientSecret: true,
+	entity.SettingSSOSAMLIDPCertificate: true,
+	entity.SettingS3SecretKey:        true,
 }
 
 // GetSetting retrieves a setting value by key.
@@ -122,6 +123,44 @@ func (s *Service) GetWechatConfig() (*entity.WechatConfig, error) {
 		CorpID:     corpID,
 		AppAgentID: appAgentID,
 		AppSecret:  appSecret,
+	}, nil
+}
+
+// GetOIDCConfig retrieves the OIDC configuration from settings.
+// Returns nil if issuer is not configured.
+func (s *Service) GetOIDCConfig() (*entity.OIDCConfig, error) {
+	issuer, err := s.GetSetting(entity.SettingSSOOIDCIssuer)
+	if err != nil || issuer == "" {
+		return nil, err
+	}
+
+	clientID, _ := s.GetSetting(entity.SettingSSOOIDCClientID)
+	clientSecret, _ := s.GetSetting(entity.SettingSSOOIDCClientSecret)
+
+	return &entity.OIDCConfig{
+		Issuer:       issuer,
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+	}, nil
+}
+
+// GetSAMLConfig retrieves the SAML 2.0 configuration from settings.
+// Returns nil if IdP SSO URL is not configured.
+func (s *Service) GetSAMLConfig() (*entity.SAMLConfig, error) {
+	ssoURL, err := s.GetSetting(entity.SettingSSOSAMLIDPSSOURL)
+	if err != nil || ssoURL == "" {
+		return nil, err
+	}
+
+	metadataURL, _ := s.GetSetting(entity.SettingSSOSAMLIDPMetadataURL)
+	entityID, _ := s.GetSetting(entity.SettingSSOSAMLIDPEntityID)
+	certificate, _ := s.GetSetting(entity.SettingSSOSAMLIDPCertificate)
+
+	return &entity.SAMLConfig{
+		IDPMetadataURL: metadataURL,
+		IDPEntityID:    entityID,
+		IDPSSOURL:      ssoURL,
+		IDPCertificate: certificate,
 	}, nil
 }
 

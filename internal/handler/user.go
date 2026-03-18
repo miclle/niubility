@@ -1,9 +1,16 @@
 package handler
 
 import (
+	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/xml"
 	"fmt"
 	"net/http"
-	"net/url"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/fox-gonic/fox"
 	"github.com/fox-gonic/fox/httperrors"
@@ -23,55 +30,258 @@ const (
 	AuthenticationStateUnauthorized AuthenticationState = "unauthorized"
 )
 
-// SSOCallbackArgs represents the SSO callback query parameters.
+// SSOCallbackArgs represents the OIDC callback query parameters.
 type SSOCallbackArgs struct {
-	Token    string `query:"token"`
-	Redirect string `query:"redirect"`
+	Code  string `query:"code"`
+	State string `query:"state"`
 }
 
-// SSOCallback handles the SSO login callback.
-// Only available when SSO is enabled.
+// SSOCallback handles the OIDC authorization code callback.
 func (ctrl *Ctrl) SSOCallback(c *fox.Context, args *SSOCallbackArgs) any {
-	if !ctrl.service.IsSSOEnabled() {
+	if ctrl.service.GetSSOType() != "oidc" {
 		return render.Redirect{Code: 302, Location: "/login"}
 	}
 
-	ssoSvc := ctrl.getSSOService()
-	if ssoSvc == nil {
-		c.Logger.Error("sso service not configured")
-		return render.Redirect{Code: 302, Location: "/500"}
-	}
-
-	userinfo, err := ssoSvc.GetLoginUserInfo(c, args.Token)
+	// Validate state (CSRF protection)
+	redirect, err := ctrl.validateSSOState(c, args.State)
 	if err != nil {
-		c.Logger.Errorf("sso get login user info failed, error: %+v", err)
+		c.Logger.Errorf("invalid SSO state: %v", err)
+		return render.Redirect{Code: 302, Location: "/login"}
+	}
+
+	provider, err := ctrl.getOIDCProvider(c)
+	if err != nil {
+		c.Logger.Errorf("get OIDC provider: %v", err)
 		return render.Redirect{Code: 302, Location: "/500"}
 	}
 
-	if len(userinfo.Username) == 0 {
-		c.Logger.Error("sso user username is empty")
+	userinfo, err := provider.Exchange(c, sso.CallbackParams{Code: args.Code, State: args.State})
+	if err != nil {
+		c.Logger.Errorf("OIDC exchange failed: %v", err)
+		return render.Redirect{Code: 302, Location: "/500"}
+	}
+
+	return ctrl.completeSSOLogin(c, userinfo, redirect)
+}
+
+// SSOAcsArgs represents the SAML ACS POST form parameters.
+type SSOAcsArgs struct {
+	SAMLResponse string `form:"SAMLResponse"`
+	RelayState   string `form:"RelayState"`
+}
+
+// SSOAcs handles the SAML 2.0 Assertion Consumer Service callback.
+func (ctrl *Ctrl) SSOAcs(c *fox.Context, args *SSOAcsArgs) any {
+	if ctrl.service.GetSSOType() != "saml" {
+		return render.Redirect{Code: 302, Location: "/login"}
+	}
+
+	provider, err := ctrl.getSAMLProvider(c)
+	if err != nil {
+		c.Logger.Errorf("get SAML provider: %v", err)
+		return render.Redirect{Code: 302, Location: "/500"}
+	}
+
+	userinfo, err := provider.Exchange(c, sso.CallbackParams{SAMLResponse: args.SAMLResponse, RelayState: args.RelayState})
+	if err != nil {
+		c.Logger.Errorf("SAML exchange failed: %v", err)
+		return render.Redirect{Code: 302, Location: "/500"}
+	}
+
+	redirect := args.RelayState
+	return ctrl.completeSSOLogin(c, userinfo, redirect)
+}
+
+// SSOMetadata returns the SAML SP metadata XML for IdP import.
+func (ctrl *Ctrl) SSOMetadata(c *fox.Context) any {
+	if ctrl.service.GetSSOType() != "saml" {
+		return httperrors.ErrNotFound
+	}
+
+	provider, err := ctrl.getSAMLProvider(c)
+	if err != nil {
+		c.Logger.Errorf("get SAML provider: %v", err)
+		return httperrors.ErrInternalServerError
+	}
+
+	metadata := provider.Metadata()
+	c.Header("Content-Type", "application/samlmetadata+xml")
+	xmlBytes, _ := xml.MarshalIndent(metadata, "", "  ")
+	c.Writer.Write(xmlBytes) //nolint:errcheck
+	return nil
+}
+
+// completeSSOLogin upserts the user, issues a JWT token, and redirects.
+func (ctrl *Ctrl) completeSSOLogin(c *fox.Context, userinfo *sso.UserInfo, redirect string) render.Redirect {
+	if userinfo.Username == "" {
+		c.Logger.Error("SSO user username is empty")
 		return render.Redirect{Code: 302, Location: "/500"}
 	}
 
 	user, err := ctrl.service.UpsertUser(userinfo.Username, userinfo.Email)
 	if err != nil {
-		c.Logger.Errorf("upsert user failed, err: %+v", err)
+		c.Logger.Errorf("upsert user failed: %v", err)
 		return render.Redirect{Code: 302, Location: "/500"}
 	}
 
 	tokenString, err := ctrl.issueToken(user.Username)
 	if err != nil {
-		c.Logger.Errorf("create jwt token failed: %s", err.Error())
+		c.Logger.Errorf("create jwt token failed: %v", err)
 		return render.Redirect{Code: 302, Location: "/500"}
 	}
 
 	ctrl.setAuthCookie(c, tokenString)
 
-	if args.Redirect == "" {
-		args.Redirect = "/"
+	if redirect == "" {
+		redirect = "/"
 	}
 
-	return render.Redirect{Code: 302, Location: args.Redirect}
+	return render.Redirect{Code: 302, Location: redirect}
+}
+
+// getOIDCProvider creates an OIDC provider from database settings.
+func (ctrl *Ctrl) getOIDCProvider(ctx context.Context) (*sso.OIDCProvider, error) {
+	cfg, err := ctrl.service.GetOIDCConfig()
+	if err != nil || cfg == nil {
+		return nil, fmt.Errorf("OIDC not configured")
+	}
+	return sso.NewOIDCProvider(ctx, cfg.Issuer, cfg.ClientID, cfg.ClientSecret)
+}
+
+// getSAMLProvider creates a SAML provider from database settings.
+func (ctrl *Ctrl) getSAMLProvider(c *fox.Context) (*sso.SAMLProvider, error) {
+	cfg, err := ctrl.service.GetSAMLConfig()
+	if err != nil || cfg == nil {
+		return nil, fmt.Errorf("SAML not configured")
+	}
+
+	scheme := "https"
+	if c.Request.TLS == nil {
+		scheme = "http"
+	}
+	baseURL := fmt.Sprintf("%s://%s", scheme, c.Request.Host)
+
+	return sso.NewSAMLProvider(sso.SAMLConfig{
+		IDPEntityID:    cfg.IDPEntityID,
+		IDPSSOURL:      cfg.IDPSSOURL,
+		IDPCertificate: cfg.IDPCertificate,
+		SPEntityID:     baseURL + "/sso/metadata",
+		SPACSURL:       baseURL + "/sso/acs",
+	})
+}
+
+// buildSSOLoginURL constructs the SSO login URL based on sso_type.
+func (ctrl *Ctrl) buildSSOLoginURL(c *fox.Context) string {
+	ssoType := ctrl.service.GetSSOType()
+	scheme := "https"
+	if c.Request.TLS == nil {
+		scheme = "http"
+	}
+	baseURL := fmt.Sprintf("%s://%s", scheme, c.Request.Host)
+
+	switch ssoType {
+	case "oidc":
+		cfg, err := ctrl.service.GetOIDCConfig()
+		if err != nil || cfg == nil {
+			return ""
+		}
+		provider, err := sso.NewOIDCProvider(context.Background(), cfg.Issuer, cfg.ClientID, cfg.ClientSecret)
+		if err != nil {
+			return ""
+		}
+		state := ctrl.generateSSOState(c, "/")
+		return provider.AuthURL(state, baseURL+"/sso/callback")
+
+	case "saml":
+		cfg, err := ctrl.service.GetSAMLConfig()
+		if err != nil || cfg == nil {
+			return ""
+		}
+		provider, err := sso.NewSAMLProvider(sso.SAMLConfig{
+			IDPEntityID:    cfg.IDPEntityID,
+			IDPSSOURL:      cfg.IDPSSOURL,
+			IDPCertificate: cfg.IDPCertificate,
+			SPEntityID:     baseURL + "/sso/metadata",
+			SPACSURL:       baseURL + "/sso/acs",
+		})
+		if err != nil {
+			return ""
+		}
+		return provider.AuthURL("/", "")
+
+	default:
+		return ""
+	}
+}
+
+// generateSSOState creates an HMAC-signed state parameter for OIDC CSRF protection.
+// Format: base64(redirect|expiry|hmac)
+func (ctrl *Ctrl) generateSSOState(c *fox.Context, redirect string) string {
+	expiry := strconv.FormatInt(time.Now().Add(10*time.Minute).Unix(), 10)
+	payload := redirect + "|" + expiry
+	mac := hmac.New(sha256.New, []byte(ctrl.service.GetJWTSecret()))
+	mac.Write([]byte(payload))
+	sig := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+	state := base64.RawURLEncoding.EncodeToString([]byte(payload + "|" + sig))
+
+	// Store in cookie for validation
+	secure := ctrl.service.IsCookieSecure()
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "sso_state",
+		Value:    state,
+		Path:     "/",
+		MaxAge:   600, // 10 minutes
+		Secure:   secure,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	return state
+}
+
+// validateSSOState validates the HMAC-signed state parameter and returns the redirect URL.
+func (ctrl *Ctrl) validateSSOState(c *fox.Context, state string) (string, error) {
+	cookieState, err := c.Cookie("sso_state")
+	if err != nil || cookieState != state {
+		return "", fmt.Errorf("state mismatch")
+	}
+
+	decoded, err := base64.RawURLEncoding.DecodeString(state)
+	if err != nil {
+		return "", fmt.Errorf("decode state: %w", err)
+	}
+
+	parts := strings.SplitN(string(decoded), "|", 3)
+	if len(parts) != 3 {
+		return "", fmt.Errorf("invalid state format")
+	}
+
+	redirect, expiryStr, sig := parts[0], parts[1], parts[2]
+
+	// Verify expiry
+	expiry, err := strconv.ParseInt(expiryStr, 10, 64)
+	if err != nil || time.Now().Unix() > expiry {
+		return "", fmt.Errorf("state expired")
+	}
+
+	// Verify HMAC
+	payload := redirect + "|" + expiryStr
+	mac := hmac.New(sha256.New, []byte(ctrl.service.GetJWTSecret()))
+	mac.Write([]byte(payload))
+	expectedSig := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+	if !hmac.Equal([]byte(sig), []byte(expectedSig)) {
+		return "", fmt.Errorf("invalid state signature")
+	}
+
+	// Clear the state cookie
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:   "sso_state",
+		Value:  "",
+		Path:   "/",
+		MaxAge: -1,
+	})
+
+	return redirect, nil
 }
 
 // BootResponse represents the boot response.
@@ -99,7 +309,7 @@ func (ctrl *Ctrl) Boot(c *fox.Context) *BootResponse {
 		Authentication:      AuthenticationStateUnauthorized,
 		Categories:          categories,
 		RegistrationEnabled: ctrl.service.IsRegistrationEnabled(),
-		SSOEnabled:          ctrl.service.IsSSOEnabled(),
+		SSOEnabled:          ctrl.service.GetSSOType() != "disabled",
 	}
 
 	// Build SSO login URL if SSO is enabled
@@ -145,58 +355,7 @@ func (ctrl *Ctrl) Logout(c *fox.Context, args *LogoutArgs) render.Redirect {
 		args.Redirect = "/login"
 	}
 
-	// If SSO is enabled, redirect to SSO signout
-	if ctrl.service.IsSSOEnabled() {
-		ssoHost, _ := ctrl.service.GetSetting(entity.SettingSSOHost)
-		if ssoHost != "" {
-			scheme := "https"
-			if c.Request.TLS == nil {
-				scheme = "http"
-			}
-			redirect := fmt.Sprintf("%s://%s/sso?redirect=%s", scheme, c.Request.Host, args.Redirect)
-			location := fmt.Sprintf("%s/signout?redirect=%s", ssoHost, redirect)
-			return render.Redirect{Code: 302, Location: location}
-		}
-	}
-
 	return render.Redirect{Code: 302, Location: args.Redirect}
-}
-
-// getSSOService creates an SSO service from database settings.
-func (ctrl *Ctrl) getSSOService() *sso.Service {
-	host, _ := ctrl.service.GetSetting(entity.SettingSSOHost)
-	clientID, _ := ctrl.service.GetSetting(entity.SettingSSOClientID)
-	secret, _ := ctrl.service.GetSetting(entity.SettingSSOSecret)
-
-	if host == "" || clientID == "" || secret == "" {
-		return nil
-	}
-
-	return sso.NewService(sso.Config{
-		Host:     host,
-		ClientID: clientID,
-		Secret:   secret,
-	})
-}
-
-// buildSSOLoginURL constructs the SSO login redirect URL.
-func (ctrl *Ctrl) buildSSOLoginURL(c *fox.Context) string {
-	ssoSvc := ctrl.getSSOService()
-	if ssoSvc == nil {
-		return ""
-	}
-
-	scheme := "https"
-	if c.Request.TLS == nil {
-		scheme = "http"
-	}
-	callbackURL := fmt.Sprintf("%s://%s/sso", scheme, c.Request.Host)
-
-	query := url.Values{}
-	query.Set("client_id", ssoSvc.ClientID)
-	query.Set("redirect", callbackURL)
-
-	return fmt.Sprintf("%s?%s", ssoSvc.Host, query.Encode())
 }
 
 // SearchUsersArgs represents the query parameters for searching users.

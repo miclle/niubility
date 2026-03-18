@@ -101,13 +101,14 @@ func (s *Service) IsRegistrationEnabled() bool {
 	return val == "true"
 }
 
-// IsSSOEnabled checks whether SSO login is enabled.
-func (s *Service) IsSSOEnabled() bool {
-	val, err := s.GetSetting(entity.SettingSSOEnabled)
-	if err != nil {
-		return false
+// GetSSOType returns the active SSO type ("disabled", "oidc", or "saml").
+// Returns "disabled" if not configured or on error.
+func (s *Service) GetSSOType() string {
+	val, err := s.GetSetting(entity.SettingSSOType)
+	if err != nil || val == "" {
+		return "disabled"
 	}
-	return val == "true"
+	return val
 }
 
 // IsCookieSecure checks whether the Secure flag should be set on cookies.
