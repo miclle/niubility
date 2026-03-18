@@ -5,6 +5,7 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
 
 import { Avatar, AvatarImage, AvatarFallback } from 'src/components/ui/avatar'
+import { fileURL } from 'src/api/upload'
 import type { Content } from 'src/types/content'
 
 dayjs.extend(relativeTime)
@@ -22,7 +23,7 @@ function ContentCard({ content }: { content: Content }) {
       <div className="relative" style={{ borderRadius: 12, overflow: 'hidden' }}>
         <div className="relative aspect-video bg-zinc-200">
           <img
-            src={content.cover_url || '/default-cover.svg'}
+            src={fileURL(content.cover_url) || '/default-cover.svg'}
             alt={content.title}
             className="w-full h-full object-cover"
             style={{ transition: 'transform 0.3s' }}

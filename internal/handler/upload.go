@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"net/http"
+	"strings"
+
 	"github.com/fox-gonic/fox"
 	"github.com/fox-gonic/fox/httperrors"
 )
@@ -15,7 +18,7 @@ type PresignRequest struct {
 // PresignResponse represents the presigned URL response.
 type PresignResponse struct {
 	PresignedURL string `json:"presigned_url"`
-	FileURL      string `json:"file_url"`
+	Key          string `json:"key"`
 }
 
 // GetPresignedURL generates an S3 presigned PUT URL for direct file upload (admin only).
@@ -29,11 +32,31 @@ func (ctrl *Ctrl) GetPresignedURL(c *fox.Context, req *PresignRequest) (*Presign
 
 	result, err := ctrl.service.GetPresignedURL(req.Filename, req.ContentType, req.Category)
 	if err != nil {
-		return nil, httperrors.ErrInternalServerError
+		return nil, httperrors.New(http.StatusInternalServerError, err.Error())
 	}
 
 	return &PresignResponse{
 		PresignedURL: result.PresignedURL,
-		FileURL:      result.FileURL,
+		Key:          result.Key,
 	}, nil
+}
+
+// GetFile resolves an S3 object key to an access URL and redirects.
+// Uses public URL if configured, otherwise generates a presigned GET URL.
+func (ctrl *Ctrl) GetFile(c *fox.Context) {
+	key := c.Param("path")
+	key = strings.TrimPrefix(key, "/")
+
+	if key == "" {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	url, err := ctrl.service.GetFileURL(key)
+	if err != nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	c.Redirect(http.StatusTemporaryRedirect, url)
 }

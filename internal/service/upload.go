@@ -15,10 +15,10 @@ import (
 	"github.com/miclle/niubility/internal/entity"
 )
 
-// PresignResult contains the presigned upload URL and the final public file URL.
+// PresignResult contains the presigned upload URL and the S3 object key.
 type PresignResult struct {
 	PresignedURL string `json:"presigned_url"`
-	FileURL      string `json:"file_url"`
+	Key          string `json:"key"`
 }
 
 // GetPresignedURL generates an S3 presigned PUT URL for direct file upload.
@@ -33,8 +33,7 @@ func (s *Service) GetPresignedURL(filename, contentType, category string) (*Pres
 	}
 
 	ext := strings.ToLower(filepath.Ext(filename))
-	now := time.Now()
-	key := fmt.Sprintf("uploads/%s/%s/%s%s", category, now.Format("2006-01"), uuid.New().String(), ext)
+	key := fmt.Sprintf("uploads/%s/%s%s", category, uuid.Must(uuid.NewV7()).String(), ext)
 
 	client := s.newS3Client(cfg)
 	presignClient := s3.NewPresignClient(client)
@@ -48,30 +47,51 @@ func (s *Service) GetPresignedURL(filename, contentType, category string) (*Pres
 		return nil, fmt.Errorf("presign put object: %w", err)
 	}
 
-	fileURL := s.buildFileURL(cfg, key)
-
 	return &PresignResult{
 		PresignedURL: req.URL,
-		FileURL:      fileURL,
+		Key:          key,
 	}, nil
+}
+
+// GetFileURL returns an access URL for the given S3 object key.
+// If PublicURL is configured, returns a direct public URL; otherwise returns a presigned GET URL.
+func (s *Service) GetFileURL(key string) (string, error) {
+	cfg, err := s.GetS3Config()
+	if err != nil {
+		return "", fmt.Errorf("get s3 config: %w", err)
+	}
+	if cfg == nil {
+		return "", fmt.Errorf("s3 storage not configured")
+	}
+
+	if cfg.PublicURL != "" {
+		return strings.TrimRight(cfg.PublicURL, "/") + "/" + key, nil
+	}
+
+	client := s.newS3Client(cfg)
+	presignClient := s3.NewPresignClient(client)
+
+	req, err := presignClient.PresignGetObject(context.Background(), &s3.GetObjectInput{
+		Bucket: aws.String(cfg.Bucket),
+		Key:    aws.String(key),
+	}, s3.WithPresignExpires(1*time.Hour))
+	if err != nil {
+		return "", fmt.Errorf("presign get object: %w", err)
+	}
+
+	return req.URL, nil
 }
 
 // newS3Client creates an S3 client from the given config.
 func (s *Service) newS3Client(cfg *entity.S3Config) *s3.Client {
+	endpoint := cfg.Endpoint
+	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
+		endpoint = "https://" + endpoint
+	}
+
 	return s3.New(s3.Options{
-		BaseEndpoint: aws.String(cfg.Endpoint),
+		BaseEndpoint: aws.String(endpoint),
 		Region:       cfg.Region,
 		Credentials:  credentials.NewStaticCredentialsProvider(cfg.AccessKey, cfg.SecretKey, ""),
 	})
-}
-
-// buildFileURL constructs the public access URL for an uploaded file.
-// Uses PublicURL if configured, otherwise falls back to endpoint + bucket.
-func (s *Service) buildFileURL(cfg *entity.S3Config, key string) string {
-	if cfg.PublicURL != "" {
-		base := strings.TrimRight(cfg.PublicURL, "/")
-		return fmt.Sprintf("%s/%s", base, key)
-	}
-	endpoint := strings.TrimRight(cfg.Endpoint, "/")
-	return fmt.Sprintf("%s/%s/%s", endpoint, cfg.Bucket, key)
 }

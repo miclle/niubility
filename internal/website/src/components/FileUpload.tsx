@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { Upload, X, Loader2 } from 'lucide-react'
 
-import { uploadFile } from 'src/api/upload'
+import { uploadFile, fileURL } from 'src/api/upload'
 
 // FileUploadProps defines the configurable behavior of the FileUpload component.
 export interface FileUploadProps {
@@ -61,8 +61,8 @@ function FileUpload({ accept, category, value, onChange, renderPreview, placehol
     return (
       <div className="relative rounded-lg overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
         <div className="p-3">
-          {renderPreview ? renderPreview(value) : (
-            <a href={value} target="_blank" rel="noreferrer" className="text-sm break-all" style={{ color: '#2563eb' }}>{value}</a>
+          {renderPreview ? renderPreview(fileURL(value)) : (
+            <a href={fileURL(value)} target="_blank" rel="noreferrer" className="text-sm break-all" style={{ color: '#2563eb' }}>{value}</a>
           )}
         </div>
         <button

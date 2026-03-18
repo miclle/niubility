@@ -6,6 +6,7 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
 
 import { getContent, listContents, likeContent } from 'src/api/content'
+import { fileURL } from 'src/api/upload'
 import VideoPlayer from 'src/components/VideoPlayer'
 import CommentSection from 'src/components/CommentSection'
 import { Avatar, AvatarImage, AvatarFallback } from 'src/components/ui/avatar'
@@ -73,8 +74,8 @@ function ContentDetail() {
             style={{ width: '100%', aspectRatio: '16/9' }}
           >
             <VideoPlayer
-              src={content.video_url}
-              poster={content.cover_url || '/default-cover.svg'}
+              src={fileURL(content.video_url)}
+              poster={fileURL(content.cover_url) || '/default-cover.svg'}
               theaterMode={theaterMode}
               onToggleTheater={() => setTheaterMode(!theaterMode)}
               contentId={content.id}
@@ -86,7 +87,7 @@ function ContentDetail() {
             style={{ width: '100%', aspectRatio: '16/9' }}
           >
             <img
-              src={content.cover_url || '/default-cover.svg'}
+              src={fileURL(content.cover_url) || '/default-cover.svg'}
               alt={content.title}
               className="w-full h-full object-cover"
             />
@@ -239,7 +240,7 @@ function ContentDetail() {
               {/* Thumbnail */}
               <div className="relative flex-shrink-0 rounded-lg overflow-hidden bg-zinc-100" style={{ width: 168, aspectRatio: '16/9' }}>
                 <img
-                  src={item.cover_url || '/default-cover.svg'}
+                  src={fileURL(item.cover_url) || '/default-cover.svg'}
                   alt={item.title}
                   className="w-full h-full object-cover"
                 />

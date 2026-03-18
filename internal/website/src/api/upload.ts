@@ -1,9 +1,12 @@
 import client from './client'
 
+// FileURL prefix for accessing files via backend presigned redirect.
+const FILE_URL_PREFIX = '/api/v1/files/'
+
 // PresignResponse represents the presigned URL response from the backend.
 export interface PresignResponse {
   presigned_url: string
-  file_url: string
+  key: string
 }
 
 // getPresignedURL requests a presigned S3 PUT URL from the backend.
@@ -11,14 +14,22 @@ export function getPresignedURL(filename: string, contentType: string, category:
   return client.post<PresignResponse>('/upload/presign', { filename, content_type: contentType, category })
 }
 
-// uploadFile handles the complete upload flow: get presigned URL, PUT to S3, return file URL.
+// fileURL constructs the access URL for a stored S3 object key.
+export function fileURL(key: string): string {
+  if (!key) return ''
+  // Already a full URL (e.g., CDN or legacy data)
+  if (key.startsWith('http://') || key.startsWith('https://') || key.startsWith('/')) return key
+  return FILE_URL_PREFIX + key
+}
+
+// uploadFile handles the complete upload flow: get presigned URL, PUT to S3, return S3 object key.
 export async function uploadFile(
   file: File,
   category: 'covers' | 'videos' | 'images',
   onProgress?: (percent: number) => void,
 ): Promise<string> {
   const res = await getPresignedURL(file.name, file.type, category)
-  const { presigned_url, file_url } = res.data
+  const { presigned_url, key } = res.data
 
   await new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest()
@@ -43,5 +54,5 @@ export async function uploadFile(
     xhr.send(file)
   })
 
-  return file_url
+  return key
 }
