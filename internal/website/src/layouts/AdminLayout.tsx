@@ -1,16 +1,33 @@
 import { useState } from 'react'
-import { Outlet, NavLink, Navigate } from 'react-router-dom'
+import { Outlet, NavLink, Navigate, useLocation } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { FileText, Users, ArrowLeft, LogOut, Upload, RefreshCw, Settings, Menu, FolderOpen } from 'lucide-react'
+import { FileText, Users, ArrowLeft, LogOut, Upload, RefreshCw, Settings, Menu, FolderOpen, ChevronDown, UserPlus, HardDrive, MessageSquare, type LucideIcon } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
+
+// NavChild represents a sub-menu item under a parent nav item.
+interface NavChild {
+  to: string
+  icon: LucideIcon
+  label: string
+}
+
+// NavItem represents a top-level navigation item, optionally with children.
+interface NavItem {
+  to: string
+  icon: LucideIcon
+  label: string
+  children?: NavChild[]
+}
 
 // AdminLayout provides the admin panel layout with collapsible sidebar navigation.
 function AdminLayout() {
   const { currentUser } = useAppContext()
+  const location = useLocation()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [settingsExpanded, setSettingsExpanded] = useState(() => location.pathname.startsWith('/admin/settings'))
 
   // Require admin or super_admin role
   if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'super_admin')) {
@@ -18,14 +35,25 @@ function AdminLayout() {
   }
 
   // Nav items configuration
-  const navItems = [
+  const navItems: NavItem[] = [
     { to: '/admin/contents', icon: FileText, label: '内容管理' },
     { to: '/admin/categories', icon: FolderOpen, label: '分类管理' },
     { to: '/admin/users', icon: Users, label: '用户管理' },
     { to: '/admin/import', icon: Upload, label: '数据导入' },
     { to: '/admin/sync', icon: RefreshCw, label: '微信同步' },
-    { to: '/admin/settings', icon: Settings, label: '系统配置' },
+    {
+      to: '/admin/settings',
+      icon: Settings,
+      label: '系统配置',
+      children: [
+        { to: '/admin/settings/auth', icon: UserPlus, label: '认证配置' },
+        { to: '/admin/settings/storage', icon: HardDrive, label: '存储配置' },
+        { to: '/admin/settings/wechat', icon: MessageSquare, label: '企业微信' },
+      ],
+    },
   ]
+
+  const isSettingsActive = location.pathname.startsWith('/admin/settings')
 
   return (
     <div className="flex min-h-screen bg-white">
@@ -48,33 +76,103 @@ function AdminLayout() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 py-3 px-3">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                  isActive ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
-                }`
-              }
-              style={{ color: '#0f0f0f', justifyContent: sidebarCollapsed ? 'center' : 'flex-start' }}
-            >
-              {sidebarCollapsed ? (
-                <Tooltip>
-                  <TooltipTrigger render={<button type="button" />}>
+        <nav className="flex-1 py-3 px-3 overflow-y-auto">
+          {navItems.map((item) => {
+            if (item.children) {
+              // Parent item with expandable children
+              return (
+                <div key={item.to}>
+                  {sidebarCollapsed ? (
+                    // Collapsed: show as a simple link to first child
+                    <NavLink
+                      to={item.children[0].to}
+                      className={() =>
+                        `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+                          isSettingsActive ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+                        }`
+                      }
+                      style={{ color: '#0f0f0f', justifyContent: 'center' }}
+                    >
+                      <Tooltip>
+                        <TooltipTrigger render={<button type="button" />}>
+                          <item.icon size={24} />
+                        </TooltipTrigger>
+                        <TooltipContent side="right">{item.label}</TooltipContent>
+                      </Tooltip>
+                    </NavLink>
+                  ) : (
+                    <>
+                      {/* Expandable parent button */}
+                      <button
+                        onClick={() => setSettingsExpanded(!settingsExpanded)}
+                        className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+                          isSettingsActive && !settingsExpanded ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+                        }`}
+                        style={{ color: '#0f0f0f', border: 'none', background: isSettingsActive && !settingsExpanded ? 'rgba(0,0,0,0.1)' : 'transparent', cursor: 'pointer' }}
+                      >
+                        <item.icon size={24} />
+                        <span className="text-sm flex-1 text-left">{item.label}</span>
+                        <ChevronDown
+                          size={16}
+                          className="transition-transform duration-200"
+                          style={{ transform: settingsExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                        />
+                      </button>
+
+                      {/* Children sub-menu */}
+                      {settingsExpanded && (
+                        <div className="ml-6 mt-1 space-y-0.5">
+                          {item.children.map((child) => (
+                            <NavLink
+                              key={child.to}
+                              to={child.to}
+                              className={({ isActive }) =>
+                                `flex items-center gap-3 px-3 py-1.5 rounded-lg no-underline transition-colors text-sm ${
+                                  isActive ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+                                }`
+                              }
+                              style={{ color: '#0f0f0f' }}
+                            >
+                              <child.icon size={16} />
+                              <span>{child.label}</span>
+                            </NavLink>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )
+            }
+
+            // Regular nav item (no children)
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+                    isActive ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+                  }`
+                }
+                style={{ color: '#0f0f0f', justifyContent: sidebarCollapsed ? 'center' : 'flex-start' }}
+              >
+                {sidebarCollapsed ? (
+                  <Tooltip>
+                    <TooltipTrigger render={<button type="button" />}>
+                      <item.icon size={24} />
+                    </TooltipTrigger>
+                    <TooltipContent side="right">{item.label}</TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <>
                     <item.icon size={24} />
-                  </TooltipTrigger>
-                  <TooltipContent side="right">{item.label}</TooltipContent>
-                </Tooltip>
-              ) : (
-                <>
-                  <item.icon size={24} />
-                  <span className="text-sm">{item.label}</span>
-                </>
-              )}
-            </NavLink>
-          ))}
+                    <span className="text-sm">{item.label}</span>
+                  </>
+                )}
+              </NavLink>
+            )
+          })}
         </nav>
 
         {/* Back to front */}

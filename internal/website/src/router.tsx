@@ -10,7 +10,9 @@ import AdminContentEditor from 'src/views/admin/contents/editor'
 import AdminUsers from 'src/views/admin/users'
 import AdminImport from 'src/views/admin/import'
 import AdminSync from 'src/views/admin/sync'
-import AdminSettings from 'src/views/admin/settings'
+import SettingsAuth from 'src/views/admin/settings/auth'
+import SettingsStorage from 'src/views/admin/settings/storage'
+import SettingsWechat from 'src/views/admin/settings/wechat'
 import AdminCategories from 'src/views/admin/categories'
 import Init from 'src/views/init'
 import Login from 'src/views/login'
@@ -49,7 +51,10 @@ const routes: RouteObject[] = [
       { path: 'categories', element: <AdminCategories /> },
       { path: 'import', element: <AdminImport /> },
       { path: 'sync', element: <AdminSync /> },
-      { path: 'settings', element: <AdminSettings /> },
+      { path: 'settings', element: <Navigate to="/admin/settings/auth" replace /> },
+      { path: 'settings/auth', element: <SettingsAuth /> },
+      { path: 'settings/storage', element: <SettingsStorage /> },
+      { path: 'settings/wechat', element: <SettingsWechat /> },
     ],
   },
   // Error pages
