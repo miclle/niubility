@@ -35,9 +35,6 @@ func New(dsn string) (*Service, error) {
 		return nil, fmt.Errorf("connect to database: %w", err)
 	}
 
-	// Rename speaker column to speaker_name before auto-migration (GORM doesn't support column rename)
-	db.Exec("ALTER TABLE contents RENAME COLUMN speaker TO speaker_name")
-
 	if err := db.AutoMigrate(&entity.User{}, &entity.Content{}, &entity.Setting{}, &entity.Department{}, &entity.Comment{}, &entity.Like{}, &entity.Category{}); err != nil {
 		return nil, fmt.Errorf("auto migrate: %w", err)
 	}
