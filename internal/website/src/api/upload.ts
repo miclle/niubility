@@ -14,6 +14,11 @@ export function getPresignedURL(filename: string, contentType: string, category:
   return client.post<PresignResponse>('/upload/presign', { filename, content_type: contentType, category })
 }
 
+// getProfilePresignedURL requests a presigned S3 PUT URL for avatar upload (authenticated users).
+export function getProfilePresignedURL(filename: string, contentType: string) {
+  return client.post<PresignResponse>('/profile/upload', { filename, content_type: contentType, category: 'avatars' })
+}
+
 // fileURL constructs the access URL for a stored S3 object key.
 export function fileURL(key: string): string {
   if (!key) return ''
@@ -31,9 +36,27 @@ export async function uploadFile(
   const res = await getPresignedURL(file.name, file.type, category)
   const { presigned_url, key } = res.data
 
-  await new Promise<void>((resolve, reject) => {
+  await putToS3(presigned_url, file, onProgress)
+  return key
+}
+
+// uploadAvatar handles avatar upload via the profile upload endpoint.
+export async function uploadAvatar(
+  file: File,
+  onProgress?: (percent: number) => void,
+): Promise<string> {
+  const res = await getProfilePresignedURL(file.name, file.type)
+  const { presigned_url, key } = res.data
+
+  await putToS3(presigned_url, file, onProgress)
+  return key
+}
+
+// putToS3 uploads a file directly to S3 using a presigned PUT URL.
+function putToS3(presignedURL: string, file: File, onProgress?: (percent: number) => void): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest()
-    xhr.open('PUT', presigned_url)
+    xhr.open('PUT', presignedURL)
     xhr.setRequestHeader('Content-Type', file.type)
 
     xhr.upload.onprogress = (e) => {
@@ -53,6 +76,4 @@ export async function uploadFile(
     xhr.onerror = () => reject(new Error('Upload network error'))
     xhr.send(file)
   })
-
-  return key
 }

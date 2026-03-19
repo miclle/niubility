@@ -524,6 +524,33 @@ func (ctrl *Ctrl) ListDepartments(c *fox.Context) (*ListDepartmentsResponse, err
 	return &ListDepartmentsResponse{Departments: result}, nil
 }
 
+// GetProfile returns the current authenticated user's profile.
+func (ctrl *Ctrl) GetProfile(c *fox.Context) (*entity.User, error) {
+	user := CurrentUser(c)
+	if user == nil {
+		return nil, httperrors.ErrUnauthorized
+	}
+	return user, nil
+}
+
+// UpdateProfile updates the current authenticated user's own profile.
+func (ctrl *Ctrl) UpdateProfile(c *fox.Context, args entity.UpdateProfileArgs) (*entity.User, error) {
+	user := CurrentUser(c)
+	if user == nil {
+		return nil, httperrors.ErrUnauthorized
+	}
+
+	updated, err := ctrl.service.UpdateProfile(user.ID, args)
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+	if updated == nil {
+		return nil, httperrors.ErrNotFound
+	}
+
+	return updated, nil
+}
+
 // UserProfileResponse represents the response for a user's profile page.
 type UserProfileResponse struct {
 	User                *entity.User `json:"user"`

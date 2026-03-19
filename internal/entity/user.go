@@ -26,19 +26,21 @@ const (
 
 // User represents a user in the system.
 type User struct {
-	ID            string     `json:"id"             gorm:"column:id;primaryKey;size:36"`
-	Username      string     `json:"username"       gorm:"column:username;uniqueIndex:uniq_users_username"`
-	Name          string     `json:"name"           gorm:"column:name"`
-	Email         string     `json:"email"          gorm:"column:email"`
-	Password      string     `json:"-"              gorm:"column:password"`
-	Mobile        string     `json:"mobile"         gorm:"column:mobile"`
-	Avatar        string     `json:"avatar"         gorm:"column:avatar"`
-	Bio           string     `json:"bio"            gorm:"column:bio;type:text"`
-	DepartmentIDs string     `json:"department_ids" gorm:"column:department_ids;type:text"` // comma-separated department IDs from WeChat
-	Role          Role       `json:"role"           gorm:"column:role;default:user"`
-	Status        UserStatus `json:"status"         gorm:"column:status;default:activated"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
+	ID             string            `json:"id"              gorm:"column:id;primaryKey;size:36"`
+	Username       string            `json:"username"        gorm:"column:username;uniqueIndex:uniq_users_username"`
+	Name           string            `json:"name"            gorm:"column:name"`
+	Email          string            `json:"email"           gorm:"column:email"`
+	Password       string            `json:"-"               gorm:"column:password"`
+	Mobile         string            `json:"mobile"          gorm:"column:mobile"`
+	Avatar         string            `json:"avatar"          gorm:"column:avatar"`
+	Bio            string            `json:"bio"             gorm:"column:bio;type:text"`
+	Location       string            `json:"location"        gorm:"column:location"`
+	SocialAccounts map[string]string `json:"social_accounts" gorm:"column:social_accounts;serializer:json"`
+	DepartmentIDs  string            `json:"department_ids"  gorm:"column:department_ids;type:text"` // comma-separated department IDs from WeChat
+	Role           Role              `json:"role"            gorm:"column:role;default:user"`
+	Status         UserStatus        `json:"status"          gorm:"column:status;default:activated"`
+	CreatedAt      time.Time         `json:"created_at"`
+	UpdatedAt      time.Time         `json:"updated_at"`
 }
 
 // TableName specifies the database table name for User.
@@ -67,4 +69,13 @@ type ListUsersArgs struct {
 type UpdateUserArgs struct {
 	Role   *Role       `json:"role"`
 	Status *UserStatus `json:"status"`
+}
+
+// UpdateProfileArgs represents the fields that a user can update on their own profile.
+type UpdateProfileArgs struct {
+	Name           *string           `json:"name"`
+	Bio            *string           `json:"bio"`
+	Location       *string           `json:"location"`
+	Avatar         *string           `json:"avatar"`
+	SocialAccounts map[string]string `json:"social_accounts"`
 }

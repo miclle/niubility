@@ -41,6 +41,29 @@ func (ctrl *Ctrl) GetPresignedURL(c *fox.Context, req *PresignRequest) (*Presign
 	}, nil
 }
 
+// GetProfilePresignedURL generates an S3 presigned PUT URL for avatar upload (authenticated users).
+func (ctrl *Ctrl) GetProfilePresignedURL(c *fox.Context, req *PresignRequest) (*PresignResponse, error) {
+	user := CurrentUser(c)
+	if user == nil {
+		return nil, httperrors.ErrUnauthorized
+	}
+
+	// Only allow avatars category for profile uploads
+	if req.Category != "avatars" {
+		return nil, httperrors.ErrInvalidArguments
+	}
+
+	result, err := ctrl.service.GetPresignedURL(req.Filename, req.ContentType, req.Category)
+	if err != nil {
+		return nil, httperrors.New(http.StatusInternalServerError, err.Error())
+	}
+
+	return &PresignResponse{
+		PresignedURL: result.PresignedURL,
+		Key:          result.Key,
+	}, nil
+}
+
 // GetFile resolves an S3 object key to an access URL and redirects.
 // Uses public URL if configured, otherwise generates a presigned GET URL.
 func (ctrl *Ctrl) GetFile(c *fox.Context) {

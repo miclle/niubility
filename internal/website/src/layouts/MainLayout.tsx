@@ -185,6 +185,10 @@ function MainLayout() {
                   {currentUser.name || currentUser.username}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
+                  <User size={16} />
+                  个人设置
+                </DropdownMenuItem>
                 {(currentUser.role === 'admin' || currentUser.role === 'super_admin') && (
                   <DropdownMenuItem onClick={() => navigate('/admin')}>
                     <Settings size={16} />

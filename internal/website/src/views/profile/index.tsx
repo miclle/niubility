@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
-import { CalendarDays, FileText, Heart, Video, BookOpen, Mic } from 'lucide-react'
+import { CalendarDays, FileText, Heart, Video, BookOpen, Mic, MapPin, Github, Globe, ExternalLink } from 'lucide-react'
 import dayjs from 'dayjs'
 
 import { getUserProfile } from 'src/api/user'
@@ -9,6 +9,23 @@ import { Avatar, AvatarImage, AvatarFallback } from 'src/components/ui/avatar'
 import ContentCard from 'src/components/ContentCard'
 import type { UserProfileResponse } from 'src/types/user'
 import type { Content, ContentType, ListContentsArgs } from 'src/types/content'
+
+// socialIconMap maps social account keys to Lucide icon components.
+const socialIconMap: Record<string, typeof Github> = {
+  github: Github,
+  website: Globe,
+}
+
+// socialLinkEntries filters and maps social accounts to renderable entries.
+function socialLinkEntries(accounts: Record<string, string>) {
+  return Object.entries(accounts)
+    .filter(([, url]) => url)
+    .map(([key, url]) => ({
+      key,
+      url,
+      icon: socialIconMap[key] || ExternalLink,
+    }))
+}
 
 type TabKey = 'all' | 'video' | 'article' | 'speaker'
 
@@ -160,11 +177,17 @@ function UserProfile() {
             )}
 
             {/* Stats & join date */}
-            <div className="flex items-center gap-4 mt-3 text-sm" style={{ color: '#606060' }}>
+            <div className="flex items-center gap-4 mt-3 text-sm flex-wrap" style={{ color: '#606060' }}>
               <span className="flex items-center gap-1">
                 <CalendarDays size={14} />
                 {dayjs(user.created_at).format('YYYY 年 M 月')}加入
               </span>
+              {user.location && (
+                <span className="flex items-center gap-1">
+                  <MapPin size={14} />
+                  {user.location}
+                </span>
+              )}
               <span className="flex items-center gap-1">
                 <FileText size={14} />
                 {content_count} 篇内容
@@ -180,6 +203,25 @@ function UserProfile() {
                 </span>
               )}
             </div>
+
+            {/* Social accounts */}
+            {user.social_accounts && Object.values(user.social_accounts).some(Boolean) && (
+              <div className="flex items-center gap-3 mt-3">
+                {socialLinkEntries(user.social_accounts).map(({ key, url, icon: Icon }) => (
+                  <a
+                    key={key}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1.5 rounded-full hover:bg-black/5 transition-colors"
+                    style={{ color: '#606060' }}
+                    title={key}
+                  >
+                    <Icon size={18} />
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

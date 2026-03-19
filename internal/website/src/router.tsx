@@ -15,6 +15,7 @@ function DynamicSlug() {
   return <Home />
 }
 import ContentEditor from 'src/views/contents/editor'
+import ProfileSettings from 'src/views/settings/profile'
 import AdminContents from 'src/views/admin/contents'
 import AdminContentEditor from 'src/views/admin/contents/editor'
 import AdminUsers from 'src/views/admin/users'
@@ -46,6 +47,7 @@ const routes: RouteObject[] = [
       { path: 'contents/new', element: <ContentEditor /> },
       { path: 'contents/:id/edit', element: <ContentEditor /> },
       { path: 'contents/:id', element: <ContentDetail /> },
+      { path: 'settings/profile', element: <ProfileSettings /> },
     ],
   },
   // Admin routes

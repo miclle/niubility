@@ -318,6 +318,47 @@ func (s *Service) UpdateUser(id string, args entity.UpdateUserArgs) (*entity.Use
 	return user, nil
 }
 
+// UpdateProfile updates a user's own profile fields by ID.
+func (s *Service) UpdateProfile(id string, args entity.UpdateProfileArgs) (*entity.User, error) {
+	user, err := s.GetUserByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, nil
+	}
+
+	updates := map[string]any{}
+	if args.Name != nil {
+		updates["name"] = *args.Name
+	}
+	if args.Bio != nil {
+		updates["bio"] = *args.Bio
+	}
+	if args.Location != nil {
+		updates["location"] = *args.Location
+	}
+	if args.Avatar != nil {
+		updates["avatar"] = *args.Avatar
+	}
+	// SocialAccounts uses GORM's serializer:json tag, which is not honored by map-based Updates.
+	// Apply it separately via struct-based update so the serializer encodes it as JSON.
+	if args.SocialAccounts != nil {
+		user.SocialAccounts = args.SocialAccounts
+		if err := s.DB.Model(user).Select("social_accounts").Updates(user).Error; err != nil {
+			return nil, fmt.Errorf("update profile social_accounts: %w", err)
+		}
+	}
+
+	if len(updates) > 0 {
+		if err := s.DB.Model(user).Updates(updates).Error; err != nil {
+			return nil, fmt.Errorf("update profile: %w", err)
+		}
+	}
+
+	return s.GetUserByID(id)
+}
+
 // InitSuperAdmin creates the initial super admin user and marks the system as initialized.
 func (s *Service) InitSuperAdmin(username, email, password string) (*entity.User, error) {
 	if s.IsInitialized() {

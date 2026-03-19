@@ -13,6 +13,8 @@ export interface User {
   mobile: string
   avatar: string
   bio: string
+  location: string
+  social_accounts: Record<string, string>
   department_ids: string
   role: Role
   status: UserStatus
@@ -62,6 +64,15 @@ export interface ListUsersResponse {
 export interface UpdateUserArgs {
   role?: Role
   status?: UserStatus
+}
+
+// UpdateProfileArgs represents the fields that a user can update on their own profile.
+export interface UpdateProfileArgs {
+  name?: string
+  bio?: string
+  location?: string
+  avatar?: string
+  social_accounts?: Record<string, string>
 }
 
 // SyncWechatResponse represents the response for syncing from WeChat.
