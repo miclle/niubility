@@ -66,11 +66,6 @@ func (s *Service) ListDepartments() ([]entity.Department, error) {
 // GetDepartmentUserCounts returns a map of department ID to user count.
 func (s *Service) GetDepartmentUserCounts() (map[int64]int, error) {
 	// Query all users and count by department_ids
-	type UserCount struct {
-		DepartmentIDs string
-		Count         int
-	}
-
 	var users []struct {
 		DepartmentIDs string
 	}

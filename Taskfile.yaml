@@ -2,44 +2,39 @@ version: "3"
 
 vars:
   WEBSITE_DIR: internal/website
+  GIT_COMMIT:
+    sh: git rev-parse --short HEAD
+  BUILD_TIME:
+    sh: TZ='Asia/Shanghai' date "+%Y-%m-%d-%H-%M-%S"
+  LDFLAGS:
+    "-s -w -X 'main.CommitID={{.GIT_COMMIT}}' -X 'main.BuildTime={{.BUILD_TIME}}'"
 
 tasks:
+  default:
+    desc: Print task list
+    cmds:
+      - task --list-all --sort none
+    silent: true
+
   init-config:
-    desc: Copy config.example.yaml to config.local.yaml if not exists
+    internal: true
     cmds:
       - cp cmd/server/config.example.yaml cmd/server/config.local.yaml
       - echo "Created cmd/server/config.local.yaml from config.example.yaml"
     status:
       - test -f cmd/server/config.local.yaml
 
-  website:install:
-    desc: Install website dependencies
-    dir: "{{.WEBSITE_DIR}}"
+  install:
+    desc: Install all dependencies (Go modules + frontend)
     cmds:
-      - npm install
-    sources:
-      - package.json
-    generates:
-      - node_modules/.package-lock.json
+      - go mod download
+      - cd {{.WEBSITE_DIR}} && npm install
 
-  website:build:
-    desc: Build website for production
-    dir: "{{.WEBSITE_DIR}}"
-    deps: [website:install]
-    cmds:
-      - npm run build
-
-  kill-website:
-    internal: true
-    desc: Kill running Vite dev server if any
-    cmds:
-      - |
-        ps aux | grep "[n]pm run dev" | grep "internal/website" | awk '{print $2}' | xargs kill -9 2>/dev/null || true
-        sleep 1
+  # ---------- Development ----------
 
   dev:
     desc: Start Vite dev server and Go server with hot-reload
-    deps: [init-config, kill-website, website:install]
+    deps: [init-config, kill-vite]
     cmds:
       - |
         cd {{.WEBSITE_DIR}} && npm run dev &
@@ -48,26 +43,80 @@ tasks:
           -d none -s \
           -r '\.go$' \
           -R 'internal/website/' \
-          -- go run -tags development ./cmd/server/ -c cmd/server/config.local.yaml
+          -- go run -trimpath -tags development ./cmd/server/ -c cmd/server/config.local.yaml
 
   run:
-    desc: Run the server (production mode, requires website:build first)
+    desc: Run the server (production mode, requires build first)
     deps: [init-config]
     cmds:
       - go run ./cmd/server/ -c cmd/server/config.local.yaml
 
+  # ---------- Build ----------
+
   build:
     desc: Build the server binary with embedded website
-    deps: [website:build]
     cmds:
-      - go build -o bin/niubility ./cmd/server/
+      - cd {{.WEBSITE_DIR}} && npm install && npm run build
+      - go build -trimpath -ldflags "{{.LDFLAGS}}" -o bin/niubility ./cmd/server/
 
-  fmt:
-    desc: Format Go source code
+  clean:
+    desc: Clean build artifacts
     cmds:
+      - rm -rf bin/
+      - go clean ./...
+
+  # ---------- Code Quality ----------
+
+  lint:
+    desc: Auto-fix code style (go mod tidy + gofmt + vet + staticcheck)
+    cmds:
+      - go mod tidy
       - gofmt -w .
-
-  vet:
-    desc: Run go vet
-    cmds:
       - go vet ./...
+      - staticcheck ./...
+
+  check:
+    desc: Run all checks without modifying files (CI-friendly)
+    cmds:
+      - task: check-mod-tidy
+      - go vet ./...
+      - staticcheck ./...
+
+  check-mod-tidy:
+    internal: true
+    cmds:
+      - |
+        cp go.mod go.mod.bak
+        cp go.sum go.sum.bak
+        go mod tidy
+        MOD_CHANGES=$(diff go.mod go.mod.bak | wc -l)
+        SUM_CHANGES=$(diff go.sum go.sum.bak | wc -l)
+        mv go.mod.bak go.mod
+        mv go.sum.bak go.sum
+        if [ $MOD_CHANGES -ne 0 ] || [ $SUM_CHANGES -ne 0 ]; then
+          echo "go.mod or go.sum is not tidy. Run 'task lint' to fix."
+          exit 1
+        fi
+
+  # ---------- Testing ----------
+
+  test:
+    desc: Run Go tests with race detection and coverage
+    cmds:
+      - go test -trimpath -race -coverprofile=coverage.out ./...
+
+  # ---------- Internal ----------
+
+  kill-vite:
+    internal: true
+    cmds:
+      - |
+        ps aux | grep "[n]pm run dev" | grep "internal/website" | awk '{print $2}' | xargs kill -9 2>/dev/null || true
+        sleep 1
+
+  update-tools:
+    desc: Install/update development tools (reflex, staticcheck)
+    run: once
+    cmds:
+      - which reflex > /dev/null 2>&1 || go install github.com/cespare/reflex@latest
+      - which staticcheck > /dev/null 2>&1 || go install honnef.co/go/tools/cmd/staticcheck@latest

@@ -57,9 +57,6 @@ func NewSAMLProvider(cfg SAMLConfig) (*SAMLProvider, error) {
 // boolPtr returns a pointer to a bool value.
 func boolPtr(b bool) *bool { return &b }
 
-// strPtr returns a pointer to a string value.
-func strPtr(s string) *string { return &s }
-
 // AuthURL constructs a SAML AuthnRequest redirect URL.
 // The state parameter is passed as RelayState.
 func (p *SAMLProvider) AuthURL(state, _ string) string {
