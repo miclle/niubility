@@ -31,6 +31,8 @@ export interface ContentEditorFormProps {
   submitLabel?: string
 }
 
+const typeLabels: Record<string, string> = { article: '图文', video: '视频' }
+
 // ContentEditorForm is the shared form for creating or editing content.
 function ContentEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError, submitLabel = '保存' }: ContentEditorFormProps) {
   const isNew = !id
@@ -209,7 +211,9 @@ function ContentEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError,
           <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>类型 *</label>
           <Select value={type} onValueChange={(val) => setType(val as ContentType)}>
             <SelectTrigger className="w-full">
-              <SelectValue />
+              <SelectValue placeholder="选择类型">
+                {(value: string) => typeLabels[value] || value}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="article">图文</SelectItem>
@@ -221,7 +225,12 @@ function ContentEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError,
           <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>分类 *</label>
           <Select value={category} onValueChange={(val) => val && setCategory(val)}>
             <SelectTrigger className="w-full">
-              <SelectValue />
+              <SelectValue placeholder="选择分类">
+                {(value: string) => {
+                  const cat = categories.find((c) => c.slug === value)
+                  return cat?.name || value
+                }}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {categories.map((cat) => (
