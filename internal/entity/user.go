@@ -33,6 +33,7 @@ type User struct {
 	Password      string     `json:"-"              gorm:"column:password"`
 	Mobile        string     `json:"mobile"         gorm:"column:mobile"`
 	Avatar        string     `json:"avatar"         gorm:"column:avatar"`
+	Bio           string     `json:"bio"            gorm:"column:bio;type:text"`
 	DepartmentIDs string     `json:"department_ids" gorm:"column:department_ids;type:text"` // comma-separated department IDs from WeChat
 	Role          Role       `json:"role"           gorm:"column:role;default:user"`
 	Status        UserStatus `json:"status"         gorm:"column:status;default:activated"`

@@ -409,3 +409,30 @@ func (s *Service) AuthenticateUser(username, password string) (*entity.User, err
 
 	return &user, nil
 }
+
+// GetUserContentCount returns the number of contents authored by the given user.
+func (s *Service) GetUserContentCount(userID string) (int64, error) {
+	var count int64
+	if err := s.DB.Model(&entity.Content{}).Where("author_id = ?", userID).Count(&count).Error; err != nil {
+		return 0, fmt.Errorf("count user contents: %w", err)
+	}
+	return count, nil
+}
+
+// GetUserTotalLikes returns the total like count across all contents authored by the given user.
+func (s *Service) GetUserTotalLikes(userID string) (int64, error) {
+	var total int64
+	if err := s.DB.Model(&entity.Content{}).Where("author_id = ?", userID).Select("COALESCE(SUM(like_count), 0)").Row().Scan(&total); err != nil {
+		return 0, fmt.Errorf("sum user likes: %w", err)
+	}
+	return total, nil
+}
+
+// GetUserSpeakerContentCount returns the number of contents where the given user is the speaker.
+func (s *Service) GetUserSpeakerContentCount(userID string) (int64, error) {
+	var count int64
+	if err := s.DB.Model(&entity.Content{}).Where("speaker_id = ?", userID).Count(&count).Error; err != nil {
+		return 0, fmt.Errorf("count speaker contents: %w", err)
+	}
+	return count, nil
+}

@@ -1,5 +1,5 @@
 import client from './client'
-import type { BootResponse, ListUsersResponse, UpdateUserArgs, User, SyncWechatResponse, ListDepartmentsResponse, SearchUsersResponse } from 'src/types/user'
+import type { BootResponse, ListUsersResponse, UpdateUserArgs, User, SyncWechatResponse, ListDepartmentsResponse, SearchUsersResponse, UserProfileResponse } from 'src/types/user'
 
 // boot fetches the current system and authentication state.
 export function boot() {
@@ -44,4 +44,9 @@ export function listDepartments() {
 // searchUsers searches users by keyword (authenticated users).
 export function searchUsers(q: string) {
   return client.get<SearchUsersResponse>('/users/search', { params: { q } })
+}
+
+// getUserProfile fetches a user's public profile with stats.
+export function getUserProfile(username: string) {
+  return client.get<UserProfileResponse>(`/users/${username}/profile`)
 }

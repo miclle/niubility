@@ -29,7 +29,7 @@ function MainLayout() {
   const { initialized, currentUser, categories } = useAppContext()
   const navigate = useNavigate()
   const location = useLocation()
-  const { category: categoryParam } = useParams()
+  const { slug } = useParams()
 
   // If system is not initialized, show prompt instead of normal content
   if (!initialized) {
@@ -77,8 +77,8 @@ function MainLayout() {
     setDrawerOpen(false)
   }, [location.pathname])
 
-  // Derive category from URL params or path
-  const category: string = categoryParam || location.pathname.split('/')[1] || (categories[0]?.slug ?? 'learning')
+  // Derive category from URL params or path (ignore @username profile routes)
+  const category: string = (slug && !slug.startsWith('@') ? slug : '') || location.pathname.split('/')[1] || (categories[0]?.slug ?? 'learning')
 
   const handleSearch = () => {
     setKeyword(searchValue)

@@ -44,13 +44,17 @@ function ContentCard({ content }: { content: Content }) {
 
       {/* Card info - YouTube style: horizontal layout with avatar */}
       <div className="flex gap-3 mt-3">
-        {/* Author avatar */}
-        <div className="flex-shrink-0">
+        {/* Author avatar - links to profile */}
+        <Link
+          to={content.author?.username ? `/@${content.author.username}` : '#'}
+          className="flex-shrink-0"
+          onClick={(e) => e.stopPropagation()}
+        >
           <Avatar>
             <AvatarImage src={content.author?.avatar} alt={content.author?.name || '匿名'} />
             <AvatarFallback>{content.author?.name?.charAt(0) || '匿'}</AvatarFallback>
           </Avatar>
-        </div>
+        </Link>
 
         {/* Text content */}
         <div className="flex-1 min-w-0">
@@ -62,10 +66,15 @@ function ContentCard({ content }: { content: Content }) {
             {content.title}
           </h3>
 
-          {/* Author name */}
-          <div className="text-xs mb-0.5" style={{ color: '#606060' }}>
+          {/* Author name - links to profile */}
+          <Link
+            to={content.author?.username ? `/@${content.author.username}` : '#'}
+            className="text-xs mb-0.5 block hover:underline"
+            style={{ color: '#606060' }}
+            onClick={(e) => e.stopPropagation()}
+          >
             {content.author?.name || '未知作者'}
-          </div>
+          </Link>
 
           {/* Meta info */}
           <div className="text-xs" style={{ color: '#606060' }}>

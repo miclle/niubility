@@ -12,6 +12,7 @@ export interface User {
   email: string
   mobile: string
   avatar: string
+  bio: string
   department_ids: string
   role: Role
   status: UserStatus
@@ -85,4 +86,12 @@ export interface SearchUserItem {
 // SearchUsersResponse represents the response for searching users.
 export interface SearchUsersResponse {
   users: SearchUserItem[]
+}
+
+// UserProfileResponse represents the response for a user's profile page.
+export interface UserProfileResponse {
+  user: User
+  content_count: number
+  total_likes: number
+  speaker_content_count: number
 }

@@ -523,3 +523,39 @@ func (ctrl *Ctrl) ListDepartments(c *fox.Context) (*ListDepartmentsResponse, err
 
 	return &ListDepartmentsResponse{Departments: result}, nil
 }
+
+// UserProfileResponse represents the response for a user's profile page.
+type UserProfileResponse struct {
+	User                *entity.User `json:"user"`
+	ContentCount        int64        `json:"content_count"`
+	TotalLikes          int64        `json:"total_likes"`
+	SpeakerContentCount int64        `json:"speaker_content_count"`
+}
+
+// GetUserProfile returns a user's public profile with stats.
+func (ctrl *Ctrl) GetUserProfile(c *fox.Context) (*UserProfileResponse, error) {
+	currentUser := CurrentUser(c)
+	if currentUser == nil {
+		return nil, httperrors.ErrUnauthorized
+	}
+
+	username := c.Param("username")
+	user, err := ctrl.service.GetUserByUsername(username)
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+	if user == nil {
+		return nil, httperrors.ErrNotFound
+	}
+
+	contentCount, _ := ctrl.service.GetUserContentCount(user.ID)
+	totalLikes, _ := ctrl.service.GetUserTotalLikes(user.ID)
+	speakerContentCount, _ := ctrl.service.GetUserSpeakerContentCount(user.ID)
+
+	return &UserProfileResponse{
+		User:                user,
+		ContentCount:        contentCount,
+		TotalLikes:          totalLikes,
+		SpeakerContentCount: speakerContentCount,
+	}, nil
+}

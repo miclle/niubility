@@ -30,6 +30,12 @@ func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, 
 	if args.Tag != "" {
 		query = query.Where("tags::jsonb @> ?", fmt.Sprintf(`[%q]`, args.Tag))
 	}
+	if args.AuthorID != "" {
+		query = query.Where("author_id = ?", args.AuthorID)
+	}
+	if args.SpeakerID != "" {
+		query = query.Where("speaker_id = ?", args.SpeakerID)
+	}
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, fmt.Errorf("count contents: %w", err)

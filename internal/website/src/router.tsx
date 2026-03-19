@@ -1,9 +1,19 @@
-import { Navigate, type RouteObject } from 'react-router-dom'
+import { Navigate, useParams, type RouteObject } from 'react-router-dom'
 
 import MainLayout from 'src/layouts/MainLayout'
 import AdminLayout from 'src/layouts/AdminLayout'
 import Home from 'src/views/home'
+import UserProfile from 'src/views/profile'
 import ContentDetail from 'src/views/contents/detail'
+
+// DynamicSlug renders UserProfile when the slug starts with '@', otherwise Home.
+function DynamicSlug() {
+  const { slug } = useParams<{ slug: string }>()
+  if (slug?.startsWith('@')) {
+    return <UserProfile />
+  }
+  return <Home />
+}
 import ContentEditor from 'src/views/contents/editor'
 import AdminContents from 'src/views/admin/contents'
 import AdminContentEditor from 'src/views/admin/contents/editor'
@@ -32,7 +42,7 @@ const routes: RouteObject[] = [
     element: <MainLayout />,
     children: [
       { index: true, element: <Navigate to="/learning" replace /> },
-      { path: ':category', element: <Home /> },
+      { path: ':slug', element: <DynamicSlug /> },
       { path: 'contents/new', element: <ContentEditor /> },
       { path: 'contents/:id/edit', element: <ContentEditor /> },
       { path: 'contents/:id', element: <ContentDetail /> },
