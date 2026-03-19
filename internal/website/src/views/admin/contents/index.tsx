@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
@@ -7,10 +7,10 @@ import dayjs from 'dayjs'
 
 import { listContents, deleteContent } from 'src/api/content'
 import { useAppContext } from 'src/context/app'
-import Pagination from 'src/components/Pagination'
 import type { Content } from 'src/types/content'
 
 const typeLabels = { article: '图文', video: '视频' } as const
+const limit = 20
 
 // AdminContents displays the admin content management page with YouTube-style design.
 function AdminContents() {
@@ -21,29 +21,55 @@ function AdminContents() {
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
-  const limit = 20
+  const loaderRef = useRef<HTMLDivElement>(null)
+  const hasMore = contents.length < total
 
-  const fetchContents = useCallback(async () => {
+  const fetchContents = useCallback(async (p: number, append: boolean) => {
     setLoading(true)
     try {
-      const res = await listContents({ page, limit })
-      setContents(res.data.contents || [])
+      const res = await listContents({ page: p, limit })
+      const list = res.data.contents || []
+      setContents((prev) => append ? [...prev, ...list] : list)
       setTotal(res.data.pagination.total)
     } catch {
-      setContents([])
+      if (!append) setContents([])
     } finally {
       setLoading(false)
     }
-  }, [page])
+  }, [])
 
+  // Initial load
   useEffect(() => {
-    fetchContents()
+    fetchContents(1, false)
   }, [fetchContents])
+
+  // Load more when page changes (page > 1)
+  useEffect(() => {
+    if (page > 1) fetchContents(page, true)
+  }, [page, fetchContents])
+
+  // IntersectionObserver for infinite scroll
+  useEffect(() => {
+    const el = loaderRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loading && hasMore) {
+          setPage((p) => p + 1)
+        }
+      },
+      { threshold: 0.1 },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [loading, hasMore])
 
   const handleDelete = async (id: string) => {
     try {
       await deleteContent(id)
-      fetchContents()
+      // Reset and reload from page 1
+      setPage(1)
+      fetchContents(1, false)
     } catch {
       // Silently fail
     }
@@ -80,13 +106,7 @@ function AdminContents() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={6} className="text-center py-8" style={{ color: '#909090' }}>
-                  加载中...
-                </td>
-              </tr>
-            ) : contents.length === 0 ? (
+            {contents.length === 0 && !loading ? (
               <tr>
                 <td colSpan={6} className="text-center py-8" style={{ color: '#909090' }}>
                   暂无内容
@@ -96,9 +116,21 @@ function AdminContents() {
               contents.map((content) => (
                 <tr key={content.id} style={{ borderTop: '1px solid #e5e5e5' }}>
                   <td style={{ padding: '12px 16px' }}>
-                    <Link to={`/contents/${content.id}`} target="_blank" className="font-medium line-clamp-1 hover:underline" style={{ color: '#0f0f0f' }}>{content.title}</Link>
+                    <Link to={`/contents/${content.id}`} target="_blank" className="flex items-center gap-3 hover:underline" style={{ color: '#0f0f0f' }}>
+                      <div className="w-[72px] h-[40px] rounded overflow-hidden flex-shrink-0" style={{ background: '#f2f2f2' }}>
+                        {content.cover_url ? (
+                          <img src={content.cover_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-xs" style={{ color: '#909090' }}>无封面</div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-medium line-clamp-1">{content.title}</div>
+                        {content.summary && <div className="text-xs line-clamp-1" style={{ color: '#909090' }}>{content.summary}</div>}
+                      </div>
+                    </Link>
                   </td>
-                  <td style={{ padding: '12px 16px' }}>
+                  <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
                     <span
                       className="px-2 py-0.5 rounded text-xs"
                       style={{
@@ -109,7 +141,7 @@ function AdminContents() {
                       {typeLabels[content.type]}
                     </span>
                   </td>
-                  <td style={{ padding: '12px 16px' }}>
+                  <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
                     <span
                       className="px-2 py-0.5 rounded text-xs"
                       style={{
@@ -120,9 +152,9 @@ function AdminContents() {
                       {categoryLabels[content.category] || content.category}
                     </span>
                   </td>
-                  <td style={{ padding: '12px 16px', color: '#606060' }}>{content.author?.name || '-'}</td>
-                  <td style={{ padding: '12px 16px', color: '#606060' }}>{dayjs(content.created_at).format('YYYY-MM-DD')}</td>
-                  <td style={{ padding: '12px 16px' }}>
+                  <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }}>{content.author?.name || '-'}</td>
+                  <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }}>{dayjs(content.created_at).format('YYYY-MM-DD')}</td>
+                  <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
                     <div className="flex gap-2">
                       <Link to={`/admin/contents/${content.id}`}>
                         <Button variant="ghost" style={{ color: '#606060' }}>
@@ -165,7 +197,9 @@ function AdminContents() {
         </table>
       </div>
 
-      <Pagination page={page} limit={limit} total={total} onChange={setPage} />
+      <div ref={loaderRef} className="py-4 text-center text-sm" style={{ color: '#909090' }}>
+        {loading ? '加载中...' : hasMore ? '' : contents.length > 0 ? '没有更多了' : ''}
+      </div>
     </div>
   )
 }
