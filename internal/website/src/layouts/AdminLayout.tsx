@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Outlet, NavLink, Navigate, useLocation } from 'react-router-dom'
+import { Outlet, NavLink, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { FileText, Users, ArrowLeft, LogOut, Upload, RefreshCw, Settings, Menu, FolderOpen, ChevronDown, UserPlus, HardDrive, MessageSquare, type LucideIcon } from 'lucide-react'
+import { FileText, Users, ArrowLeft, LogOut, Upload, RefreshCw, Settings, Menu, FolderOpen, ChevronDown, UserPlus, HardDrive, MessageSquare, CircleUserRound, User, type LucideIcon } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
 
@@ -26,6 +26,7 @@ interface NavItem {
 function AdminLayout() {
   const { currentUser } = useAppContext()
   const location = useLocation()
+  const navigate = useNavigate()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [settingsExpanded, setSettingsExpanded] = useState(() => location.pathname.startsWith('/admin/settings'))
 
@@ -230,6 +231,19 @@ function AdminLayout() {
               }
             />
             <DropdownMenuContent align="end">
+              <DropdownMenuItem disabled>
+                {currentUser.name || currentUser.username}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate(`/@${currentUser.username}`)}>
+                <CircleUserRound size={16} />
+                个人主页
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/settings/account')}>
+                <User size={16} />
+                个人设置
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 variant="destructive"
                 onClick={() => {

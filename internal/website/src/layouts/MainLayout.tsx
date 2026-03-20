@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation, useParams } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { LogOut, Settings, User, Search, Menu, Home, Play, FileText, ChevronDown, Plus, ServerOff, BookOpen, GraduationCap, Heart, Star, Lightbulb, Trophy, Coffee, Briefcase, Globe, Flame, type LucideIcon } from 'lucide-react'
+import { LogOut, Settings, User, Search, Menu, Home, Play, FileText, ChevronDown, Plus, ServerOff, BookOpen, GraduationCap, Heart, Star, Lightbulb, Trophy, Coffee, Briefcase, Globe, Flame, CircleUserRound, type LucideIcon } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
 import type { ContentType } from 'src/types/content'
@@ -187,6 +187,10 @@ function MainLayout() {
                   {currentUser.name || currentUser.username}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate(`/@${currentUser.username}`)}>
+                  <CircleUserRound size={16} />
+                  个人主页
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/settings/account')}>
                   <User size={16} />
                   个人设置
