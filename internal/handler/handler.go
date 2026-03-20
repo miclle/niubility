@@ -51,6 +51,8 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	api.GET("/profile", ctrl.GetProfile)
 	api.PATCH("/profile", ctrl.UpdateProfile)
 	api.POST("/profile/upload", ctrl.GetProfilePresignedURL)
+	api.POST("/profile/change-password", ctrl.ChangePassword)
+	api.GET("/profile/has-password", ctrl.HasPassword)
 	api.GET("/users/:username/profile", ctrl.GetUserProfile)
 
 	// content routes (authenticated users can read, admin can write)

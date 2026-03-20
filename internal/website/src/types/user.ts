@@ -106,3 +106,14 @@ export interface UserProfileResponse {
   total_likes: number
   speaker_content_count: number
 }
+
+// ChangePasswordArgs represents the request body for changing password.
+export interface ChangePasswordArgs {
+  old_password: string
+  new_password: string
+}
+
+// HasPasswordResponse represents the response for checking if user has a password.
+export interface HasPasswordResponse {
+  has_password: boolean
+}

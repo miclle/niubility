@@ -451,6 +451,45 @@ func (s *Service) AuthenticateUser(username, password string) (*entity.User, err
 	return &user, nil
 }
 
+// HasPassword checks if the user has a password set.
+func (s *Service) HasPassword(userID string) (bool, error) {
+	var password string
+	err := s.DB.Model(&entity.User{}).Where("id = ?", userID).Pluck("password", &password).Error
+	if err != nil {
+		return false, fmt.Errorf("check user password: %w", err)
+	}
+	return password != "", nil
+}
+
+// ChangePassword verifies the old password and sets a new password for the user.
+func (s *Service) ChangePassword(userID, oldPassword, newPassword string) error {
+	var user entity.User
+	if err := s.DB.Where("id = ?", userID).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("user not found")
+		}
+		return fmt.Errorf("get user: %w", err)
+	}
+
+	// If user has an existing password, verify the old password
+	if user.Password != "" {
+		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(oldPassword)); err != nil {
+			return fmt.Errorf("旧密码不正确")
+		}
+	}
+
+	hashed, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("hash password: %w", err)
+	}
+
+	if err := s.DB.Model(&user).Update("password", string(hashed)).Error; err != nil {
+		return fmt.Errorf("update password: %w", err)
+	}
+
+	return nil
+}
+
 // GetUserContentCount returns the number of contents authored by the given user.
 func (s *Service) GetUserContentCount(userID string) (int64, error) {
 	var count int64

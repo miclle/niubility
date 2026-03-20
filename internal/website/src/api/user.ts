@@ -1,5 +1,5 @@
 import client from './client'
-import type { BootResponse, ListUsersResponse, UpdateUserArgs, UpdateProfileArgs, User, SyncWechatResponse, ListDepartmentsResponse, SearchUsersResponse, UserProfileResponse } from 'src/types/user'
+import type { BootResponse, ListUsersResponse, UpdateUserArgs, UpdateProfileArgs, User, SyncWechatResponse, ListDepartmentsResponse, SearchUsersResponse, UserProfileResponse, ChangePasswordArgs, HasPasswordResponse } from 'src/types/user'
 
 // boot fetches the current system and authentication state.
 export function boot() {
@@ -59,4 +59,14 @@ export function getProfile() {
 // updateProfile updates the current authenticated user's profile.
 export function updateProfile(data: UpdateProfileArgs) {
   return client.patch<User>('/profile', data)
+}
+
+// changePassword changes the current user's password.
+export function changePassword(data: ChangePasswordArgs) {
+  return client.post<{ message: string }>('/profile/change-password', data)
+}
+
+// hasPassword checks if the current user has a password set.
+export function hasPassword() {
+  return client.get<HasPasswordResponse>('/profile/has-password')
 }

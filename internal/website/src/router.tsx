@@ -2,6 +2,7 @@ import { Navigate, useParams, type RouteObject } from 'react-router-dom'
 
 import MainLayout from 'src/layouts/MainLayout'
 import AdminLayout from 'src/layouts/AdminLayout'
+import SettingsLayout from 'src/layouts/SettingsLayout'
 import Home from 'src/views/home'
 import UserProfile from 'src/views/profile'
 import ContentDetail from 'src/views/contents/detail'
@@ -15,7 +16,10 @@ function DynamicSlug() {
   return <Home />
 }
 import ContentEditor from 'src/views/contents/editor'
-import ProfileSettings from 'src/views/settings/profile'
+import AccountSettings from 'src/views/settings/account'
+import MyContents from 'src/views/settings/contents'
+import SecuritySettings from 'src/views/settings/security'
+import NotificationSettings from 'src/views/settings/notifications'
 import AdminContents from 'src/views/admin/contents'
 import AdminContentEditor from 'src/views/admin/contents/editor'
 import AdminUsers from 'src/views/admin/users'
@@ -47,7 +51,17 @@ const routes: RouteObject[] = [
       { path: 'contents/new', element: <ContentEditor /> },
       { path: 'contents/:id/edit', element: <ContentEditor /> },
       { path: 'contents/:id', element: <ContentDetail /> },
-      { path: 'settings/profile', element: <ProfileSettings /> },
+      {
+        path: 'settings',
+        element: <SettingsLayout />,
+        children: [
+          { index: true, element: <Navigate to="/settings/account" replace /> },
+          { path: 'account', element: <AccountSettings /> },
+          { path: 'contents', element: <MyContents /> },
+          { path: 'security', element: <SecuritySettings /> },
+          { path: 'notifications', element: <NotificationSettings /> },
+        ],
+      },
     ],
   },
   // Admin routes

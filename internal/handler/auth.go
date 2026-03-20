@@ -67,6 +67,50 @@ func (ctrl *Ctrl) Register(c *fox.Context, req *RegisterRequest) (any, error) {
 	return user, nil
 }
 
+// ChangePasswordRequest represents the request body for changing password.
+type ChangePasswordRequest struct {
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password" binding:"required"`
+}
+
+// ChangePassword handles password change for the current user.
+func (ctrl *Ctrl) ChangePassword(c *fox.Context, req *ChangePasswordRequest) (any, error) {
+	user := CurrentUser(c)
+	if user == nil {
+		return nil, httperrors.ErrUnauthorized
+	}
+
+	if len(req.NewPassword) < 6 {
+		return nil, httperrors.New(http.StatusBadRequest, "密码长度不能少于 6 位")
+	}
+
+	if err := ctrl.service.ChangePassword(user.ID, req.OldPassword, req.NewPassword); err != nil {
+		return nil, httperrors.New(http.StatusBadRequest, err.Error())
+	}
+
+	return map[string]string{"message": "密码修改成功"}, nil
+}
+
+// HasPasswordResponse represents the response for checking if user has a password.
+type HasPasswordResponse struct {
+	HasPassword bool `json:"has_password"`
+}
+
+// HasPassword returns whether the current user has a password set.
+func (ctrl *Ctrl) HasPassword(c *fox.Context) (*HasPasswordResponse, error) {
+	user := CurrentUser(c)
+	if user == nil {
+		return nil, httperrors.ErrUnauthorized
+	}
+
+	has, err := ctrl.service.HasPassword(user.ID)
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+
+	return &HasPasswordResponse{HasPassword: has}, nil
+}
+
 // issueToken creates a signed JWT token for the given username.
 func (ctrl *Ctrl) issueToken(username string) (string, error) {
 	timeNow := time.Now()

@@ -57,12 +57,14 @@ function MainLayout() {
   // Remember user's manual sidebar state before auto-hide on detail page
   const userSidebarStateRef = useRef(false)
 
-  // Detect if on detail page
+  // Detect if on detail page or settings page (sidebar should be hidden)
   const isDetailPage = /^\/contents\/[^/]+$/.test(location.pathname)
+  const isSettingsPage = location.pathname.startsWith('/settings')
+  const shouldHideSidebar = isDetailPage || isSettingsPage
 
-  // Auto-hide sidebar on detail page, restore user's state on other pages
+  // Auto-hide sidebar on detail/settings page, restore user's state on other pages
   useEffect(() => {
-    if (isDetailPage) {
+    if (shouldHideSidebar) {
       // Save current state before auto-hide
       userSidebarStateRef.current = sidebarCollapsed
       setSidebarCollapsed(true)
@@ -70,7 +72,7 @@ function MainLayout() {
       // Restore user's saved state
       setSidebarCollapsed(userSidebarStateRef.current)
     }
-  }, [isDetailPage])
+  }, [shouldHideSidebar])
 
   // Close drawer when route changes
   useEffect(() => {
@@ -123,7 +125,7 @@ function MainLayout() {
           <button
             className="yt-icon-btn"
             onClick={() => {
-              if (isDetailPage) {
+              if (shouldHideSidebar) {
                 setDrawerOpen(!drawerOpen)
               } else {
                 setSidebarCollapsed(!sidebarCollapsed)
@@ -185,7 +187,7 @@ function MainLayout() {
                   {currentUser.name || currentUser.username}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
+                <DropdownMenuItem onClick={() => navigate('/settings/account')}>
                   <User size={16} />
                   个人设置
                 </DropdownMenuItem>
@@ -228,8 +230,8 @@ function MainLayout() {
 
       {/* Body: Sidebar + Main Content */}
       <div className="flex flex-1">
-        {/* Drawer overlay for detail page */}
-        {isDetailPage && (
+        {/* Drawer overlay for detail/settings page */}
+        {shouldHideSidebar && (
           <>
             {/* Backdrop */}
             <div
@@ -306,8 +308,8 @@ function MainLayout() {
           </>
         )}
 
-        {/* Sidebar - YouTube style (hidden on detail page) */}
-        {!isDetailPage && (
+        {/* Sidebar - YouTube style (hidden on detail/settings page) */}
+        {!shouldHideSidebar && (
           <aside
             className="flex-shrink-0 sticky top-14 overflow-y-auto bg-white transition-all duration-200"
             style={{
