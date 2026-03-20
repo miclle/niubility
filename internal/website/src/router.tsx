@@ -16,6 +16,7 @@ function DynamicSlug() {
   return <Home />
 }
 import ContentEditor from 'src/views/contents/editor'
+import FollowingFeed from 'src/views/following'
 import AccountSettings from 'src/views/settings/account'
 import MyContents from 'src/views/settings/contents'
 import SecuritySettings from 'src/views/settings/security'
@@ -47,6 +48,7 @@ const routes: RouteObject[] = [
     element: <MainLayout />,
     children: [
       { index: true, element: <Navigate to="/learning" replace /> },
+      { path: 'following', element: <FollowingFeed /> },
       { path: ':slug', element: <DynamicSlug /> },
       { path: 'contents/new', element: <ContentEditor /> },
       { path: 'contents/:id/edit', element: <ContentEditor /> },

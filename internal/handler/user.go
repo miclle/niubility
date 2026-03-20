@@ -566,6 +566,7 @@ type UserProfileResponse struct {
 	ContentCount        int64        `json:"content_count"`
 	TotalLikes          int64        `json:"total_likes"`
 	SpeakerContentCount int64        `json:"speaker_content_count"`
+	Following           bool         `json:"following"`
 }
 
 // GetUserProfile returns a user's public profile with stats.
@@ -588,6 +589,12 @@ func (ctrl *Ctrl) GetUserProfile(c *fox.Context) (*UserProfileResponse, error) {
 	totalLikes, _ := ctrl.service.GetUserTotalLikes(user.ID)
 	speakerContentCount, _ := ctrl.service.GetUserSpeakerContentCount(user.ID)
 
+	// Check if current user is following this user
+	following := false
+	if currentUser.ID != user.ID {
+		following, _ = ctrl.service.IsFollowing(currentUser.ID, user.ID)
+	}
+
 	user.ResolveAssetURLs()
 
 	return &UserProfileResponse{
@@ -595,5 +602,6 @@ func (ctrl *Ctrl) GetUserProfile(c *fox.Context) (*UserProfileResponse, error) {
 		ContentCount:        contentCount,
 		TotalLikes:          totalLikes,
 		SpeakerContentCount: speakerContentCount,
+		Following:           following,
 	}, nil
 }

@@ -54,13 +54,14 @@ const (
 // ListContentsArgs represents the query parameters for listing contents.
 type ListContentsArgs struct {
 	Pagination
-	Category  string      `json:"category"   form:"category"`
-	Type      ContentType `json:"type"       form:"type"`
-	Keyword   string      `json:"keyword"    form:"keyword"`
-	Tag       string      `json:"tag"        form:"tag"`
-	Sort      SortField   `json:"sort"       form:"sort"`
-	AuthorID  string      `json:"author_id"  form:"author_id"`
-	SpeakerID string      `json:"speaker_id" form:"speaker_id"`
+	Category         string      `json:"category"            form:"category"`
+	Type             ContentType `json:"type"                form:"type"`
+	Keyword          string      `json:"keyword"             form:"keyword"`
+	Tag              string      `json:"tag"                 form:"tag"`
+	Sort             SortField   `json:"sort"                form:"sort"`
+	AuthorID         string      `json:"author_id"           form:"author_id"`
+	SpeakerID        string      `json:"speaker_id"          form:"speaker_id"`
+	FollowedByUserID string      `json:"followed_by_user_id" form:"followed_by_user_id"`
 }
 
 // CreateContentArgs represents the fields required to create content.

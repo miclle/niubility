@@ -35,7 +35,7 @@ func New(dsn string) (*Service, error) {
 		return nil, fmt.Errorf("connect to database: %w", err)
 	}
 
-	if err := db.AutoMigrate(&entity.User{}, &entity.Content{}, &entity.Setting{}, &entity.Department{}, &entity.Comment{}, &entity.Like{}, &entity.Category{}); err != nil {
+	if err := db.AutoMigrate(&entity.User{}, &entity.Content{}, &entity.Setting{}, &entity.Department{}, &entity.Comment{}, &entity.Like{}, &entity.Category{}, &entity.Follow{}); err != nil {
 		return nil, fmt.Errorf("auto migrate: %w", err)
 	}
 

@@ -36,6 +36,9 @@ func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, 
 	if args.SpeakerID != "" {
 		query = query.Where("speaker_id = ?", args.SpeakerID)
 	}
+	if args.FollowedByUserID != "" {
+		query = query.Where("author_id IN (SELECT following_id FROM follows WHERE follower_id = ?)", args.FollowedByUserID)
+	}
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, fmt.Errorf("count contents: %w", err)

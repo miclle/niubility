@@ -1,5 +1,5 @@
 import client from './client'
-import type { BootResponse, ListUsersResponse, UpdateUserArgs, UpdateProfileArgs, User, SyncWechatResponse, ListDepartmentsResponse, SearchUsersResponse, UserProfileResponse, ChangePasswordArgs, HasPasswordResponse } from 'src/types/user'
+import type { BootResponse, ListUsersResponse, UpdateUserArgs, UpdateProfileArgs, User, SyncWechatResponse, ListDepartmentsResponse, SearchUsersResponse, UserProfileResponse, ChangePasswordArgs, HasPasswordResponse, FollowResponse } from 'src/types/user'
 
 // boot fetches the current system and authentication state.
 export function boot() {
@@ -69,4 +69,19 @@ export function changePassword(data: ChangePasswordArgs) {
 // hasPassword checks if the current user has a password set.
 export function hasPassword() {
   return client.get<HasPasswordResponse>('/profile/has-password')
+}
+
+// toggleFollow toggles the follow state for a user.
+export function toggleFollow(username: string) {
+  return client.post<FollowResponse>(`/users/${username}/follow`)
+}
+
+// listFollowing fetches the list of users that a user is following.
+export function listFollowing(username: string, params?: { page?: number; limit?: number }) {
+  return client.get<ListUsersResponse>(`/users/${username}/following`, { params })
+}
+
+// listFollowers fetches the list of users who follow a user.
+export function listFollowers(username: string, params?: { page?: number; limit?: number }) {
+  return client.get<ListUsersResponse>(`/users/${username}/followers`, { params })
 }

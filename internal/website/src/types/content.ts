@@ -57,6 +57,7 @@ export interface ListContentsArgs {
   sort?: SortField
   author_id?: string
   speaker_id?: string
+  followed_by_user_id?: string
 }
 
 // ListContentsResponse represents the response for listing contents.

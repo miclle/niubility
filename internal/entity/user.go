@@ -39,6 +39,8 @@ type User struct {
 	DepartmentIDs  string            `json:"department_ids"  gorm:"column:department_ids;type:text"` // comma-separated department IDs from WeChat
 	Role           Role              `json:"role"            gorm:"column:role;default:user"`
 	Status         UserStatus        `json:"status"          gorm:"column:status;default:activated"`
+	FollowerCount  int64             `json:"follower_count"  gorm:"column:follower_count;default:0"`
+	FollowingCount int64             `json:"following_count" gorm:"column:following_count;default:0"`
 	CreatedAt      time.Time         `json:"created_at"`
 	UpdatedAt      time.Time         `json:"updated_at"`
 }

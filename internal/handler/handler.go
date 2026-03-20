@@ -71,6 +71,11 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	// comment routes
 	api.POST("/comments/:id/like", ctrl.LikeComment)
 
+	// follow routes (authenticated users)
+	api.POST("/users/:username/follow", ctrl.ToggleFollow)
+	api.GET("/users/:username/following", ctrl.ListFollowing)
+	api.GET("/users/:username/followers", ctrl.ListFollowers)
+
 	// import routes (admin only)
 	api.POST("/import", ctrl.RequireAdmin, ctrl.ImportContents)
 

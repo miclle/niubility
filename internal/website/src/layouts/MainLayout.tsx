@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation, useParams } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { LogOut, Settings, User, Search, Menu, Home, Play, FileText, ChevronDown, Plus, ServerOff, BookOpen, GraduationCap, Heart, Star, Lightbulb, Trophy, Coffee, Briefcase, Globe, Flame, CircleUserRound, type LucideIcon } from 'lucide-react'
+import { LogOut, Settings, User, Search, Menu, Home, Play, FileText, ChevronDown, Plus, ServerOff, BookOpen, GraduationCap, Heart, Star, Lightbulb, Trophy, Coffee, Briefcase, Globe, Flame, CircleUserRound, UserCheck, type LucideIcon } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
 import type { ContentType } from 'src/types/content'
@@ -95,6 +95,20 @@ function MainLayout() {
   // Render category nav items
   const renderCategoryNav = () => (
     <div className="px-3">
+      {currentUser && (
+        <NavLink
+          to="/following"
+          className={() =>
+            `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+              location.pathname === '/following' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+            }`
+          }
+          style={{ color: '#0f0f0f' }}
+        >
+          <UserCheck size={24} />
+          <span className="text-sm">关注</span>
+        </NavLink>
+      )}
       {categories.map((cat) => {
         const IconComponent = iconMap[cat.icon] || Home
         return (

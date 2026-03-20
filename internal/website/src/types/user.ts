@@ -18,6 +18,8 @@ export interface User {
   department_ids: string
   role: Role
   status: UserStatus
+  follower_count: number
+  following_count: number
   created_at: string
   updated_at: string
 }
@@ -105,6 +107,14 @@ export interface UserProfileResponse {
   content_count: number
   total_likes: number
   speaker_content_count: number
+  following: boolean
+}
+
+// FollowResponse represents the response after toggling a follow.
+export interface FollowResponse {
+  following: boolean
+  follower_count: number
+  following_count: number
 }
 
 // ChangePasswordArgs represents the request body for changing password.
