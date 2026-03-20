@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Play } from 'lucide-react'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -13,11 +13,23 @@ dayjs.locale('zh-cn')
 
 // ContentCard displays a content item as a YouTube-style video card.
 function ContentCard({ content }: { content: Content }) {
+  const navigate = useNavigate()
+  const profilePath = content.author?.username ? `/@${content.author.username}` : ''
+
+  const handleCardClick = () => {
+    navigate(`/contents/${content.id}`)
+  }
+
+  const handleProfileClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (profilePath) navigate(profilePath)
+  }
+
   return (
-    <Link
-      to={`/contents/${content.id}`}
-      className="group block no-underline"
+    <div
+      className="group block no-underline cursor-pointer"
       style={{ color: 'inherit' }}
+      onClick={handleCardClick}
     >
       {/* Thumbnail - YouTube style */}
       <div className="relative" style={{ borderRadius: 12, overflow: 'hidden' }}>
@@ -45,16 +57,12 @@ function ContentCard({ content }: { content: Content }) {
       {/* Card info - YouTube style: horizontal layout with avatar */}
       <div className="flex gap-3 mt-3">
         {/* Author avatar - links to profile */}
-        <Link
-          to={content.author?.username ? `/@${content.author.username}` : '#'}
-          className="flex-shrink-0"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Avatar>
+        <div className="flex-shrink-0" onClick={handleProfileClick}>
+          <Avatar className={profilePath ? 'cursor-pointer' : ''}>
             <AvatarImage src={content.author?.avatar} alt={content.author?.name || '匿名'} />
             <AvatarFallback>{content.author?.name?.charAt(0) || '匿'}</AvatarFallback>
           </Avatar>
-        </Link>
+        </div>
 
         {/* Text content */}
         <div className="flex-1 min-w-0">
@@ -67,14 +75,13 @@ function ContentCard({ content }: { content: Content }) {
           </h3>
 
           {/* Author name - links to profile */}
-          <Link
-            to={content.author?.username ? `/@${content.author.username}` : '#'}
-            className="text-xs mb-0.5 block hover:underline"
+          <span
+            className="text-xs mb-0.5 block hover:underline cursor-pointer"
             style={{ color: '#606060' }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={handleProfileClick}
           >
             {content.author?.name || '未知作者'}
-          </Link>
+          </span>
 
           {/* Meta info */}
           <div className="text-xs" style={{ color: '#606060' }}>
@@ -82,7 +89,7 @@ function ContentCard({ content }: { content: Content }) {
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   )
 }
 
