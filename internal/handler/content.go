@@ -24,6 +24,10 @@ func (ctrl *Ctrl) ListContents(c *fox.Context, args entity.ListContentsArgs) (*L
 
 	args.Total = total
 
+	for i := range contents {
+		contents[i].ResolveFileURLs()
+	}
+
 	return &ListContentsResponse{
 		Contents:   contents,
 		Pagination: args.Pagination,
@@ -48,6 +52,7 @@ func (ctrl *Ctrl) GetContent(c *fox.Context) (*GetContentResponse, error) {
 		return nil, httperrors.ErrNotFound
 	}
 
+	content.ResolveFileURLs()
 	resp := &GetContentResponse{Content: content}
 
 	if user := CurrentUser(c); user != nil {
@@ -106,7 +111,12 @@ func (ctrl *Ctrl) CreateContent(c *fox.Context, args entity.CreateContentArgs) (
 	}
 
 	// reload with author
-	return ctrl.service.GetContentByID(content.ID)
+	created, err := ctrl.service.GetContentByID(content.ID)
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+	created.ResolveFileURLs()
+	return created, nil
 }
 
 // UpdateContent updates an existing content (admin only).
@@ -121,6 +131,7 @@ func (ctrl *Ctrl) UpdateContent(c *fox.Context, args entity.UpdateContentArgs) (
 		return nil, httperrors.ErrNotFound
 	}
 
+	content.ResolveFileURLs()
 	return content, nil
 }
 

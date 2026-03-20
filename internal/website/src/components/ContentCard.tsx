@@ -5,14 +5,13 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
 
 import { Avatar, AvatarImage, AvatarFallback } from 'src/components/ui/avatar'
-import { fileURL } from 'src/api/upload'
 import type { Content } from 'src/types/content'
 
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
 
 // ContentCard displays a content item as a YouTube-style video card.
-function ContentCard({ content }: { content: Content }) {
+function ContentCard({ content, hideAuthor = false }: { content: Content; hideAuthor?: boolean }) {
   const navigate = useNavigate()
   const profilePath = content.author?.username ? `/@${content.author.username}` : ''
 
@@ -35,7 +34,7 @@ function ContentCard({ content }: { content: Content }) {
       <div className="relative" style={{ borderRadius: 12, overflow: 'hidden' }}>
         <div className="relative aspect-video bg-zinc-200">
           <img
-            src={fileURL(content.cover_url) || '/default-cover.svg'}
+            src={content.cover_url || '/default-cover.svg'}
             alt={content.title}
             className="w-full h-full object-cover"
             style={{ transition: 'transform 0.3s' }}
@@ -54,15 +53,17 @@ function ContentCard({ content }: { content: Content }) {
         </div>
       </div>
 
-      {/* Card info - YouTube style: horizontal layout with avatar */}
-      <div className="flex gap-3 mt-3">
+      {/* Card info */}
+      <div className={`flex gap-3 mt-3`}>
         {/* Author avatar - links to profile */}
-        <div className="flex-shrink-0" onClick={handleProfileClick}>
-          <Avatar className={profilePath ? 'cursor-pointer' : ''}>
-            <AvatarImage src={content.author?.avatar} alt={content.author?.name || '匿名'} />
-            <AvatarFallback>{content.author?.name?.charAt(0) || '匿'}</AvatarFallback>
-          </Avatar>
-        </div>
+        {!hideAuthor && (
+          <div className="flex-shrink-0" onClick={handleProfileClick}>
+            <Avatar className={profilePath ? 'cursor-pointer' : ''}>
+              <AvatarImage src={content.author?.avatar || ''} alt={content.author?.name || '匿名'} />
+              <AvatarFallback>{content.author?.name?.charAt(0) || '匿'}</AvatarFallback>
+            </Avatar>
+          </div>
+        )}
 
         {/* Text content */}
         <div className="flex-1 min-w-0">
@@ -75,13 +76,15 @@ function ContentCard({ content }: { content: Content }) {
           </h3>
 
           {/* Author name - links to profile */}
-          <span
-            className="text-xs mb-0.5 block hover:underline cursor-pointer"
-            style={{ color: '#606060' }}
-            onClick={handleProfileClick}
-          >
-            {content.author?.name || '未知作者'}
-          </span>
+          {!hideAuthor && (
+            <span
+              className="text-xs mb-0.5 block hover:underline cursor-pointer"
+              style={{ color: '#606060' }}
+              onClick={handleProfileClick}
+            >
+              {content.author?.name || '未知作者'}
+            </span>
+          )}
 
           {/* Meta info */}
           <div className="text-xs" style={{ color: '#606060' }}>

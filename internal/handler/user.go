@@ -320,6 +320,7 @@ func (ctrl *Ctrl) Boot(c *fox.Context) *BootResponse {
 	user := CurrentUser(c)
 	if user != nil {
 		resp.Authentication = AuthenticationStateAuthorized
+		user.ResolveFileURLs()
 		resp.User = user
 	}
 
@@ -399,7 +400,7 @@ func (ctrl *Ctrl) SearchUsers(c *fox.Context, args *SearchUsersArgs) (*SearchUse
 		items[i] = SearchUserItem{
 			ID:     u.ID,
 			Name:   u.Name,
-			Avatar: u.Avatar,
+			Avatar: entity.ResolveFileURL(u.Avatar),
 		}
 	}
 
@@ -417,6 +418,10 @@ func (ctrl *Ctrl) ListUsers(c *fox.Context, args entity.ListUsersArgs) (*ListUse
 	users, total, err := ctrl.service.ListUsers(args)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
+	}
+
+	for i := range users {
+		users[i].ResolveFileURLs()
 	}
 
 	args.Total = total
@@ -439,6 +444,7 @@ func (ctrl *Ctrl) UpdateUser(c *fox.Context, args entity.UpdateUserArgs) (*entit
 		return nil, httperrors.ErrNotFound
 	}
 
+	user.ResolveFileURLs()
 	return user, nil
 }
 
@@ -457,6 +463,7 @@ func (ctrl *Ctrl) SyncUserFromWechat(c *fox.Context) (*entity.User, error) {
 		return nil, httperrors.ErrNotFound
 	}
 
+	updatedUser.ResolveFileURLs()
 	return updatedUser, nil
 }
 
@@ -530,6 +537,7 @@ func (ctrl *Ctrl) GetProfile(c *fox.Context) (*entity.User, error) {
 	if user == nil {
 		return nil, httperrors.ErrUnauthorized
 	}
+	user.ResolveFileURLs()
 	return user, nil
 }
 
@@ -548,6 +556,7 @@ func (ctrl *Ctrl) UpdateProfile(c *fox.Context, args entity.UpdateProfileArgs) (
 		return nil, httperrors.ErrNotFound
 	}
 
+	updated.ResolveFileURLs()
 	return updated, nil
 }
 
@@ -578,6 +587,8 @@ func (ctrl *Ctrl) GetUserProfile(c *fox.Context) (*UserProfileResponse, error) {
 	contentCount, _ := ctrl.service.GetUserContentCount(user.ID)
 	totalLikes, _ := ctrl.service.GetUserTotalLikes(user.ID)
 	speakerContentCount, _ := ctrl.service.GetUserSpeakerContentCount(user.ID)
+
+	user.ResolveFileURLs()
 
 	return &UserProfileResponse{
 		User:                user,

@@ -1,7 +1,7 @@
 import client from './client'
 
 // FileURL prefix for accessing files via backend presigned redirect.
-const FILE_URL_PREFIX = '/api/v1/files/'
+const FILE_URL_PREFIX = '/api/v1/assets/'
 
 // PresignResponse represents the presigned URL response from the backend.
 export interface PresignResponse {

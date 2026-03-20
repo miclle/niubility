@@ -257,7 +257,7 @@ function UserProfile() {
         ) : (
           <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
             {contents.map((content) => (
-              <ContentCard key={content.id} content={content} />
+              <ContentCard key={content.id} content={content} hideAuthor />
             ))}
           </div>
         )}

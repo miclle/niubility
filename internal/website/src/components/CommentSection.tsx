@@ -191,7 +191,7 @@ function CommentSection({ contentID, commentCount, onCommentCountChange }: Comme
       <div key={comment.id} className={`flex gap-3 ${isReply ? 'ml-12' : ''}`}>
         {/* Avatar */}
         <Avatar className="size-9">
-          <AvatarImage src={comment.user?.avatar} alt={comment.user?.name || '匿名'} />
+          <AvatarImage src={comment.user?.avatar || ''} alt={comment.user?.name || '匿名'} />
           <AvatarFallback>{comment.user?.name?.charAt(0) || '匿'}</AvatarFallback>
         </Avatar>
 

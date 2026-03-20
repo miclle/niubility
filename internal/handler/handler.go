@@ -75,8 +75,8 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	// upload routes (admin only)
 	api.POST("/upload/presign", ctrl.RequireAdmin, ctrl.GetPresignedURL)
 
-	// file access route (presigned redirect for private S3 objects)
-	api.GET("/files/*path", ctrl.GetFile)
+	// asset access route (presigned redirect for private S3 objects)
+	api.GET("/assets/*path", ctrl.GetFile)
 
 	// admin routes (all require admin role)
 	admin := api.Group("/admin", ctrl.RequireAdmin)

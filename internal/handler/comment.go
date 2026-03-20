@@ -40,6 +40,10 @@ func (ctrl *Ctrl) ListComments(c *fox.Context, args entity.Pagination) (*ListCom
 
 	likedIDs, _ := ctrl.service.GetLikedIDs(user.ID, allIDs, entity.TargetTypeComment)
 
+	for i := range comments {
+		comments[i].ResolveFileURLs()
+	}
+
 	return &ListCommentsResponse{
 		Comments:        comments,
 		Pagination:      args,
@@ -89,6 +93,7 @@ func (ctrl *Ctrl) CreateComment(c *fox.Context, args entity.CreateCommentArgs) (
 
 	// Reload with user info
 	comment.User = user
+	comment.ResolveFileURLs()
 	return comment, nil
 }
 

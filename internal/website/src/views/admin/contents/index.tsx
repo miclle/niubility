@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
@@ -152,7 +153,15 @@ function AdminContents() {
                       {categoryLabels[content.category] || content.category}
                     </span>
                   </td>
-                  <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }}>{content.author?.name || '-'}</td>
+                  <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }}>
+                    <div className="flex items-center gap-2">
+                      <Avatar className="w-6 h-6">
+                        <AvatarImage src={content.author?.avatar || ''} alt={content.author?.name || ''} />
+                        <AvatarFallback className="text-xs">{content.author?.name?.charAt(0) || '-'}</AvatarFallback>
+                      </Avatar>
+                      {content.author?.name || '-'}
+                    </div>
+                  </td>
                   <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }}>{dayjs(content.created_at).format('YYYY-MM-DD')}</td>
                   <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
                     <div className="flex gap-2">

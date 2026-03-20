@@ -6,7 +6,6 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
 
 import { getContent, listContents, likeContent } from 'src/api/content'
-import { fileURL } from 'src/api/upload'
 import VideoPlayer from 'src/components/VideoPlayer'
 import CommentSection from 'src/components/CommentSection'
 import { Avatar, AvatarImage, AvatarFallback } from 'src/components/ui/avatar'
@@ -74,8 +73,8 @@ function ContentDetail() {
             style={{ width: '100%', aspectRatio: '16/9' }}
           >
             <VideoPlayer
-              src={fileURL(content.video_url)}
-              poster={fileURL(content.cover_url) || '/default-cover.svg'}
+              src={content.video_url}
+              poster={content.cover_url || '/default-cover.svg'}
               theaterMode={theaterMode}
               onToggleTheater={() => setTheaterMode(!theaterMode)}
               contentId={content.id}
@@ -87,7 +86,7 @@ function ContentDetail() {
             style={{ width: '100%', aspectRatio: '16/9' }}
           >
             <img
-              src={fileURL(content.cover_url) || '/default-cover.svg'}
+              src={content.cover_url || '/default-cover.svg'}
               alt={content.title}
               className="w-full h-full object-cover"
             />
@@ -104,7 +103,7 @@ function ContentDetail() {
           {/* Channel info */}
           <div className="flex items-center gap-3">
             <Avatar size="lg">
-              <AvatarImage src={content.speaker?.avatar || content.author?.avatar} alt={content.speaker?.name || content.author?.name || content.speaker_name || '匿名'} />
+              <AvatarImage src={content.speaker?.avatar || content.author?.avatar || ''} alt={content.speaker?.name || content.author?.name || content.speaker_name || '匿名'} />
               <AvatarFallback>{content.speaker?.name?.charAt(0) || content.author?.name?.charAt(0) || content.speaker_name?.charAt(0) || '匿'}</AvatarFallback>
             </Avatar>
             <div>
@@ -240,7 +239,7 @@ function ContentDetail() {
               {/* Thumbnail */}
               <div className="relative flex-shrink-0 rounded-lg overflow-hidden bg-zinc-100" style={{ width: 168, aspectRatio: '16/9' }}>
                 <img
-                  src={fileURL(item.cover_url) || '/default-cover.svg'}
+                  src={item.cover_url || '/default-cover.svg'}
                   alt={item.title}
                   className="w-full h-full object-cover"
                 />
