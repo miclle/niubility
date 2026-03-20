@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Heart, MessageSquare } from 'lucide-react'
 import dayjs from 'dayjs'
 
 import { listContents, deleteContent } from 'src/api/content'
@@ -12,6 +12,11 @@ import type { Content } from 'src/types/content'
 
 const typeLabels = { article: '图文', video: '视频' } as const
 const limit = 20
+
+// Table cell styles
+const thStyle: React.CSSProperties = { padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap' }
+const tdStyle: React.CSSProperties = { padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }
+const columnCount = 8
 
 // AdminContents displays the admin content management page with YouTube-style design.
 function AdminContents() {
@@ -98,18 +103,19 @@ function AdminContents() {
         <table className="w-full">
           <thead>
             <tr style={{ background: '#f9f9f9' }}>
-              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>标题</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>类型</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>分类</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>作者</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>创建时间</th>
-              <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>操作</th>
+              <th style={thStyle}>标题</th>
+              <th style={thStyle}>类型</th>
+              <th style={thStyle}>分类</th>
+              <th style={thStyle}>作者</th>
+              <th style={thStyle}>互动</th>
+              <th style={thStyle}>创建时间</th>
+              <th style={thStyle}>操作</th>
             </tr>
           </thead>
           <tbody>
             {contents.length === 0 && !loading ? (
               <tr>
-                <td colSpan={6} className="text-center py-8" style={{ color: '#909090' }}>
+                <td colSpan={columnCount} className="text-center py-8" style={{ color: '#909090' }}>
                   暂无内容
                 </td>
               </tr>
@@ -131,29 +137,17 @@ function AdminContents() {
                       </div>
                     </Link>
                   </td>
-                  <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
-                    <span
-                      className="px-2 py-0.5 rounded text-xs"
-                      style={{
-                        background: '#f2f2f2',
-                        color: '#606060',
-                      }}
-                    >
+                  <td style={tdStyle}>
+                    <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#f2f2f2', color: '#606060' }}>
                       {typeLabels[content.type]}
                     </span>
                   </td>
-                  <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
-                    <span
-                      className="px-2 py-0.5 rounded text-xs"
-                      style={{
-                        background: '#f2f2f2',
-                        color: '#606060',
-                      }}
-                    >
+                  <td style={tdStyle}>
+                    <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#f2f2f2', color: '#606060' }}>
                       {categoryLabels[content.category] || content.category}
                     </span>
                   </td>
-                  <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }}>
+                  <td style={tdStyle}>
                     <div className="flex items-center gap-2">
                       <Avatar className="w-6 h-6">
                         <AvatarImage src={content.author?.avatar || ''} alt={content.author?.name || ''} />
@@ -162,8 +156,14 @@ function AdminContents() {
                       {content.author?.name || '-'}
                     </div>
                   </td>
-                  <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }}>{dayjs(content.created_at).format('YYYY-MM-DD')}</td>
-                  <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
+                  <td style={tdStyle}>
+                    <div className="flex items-center gap-3">
+                      <span className="flex items-center gap-1 text-xs"><Heart size={12} />{content.like_count}</span>
+                      <span className="flex items-center gap-1 text-xs"><MessageSquare size={12} />{content.comment_count}</span>
+                    </div>
+                  </td>
+                  <td style={tdStyle}>{dayjs(content.created_at).format('YYYY-MM-DD')}</td>
+                  <td style={tdStyle}>
                     <div className="flex gap-2">
                       <Link to={`/admin/contents/${content.id}`}>
                         <Button variant="ghost" style={{ color: '#606060' }}>
