@@ -25,7 +25,7 @@ func (ctrl *Ctrl) ListContents(c *fox.Context, args entity.ListContentsArgs) (*L
 	args.Total = total
 
 	for i := range contents {
-		contents[i].ResolveFileURLs()
+		contents[i].ResolveAssetURLs()
 	}
 
 	return &ListContentsResponse{
@@ -52,7 +52,7 @@ func (ctrl *Ctrl) GetContent(c *fox.Context) (*GetContentResponse, error) {
 		return nil, httperrors.ErrNotFound
 	}
 
-	content.ResolveFileURLs()
+	content.ResolveAssetURLs()
 	resp := &GetContentResponse{Content: content}
 
 	if user := CurrentUser(c); user != nil {
@@ -115,7 +115,7 @@ func (ctrl *Ctrl) CreateContent(c *fox.Context, args entity.CreateContentArgs) (
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
-	created.ResolveFileURLs()
+	created.ResolveAssetURLs()
 	return created, nil
 }
 
@@ -131,7 +131,7 @@ func (ctrl *Ctrl) UpdateContent(c *fox.Context, args entity.UpdateContentArgs) (
 		return nil, httperrors.ErrNotFound
 	}
 
-	content.ResolveFileURLs()
+	content.ResolveAssetURLs()
 	return content, nil
 }
 
