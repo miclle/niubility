@@ -195,6 +195,7 @@ function MainLayout() {
                     管理后台
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   variant="destructive"
                   onClick={() => {
