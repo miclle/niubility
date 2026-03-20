@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, Link } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -20,6 +20,41 @@ const roleLabels: Record<Role, { label: string; bg: string; color: string }> = {
 const statusLabels: Record<UserStatus, { label: string; bg: string; color: string }> = {
   activated: { label: '已激活', bg: '#dcfce7', color: '#166534' },
   deactivated: { label: '已禁用', bg: '#fee2e2', color: '#991b1b' },
+}
+
+// Table cell styles (module-level for stable references across renders)
+const tableBorder = '1px solid #e5e5e5'
+const thStyle: React.CSSProperties = { background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: tableBorder }
+const tdStyle: React.CSSProperties = { padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: tableBorder }
+const stickyTh: React.CSSProperties = { ...thStyle, position: 'sticky', left: 0, zIndex: 20, minWidth: 200, borderRight: tableBorder }
+const stickyTd: React.CSSProperties = { ...tdStyle, position: 'sticky', left: 0, zIndex: 10, background: '#ffffff', borderRight: tableBorder }
+const columnCount = 9
+
+// LabeledSelect renders a select dropdown with colored label badges.
+function LabeledSelect<T extends string>({ value, labels, onChange }: {
+  value: T
+  labels: Record<T, { label: string; bg: string; color: string }>
+  onChange: (val: T) => void
+}) {
+  const current = labels[value]
+  return (
+    <Select value={value} onValueChange={(v) => onChange(v as T)}>
+      <SelectTrigger size="sm" className="w-24 border-0 bg-transparent shadow-none">
+        <SelectValue>
+          {current
+            ? <span className="px-2 py-0.5 rounded text-xs" style={{ background: current.bg, color: current.color }}>{current.label}</span>
+            : value}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {(Object.entries(labels) as [T, { label: string; bg: string; color: string }][]).map(([v, { label, bg, color }]) => (
+          <SelectItem key={v} value={v}>
+            <span className="px-2 py-0.5 rounded text-xs" style={{ background: bg, color }}>{label}</span>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
 }
 
 // DepartmentNode extends Department with children for tree structure
@@ -257,19 +292,10 @@ function AdminUsers() {
     setSearchParams(params, { replace: true })
   }
 
-  const handleRoleChange = async (userId: string, role: Role) => {
+  const handleFieldChange = async <K extends 'role' | 'status'>(userId: string, field: K, value: User[K]) => {
     try {
-      await updateUser(userId, { role })
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, role } : u))
-    } catch {
-      // Silently fail
-    }
-  }
-
-  const handleStatusChange = async (userId: string, status: UserStatus) => {
-    try {
-      await updateUser(userId, { status })
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, status } : u))
+      await updateUser(userId, { [field]: value })
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, [field]: value } : u))
     } catch {
       // Silently fail
     }
@@ -351,82 +377,63 @@ function AdminUsers() {
         </div>
 
         {/* Right side - Table with contained scroll */}
-        <div className="flex-1 min-w-0 bg-white rounded-xl overflow-auto" style={{ border: '1px solid #e5e5e5' }}>
+        <div className="flex-1 min-w-0 bg-white rounded-xl overflow-auto" style={{ border: tableBorder }}>
           <table style={{ minWidth: 1200, borderCollapse: 'separate', borderSpacing: 0, width: '100%' }}>
             <thead className="sticky top-0 z-20">
               <tr>
-                <th style={{ position: 'sticky', left: 0, zIndex: 20, background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, minWidth: 180, borderRight: '1px solid #e5e5e5', borderBottom: '1px solid #e5e5e5' }}>用户</th>
-                <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>用户名</th>
-                <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>邮箱</th>
-                <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>手机</th>
-                <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>部门</th>
-                <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>角色</th>
-                <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>状态</th>
-                <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>注册时间</th>
-                <th style={{ background: '#f9f9f9', padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap', borderBottom: '1px solid #e5e5e5' }}>更新时间</th>
+                <th style={stickyTh}>用户</th>
+                <th style={thStyle}>邮箱</th>
+                <th style={thStyle}>手机</th>
+                <th style={thStyle}>部门</th>
+                <th style={thStyle}>关注</th>
+                <th style={thStyle}>角色</th>
+                <th style={thStyle}>状态</th>
+                <th style={thStyle}>注册时间</th>
+                <th style={thStyle}>更新时间</th>
               </tr>
             </thead>
             <tbody>
               {users.length === 0 && !loading ? (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: 'center', padding: 32, color: '#909090' }}>
+                  <td colSpan={columnCount} style={{ textAlign: 'center', padding: 32, color: '#909090' }}>
                     {hasFilters ? '未找到匹配的用户' : '暂无用户'}
                   </td>
                 </tr>
               ) : (
                 users.map((user) => (
                   <tr key={user.id}>
-                    <td style={{ position: 'sticky', left: 0, zIndex: 10, background: '#ffffff', padding: '12px 16px', borderRight: '1px solid #e5e5e5', borderTop: '1px solid #e5e5e5' }}>
+                    <td style={stickyTd}>
                       <div className="flex items-center gap-3">
                         <Avatar className="size-8">
                           <AvatarImage src={user.avatar} alt={user.name || user.username} />
                           <AvatarFallback>{user.name?.charAt(0) || user.username.charAt(0)}</AvatarFallback>
                         </Avatar>
-                        <span className="font-medium" style={{ color: '#0f0f0f', whiteSpace: 'nowrap' }}>{user.name || '-'}</span>
+                        <div className="flex flex-col">
+                          <Link to={`/@${user.username}`} className="font-medium hover:underline" style={{ color: '#0f0f0f', whiteSpace: 'nowrap' }}>{user.name || user.username}</Link>
+                          <span className="text-xs" style={{ color: '#909090' }}>@{user.username}</span>
+                        </div>
                       </div>
                     </td>
-                    <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>{user.username}</td>
-                    <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>{user.email || '-'}</td>
-                    <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>{user.mobile || '-'}</td>
-                    <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>
+                    <td style={tdStyle}>{user.email || '-'}</td>
+                    <td style={tdStyle}>{user.mobile || '-'}</td>
+                    <td style={tdStyle}>
                       <span className="text-xs" style={{ background: '#f2f2f2', padding: '2px 6px', borderRadius: 4, display: 'inline-block' }}>
                         {getDepartmentNames(user.department_ids)}
                       </span>
                     </td>
-                    <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>
-                      <Select value={user.role} onValueChange={(val) => handleRoleChange(user.id, val as Role)}>
-                        <SelectTrigger size="sm" className="w-24 border-0 bg-transparent shadow-none">
-                          <SelectValue>
-                            {(() => { const r = roleLabels[user.role]; return r ? <span className="px-2 py-0.5 rounded text-xs" style={{ background: r.bg, color: r.color }}>{r.label}</span> : user.role })()}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(Object.entries(roleLabels) as [Role, typeof roleLabels[Role]][]).map(([value, { label, bg, color }]) => (
-                            <SelectItem key={value} value={value}>
-                              <span className="px-2 py-0.5 rounded text-xs" style={{ background: bg, color }}>{label}</span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <td style={tdStyle}>
+                      <span className="text-xs">{user.following_count} 关注</span>
+                      <span className="mx-1" style={{ color: '#e5e5e5' }}>|</span>
+                      <span className="text-xs">{user.follower_count} 粉丝</span>
                     </td>
-                    <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>
-                      <Select value={user.status} onValueChange={(val) => handleStatusChange(user.id, val as UserStatus)}>
-                        <SelectTrigger size="sm" className="w-24 border-0 bg-transparent shadow-none">
-                          <SelectValue>
-                            {(() => { const s = statusLabels[user.status]; return s ? <span className="px-2 py-0.5 rounded text-xs" style={{ background: s.bg, color: s.color }}>{s.label}</span> : user.status })()}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(Object.entries(statusLabels) as [UserStatus, typeof statusLabels[UserStatus]][]).map(([value, { label, bg, color }]) => (
-                            <SelectItem key={value} value={value}>
-                              <span className="px-2 py-0.5 rounded text-xs" style={{ background: bg, color }}>{label}</span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <td style={tdStyle}>
+                      <LabeledSelect value={user.role} labels={roleLabels} onChange={(val) => handleFieldChange(user.id, 'role', val)} />
                     </td>
-                    <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>{dayjs(user.created_at).format('YYYY-MM-DD HH:mm')}</td>
-                    <td style={{ padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: '1px solid #e5e5e5' }}>{dayjs(user.updated_at).format('YYYY-MM-DD HH:mm')}</td>
+                    <td style={tdStyle}>
+                      <LabeledSelect value={user.status} labels={statusLabels} onChange={(val) => handleFieldChange(user.id, 'status', val)} />
+                    </td>
+                    <td style={tdStyle}>{dayjs(user.created_at).format('YYYY-MM-DD HH:mm')}</td>
+                    <td style={tdStyle}>{dayjs(user.updated_at).format('YYYY-MM-DD HH:mm')}</td>
                   </tr>
                 ))
               )}
