@@ -3,7 +3,7 @@ import { Outlet, NavLink, Navigate, useLocation, useNavigate } from 'react-route
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { FileText, Users, ArrowLeft, LogOut, Upload, RefreshCw, Settings, Menu, FolderOpen, ChevronDown, UserPlus, HardDrive, MessageSquare, CircleUserRound, User, type LucideIcon } from 'lucide-react'
+import { FileText, Users, ArrowLeft, LogOut, Upload, RefreshCw, Settings, Menu, FolderOpen, ChevronDown, UserPlus, HardDrive, MessageSquare, CircleUserRound, User, Plus, Play, ImageIcon, type LucideIcon } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
 
@@ -215,8 +215,38 @@ function AdminLayout() {
             <Menu size={24} style={{ color: '#0f0f0f' }} />
           </button>
 
-          {/* User menu */}
-          <DropdownMenu>
+          {/* Right: Create button + User menu */}
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <button
+                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-colors cursor-pointer border-0"
+                    style={{ background: '#0f0f0f', color: '#ffffff' }}
+                  >
+                    <Plus size={16} />
+                    创建
+                  </button>
+                }
+              />
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => navigate('/contents/new/video')}>
+                  <Play size={16} />
+                  视频
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/contents/new/gallery')}>
+                  <ImageIcon size={16} />
+                  图文
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/contents/new/article')}>
+                  <FileText size={16} />
+                  长文
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* User menu */}
+            <DropdownMenu>
             <DropdownMenuTrigger
               render={
                 <button className="flex items-center gap-2 cursor-pointer bg-transparent border-0 p-1 rounded-full hover:bg-black/5 transition-colors">
@@ -255,6 +285,7 @@ function AdminLayout() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </header>
 
         {/* Content */}
