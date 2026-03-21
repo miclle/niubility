@@ -57,6 +57,8 @@ function ContentDetail() {
     return <div className="p-6 text-center" style={{ color: '#606060' }}>内容不存在</div>
   }
 
+  const isDraft = content.status === 'draft'
+
   const categoryPath = content.category === 'culture' ? '/culture' : '/learning'
   const categoryLabel = content.category === 'culture' ? '七牛文化' : '学习分享'
 
@@ -170,11 +172,19 @@ function ContentDetail() {
     </div>
   )
 
+  // Draft banner component
+  const draftBanner = isDraft ? (
+    <div className="mb-4 px-4 py-3 rounded-xl text-sm font-medium" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
+      草稿预览 — 此内容尚未发布，仅作者可见
+    </div>
+  ) : null
+
   // === VIDEO TYPE ===
   if (content.type === 'video') {
     return (
       <div className={`flex gap-6 p-6 ${theaterMode ? '' : 'justify-center'}`}>
         <div style={{ width: theaterMode ? '100%' : 'max(640px, min(calc((100vh - 180px) * 16 / 9), calc(100vw - 48px)))' }}>
+          {draftBanner}
           {/* Video player */}
           {currentVideo ? (
             <div className={`relative bg-black overflow-hidden ${theaterMode ? 'rounded-none' : 'rounded-xl'}`} style={{ width: '100%', aspectRatio: '16/9' }}>
@@ -240,6 +250,7 @@ function ContentDetail() {
     return (
       <div className="flex gap-6 p-6 justify-center">
         <div style={{ width: 'max(640px, min(calc((100vh - 180px) * 16 / 9), calc(100vw - 48px)))' }}>
+          {draftBanner}
           {/* Carousel */}
           {galleryItems.length > 0 && <MediaCarousel items={galleryItems} />}
 
@@ -274,7 +285,8 @@ function ContentDetail() {
   // === ARTICLE TYPE (Medium-style) ===
   return (
     <div className="flex gap-6 p-6 justify-center">
-      <div style={{ maxWidth: 720, width: '100%' }}>
+      <div style={{ maxWidth: 840, width: '100%' }}>
+        {draftBanner}
         {/* Title */}
         <h1 className="text-3xl font-bold mb-4" style={{ color: '#0f0f0f', lineHeight: 1.3 }}>{content.title}</h1>
 

@@ -11,15 +11,14 @@ import { Save, X, Plus, GripVertical, Trash2, Star, Upload, Loader2 } from 'luci
 import { getContent, createContent, updateContent } from 'src/api/content'
 import { useAppContext } from 'src/context/app'
 import { uploadFile, fileURL } from 'src/api/upload'
-import type { CreateContentArgs, CreateAttachmentArgs, AttachmentType } from 'src/types/content'
+import type { ContentStatus, CreateContentArgs, CreateAttachmentArgs, AttachmentType } from 'src/types/content'
 
 // GalleryEditorFormProps defines the configurable behavior of the gallery editor form.
 export interface GalleryEditorFormProps {
   id?: string
-  onSaved: (contentId: string) => void
+  onSaved: (contentId: string, status: ContentStatus) => void
   onCancel: () => void
   onLoadError: () => void
-  submitLabel?: string
 }
 
 // GalleryItem is a local state item for gallery media management.
@@ -107,7 +106,7 @@ function SortableGalleryItem({ item, onRemove, onSetCover }: {
 }
 
 // GalleryEditorForm is the editor form for creating/editing gallery (image/short-video) content.
-function GalleryEditorForm({ id, onSaved, onCancel, onLoadError, submitLabel = '保存' }: GalleryEditorFormProps) {
+function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditorFormProps) {
   const isNew = !id
   const { categories } = useAppContext()
 
@@ -117,6 +116,7 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError, submitLabel = '
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
   const [items, setItems] = useState<GalleryItem[]>([])
+  const [contentStatus, setContentStatus] = useState<ContentStatus>('draft')
 
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -140,6 +140,7 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError, submitLabel = '
         setSummary(c.summary || '')
         setCategory(c.category)
         setTags(c.tags || [])
+        setContentStatus(c.status || 'published')
 
         if (c.attachments && c.attachments.length > 0) {
           setItems(c.attachments.map((m) => ({
@@ -242,8 +243,7 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError, submitLabel = '
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (status: ContentStatus) => {
     if (!title.trim() || items.length === 0) return
 
     setSaving(true)
@@ -261,6 +261,7 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError, submitLabel = '
         title: title.trim(),
         summary: summary.trim(),
         type: 'gallery',
+        status,
         category,
         tags,
         media_items: mediaItems,
@@ -268,10 +269,10 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError, submitLabel = '
 
       if (isNew) {
         const res = await createContent(data)
-        onSaved(res.data.id)
+        onSaved(res.data.id, status)
       } else {
         await updateContent(id!, data)
-        onSaved(id!)
+        onSaved(id!, status)
       }
     } catch {
       // Silently fail
@@ -287,7 +288,7 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError, submitLabel = '
   const uploadedItems = items.filter((i) => i.url)
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-xl p-6 space-y-5" style={{ border: '1px solid #e5e5e5' }}>
+    <form onSubmit={(e) => e.preventDefault()} className="bg-white rounded-xl p-6 space-y-5" style={{ border: '1px solid #e5e5e5' }}>
       {/* Title */}
       <div>
         <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>标题 *</label>
@@ -405,10 +406,27 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError, submitLabel = '
 
       {/* Actions */}
       <div className="flex items-center gap-3 pt-4" style={{ borderTop: '1px solid #e5e5e5' }}>
-        <Button type="submit" disabled={saving || !title.trim() || items.length === 0} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
-          <Save size={16} />
-          {saving ? '保存中...' : submitLabel}
-        </Button>
+        {(isNew || contentStatus === 'draft') ? (
+          <>
+            <Button type="button" variant="outline" disabled={saving || !title.trim() || items.length === 0} onClick={() => handleSubmit('draft')}>
+              <Save size={16} />
+              {saving ? '保存中...' : '保存草稿'}
+            </Button>
+            <Button type="button" disabled={saving || !title.trim() || items.length === 0} onClick={() => handleSubmit('published')} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
+              {saving ? '发布中...' : '发布'}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button type="button" disabled={saving || !title.trim() || items.length === 0} onClick={() => handleSubmit('published')} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
+              <Save size={16} />
+              {saving ? '保存中...' : '保存'}
+            </Button>
+            <Button type="button" variant="outline" disabled={saving} onClick={() => handleSubmit('draft')}>
+              转为草稿
+            </Button>
+          </>
+        )}
         <Button type="button" variant="outline" onClick={onCancel}><X size={16} />取消</Button>
       </div>
     </form>

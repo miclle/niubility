@@ -21,8 +21,13 @@ type PresignResponse struct {
 	Key          string `json:"key"`
 }
 
-// GetPresignedURL generates an S3 presigned PUT URL for direct file upload (admin only).
+// GetPresignedURL generates an S3 presigned PUT URL for direct file upload (authenticated users).
 func (ctrl *Ctrl) GetPresignedURL(c *fox.Context, req *PresignRequest) (*PresignResponse, error) {
+	user := CurrentUser(c)
+	if user == nil {
+		return nil, httperrors.ErrUnauthorized
+	}
+
 	// Validate category
 	switch req.Category {
 	case "covers", "videos", "images":

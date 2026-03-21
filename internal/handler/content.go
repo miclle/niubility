@@ -52,6 +52,14 @@ func (ctrl *Ctrl) GetContent(c *fox.Context) (*GetContentResponse, error) {
 		return nil, httperrors.ErrNotFound
 	}
 
+	// Draft content is only visible to the author or admin
+	if content.Status == entity.ContentStatusDraft {
+		user := CurrentUser(c)
+		if user == nil || (user.ID != content.AuthorID && !user.IsAdmin()) {
+			return nil, httperrors.ErrNotFound
+		}
+	}
+
 	content.ResolveAssetURLs()
 	resp := &GetContentResponse{Content: content}
 
@@ -87,9 +95,12 @@ func (ctrl *Ctrl) LikeContent(c *fox.Context) (*entity.LikeResponse, error) {
 	return resp, nil
 }
 
-// CreateContent creates a new content (admin only).
+// CreateContent creates a new content (authenticated users).
 func (ctrl *Ctrl) CreateContent(c *fox.Context, args entity.CreateContentArgs) (*entity.Content, error) {
 	user := CurrentUser(c)
+	if user == nil {
+		return nil, httperrors.ErrUnauthorized
+	}
 
 	content := &entity.Content{
 		AuthorID:    user.ID,
@@ -98,6 +109,7 @@ func (ctrl *Ctrl) CreateContent(c *fox.Context, args entity.CreateContentArgs) (
 		Body:        args.Body,
 		CoverURL:    args.CoverURL,
 		Type:        args.Type,
+		Status:      args.Status,
 		Category:    args.Category,
 		Tags:        args.Tags,
 		SpeakerID:   args.SpeakerID,
@@ -117,9 +129,24 @@ func (ctrl *Ctrl) CreateContent(c *fox.Context, args entity.CreateContentArgs) (
 	return created, nil
 }
 
-// UpdateContent updates an existing content (admin only).
+// UpdateContent updates an existing content (author or admin).
 func (ctrl *Ctrl) UpdateContent(c *fox.Context, args entity.UpdateContentArgs) (*entity.Content, error) {
 	id := c.Param("id")
+	user := CurrentUser(c)
+	if user == nil {
+		return nil, httperrors.ErrUnauthorized
+	}
+
+	existing, err := ctrl.service.GetContentByID(id)
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+	if existing == nil {
+		return nil, httperrors.ErrNotFound
+	}
+	if user.ID != existing.AuthorID && !user.IsAdmin() {
+		return nil, httperrors.ErrForbidden
+	}
 
 	content, err := ctrl.service.UpdateContent(id, args)
 	if err != nil {
@@ -133,9 +160,13 @@ func (ctrl *Ctrl) UpdateContent(c *fox.Context, args entity.UpdateContentArgs) (
 	return content, nil
 }
 
-// DeleteContent deletes a content by ID (admin only).
+// DeleteContent deletes a content by ID (author or admin).
 func (ctrl *Ctrl) DeleteContent(c *fox.Context) error {
 	id := c.Param("id")
+	user := CurrentUser(c)
+	if user == nil {
+		return httperrors.ErrUnauthorized
+	}
 
 	existing, err := ctrl.service.GetContentByID(id)
 	if err != nil {
@@ -143,6 +174,9 @@ func (ctrl *Ctrl) DeleteContent(c *fox.Context) error {
 	}
 	if existing == nil {
 		return httperrors.ErrNotFound
+	}
+	if user.ID != existing.AuthorID && !user.IsAdmin() {
+		return httperrors.ErrForbidden
 	}
 
 	if err := ctrl.service.DeleteContent(id); err != nil {

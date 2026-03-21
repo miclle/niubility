@@ -1,19 +1,18 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 
 import { useAppContext } from 'src/context/app'
 import { getContent } from 'src/api/content'
 import VideoEditorForm from 'src/components/VideoEditorForm'
 import GalleryEditorForm from 'src/components/GalleryEditorForm'
 import ArticleEditorForm from 'src/components/ArticleEditorForm'
-import type { ContentType } from 'src/types/content'
+import type { ContentType, ContentStatus } from 'src/types/content'
 
 // ContentEditor is the user-facing content editor page.
 // Routes: /contents/new/video, /contents/new/gallery, /contents/new/article, /contents/:id/edit
 function ContentEditor() {
   const { id, type: routeType } = useParams<{ id: string; type: string }>()
   const navigate = useNavigate()
-  const location = useLocation()
   const { currentUser } = useAppContext()
   const isNew = !id
 
@@ -27,19 +26,18 @@ function ContentEditor() {
     if (routeType) setContentType(routeType as ContentType)
   }, [routeType])
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!currentUser) {
-      window.location.href = '/sso?redirect=' + encodeURIComponent(location.pathname)
-    }
-  }, [currentUser, location.pathname])
-
-  // Load content type when editing existing content
+  // Load content type and verify ownership when editing existing content
   useEffect(() => {
     if (!id || contentType) return
     setLoading(true)
     getContent(id)
-      .then((res) => setContentType(res.data.type))
+      .then((res) => {
+        setContentType(res.data.type)
+        // Only author can edit their own content (admin can edit any)
+        if (currentUser && currentUser.role === 'user' && res.data.author_id !== currentUser.id) {
+          navigate('/')
+        }
+      })
       .catch(() => navigate('/'))
       .finally(() => setLoading(false))
   }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -51,7 +49,13 @@ function ContentEditor() {
     ? { id: currentUser.id, name: currentUser.name, avatar: currentUser.avatar }
     : undefined
 
-  const onSaved = (contentId: string) => navigate(`/contents/${contentId}`)
+  const onSaved = (contentId: string, status: ContentStatus) => {
+    if (status === 'draft') {
+      navigate(`/contents/${contentId}/edit`)
+    } else {
+      navigate(`/contents/${contentId}`)
+    }
+  }
   const onCancel = () => navigate(-1)
   const onLoadError = () => navigate('/')
 
@@ -61,7 +65,7 @@ function ContentEditor() {
         <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>
           {isNew ? '发布视频' : '编辑视频'}
         </h1>
-        <VideoEditorForm id={id} defaultSpeaker={defaultSpeaker} submitLabel="发布" onSaved={onSaved} onCancel={onCancel} onLoadError={onLoadError} />
+        <VideoEditorForm id={id} defaultSpeaker={defaultSpeaker} onSaved={onSaved} onCancel={onCancel} onLoadError={onLoadError} />
       </div>
     )
   }
@@ -72,15 +76,15 @@ function ContentEditor() {
         <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>
           {isNew ? '发布图文' : '编辑图文'}
         </h1>
-        <GalleryEditorForm id={id} submitLabel="发布" onSaved={onSaved} onCancel={onCancel} onLoadError={onLoadError} />
+        <GalleryEditorForm id={id} onSaved={onSaved} onCancel={onCancel} onLoadError={onLoadError} />
       </div>
     )
   }
 
   if (contentType === 'article') {
     return (
-      <div className="max-w-[720px] mx-auto p-6">
-        <ArticleEditorForm id={id} defaultSpeaker={defaultSpeaker} submitLabel="发布" onSaved={onSaved} onCancel={onCancel} onLoadError={onLoadError} />
+      <div className="max-w-[840px] mx-auto p-6">
+        <ArticleEditorForm id={id} defaultSpeaker={defaultSpeaker} onSaved={onSaved} onCancel={onCancel} onLoadError={onLoadError} />
       </div>
     )
   }

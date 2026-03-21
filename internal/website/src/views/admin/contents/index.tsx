@@ -22,7 +22,7 @@ const limit = 20
 // Table cell styles
 const thStyle: React.CSSProperties = { padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap' }
 const tdStyle: React.CSSProperties = { padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }
-const columnCount = 7
+const columnCount = 8
 
 // AdminContents displays the admin content management page.
 function AdminContents() {
@@ -39,7 +39,7 @@ function AdminContents() {
   const fetchContents = useCallback(async (p: number, append: boolean) => {
     setLoading(true)
     try {
-      const res = await listContents({ page: p, limit })
+      const res = await listContents({ page: p, limit, status: 'all' })
       const list = res.data.contents || []
       setContents((prev) => append ? [...prev, ...list] : list)
       setTotal(res.data.pagination.total)
@@ -131,6 +131,7 @@ function AdminContents() {
             <tr style={{ background: '#f9f9f9' }}>
               <th style={thStyle}>标题</th>
               <th style={thStyle}>类型</th>
+              <th style={thStyle}>状态</th>
               <th style={thStyle}>分类</th>
               <th style={thStyle}>作者</th>
               <th style={thStyle}>互动</th>
@@ -169,6 +170,11 @@ function AdminContents() {
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs" style={{ background: '#f2f2f2', color: '#606060' }}>
                         {typeIcons[content.type]}
                         {typeLabels[content.type] || content.type}
+                      </span>
+                    </td>
+                    <td style={tdStyle}>
+                      <span className="px-2 py-0.5 rounded text-xs" style={content.status === 'draft' ? { background: '#fef3c7', color: '#92400e' } : { background: '#d1fae5', color: '#065f46' }}>
+                        {content.status === 'draft' ? '草稿' : '已发布'}
                       </span>
                     </td>
                     <td style={tdStyle}>

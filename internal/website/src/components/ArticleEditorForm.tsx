@@ -10,21 +10,20 @@ import { searchUsers } from 'src/api/user'
 import { useAppContext } from 'src/context/app'
 import ImageUpload from 'src/components/ImageUpload'
 import RichTextEditor from 'src/components/RichTextEditor'
-import type { CreateContentArgs } from 'src/types/content'
+import type { ContentStatus, CreateContentArgs } from 'src/types/content'
 import type { SearchUserItem } from 'src/types/user'
 
 // ArticleEditorFormProps defines the configurable behavior of the article editor form.
 export interface ArticleEditorFormProps {
   id?: string
   defaultSpeaker?: SearchUserItem
-  onSaved: (contentId: string) => void
+  onSaved: (contentId: string, status: ContentStatus) => void
   onCancel: () => void
   onLoadError: () => void
-  submitLabel?: string
 }
 
 // ArticleEditorForm is the editor form for creating/editing long-form article content.
-function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError, submitLabel = '保存' }: ArticleEditorFormProps) {
+function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }: ArticleEditorFormProps) {
   const isNew = !id
   const { categories } = useAppContext()
 
@@ -34,6 +33,7 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError,
   const [category, setCategory] = useState<string>(categories[0]?.slug || 'learning')
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
+  const [contentStatus, setContentStatus] = useState<ContentStatus>('draft')
 
   // Speaker state
   const [speakerId, setSpeakerId] = useState(defaultSpeaker?.id || '')
@@ -71,6 +71,7 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError,
         setCoverUrl(c.cover_url || '')
         setCategory(c.category)
         setTags(c.tags || [])
+        setContentStatus(c.status || 'published')
 
         if (c.speaker_id && c.speaker) {
           setSpeakerId(c.speaker_id)
@@ -109,8 +110,7 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError,
     setTagInput('')
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (status: ContentStatus) => {
     if (!title.trim()) return
 
     setSaving(true)
@@ -120,6 +120,7 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError,
         body,
         cover_url: coverUrl.trim(),
         type: 'article',
+        status,
         category,
         tags,
         speaker_id: speakerId || '',
@@ -129,10 +130,10 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError,
 
       if (isNew) {
         const res = await createContent(data)
-        onSaved(res.data.id)
+        onSaved(res.data.id, status)
       } else {
         await updateContent(id!, data)
-        onSaved(id!)
+        onSaved(id!, status)
       }
     } catch {
       // Silently fail
@@ -146,7 +147,7 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError,
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
       {/* Title - Medium style large input */}
       <div>
         <input
@@ -261,10 +262,27 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError,
 
       {/* Actions */}
       <div className="flex items-center gap-3 pt-4" style={{ borderTop: '1px solid #e5e5e5' }}>
-        <Button type="submit" disabled={saving || !title.trim()} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
-          <Save size={16} />
-          {saving ? '保存中...' : submitLabel}
-        </Button>
+        {(isNew || contentStatus === 'draft') ? (
+          <>
+            <Button type="button" variant="outline" disabled={saving || !title.trim()} onClick={() => handleSubmit('draft')}>
+              <Save size={16} />
+              {saving ? '保存中...' : '保存草稿'}
+            </Button>
+            <Button type="button" disabled={saving || !title.trim()} onClick={() => handleSubmit('published')} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
+              {saving ? '发布中...' : '发布'}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button type="button" disabled={saving || !title.trim()} onClick={() => handleSubmit('published')} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
+              <Save size={16} />
+              {saving ? '保存中...' : '保存'}
+            </Button>
+            <Button type="button" variant="outline" disabled={saving} onClick={() => handleSubmit('draft')}>
+              转为草稿
+            </Button>
+          </>
+        )}
         <Button type="button" variant="outline" onClick={onCancel}><X size={16} />取消</Button>
       </div>
     </form>

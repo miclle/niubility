@@ -11,17 +11,17 @@ export function getContent(id: string) {
   return client.get<Content>(`/contents/${id}`)
 }
 
-// createContent creates a new content (admin only).
+// createContent creates a new content.
 export function createContent(data: CreateContentArgs) {
   return client.post<Content>('/contents', data)
 }
 
-// updateContent updates an existing content (admin only).
+// updateContent updates an existing content.
 export function updateContent(id: string, data: UpdateContentArgs) {
   return client.put<Content>(`/contents/${id}`, data)
 }
 
-// deleteContent deletes a content by ID (admin only).
+// deleteContent deletes a content by ID.
 export function deleteContent(id: string) {
   return client.delete(`/contents/${id}`)
 }

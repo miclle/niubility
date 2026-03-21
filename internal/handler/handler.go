@@ -55,15 +55,15 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	api.GET("/profile/has-password", ctrl.HasPassword)
 	api.GET("/users/:username/profile", ctrl.GetUserProfile)
 
-	// content routes (authenticated users can read, admin can write)
+	// content routes (authenticated users can CRUD their own content, admin can manage all)
 	api.GET("/contents", ctrl.ListContents)
 	api.GET("/contents/:id", ctrl.GetContent)
 	api.POST("/contents/:id/comments", ctrl.CreateComment)
 	api.GET("/contents/:id/comments", ctrl.ListComments)
 	api.POST("/contents/:id/like", ctrl.LikeContent)
-	api.POST("/contents", ctrl.RequireAdmin, ctrl.CreateContent)
-	api.PUT("/contents/:id", ctrl.RequireAdmin, ctrl.UpdateContent)
-	api.DELETE("/contents/:id", ctrl.RequireAdmin, ctrl.DeleteContent)
+	api.POST("/contents", ctrl.CreateContent)
+	api.PUT("/contents/:id", ctrl.UpdateContent)
+	api.DELETE("/contents/:id", ctrl.DeleteContent)
 
 	// category routes (public read, admin write)
 	api.GET("/categories", ctrl.ListCategories)
@@ -79,8 +79,8 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	// import routes (admin only)
 	api.POST("/import", ctrl.RequireAdmin, ctrl.ImportContents)
 
-	// upload routes (admin only)
-	api.POST("/upload/presign", ctrl.RequireAdmin, ctrl.GetPresignedURL)
+	// upload routes (authenticated users)
+	api.POST("/upload/presign", ctrl.GetPresignedURL)
 
 	// asset access route (presigned redirect for private S3 objects)
 	api.GET("/assets/*path", ctrl.GetFile)

@@ -49,7 +49,7 @@ function AdminContentEditor() {
         <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>
           {isNew ? '新建视频' : `编辑${typeLabel}`}
         </h1>
-        <VideoEditorForm id={id} submitLabel="保存" onSaved={onSaved} onCancel={onCancel} onLoadError={onLoadError} />
+        <VideoEditorForm id={id} onSaved={onSaved} onCancel={onCancel} onLoadError={onLoadError} />
       </div>
     )
   }
@@ -60,7 +60,7 @@ function AdminContentEditor() {
         <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>
           {isNew ? '新建图文' : `编辑${typeLabel}`}
         </h1>
-        <GalleryEditorForm id={id} submitLabel="保存" onSaved={onSaved} onCancel={onCancel} onLoadError={onLoadError} />
+        <GalleryEditorForm id={id} onSaved={onSaved} onCancel={onCancel} onLoadError={onLoadError} />
       </div>
     )
   }
@@ -71,7 +71,7 @@ function AdminContentEditor() {
         <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>
           {isNew ? '新建长文' : `编辑${typeLabel}`}
         </h1>
-        <ArticleEditorForm id={id} submitLabel="保存" onSaved={onSaved} onCancel={onCancel} onLoadError={onLoadError} />
+        <ArticleEditorForm id={id} onSaved={onSaved} onCancel={onCancel} onLoadError={onLoadError} />
       </div>
     )
   }

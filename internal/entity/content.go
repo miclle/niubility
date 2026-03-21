@@ -14,6 +14,16 @@ const (
 	ContentTypeArticle ContentType = "article"
 )
 
+// ContentStatus represents the publication status of content.
+type ContentStatus string
+
+const (
+	// ContentStatusDraft indicates unpublished draft content.
+	ContentStatusDraft ContentStatus = "draft"
+	// ContentStatusPublished indicates published content visible to all.
+	ContentStatusPublished ContentStatus = "published"
+)
+
 // Content represents a piece of content in the system.
 type Content struct {
 	ID           string      `json:"id"            gorm:"column:id;primaryKey;size:36"`
@@ -22,8 +32,9 @@ type Content struct {
 	Summary      string      `json:"summary"       gorm:"column:summary"`
 	Body         string      `json:"body"          gorm:"column:body;type:text"`
 	CoverURL     string      `json:"cover_url"     gorm:"column:cover_url"`
-	Type         ContentType `json:"type"          gorm:"column:type"`
-	Category     string      `json:"category"      gorm:"column:category;index:idx_contents_category"`
+	Type         ContentType   `json:"type"          gorm:"column:type"`
+	Status       ContentStatus `json:"status"        gorm:"column:status;default:draft;index:idx_contents_status"`
+	Category     string        `json:"category"      gorm:"column:category;index:idx_contents_category"`
 	Tags         []string    `json:"tags"          gorm:"column:tags;serializer:json"`
 	SpeakerID    string      `json:"speaker_id"    gorm:"column:speaker_id;index:idx_contents_speaker_id"`
 	SpeakerName  string      `json:"speaker_name"  gorm:"column:speaker_name"`
@@ -56,14 +67,15 @@ const (
 // ListContentsArgs represents the query parameters for listing contents.
 type ListContentsArgs struct {
 	Pagination
-	Category         string      `json:"category"            form:"category"`
-	Type             ContentType `json:"type"                form:"type"`
-	Keyword          string      `json:"keyword"             form:"keyword"`
-	Tag              string      `json:"tag"                 form:"tag"`
-	Sort             SortField   `json:"sort"                form:"sort"`
-	AuthorID         string      `json:"author_id"           form:"author_id"`
-	SpeakerID        string      `json:"speaker_id"          form:"speaker_id"`
-	FollowedByUserID string      `json:"followed_by_user_id" form:"followed_by_user_id"`
+	Category         string        `json:"category"            form:"category"`
+	Type             ContentType   `json:"type"                form:"type"`
+	Status           ContentStatus `json:"status"              form:"status"`
+	Keyword          string        `json:"keyword"             form:"keyword"`
+	Tag              string        `json:"tag"                 form:"tag"`
+	Sort             SortField     `json:"sort"                form:"sort"`
+	AuthorID         string        `json:"author_id"           form:"author_id"`
+	SpeakerID        string        `json:"speaker_id"          form:"speaker_id"`
+	FollowedByUserID string        `json:"followed_by_user_id" form:"followed_by_user_id"`
 }
 
 // CreateContentArgs represents the fields required to create content.
@@ -73,6 +85,7 @@ type CreateContentArgs struct {
 	Body        string                `json:"body"`
 	CoverURL    string                `json:"cover_url"`
 	Type        ContentType           `json:"type"         binding:"required"`
+	Status      ContentStatus         `json:"status"`
 	Category    string                `json:"category"     binding:"required"`
 	Tags        []string              `json:"tags"`
 	SpeakerID   string                `json:"speaker_id"`
@@ -88,6 +101,7 @@ type UpdateContentArgs struct {
 	Body        *string               `json:"body"`
 	CoverURL    *string               `json:"cover_url"`
 	Type        *ContentType          `json:"type"`
+	Status      *ContentStatus        `json:"status"`
 	Category    *string               `json:"category"`
 	Tags        []string              `json:"tags"`
 	SpeakerID   *string               `json:"speaker_id"`

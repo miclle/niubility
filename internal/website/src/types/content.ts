@@ -3,6 +3,9 @@ import type { User, Pagination } from './user'
 // ContentType represents the type of content.
 export type ContentType = 'video' | 'gallery' | 'article'
 
+// ContentStatus represents the publication status of content.
+export type ContentStatus = 'draft' | 'published'
+
 // ContentCategory represents the category of content (dynamic, stored as slug string).
 export type ContentCategory = string
 
@@ -62,6 +65,7 @@ export interface Content {
   body: string
   cover_url: string
   type: ContentType
+  status: ContentStatus
   category: ContentCategory
   tags: string[]
   speaker_id: string
@@ -83,6 +87,7 @@ export interface ListContentsArgs {
   limit?: number
   category?: ContentCategory
   type?: ContentType
+  status?: ContentStatus | 'all'
   keyword?: string
   tag?: string
   sort?: SortField
@@ -104,6 +109,7 @@ export interface CreateContentArgs {
   body?: string
   cover_url?: string
   type: ContentType
+  status?: ContentStatus
   category: ContentCategory
   tags?: string[]
   speaker_id?: string
@@ -119,6 +125,7 @@ export interface UpdateContentArgs {
   body?: string
   cover_url?: string
   type?: ContentType
+  status?: ContentStatus
   category?: ContentCategory
   tags?: string[]
   speaker_id?: string

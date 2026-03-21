@@ -14,17 +14,16 @@ import { searchUsers } from 'src/api/user'
 import { useAppContext } from 'src/context/app'
 import ImageUpload from 'src/components/ImageUpload'
 import FileUpload from 'src/components/FileUpload'
-import type { CreateContentArgs, CreateAttachmentArgs } from 'src/types/content'
+import type { ContentStatus, CreateContentArgs, CreateAttachmentArgs } from 'src/types/content'
 import type { SearchUserItem } from 'src/types/user'
 
 // VideoEditorFormProps defines the configurable behavior of the video editor form.
 export interface VideoEditorFormProps {
   id?: string
   defaultSpeaker?: SearchUserItem
-  onSaved: (contentId: string) => void
+  onSaved: (contentId: string, status: ContentStatus) => void
   onCancel: () => void
   onLoadError: () => void
-  submitLabel?: string
 }
 
 // VideoItem is a local state item for the video playlist editor.
@@ -93,7 +92,7 @@ function SortableVideoItem({ item, index, onChange, onRemove }: {
 }
 
 // VideoEditorForm is the editor form for creating/editing video content with playlist.
-function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError, submitLabel = '保存' }: VideoEditorFormProps) {
+function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }: VideoEditorFormProps) {
   const isNew = !id
   const { categories } = useAppContext()
 
@@ -104,6 +103,7 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError, s
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
   const [videos, setVideos] = useState<VideoItem[]>([newVideoItem()])
+  const [contentStatus, setContentStatus] = useState<ContentStatus>('draft')
 
   // Speaker state
   const [speakerId, setSpeakerId] = useState(defaultSpeaker?.id || '')
@@ -146,6 +146,7 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError, s
         setCoverUrl(c.cover_url || '')
         setCategory(c.category)
         setTags(c.tags || [])
+        setContentStatus(c.status || 'published')
 
         if (c.attachments && c.attachments.length > 0) {
           setVideos(c.attachments.filter((m) => m.type === 'video').map((m) => ({
@@ -214,8 +215,7 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError, s
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (status: ContentStatus) => {
     if (!title.trim()) return
 
     setSaving(true)
@@ -235,6 +235,7 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError, s
         summary: summary.trim(),
         cover_url: coverUrl.trim(),
         type: 'video',
+        status,
         category,
         tags,
         speaker_id: speakerId || '',
@@ -245,10 +246,10 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError, s
 
       if (isNew) {
         const res = await createContent(data)
-        onSaved(res.data.id)
+        onSaved(res.data.id, status)
       } else {
         await updateContent(id!, data)
-        onSaved(id!)
+        onSaved(id!, status)
       }
     } catch {
       // Silently fail
@@ -262,7 +263,7 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError, s
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-xl p-6 space-y-5" style={{ border: '1px solid #e5e5e5' }}>
+    <form onSubmit={(e) => e.preventDefault()} className="bg-white rounded-xl p-6 space-y-5" style={{ border: '1px solid #e5e5e5' }}>
       {/* Title */}
       <div>
         <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>标题 *</label>
@@ -391,10 +392,27 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError, s
 
       {/* Actions */}
       <div className="flex items-center gap-3 pt-4" style={{ borderTop: '1px solid #e5e5e5' }}>
-        <Button type="submit" disabled={saving || !title.trim()} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
-          <Save size={16} />
-          {saving ? '保存中...' : submitLabel}
-        </Button>
+        {(isNew || contentStatus === 'draft') ? (
+          <>
+            <Button type="button" variant="outline" disabled={saving || !title.trim()} onClick={() => handleSubmit('draft')}>
+              <Save size={16} />
+              {saving ? '保存中...' : '保存草稿'}
+            </Button>
+            <Button type="button" disabled={saving || !title.trim()} onClick={() => handleSubmit('published')} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
+              {saving ? '发布中...' : '发布'}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button type="button" disabled={saving || !title.trim()} onClick={() => handleSubmit('published')} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
+              <Save size={16} />
+              {saving ? '保存中...' : '保存'}
+            </Button>
+            <Button type="button" variant="outline" disabled={saving} onClick={() => handleSubmit('draft')}>
+              转为草稿
+            </Button>
+          </>
+        )}
         <Button type="button" variant="outline" onClick={onCancel}><X size={16} />取消</Button>
       </div>
     </form>

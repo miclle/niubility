@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -42,6 +43,13 @@ func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, 
 	if args.FollowedByUserID != "" {
 		query = query.Where("author_id IN (SELECT following_id FROM follows WHERE follower_id = ?)", args.FollowedByUserID)
 	}
+	if args.Status != "" && args.Status != "all" {
+		query = query.Where("status = ?", args.Status)
+	} else if args.Status == "" {
+		// Default to published content for public listings
+		query = query.Where("status = ?", entity.ContentStatusPublished)
+	}
+	// When args.Status == "all", no filter is applied
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, fmt.Errorf("count contents: %w", err)
@@ -108,6 +116,9 @@ func (s *Service) createAttachments(tx *gorm.DB, contentID string, contentType e
 // CreateContent creates a new content record with attachments.
 func (s *Service) CreateContent(content *entity.Content, attachments []entity.CreateAttachmentArgs) error {
 	content.ID = entity.ID()
+	if content.Status == "" {
+		content.Status = entity.ContentStatusDraft
+	}
 
 	return s.DB.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(content).Error; err != nil {
@@ -152,7 +163,8 @@ func (s *Service) UpdateContent(id string, args entity.UpdateContentArgs) (*enti
 		updates["category"] = *args.Category
 	}
 	if args.Tags != nil {
-		updates["tags"] = args.Tags
+		tagsJSON, _ := json.Marshal(args.Tags)
+		updates["tags"] = string(tagsJSON)
 	}
 	if args.SpeakerID != nil {
 		updates["speaker_id"] = *args.SpeakerID
@@ -168,6 +180,9 @@ func (s *Service) UpdateContent(id string, args entity.UpdateContentArgs) (*enti
 	}
 	if args.SpeakerBio != nil {
 		updates["speaker_bio"] = *args.SpeakerBio
+	}
+	if args.Status != nil {
+		updates["status"] = *args.Status
 	}
 
 	// Determine content type for validation
@@ -259,6 +274,7 @@ func (s *Service) ImportContents(authorID string, talks []entity.LegacyTalk) (*e
 			Body:        talk.Description,
 			CoverURL:    talk.Cover,
 			Type:        entity.ContentTypeVideo,
+			Status:      entity.ContentStatusPublished,
 			Category:    category,
 			Tags:        talk.Tags,
 			SpeakerName: talk.Speaker,
