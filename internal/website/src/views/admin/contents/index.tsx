@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Plus, Pencil, Trash2, Heart, MessageSquare, Play, Image, FileText, ChevronDown } from 'lucide-react'
+import { Pencil, Trash2, Heart, MessageSquare, Play, Image, FileText } from 'lucide-react'
 import dayjs from 'dayjs'
 
 import { listContents, deleteContent } from 'src/api/content'
@@ -90,40 +89,7 @@ function AdminContents() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>内容管理</h1>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
-                <Plus size={16} />
-                新建内容
-                <ChevronDown size={14} />
-              </Button>
-            }
-          />
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>
-              <Link to="/contents/new/video" className="flex items-center gap-2 no-underline" style={{ color: 'inherit' }}>
-                <Play size={16} />
-                视频
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Link to="/contents/new/gallery" className="flex items-center gap-2 no-underline" style={{ color: 'inherit' }}>
-                <Image size={16} />
-                图文
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Link to="/contents/new/article" className="flex items-center gap-2 no-underline" style={{ color: 'inherit' }}>
-                <FileText size={16} />
-                长文
-              </Link>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>内容管理</h1>
 
       <div className="bg-white rounded-xl overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
         <table className="w-full">
