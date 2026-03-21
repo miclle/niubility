@@ -61,7 +61,7 @@ function ContentEditor() {
 
   if (contentType === 'video') {
     return (
-      <div className="max-w-3xl mx-auto p-6">
+      <div className="max-w-[840px] mx-auto p-6">
         <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>
           {isNew ? '发布视频' : '编辑视频'}
         </h1>
@@ -72,7 +72,7 @@ function ContentEditor() {
 
   if (contentType === 'gallery') {
     return (
-      <div className="max-w-3xl mx-auto p-6">
+      <div className="max-w-[840px] mx-auto p-6">
         <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>
           {isNew ? '发布图文' : '编辑图文'}
         </h1>
