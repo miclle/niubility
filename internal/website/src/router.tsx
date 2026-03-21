@@ -4,17 +4,11 @@ import MainLayout from 'src/layouts/MainLayout'
 import AdminLayout from 'src/layouts/AdminLayout'
 import SettingsLayout from 'src/layouts/SettingsLayout'
 import Home from 'src/views/home'
-import UserProfile from 'src/views/profile'
+import ProfileLayout from 'src/views/profile'
+import ProfileContents from 'src/views/profile/contents'
+import ProfileFollowing from 'src/views/profile/following'
+import ProfileFollowers from 'src/views/profile/followers'
 import ContentDetail from 'src/views/contents/detail'
-
-// DynamicSlug renders UserProfile when the slug starts with '@', otherwise Home.
-function DynamicSlug() {
-  const { slug } = useParams<{ slug: string }>()
-  if (slug?.startsWith('@')) {
-    return <UserProfile />
-  }
-  return <Home />
-}
 import ContentEditor from 'src/views/contents/editor'
 import FollowingFeed from 'src/views/following'
 import AccountSettings from 'src/views/settings/account'
@@ -37,6 +31,15 @@ import NotFound from 'src/views/errors/NotFound'
 import Forbidden from 'src/views/errors/Forbidden'
 import ServerError from 'src/views/errors/ServerError'
 
+// DynamicSlug renders ProfileLayout (with child routes) when the slug starts with '@', otherwise Home.
+function DynamicSlug() {
+  const { slug } = useParams<{ slug: string }>()
+  if (slug?.startsWith('@')) {
+    return <ProfileLayout />
+  }
+  return <Home />
+}
+
 const routes: RouteObject[] = [
   // Auth routes (no layout)
   { path: '/init', element: <Init /> },
@@ -49,7 +52,18 @@ const routes: RouteObject[] = [
     children: [
       { index: true, element: <Navigate to="/learning" replace /> },
       { path: 'following', element: <FollowingFeed /> },
-      { path: ':slug', element: <DynamicSlug /> },
+      {
+        path: ':slug',
+        element: <DynamicSlug />,
+        children: [
+          { index: true, element: <ProfileContents /> },
+          { path: 'videos', element: <ProfileContents /> },
+          { path: 'articles', element: <ProfileContents /> },
+          { path: 'speakers', element: <ProfileContents /> },
+          { path: 'following', element: <ProfileFollowing /> },
+          { path: 'followers', element: <ProfileFollowers /> },
+        ],
+      },
       { path: 'contents/new', element: <ContentEditor /> },
       { path: 'contents/:id/edit', element: <ContentEditor /> },
       { path: 'contents/:id', element: <ContentDetail /> },
