@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Outlet, NavLink, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink, Link, Navigate, useLocation } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -26,7 +26,6 @@ interface NavItem {
 function AdminLayout() {
   const { currentUser } = useAppContext()
   const location = useLocation()
-  const navigate = useNavigate()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [settingsExpanded, setSettingsExpanded] = useState(() => location.pathname.startsWith('/admin/settings'))
 
@@ -230,15 +229,15 @@ function AdminLayout() {
                 }
               />
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate('/contents/new/video')}>
+                <DropdownMenuItem render={<Link to="/contents/new/video" />}>
                   <Play size={16} />
                   视频
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/contents/new/gallery')}>
+                <DropdownMenuItem render={<Link to="/contents/new/gallery" />}>
                   <ImageIcon size={16} />
                   图文
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/contents/new/article')}>
+                <DropdownMenuItem render={<Link to="/contents/new/article" />}>
                   <FileText size={16} />
                   长文
                 </DropdownMenuItem>
@@ -265,11 +264,11 @@ function AdminLayout() {
                 {currentUser.name || currentUser.username}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate(`/@${currentUser.username}`)}>
+              <DropdownMenuItem render={<Link to={`/@${currentUser.username}`} />}>
                 <CircleUserRound size={16} />
                 个人主页
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/settings/account')}>
+              <DropdownMenuItem render={<Link to="/settings/account" />}>
                 <User size={16} />
                 个人设置
               </DropdownMenuItem>
