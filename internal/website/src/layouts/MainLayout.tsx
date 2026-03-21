@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Outlet, NavLink, useNavigate, useLocation, useParams } from 'react-router-dom'
+import { Outlet, NavLink, Link, useLocation, useParams } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { LogOut, Settings, User, Search, Menu, Home, Play, FileText, ChevronDown, Plus, ServerOff, BookOpen, GraduationCap, Heart, Star, Lightbulb, Trophy, Coffee, Briefcase, Globe, Flame, CircleUserRound, UserCheck, ImageIcon, type LucideIcon } from 'lucide-react'
@@ -27,7 +27,6 @@ const iconMap: Record<string, LucideIcon> = {
 // MainLayout provides YouTube-style layout with top nav and left sidebar.
 function MainLayout() {
   const { initialized, currentUser, categories } = useAppContext()
-  const navigate = useNavigate()
   const location = useLocation()
   const { slug } = useParams()
 
@@ -50,7 +49,6 @@ function MainLayout() {
   // Filter state managed in layout, passed to child via outlet context
   const [keyword, setKeyword] = useState('')
   const [searchValue, setSearchValue] = useState('')
-  const [typeFilter, setTypeFilter] = useState<ContentType | ''>('')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
 
@@ -83,6 +81,10 @@ function MainLayout() {
   // Derive category from URL params or path (ignore @username profile routes)
   const category: string = (slug && !slug.startsWith('@') ? slug : '') || location.pathname.split('/')[1] || (categories[0]?.slug ?? 'learning')
 
+  // Derive type filter from URL search params
+  const searchParams = new URLSearchParams(location.search)
+  const typeFilter = (searchParams.get('type') || '') as ContentType | ''
+
   const handleSearch = () => {
     setKeyword(searchValue)
   }
@@ -92,6 +94,51 @@ function MainLayout() {
       handleSearch()
     }
   }
+
+  // Build type filter path for a given content type
+  const typeFilterPath = (type: ContentType | '') => type ? `/${category}?type=${type}` : `/${category}`
+
+  // Render type filter nav items
+  const renderTypeFilterNav = () => (
+    <div className="px-3">
+      <div className="flex items-center justify-between px-3 py-1 mb-1 cursor-pointer">
+        <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>类型筛选</span>
+        <ChevronDown size={16} style={{ color: '#0f0f0f' }} />
+      </div>
+      <NavLink
+        to={typeFilterPath('')}
+        className={`flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${typeFilter === '' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'}`}
+        style={{ color: '#0f0f0f' }}
+      >
+        <FileText size={24} />
+        <span className="text-sm">全部</span>
+      </NavLink>
+      <NavLink
+        to={typeFilterPath('video')}
+        className={`flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${typeFilter === 'video' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'}`}
+        style={{ color: '#0f0f0f' }}
+      >
+        <Play size={24} />
+        <span className="text-sm">视频</span>
+      </NavLink>
+      <NavLink
+        to={typeFilterPath('gallery')}
+        className={`flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${typeFilter === 'gallery' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'}`}
+        style={{ color: '#0f0f0f' }}
+      >
+        <ImageIcon size={24} />
+        <span className="text-sm">图文</span>
+      </NavLink>
+      <NavLink
+        to={typeFilterPath('article')}
+        className={`flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${typeFilter === 'article' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'}`}
+        style={{ color: '#0f0f0f' }}
+      >
+        <FileText size={24} />
+        <span className="text-sm">长文</span>
+      </NavLink>
+    </div>
+  )
 
   // Render category nav items
   const renderCategoryNav = () => (
@@ -188,15 +235,15 @@ function MainLayout() {
                   }
                 />
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate('/contents/new/video')}>
+                  <DropdownMenuItem render={<Link to="/contents/new/video" />}>
                     <Play size={16} />
                     视频
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/contents/new/gallery')}>
+                  <DropdownMenuItem render={<Link to="/contents/new/gallery" />}>
                     <ImageIcon size={16} />
                     图文
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/contents/new/article')}>
+                  <DropdownMenuItem render={<Link to="/contents/new/article" />}>
                     <FileText size={16} />
                     长文
                   </DropdownMenuItem>
@@ -218,16 +265,16 @@ function MainLayout() {
                   {currentUser.name || currentUser.username}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate(`/@${currentUser.username}`)}>
+                <DropdownMenuItem render={<Link to={`/@${currentUser.username}`} />}>
                   <CircleUserRound size={16} />
                   个人主页
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/settings/account')}>
+                <DropdownMenuItem render={<Link to="/settings/account" />}>
                   <User size={16} />
                   个人设置
                 </DropdownMenuItem>
                 {(currentUser.role === 'admin' || currentUser.role === 'super_admin') && (
-                  <DropdownMenuItem onClick={() => navigate('/admin')}>
+                  <DropdownMenuItem render={<Link to="/admin" />}>
                     <Settings size={16} />
                     管理后台
                   </DropdownMenuItem>
@@ -300,54 +347,7 @@ function MainLayout() {
                 <div className="my-3 mx-3 h-px" style={{ background: '#e5e5e5' }} />
 
                 {/* Type filter */}
-                <div className="px-3">
-                  <div className="flex items-center justify-between px-3 py-1 mb-1 cursor-pointer">
-                    <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>
-                      类型筛选
-                    </span>
-                    <ChevronDown size={16} style={{ color: '#0f0f0f' }} />
-                  </div>
-                  <button
-                    onClick={() => setTypeFilter('')}
-                    className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                      typeFilter === '' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
-                    }`}
-                    style={{ color: '#0f0f0f' }}
-                  >
-                    <FileText size={24} />
-                    <span className="text-sm">全部</span>
-                  </button>
-                  <button
-                    onClick={() => setTypeFilter('video')}
-                    className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                      typeFilter === 'video' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
-                    }`}
-                    style={{ color: '#0f0f0f' }}
-                  >
-                    <Play size={24} />
-                    <span className="text-sm">视频</span>
-                  </button>
-                  <button
-                    onClick={() => setTypeFilter('gallery')}
-                    className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                      typeFilter === 'gallery' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
-                    }`}
-                    style={{ color: '#0f0f0f' }}
-                  >
-                    <ImageIcon size={24} />
-                    <span className="text-sm">图文</span>
-                  </button>
-                  <button
-                    onClick={() => setTypeFilter('article')}
-                    className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                      typeFilter === 'article' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
-                    }`}
-                    style={{ color: '#0f0f0f' }}
-                  >
-                    <FileText size={24} />
-                    <span className="text-sm">长文</span>
-                  </button>
-                </div>
+                {renderTypeFilterNav()}
 
                 <div className="mt-auto px-6 py-4 text-xs" style={{ color: '#909090' }}>
                   &copy; {new Date().getFullYear()} Niubility
@@ -375,54 +375,7 @@ function MainLayout() {
               <div className="my-3 mx-3 h-px" style={{ background: '#e5e5e5' }} />
 
               {/* Type filter */}
-              <div className="px-3">
-                <div className="flex items-center justify-between px-3 py-1 mb-1 cursor-pointer">
-                  <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>
-                    类型筛选
-                  </span>
-                  <ChevronDown size={16} style={{ color: '#0f0f0f' }} />
-                </div>
-                <button
-                  onClick={() => setTypeFilter('')}
-                  className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                    typeFilter === '' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
-                  }`}
-                  style={{ color: '#0f0f0f' }}
-                >
-                  <FileText size={24} />
-                  <span className="text-sm">全部</span>
-                </button>
-                <button
-                  onClick={() => setTypeFilter('video')}
-                  className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                    typeFilter === 'video' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
-                  }`}
-                  style={{ color: '#0f0f0f' }}
-                >
-                  <Play size={24} />
-                  <span className="text-sm">视频</span>
-                </button>
-                <button
-                  onClick={() => setTypeFilter('gallery')}
-                  className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                    typeFilter === 'gallery' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
-                  }`}
-                  style={{ color: '#0f0f0f' }}
-                >
-                  <ImageIcon size={24} />
-                  <span className="text-sm">图文</span>
-                </button>
-                <button
-                  onClick={() => setTypeFilter('article')}
-                  className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                    typeFilter === 'article' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
-                  }`}
-                  style={{ color: '#0f0f0f' }}
-                >
-                  <FileText size={24} />
-                  <span className="text-sm">长文</span>
-                </button>
-              </div>
+              {renderTypeFilterNav()}
 
               <div className="mt-auto px-6 py-4 text-xs" style={{ color: '#909090' }}>
                 &copy; {new Date().getFullYear()} Niubility
