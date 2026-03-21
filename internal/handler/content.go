@@ -117,7 +117,7 @@ func (ctrl *Ctrl) CreateContent(c *fox.Context, args entity.CreateContentArgs) (
 		SpeakerBio:  args.SpeakerBio,
 	}
 
-	if err := ctrl.service.CreateContent(content, args.MediaItems); err != nil {
+	if err := ctrl.service.CreateContent(content, args.Attachments); err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
 

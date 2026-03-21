@@ -115,7 +115,7 @@ export interface CreateContentArgs {
   speaker_id?: string
   speaker_name?: string
   speaker_bio?: string
-  media_items?: CreateAttachmentArgs[]
+  attachments?: CreateAttachmentArgs[]
 }
 
 // UpdateContentArgs represents the fields that can be updated for content.
@@ -131,7 +131,7 @@ export interface UpdateContentArgs {
   speaker_id?: string
   speaker_name?: string
   speaker_bio?: string
-  media_items?: CreateAttachmentArgs[]
+  attachments?: CreateAttachmentArgs[]
 }
 
 // LegacyTalk represents the data structure from the old platform.

@@ -178,7 +178,7 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
       }
 
       try {
-        const url = await uploadFile(file, 'images')
+        const url = await uploadFile(file)
         const localId = `gal_${++galleryItemCounter}`
         const newItem: GalleryItem = {
           localId,
@@ -264,7 +264,7 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
         status,
         category,
         tags,
-        media_items: mediaItems,
+        attachments: mediaItems,
       }
 
       if (isNew) {

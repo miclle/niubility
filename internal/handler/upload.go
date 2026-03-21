@@ -12,7 +12,6 @@ import (
 type PresignRequest struct {
 	Filename    string `json:"filename" binding:"required"`
 	ContentType string `json:"content_type" binding:"required"`
-	Category    string `json:"category" binding:"required"` // covers | videos | images
 }
 
 // PresignResponse represents the presigned URL response.
@@ -21,21 +20,14 @@ type PresignResponse struct {
 	Key          string `json:"key"`
 }
 
-// GetPresignedURL generates an S3 presigned PUT URL for direct file upload (authenticated users).
+// GetPresignedURL generates an S3 presigned PUT URL for attachment upload (authenticated users).
 func (ctrl *Ctrl) GetPresignedURL(c *fox.Context, req *PresignRequest) (*PresignResponse, error) {
 	user := CurrentUser(c)
 	if user == nil {
 		return nil, httperrors.ErrUnauthorized
 	}
 
-	// Validate category
-	switch req.Category {
-	case "covers", "videos", "images":
-	default:
-		return nil, httperrors.ErrInvalidArguments
-	}
-
-	result, err := ctrl.service.GetPresignedURL(req.Filename, req.ContentType, req.Category)
+	result, err := ctrl.service.GetPresignedURL(req.Filename, req.ContentType)
 	if err != nil {
 		return nil, httperrors.New(http.StatusInternalServerError, err.Error())
 	}
@@ -46,19 +38,14 @@ func (ctrl *Ctrl) GetPresignedURL(c *fox.Context, req *PresignRequest) (*Presign
 	}, nil
 }
 
-// GetProfilePresignedURL generates an S3 presigned PUT URL for avatar upload (authenticated users).
-func (ctrl *Ctrl) GetProfilePresignedURL(c *fox.Context, req *PresignRequest) (*PresignResponse, error) {
+// GetAvatarPresignedURL generates an S3 presigned PUT URL for avatar upload (authenticated users).
+func (ctrl *Ctrl) GetAvatarPresignedURL(c *fox.Context, req *PresignRequest) (*PresignResponse, error) {
 	user := CurrentUser(c)
 	if user == nil {
 		return nil, httperrors.ErrUnauthorized
 	}
 
-	// Only allow avatars category for profile uploads
-	if req.Category != "avatars" {
-		return nil, httperrors.ErrInvalidArguments
-	}
-
-	result, err := ctrl.service.GetPresignedURL(req.Filename, req.ContentType, req.Category)
+	result, err := ctrl.service.GetAvatarPresignedURL(req.Filename, req.ContentType)
 	if err != nil {
 		return nil, httperrors.New(http.StatusInternalServerError, err.Error())
 	}
@@ -69,18 +56,34 @@ func (ctrl *Ctrl) GetProfilePresignedURL(c *fox.Context, req *PresignRequest) (*
 	}, nil
 }
 
-// GetFile resolves an S3 object key to an access URL and redirects.
-// Uses public URL if configured, otherwise generates a presigned GET URL.
-func (ctrl *Ctrl) GetFile(c *fox.Context) {
-	key := c.Param("path")
-	key = strings.TrimPrefix(key, "/")
-
-	if key == "" {
+// GetAttachmentFile resolves an attachment S3 key and redirects to the access URL.
+// Route: /attachments/*path → S3 key: attachments/{path}
+func (ctrl *Ctrl) GetAttachmentFile(c *fox.Context) {
+	path := strings.TrimPrefix(c.Param("path"), "/")
+	if path == "" {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 
-	url, err := ctrl.service.GetFileURL(key)
+	url, err := ctrl.service.GetFileURL("attachments/" + path)
+	if err != nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	c.Redirect(http.StatusTemporaryRedirect, url)
+}
+
+// GetAvatarFile resolves an avatar S3 key and redirects to the access URL.
+// Route: /avatars/*path → S3 key: avatars/{path}
+func (ctrl *Ctrl) GetAvatarFile(c *fox.Context) {
+	path := strings.TrimPrefix(c.Param("path"), "/")
+	if path == "" {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	url, err := ctrl.service.GetFileURL("avatars/" + path)
 	if err != nil {
 		c.AbortWithStatus(http.StatusNotFound)
 		return

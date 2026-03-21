@@ -10,7 +10,7 @@ import { searchUsers } from 'src/api/user'
 import { useAppContext } from 'src/context/app'
 import ImageUpload from 'src/components/ImageUpload'
 import RichTextEditor from 'src/components/RichTextEditor'
-import type { ContentStatus, CreateContentArgs } from 'src/types/content'
+import type { ContentStatus, CreateContentArgs, CreateAttachmentArgs } from 'src/types/content'
 import type { SearchUserItem } from 'src/types/user'
 
 // ArticleEditorFormProps defines the configurable behavior of the article editor form.
@@ -43,6 +43,7 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
   const [speakerBio, setSpeakerBio] = useState('')
   const [speakerResults, setSpeakerResults] = useState<SearchUserItem[]>([])
   const [showSpeakerDropdown, setShowSpeakerDropdown] = useState(false)
+  const titleRef = useRef<HTMLTextAreaElement>(null)
   const speakerDropdownRef = useRef<HTMLDivElement>(null)
   const searchTimerRef = useRef<ReturnType<typeof setTimeout>>()
 
@@ -81,6 +82,14 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
           setSpeakerInput(c.speaker_name)
         }
         setSpeakerBio(c.speaker_bio || '')
+
+        // Auto-resize title textarea after content loads
+        requestAnimationFrame(() => {
+          if (titleRef.current) {
+            titleRef.current.style.height = 'auto'
+            titleRef.current.style.height = titleRef.current.scrollHeight + 'px'
+          }
+        })
       })
       .catch(() => onLoadError())
       .finally(() => setLoading(false))
@@ -116,6 +125,21 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
 
     setSaving(true)
     try {
+      // Collect images as attachments: cover image + body inline images
+      const mediaItems: CreateAttachmentArgs[] = []
+      let sortOrder = 0
+
+      if (coverUrl.trim()) {
+        mediaItems.push({ url: coverUrl.trim(), type: 'image', sort_order: sortOrder++, is_cover: true })
+      }
+
+      // Extract inline image URLs from body HTML
+      const imgRegex = /<img[^>]+src="([^"]+)"/g
+      let match
+      while ((match = imgRegex.exec(body)) !== null) {
+        mediaItems.push({ url: match[1], type: 'image', sort_order: sortOrder++ })
+      }
+
       const data: CreateContentArgs = {
         title: title.trim(),
         body,
@@ -127,6 +151,7 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
         speaker_id: speakerId || '',
         speaker_name: speakerId ? '' : speakerInput.trim(),
         speaker_bio: speakerBio.trim(),
+        attachments: mediaItems,
       }
 
       if (isNew) {
@@ -149,22 +174,24 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
 
   return (
     <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
-      {/* Title - Medium style large input */}
+      {/* Title - Medium style, auto-resize textarea */}
       <div>
-        <input
-          type="text"
+        <textarea
+          ref={titleRef}
           placeholder="输入文章标题..."
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) => { setTitle(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }}
+          onInput={(e) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px' }}
           required
-          className="w-full text-3xl font-bold border-0 outline-none placeholder:text-zinc-300 bg-transparent"
+          rows={1}
+          className="w-full text-3xl font-bold border-0 outline-none placeholder:text-zinc-300 bg-transparent resize-none overflow-hidden"
           style={{ color: '#0f0f0f', lineHeight: 1.3 }}
         />
       </div>
 
       {/* Cover Image */}
       <div>
-        <ImageUpload value={coverUrl} onChange={setCoverUrl} category="covers" />
+        <ImageUpload value={coverUrl} onChange={setCoverUrl} placeholder="拖拽或点击上传封面图片" />
       </div>
 
       {/* Body - Rich Text Editor */}

@@ -78,7 +78,6 @@ function SortableVideoItem({ item, index, onChange, onRemove }: {
         />
         <FileUpload
           accept="video/*"
-          category="videos"
           value={item.url}
           onChange={(url) => onChange(item.localId, 'url', url)}
           placeholder="拖拽视频到此处或点击选择"
@@ -242,7 +241,7 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
         speaker_id: speakerId || '',
         speaker_name: speakerId ? '' : speakerInput.trim(),
         speaker_bio: speakerBio.trim(),
-        media_items: mediaItems,
+        attachments: mediaItems,
       }
 
       if (isNew) {
@@ -300,7 +299,7 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
       {/* Cover Image */}
       <div>
         <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>封面图</label>
-        <ImageUpload value={coverUrl} onChange={setCoverUrl} category="covers" />
+        <ImageUpload value={coverUrl} onChange={setCoverUrl} />
       </div>
 
       {/* Video Playlist */}

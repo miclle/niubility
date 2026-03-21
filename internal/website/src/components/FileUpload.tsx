@@ -7,8 +7,6 @@ import { uploadFile, fileURL } from 'src/api/upload'
 export interface FileUploadProps {
   // MIME types to accept (e.g., "image/*", "video/*").
   accept: string
-  // Upload category for S3 key generation.
-  category: 'covers' | 'videos' | 'images'
   // Current file URL value.
   value: string
   // Callback when file URL changes.
@@ -20,7 +18,7 @@ export interface FileUploadProps {
 }
 
 // FileUpload is a generic file upload component with drag-and-drop and progress support.
-function FileUpload({ accept, category, value, onChange, renderPreview, placeholder = '拖拽文件到此处或点击选择' }: FileUploadProps) {
+function FileUpload({ accept, value, onChange, renderPreview, placeholder = '拖拽文件到此处或点击选择' }: FileUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [dragOver, setDragOver] = useState(false)
@@ -30,14 +28,14 @@ function FileUpload({ accept, category, value, onChange, renderPreview, placehol
     setUploading(true)
     setProgress(0)
     try {
-      const url = await uploadFile(file, category, setProgress)
+      const url = await uploadFile(file, setProgress)
       onChange(url)
     } catch (err) {
       console.error('Upload failed:', err)
     } finally {
       setUploading(false)
     }
-  }, [category, onChange])
+  }, [onChange])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

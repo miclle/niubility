@@ -91,7 +91,7 @@ type CreateContentArgs struct {
 	SpeakerID   string                `json:"speaker_id"`
 	SpeakerName string                `json:"speaker_name"`
 	SpeakerBio  string                `json:"speaker_bio"`
-	MediaItems  []CreateAttachmentArgs `json:"media_items"`
+	Attachments []CreateAttachmentArgs `json:"attachments"`
 }
 
 // UpdateContentArgs represents the fields that can be updated for content.
@@ -107,5 +107,5 @@ type UpdateContentArgs struct {
 	SpeakerID   *string               `json:"speaker_id"`
 	SpeakerName *string               `json:"speaker_name"`
 	SpeakerBio  *string               `json:"speaker_bio"`
-	MediaItems  []CreateAttachmentArgs `json:"media_items"`
+	Attachments []CreateAttachmentArgs `json:"attachments"`
 }

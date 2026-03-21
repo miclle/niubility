@@ -199,12 +199,12 @@ func (s *Service) UpdateContent(id string, args entity.UpdateContentArgs) (*enti
 		}
 
 		// Replace attachments if provided (full replacement strategy)
-		if args.MediaItems != nil {
+		if args.Attachments != nil {
 			if err := tx.Where("content_id = ?", id).Delete(&entity.Attachment{}).Error; err != nil {
 				return fmt.Errorf("delete old attachments: %w", err)
 			}
-			if len(args.MediaItems) > 0 {
-				if err := s.createAttachments(tx, id, contentType, args.MediaItems); err != nil {
+			if len(args.Attachments) > 0 {
+				if err := s.createAttachments(tx, id, contentType, args.Attachments); err != nil {
 					return err
 				}
 			}

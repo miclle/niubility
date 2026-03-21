@@ -37,6 +37,10 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	// health check
 	r.GET("/health", ctrl.Health)
 
+	// attachment access route (presigned redirect for S3 objects)
+	r.GET("/attachments/*path", ctrl.GetAttachmentFile)
+	r.GET("/avatars/*path", ctrl.GetAvatarFile)
+
 	// API routes
 	api := r.Group("/api/v1")
 	api.GET("/boot", ctrl.Boot)
@@ -50,7 +54,7 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	// user profile (authenticated users)
 	api.GET("/profile", ctrl.GetProfile)
 	api.PATCH("/profile", ctrl.UpdateProfile)
-	api.POST("/profile/upload", ctrl.GetProfilePresignedURL)
+	api.POST("/profile/upload", ctrl.GetAvatarPresignedURL)
 	api.POST("/profile/change-password", ctrl.ChangePassword)
 	api.GET("/profile/has-password", ctrl.HasPassword)
 	api.GET("/users/:username/profile", ctrl.GetUserProfile)
@@ -81,9 +85,6 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 
 	// upload routes (authenticated users)
 	api.POST("/upload/presign", ctrl.GetPresignedURL)
-
-	// asset access route (presigned redirect for private S3 objects)
-	api.GET("/assets/*path", ctrl.GetFile)
 
 	// admin routes (all require admin role)
 	admin := api.Group("/admin", ctrl.RequireAdmin)

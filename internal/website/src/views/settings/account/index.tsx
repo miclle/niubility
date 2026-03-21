@@ -8,7 +8,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 
 import { useAppContext } from 'src/context/app'
 import { getProfile, updateProfile } from 'src/api/user'
-import { uploadAvatar, fileURL } from 'src/api/upload'
+import { uploadAvatar, avatarURL as resolveAvatarURL } from 'src/api/upload'
 import type { User } from 'src/types/user'
 
 // socialFields defines the social account fields with domain prefixes and placeholders.
@@ -135,7 +135,7 @@ function AccountSettings() {
     )
   }
 
-  const avatarURL = avatar ? fileURL(avatar) : ''
+  const avatarDisplayURL = avatar ? resolveAvatarURL(avatar) : ''
 
   return (
     <div className="mx-auto py-8 px-6" style={{ maxWidth: 960 }}>
@@ -231,7 +231,7 @@ function AccountSettings() {
           <Label className="text-sm font-medium mb-3 block" style={{ color: '#606060' }}>头像</Label>
           <div className="relative group cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
             <Avatar style={{ width: 200, height: 200 }}>
-              <AvatarImage src={avatarURL} alt={name} />
+              <AvatarImage src={avatarDisplayURL} alt={name} />
               <AvatarFallback style={{ fontSize: 64 }}>{name?.charAt(0) || currentUser?.username?.charAt(0) || '?'}</AvatarFallback>
             </Avatar>
             <div

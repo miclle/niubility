@@ -400,7 +400,7 @@ func (ctrl *Ctrl) SearchUsers(c *fox.Context, args *SearchUsersArgs) (*SearchUse
 		items[i] = SearchUserItem{
 			ID:     u.ID,
 			Name:   u.Name,
-			Avatar: entity.ResolveAssetURL(u.Avatar),
+			Avatar: entity.AvatarURL(u.Avatar),
 		}
 	}
 

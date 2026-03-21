@@ -21,9 +21,20 @@ type PresignResult struct {
 	Key          string `json:"key"`
 }
 
-// GetPresignedURL generates an S3 presigned PUT URL for direct file upload.
-// The key format is: uploads/{category}/{YYYY-MM}/{uuid}.{ext}
-func (s *Service) GetPresignedURL(filename, contentType, category string) (*PresignResult, error) {
+// GetPresignedURL generates an S3 presigned PUT URL for attachment upload.
+// S3 key: attachments/{uuid}.{ext}, returned key: {uuid}.{ext}
+func (s *Service) GetPresignedURL(filename, contentType string) (*PresignResult, error) {
+	return s.presignUpload(filename, contentType, "attachments")
+}
+
+// GetAvatarPresignedURL generates an S3 presigned PUT URL for avatar upload.
+// S3 key: avatars/{uuid}.{ext}, returned key: {uuid}.{ext}
+func (s *Service) GetAvatarPresignedURL(filename, contentType string) (*PresignResult, error) {
+	return s.presignUpload(filename, contentType, "avatars")
+}
+
+// presignUpload generates an S3 presigned PUT URL under the given prefix.
+func (s *Service) presignUpload(filename, contentType, prefix string) (*PresignResult, error) {
 	cfg, err := s.GetS3Config()
 	if err != nil {
 		return nil, fmt.Errorf("get s3 config: %w", err)
@@ -33,14 +44,15 @@ func (s *Service) GetPresignedURL(filename, contentType, category string) (*Pres
 	}
 
 	ext := strings.ToLower(filepath.Ext(filename))
-	key := fmt.Sprintf("uploads/%s/%s%s", category, uuid.Must(uuid.NewV7()).String(), ext)
+	name := uuid.Must(uuid.NewV7()).String() + ext
+	s3Key := prefix + "/" + name
 
 	client := s.newS3Client(cfg)
 	presignClient := s3.NewPresignClient(client)
 
 	req, err := presignClient.PresignPutObject(context.Background(), &s3.PutObjectInput{
 		Bucket:      aws.String(cfg.Bucket),
-		Key:         aws.String(key),
+		Key:         aws.String(s3Key),
 		ContentType: aws.String(contentType),
 	}, s3.WithPresignExpires(15*time.Minute))
 	if err != nil {
@@ -49,7 +61,7 @@ func (s *Service) GetPresignedURL(filename, contentType, category string) (*Pres
 
 	return &PresignResult{
 		PresignedURL: req.URL,
-		Key:          key,
+		Key:          name,
 	}, nil
 }
 

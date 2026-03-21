@@ -6,19 +6,18 @@ export interface ImageUploadProps {
   value: string
   // Callback when image URL changes.
   onChange: (url: string) => void
-  // Upload category, defaults to "covers".
-  category?: 'covers' | 'images'
+  // Placeholder text shown in the upload area.
+  placeholder?: string
 }
 
 // ImageUpload is an image-specific upload component with preview display.
-function ImageUpload({ value, onChange, category = 'covers' }: ImageUploadProps) {
+function ImageUpload({ value, onChange, placeholder = '拖拽图片到此处或点击选择' }: ImageUploadProps) {
   return (
     <FileUpload
       accept="image/*"
-      category={category}
       value={value}
       onChange={onChange}
-      placeholder="拖拽图片到此处或点击选择"
+      placeholder={placeholder}
       renderPreview={(url) => (
         <img src={url} alt="preview" className="max-h-48 rounded object-contain mx-auto" />
       )}
