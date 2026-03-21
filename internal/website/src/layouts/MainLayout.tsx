@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation, useParams } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { LogOut, Settings, User, Search, Menu, Home, Play, FileText, ChevronDown, Plus, ServerOff, BookOpen, GraduationCap, Heart, Star, Lightbulb, Trophy, Coffee, Briefcase, Globe, Flame, CircleUserRound, UserCheck, type LucideIcon } from 'lucide-react'
+import { LogOut, Settings, User, Search, Menu, Home, Play, FileText, ChevronDown, Plus, ServerOff, BookOpen, GraduationCap, Heart, Star, Lightbulb, Trophy, Coffee, Briefcase, Globe, Flame, CircleUserRound, UserCheck, ImageIcon, type LucideIcon } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
 import type { ContentType } from 'src/types/content'
@@ -57,10 +57,11 @@ function MainLayout() {
   // Remember user's manual sidebar state before auto-hide on detail page
   const userSidebarStateRef = useRef(false)
 
-  // Detect if on detail page or settings page (sidebar should be hidden)
+  // Detect if on detail page, editor page, or settings page (sidebar should be hidden)
   const isDetailPage = /^\/contents\/[^/]+$/.test(location.pathname)
+  const isEditorPage = /^\/contents\/(new\/|[^/]+\/edit)/.test(location.pathname)
   const isSettingsPage = location.pathname.startsWith('/settings')
-  const shouldHideSidebar = isDetailPage || isSettingsPage
+  const shouldHideSidebar = isDetailPage || isEditorPage || isSettingsPage
 
   // Auto-hide sidebar on detail/settings page, restore user's state on other pages
   useEffect(() => {
@@ -174,17 +175,33 @@ function MainLayout() {
         <div className="flex items-center gap-2">
           {currentUser ? (
             <>
-              <NavLink
-                to="/contents/new"
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium no-underline transition-colors"
-                style={{
-                  background: '#0f0f0f',
-                  color: '#ffffff',
-                }}
-              >
-                <Plus size={16} />
-                创建
-              </NavLink>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <button
+                      className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-colors cursor-pointer border-0"
+                      style={{ background: '#0f0f0f', color: '#ffffff' }}
+                    >
+                      <Plus size={16} />
+                      创建
+                    </button>
+                  }
+                />
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => navigate('/contents/new/video')}>
+                    <Play size={16} />
+                    视频
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/contents/new/gallery')}>
+                    <ImageIcon size={16} />
+                    图文
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/contents/new/article')}>
+                    <FileText size={16} />
+                    长文
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <DropdownMenu>
               <DropdownMenuTrigger
                 render={
@@ -301,16 +318,6 @@ function MainLayout() {
                     <span className="text-sm">全部</span>
                   </button>
                   <button
-                    onClick={() => setTypeFilter('article')}
-                    className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                      typeFilter === 'article' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
-                    }`}
-                    style={{ color: '#0f0f0f' }}
-                  >
-                    <FileText size={24} />
-                    <span className="text-sm">图文</span>
-                  </button>
-                  <button
                     onClick={() => setTypeFilter('video')}
                     className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
                       typeFilter === 'video' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
@@ -319,6 +326,26 @@ function MainLayout() {
                   >
                     <Play size={24} />
                     <span className="text-sm">视频</span>
+                  </button>
+                  <button
+                    onClick={() => setTypeFilter('gallery')}
+                    className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+                      typeFilter === 'gallery' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+                    }`}
+                    style={{ color: '#0f0f0f' }}
+                  >
+                    <ImageIcon size={24} />
+                    <span className="text-sm">图文</span>
+                  </button>
+                  <button
+                    onClick={() => setTypeFilter('article')}
+                    className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+                      typeFilter === 'article' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+                    }`}
+                    style={{ color: '#0f0f0f' }}
+                  >
+                    <FileText size={24} />
+                    <span className="text-sm">长文</span>
                   </button>
                 </div>
               </nav>
@@ -362,16 +389,6 @@ function MainLayout() {
                   <span className="text-sm">全部</span>
                 </button>
                 <button
-                  onClick={() => setTypeFilter('article')}
-                  className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                    typeFilter === 'article' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
-                  }`}
-                  style={{ color: '#0f0f0f' }}
-                >
-                  <FileText size={24} />
-                  <span className="text-sm">图文</span>
-                </button>
-                <button
                   onClick={() => setTypeFilter('video')}
                   className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
                     typeFilter === 'video' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
@@ -380,6 +397,26 @@ function MainLayout() {
                 >
                   <Play size={24} />
                   <span className="text-sm">视频</span>
+                </button>
+                <button
+                  onClick={() => setTypeFilter('gallery')}
+                  className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+                    typeFilter === 'gallery' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+                  }`}
+                  style={{ color: '#0f0f0f' }}
+                >
+                  <ImageIcon size={24} />
+                  <span className="text-sm">图文</span>
+                </button>
+                <button
+                  onClick={() => setTypeFilter('article')}
+                  className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+                    typeFilter === 'article' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+                  }`}
+                  style={{ color: '#0f0f0f' }}
+                >
+                  <FileText size={24} />
+                  <span className="text-sm">长文</span>
                 </button>
               </div>
             </nav>

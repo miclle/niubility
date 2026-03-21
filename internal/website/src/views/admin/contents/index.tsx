@@ -3,22 +3,28 @@ import { Link } from 'react-router-dom'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
-import { Plus, Pencil, Trash2, Heart, MessageSquare } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Plus, Pencil, Trash2, Heart, MessageSquare, Play, Image, FileText, ChevronDown } from 'lucide-react'
 import dayjs from 'dayjs'
 
 import { listContents, deleteContent } from 'src/api/content'
 import { useAppContext } from 'src/context/app'
-import type { Content } from 'src/types/content'
+import type { Content, ContentType } from 'src/types/content'
 
-const typeLabels = { article: '图文', video: '视频' } as const
+const typeLabels: Record<string, string> = { video: '视频', gallery: '图文', article: '长文' }
+const typeIcons: Record<string, React.ReactNode> = {
+  video: <Play size={12} />,
+  gallery: <Image size={12} />,
+  article: <FileText size={12} />,
+}
 const limit = 20
 
 // Table cell styles
 const thStyle: React.CSSProperties = { padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap' }
 const tdStyle: React.CSSProperties = { padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }
-const columnCount = 8
+const columnCount = 7
 
-// AdminContents displays the admin content management page with YouTube-style design.
+// AdminContents displays the admin content management page.
 function AdminContents() {
   const { categories } = useAppContext()
   const categoryLabels = Object.fromEntries(categories.map((c) => [c.slug, c.name]))
@@ -44,26 +50,17 @@ function AdminContents() {
     }
   }, [])
 
-  // Initial load
-  useEffect(() => {
-    fetchContents(1, false)
-  }, [fetchContents])
+  useEffect(() => { fetchContents(1, false) }, [fetchContents])
 
-  // Load more when page changes (page > 1)
   useEffect(() => {
     if (page > 1) fetchContents(page, true)
   }, [page, fetchContents])
 
-  // IntersectionObserver for infinite scroll
   useEffect(() => {
     const el = loaderRef.current
     if (!el) return
     const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !loading && hasMore) {
-          setPage((p) => p + 1)
-        }
-      },
+      (entries) => { if (entries[0].isIntersecting && !loading && hasMore) setPage((p) => p + 1) },
       { threshold: 0.1 },
     )
     observer.observe(el)
@@ -73,7 +70,6 @@ function AdminContents() {
   const handleDelete = async (id: string) => {
     try {
       await deleteContent(id)
-      // Reset and reload from page 1
       setPage(1)
       fetchContents(1, false)
     } catch {
@@ -81,22 +77,52 @@ function AdminContents() {
     }
   }
 
+  // getContentCover returns the best cover URL for a content item.
+  const getContentCover = (content: Content): string => {
+    if (content.cover_url) return content.cover_url
+    const items = content.attachments || []
+    const coverItem = items.find((m) => m.is_cover)
+    if (coverItem) return coverItem.url
+    const first = items[0]
+    if (first) return first.url
+    return ''
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>内容管理</h1>
-        <Link to="/admin/contents/new">
-          <Button
-            style={{
-              background: '#0f0f0f',
-              color: '#ffffff',
-              borderRadius: '18px',
-            }}
-          >
-            <Plus size={16} />
-            新建内容
-          </Button>
-        </Link>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
+                <Plus size={16} />
+                新建内容
+                <ChevronDown size={14} />
+              </Button>
+            }
+          />
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem>
+              <Link to="/admin/contents/new/video" className="flex items-center gap-2 no-underline" style={{ color: 'inherit' }}>
+                <Play size={16} />
+                视频
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Link to="/admin/contents/new/gallery" className="flex items-center gap-2 no-underline" style={{ color: 'inherit' }}>
+                <Image size={16} />
+                图文
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Link to="/admin/contents/new/article" className="flex items-center gap-2 no-underline" style={{ color: 'inherit' }}>
+                <FileText size={16} />
+                长文
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="bg-white rounded-xl overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
@@ -120,87 +146,87 @@ function AdminContents() {
                 </td>
               </tr>
             ) : (
-              contents.map((content) => (
-                <tr key={content.id} style={{ borderTop: '1px solid #e5e5e5' }}>
-                  <td style={{ padding: '12px 16px' }}>
-                    <Link to={`/contents/${content.id}`} target="_blank" className="flex items-center gap-3 hover:underline" style={{ color: '#0f0f0f' }}>
-                      <div className="w-[72px] h-[40px] rounded overflow-hidden flex-shrink-0" style={{ background: '#f2f2f2' }}>
-                        {content.cover_url ? (
-                          <img src={content.cover_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-xs" style={{ color: '#909090' }}>无封面</div>
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="font-medium line-clamp-1">{content.title}</div>
-                        {content.summary && <div className="text-xs line-clamp-1" style={{ color: '#909090' }}>{content.summary}</div>}
-                      </div>
-                    </Link>
-                  </td>
-                  <td style={tdStyle}>
-                    <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#f2f2f2', color: '#606060' }}>
-                      {typeLabels[content.type]}
-                    </span>
-                  </td>
-                  <td style={tdStyle}>
-                    <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#f2f2f2', color: '#606060' }}>
-                      {categoryLabels[content.category] || content.category}
-                    </span>
-                  </td>
-                  <td style={tdStyle}>
-                    <div className="flex items-center gap-2">
-                      <Avatar className="w-6 h-6">
-                        <AvatarImage src={content.author?.avatar || ''} alt={content.author?.name || ''} />
-                        <AvatarFallback className="text-xs">{content.author?.name?.charAt(0) || '-'}</AvatarFallback>
-                      </Avatar>
-                      {content.author?.name || '-'}
-                    </div>
-                  </td>
-                  <td style={tdStyle}>
-                    <div className="flex items-center gap-3">
-                      <span className="flex items-center gap-1 text-xs"><Heart size={12} />{content.like_count}</span>
-                      <span className="flex items-center gap-1 text-xs"><MessageSquare size={12} />{content.comment_count}</span>
-                    </div>
-                  </td>
-                  <td style={tdStyle}>{dayjs(content.created_at).format('YYYY-MM-DD')}</td>
-                  <td style={tdStyle}>
-                    <div className="flex gap-2">
-                      <Link to={`/admin/contents/${content.id}`}>
-                        <Button variant="ghost" style={{ color: '#606060' }}>
-                          <Pencil size={14} />
-                        </Button>
+              contents.map((content) => {
+                const coverUrl = getContentCover(content)
+                return (
+                  <tr key={content.id} style={{ borderTop: '1px solid #e5e5e5' }}>
+                    <td style={{ padding: '12px 16px' }}>
+                      <Link to={`/contents/${content.id}`} target="_blank" className="flex items-center gap-3 hover:underline" style={{ color: '#0f0f0f' }}>
+                        <div className="w-[72px] h-[40px] rounded overflow-hidden flex-shrink-0" style={{ background: '#f2f2f2' }}>
+                          {coverUrl ? (
+                            <img src={coverUrl} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-xs" style={{ color: '#909090' }}>无封面</div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-medium line-clamp-1">{content.title}</div>
+                          {content.summary && <div className="text-xs line-clamp-1" style={{ color: '#909090' }}>{content.summary}</div>}
+                        </div>
                       </Link>
-                      <AlertDialog>
-                        <AlertDialogTrigger render={
-                          <Button variant="ghost" style={{ color: '#cc0000' }}>
-                            <Trash2 size={14} />
+                    </td>
+                    <td style={tdStyle}>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs" style={{ background: '#f2f2f2', color: '#606060' }}>
+                        {typeIcons[content.type]}
+                        {typeLabels[content.type] || content.type}
+                      </span>
+                    </td>
+                    <td style={tdStyle}>
+                      <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#f2f2f2', color: '#606060' }}>
+                        {categoryLabels[content.category] || content.category}
+                      </span>
+                    </td>
+                    <td style={tdStyle}>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="w-6 h-6">
+                          <AvatarImage src={content.author?.avatar || ''} alt={content.author?.name || ''} />
+                          <AvatarFallback className="text-xs">{content.author?.name?.charAt(0) || '-'}</AvatarFallback>
+                        </Avatar>
+                        {content.author?.name || '-'}
+                      </div>
+                    </td>
+                    <td style={tdStyle}>
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center gap-1 text-xs"><Heart size={12} />{content.like_count}</span>
+                        <span className="flex items-center gap-1 text-xs"><MessageSquare size={12} />{content.comment_count}</span>
+                      </div>
+                    </td>
+                    <td style={tdStyle}>{dayjs(content.created_at).format('YYYY-MM-DD')}</td>
+                    <td style={tdStyle}>
+                      <div className="flex gap-2">
+                        <Link to={`/admin/contents/${content.id}`}>
+                          <Button variant="ghost" style={{ color: '#606060' }}>
+                            <Pencil size={14} />
                           </Button>
-                        } />
-                        <AlertDialogContent>
-                          <AlertDialogTitle>确认删除</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            确定要删除「{content.title}」吗？此操作不可撤销。
-                          </AlertDialogDescription>
-                          <div className="flex justify-end gap-3 mt-4">
-                            <AlertDialogCancel>
-                              <Button variant="outline" style={{ borderRadius: '18px' }}>取消</Button>
-                            </AlertDialogCancel>
-                            <AlertDialogAction>
-                              <Button
-                                variant="destructive"
-                                onClick={() => handleDelete(content.id)}
-                                style={{ borderRadius: '18px' }}
-                              >
-                                确认删除
-                              </Button>
-                            </AlertDialogAction>
-                          </div>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </td>
-                </tr>
-              ))
+                        </Link>
+                        <AlertDialog>
+                          <AlertDialogTrigger render={
+                            <Button variant="ghost" style={{ color: '#cc0000' }}>
+                              <Trash2 size={14} />
+                            </Button>
+                          } />
+                          <AlertDialogContent>
+                            <AlertDialogTitle>确认删除</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              确定要删除「{content.title}」吗？此操作不可撤销。
+                            </AlertDialogDescription>
+                            <div className="flex justify-end gap-3 mt-4">
+                              <AlertDialogCancel>
+                                <Button variant="outline" style={{ borderRadius: '18px' }}>取消</Button>
+                              </AlertDialogCancel>
+                              <AlertDialogAction>
+                                <Button variant="destructive" onClick={() => handleDelete(content.id)} style={{ borderRadius: '18px' }}>
+                                  确认删除
+                                </Button>
+                              </AlertDialogAction>
+                            </div>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })
             )}
           </tbody>
         </table>

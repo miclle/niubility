@@ -31,12 +31,14 @@ func (c *Content) ResolveAssetURLs() {
 		return
 	}
 	c.CoverURL = ResolveAssetURL(c.CoverURL)
-	c.VideoURL = ResolveAssetURL(c.VideoURL)
 	if c.Author != nil {
 		c.Author.ResolveAssetURLs()
 	}
 	if c.Speaker != nil {
 		c.Speaker.ResolveAssetURLs()
+	}
+	for i := range c.Attachments {
+		c.Attachments[i].URL = ResolveAssetURL(c.Attachments[i].URL)
 	}
 }
 

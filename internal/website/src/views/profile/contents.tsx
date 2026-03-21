@@ -6,7 +6,7 @@ import ContentCard from 'src/components/ContentCard'
 import type { Content, ContentType, ListContentsArgs } from 'src/types/content'
 import type { ProfileContext } from './index'
 
-type ContentTab = 'all' | 'video' | 'article' | 'speaker'
+type ContentTab = 'all' | 'video' | 'gallery' | 'article' | 'speaker'
 
 // tabFromPath derives the content tab from the current URL pathname suffix.
 function tabFromPath(pathname: string): ContentTab {

@@ -10,6 +10,9 @@ import (
 	"github.com/miclle/niubility/internal/entity"
 )
 
+// GalleryVideoMaxFileSize is the maximum file size for short videos in gallery content (20 MB).
+const GalleryVideoMaxFileSize int64 = 20 * 1024 * 1024
+
 // ListContents retrieves a paginated list of contents with optional filters.
 func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, int64, error) {
 	var contents []entity.Content
@@ -50,17 +53,21 @@ func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, 
 		orderClause = "like_count DESC"
 	}
 
-	if err := query.Preload("Author").Preload("Speaker").Offset(args.Offset()).Limit(args.GetLimit()).Order(orderClause).Find(&contents).Error; err != nil {
+	if err := query.Preload("Author").Preload("Speaker").Preload("Attachments", func(db *gorm.DB) *gorm.DB {
+		return db.Order("sort_order ASC")
+	}).Offset(args.Offset()).Limit(args.GetLimit()).Order(orderClause).Find(&contents).Error; err != nil {
 		return nil, 0, fmt.Errorf("list contents: %w", err)
 	}
 
 	return contents, total, nil
 }
 
-// GetContentByID retrieves a content by ID with author preloaded.
+// GetContentByID retrieves a content by ID with author and attachments preloaded.
 func (s *Service) GetContentByID(id string) (*entity.Content, error) {
 	var content entity.Content
-	if err := s.DB.Preload("Author").Preload("Speaker").Where("id = ?", id).First(&content).Error; err != nil {
+	if err := s.DB.Preload("Author").Preload("Speaker").Preload("Attachments", func(db *gorm.DB) *gorm.DB {
+		return db.Order("sort_order ASC")
+	}).Where("id = ?", id).First(&content).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
@@ -69,16 +76,53 @@ func (s *Service) GetContentByID(id string) (*entity.Content, error) {
 	return &content, nil
 }
 
-// CreateContent creates a new content record.
-func (s *Service) CreateContent(content *entity.Content) error {
-	content.ID = entity.ID()
-	if err := s.DB.Create(content).Error; err != nil {
-		return fmt.Errorf("create content: %w", err)
+// createAttachments creates attachments for a content, validating gallery constraints.
+func (s *Service) createAttachments(tx *gorm.DB, contentID string, contentType entity.ContentType, items []entity.CreateAttachmentArgs) error {
+	for i, item := range items {
+		// Validate gallery short video constraints
+		if contentType == entity.ContentTypeGallery && item.Type == entity.AttachmentTypeVideo {
+			if item.FileSize > GalleryVideoMaxFileSize {
+				return fmt.Errorf("gallery video #%d exceeds 20MB limit", i+1)
+			}
+		}
+
+		attachment := entity.Attachment{
+			ID:          entity.ID(),
+			ContentID:   contentID,
+			Title:       item.Title,
+			Description: item.Description,
+			URL:         item.URL,
+			Type:        item.Type,
+			SortOrder:   item.SortOrder,
+			IsCover:     item.IsCover,
+			FileSize:    item.FileSize,
+			Duration:    item.Duration,
+		}
+		if err := tx.Create(&attachment).Error; err != nil {
+			return fmt.Errorf("create attachment: %w", err)
+		}
 	}
 	return nil
 }
 
-// UpdateContent updates content fields by ID.
+// CreateContent creates a new content record with attachments.
+func (s *Service) CreateContent(content *entity.Content, attachments []entity.CreateAttachmentArgs) error {
+	content.ID = entity.ID()
+
+	return s.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(content).Error; err != nil {
+			return fmt.Errorf("create content: %w", err)
+		}
+		if len(attachments) > 0 {
+			if err := s.createAttachments(tx, content.ID, content.Type, attachments); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// UpdateContent updates content fields by ID, replacing attachments.
 func (s *Service) UpdateContent(id string, args entity.UpdateContentArgs) (*entity.Content, error) {
 	content, err := s.GetContentByID(id)
 	if err != nil {
@@ -101,9 +145,6 @@ func (s *Service) UpdateContent(id string, args entity.UpdateContentArgs) (*enti
 	if args.CoverURL != nil {
 		updates["cover_url"] = *args.CoverURL
 	}
-	if args.VideoURL != nil {
-		updates["video_url"] = *args.VideoURL
-	}
 	if args.Type != nil {
 		updates["type"] = *args.Type
 	}
@@ -115,14 +156,12 @@ func (s *Service) UpdateContent(id string, args entity.UpdateContentArgs) (*enti
 	}
 	if args.SpeakerID != nil {
 		updates["speaker_id"] = *args.SpeakerID
-		// When setting a speaker from employees, clear manual speaker name
 		if *args.SpeakerID != "" {
 			updates["speaker_name"] = ""
 		}
 	}
 	if args.SpeakerName != nil {
 		updates["speaker_name"] = *args.SpeakerName
-		// When setting manual speaker, clear employee speaker
 		if *args.SpeakerName != "" {
 			updates["speaker_id"] = ""
 		}
@@ -131,26 +170,51 @@ func (s *Service) UpdateContent(id string, args entity.UpdateContentArgs) (*enti
 		updates["speaker_bio"] = *args.SpeakerBio
 	}
 
-	if len(updates) > 0 {
-		if err := s.DB.Model(content).Updates(updates).Error; err != nil {
-			return nil, fmt.Errorf("update content: %w", err)
-		}
+	// Determine content type for validation
+	contentType := content.Type
+	if args.Type != nil {
+		contentType = *args.Type
 	}
 
-	// reload with author
+	err = s.DB.Transaction(func(tx *gorm.DB) error {
+		if len(updates) > 0 {
+			if err := tx.Model(content).Updates(updates).Error; err != nil {
+				return fmt.Errorf("update content: %w", err)
+			}
+		}
+
+		// Replace attachments if provided (full replacement strategy)
+		if args.MediaItems != nil {
+			if err := tx.Where("content_id = ?", id).Delete(&entity.Attachment{}).Error; err != nil {
+				return fmt.Errorf("delete old attachments: %w", err)
+			}
+			if len(args.MediaItems) > 0 {
+				if err := s.createAttachments(tx, id, contentType, args.MediaItems); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return s.GetContentByID(id)
 }
 
-// DeleteContent deletes a content by ID.
+// DeleteContent deletes a content and its attachments by ID.
 func (s *Service) DeleteContent(id string) error {
-	result := s.DB.Where("id = ?", id).Delete(&entity.Content{})
-	if result.Error != nil {
-		return fmt.Errorf("delete content: %w", result.Error)
-	}
-	if result.RowsAffected == 0 {
+	return s.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("content_id = ?", id).Delete(&entity.Attachment{}).Error; err != nil {
+			return fmt.Errorf("delete attachments: %w", err)
+		}
+		result := tx.Where("id = ?", id).Delete(&entity.Content{})
+		if result.Error != nil {
+			return fmt.Errorf("delete content: %w", result.Error)
+		}
 		return nil
-	}
-	return nil
+	})
 }
 
 // ImportContents imports contents from the legacy platform.
@@ -161,13 +225,11 @@ func (s *Service) ImportContents(authorID string, talks []entity.LegacyTalk) (*e
 	}
 
 	for _, talk := range talks {
-		// Skip if title is empty
 		if talk.Title == "" {
 			result.Skipped++
 			continue
 		}
 
-		// Check if content with this title already exists
 		var existing entity.Content
 		if err := s.DB.Where("title = ?", talk.Title).First(&existing).Error; err == nil {
 			result.Skipped++
@@ -177,7 +239,6 @@ func (s *Service) ImportContents(authorID string, talks []entity.LegacyTalk) (*e
 			continue
 		}
 
-		// Determine category from talk.Type: "sharing" → learning, "training" → culture
 		var category string
 		if talk.Type == "sharing" {
 			category = "learning"
@@ -185,7 +246,6 @@ func (s *Service) ImportContents(authorID string, talks []entity.LegacyTalk) (*e
 			category = "culture"
 		}
 
-		// Parse created_at time
 		createdAt := time.Now()
 		if !talk.CreatedAt.IsZero() {
 			createdAt = talk.CreatedAt
@@ -198,7 +258,6 @@ func (s *Service) ImportContents(authorID string, talks []entity.LegacyTalk) (*e
 			Summary:     talk.Description,
 			Body:        talk.Description,
 			CoverURL:    talk.Cover,
-			VideoURL:    talk.Playback,
 			Type:        entity.ContentTypeVideo,
 			Category:    category,
 			Tags:        talk.Tags,
@@ -208,7 +267,17 @@ func (s *Service) ImportContents(authorID string, talks []entity.LegacyTalk) (*e
 			UpdatedAt:   createdAt,
 		}
 
-		if err := s.DB.Create(content).Error; err != nil {
+		// Create attachment for the video playback URL
+		var attachments []entity.CreateAttachmentArgs
+		if talk.Playback != "" {
+			attachments = append(attachments, entity.CreateAttachmentArgs{
+				URL:       talk.Playback,
+				Type:      entity.AttachmentTypeVideo,
+				SortOrder: 0,
+			})
+		}
+
+		if err := s.CreateContent(content, attachments); err != nil {
 			result.Errors = append(result.Errors, fmt.Sprintf("create %s: %v", talk.ID, err))
 			continue
 		}

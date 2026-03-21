@@ -97,7 +97,6 @@ func (ctrl *Ctrl) CreateContent(c *fox.Context, args entity.CreateContentArgs) (
 		Summary:     args.Summary,
 		Body:        args.Body,
 		CoverURL:    args.CoverURL,
-		VideoURL:    args.VideoURL,
 		Type:        args.Type,
 		Category:    args.Category,
 		Tags:        args.Tags,
@@ -106,11 +105,10 @@ func (ctrl *Ctrl) CreateContent(c *fox.Context, args entity.CreateContentArgs) (
 		SpeakerBio:  args.SpeakerBio,
 	}
 
-	if err := ctrl.service.CreateContent(content); err != nil {
+	if err := ctrl.service.CreateContent(content, args.MediaItems); err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
 
-	// reload with author
 	created, err := ctrl.service.GetContentByID(content.ID)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError

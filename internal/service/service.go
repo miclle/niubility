@@ -35,8 +35,15 @@ func New(dsn string) (*Service, error) {
 		return nil, fmt.Errorf("connect to database: %w", err)
 	}
 
-	if err := db.AutoMigrate(&entity.User{}, &entity.Content{}, &entity.Setting{}, &entity.Department{}, &entity.Comment{}, &entity.Like{}, &entity.Category{}, &entity.Follow{}); err != nil {
+	if err := db.AutoMigrate(&entity.User{}, &entity.Content{}, &entity.Attachment{}, &entity.Setting{}, &entity.Department{}, &entity.Comment{}, &entity.Like{}, &entity.Category{}, &entity.Follow{}); err != nil {
 		return nil, fmt.Errorf("auto migrate: %w", err)
+	}
+
+	// Drop legacy video_url column from contents table if it exists
+	if db.Migrator().HasColumn(&entity.Content{}, "video_url") {
+		if err := db.Migrator().DropColumn(&entity.Content{}, "video_url"); err != nil {
+			return nil, fmt.Errorf("drop video_url column: %w", err)
+		}
 	}
 
 	svc := &Service{DB: db}

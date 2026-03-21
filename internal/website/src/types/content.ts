@@ -1,7 +1,7 @@
 import type { User, Pagination } from './user'
 
 // ContentType represents the type of content.
-export type ContentType = 'article' | 'video'
+export type ContentType = 'video' | 'gallery' | 'article'
 
 // ContentCategory represents the category of content (dynamic, stored as slug string).
 export type ContentCategory = string
@@ -22,6 +22,37 @@ export interface Category {
 // SortField represents the field to sort by.
 export type SortField = 'created_at' | 'like_count'
 
+// AttachmentType represents the type of an attachment.
+export type AttachmentType = 'video' | 'image'
+
+// Attachment represents a file (video, image, etc.) attached to a content.
+export interface Attachment {
+  id: string
+  content_id: string
+  title: string
+  description: string
+  url: string
+  type: AttachmentType
+  sort_order: number
+  is_cover: boolean
+  file_size: number
+  duration: number
+  created_at: string
+  updated_at: string
+}
+
+// CreateAttachmentArgs represents the fields required to create an attachment.
+export interface CreateAttachmentArgs {
+  title?: string
+  description?: string
+  url: string
+  type: AttachmentType
+  sort_order: number
+  is_cover?: boolean
+  file_size?: number
+  duration?: number
+}
+
 // Content represents a piece of content in the system.
 export interface Content {
   id: string
@@ -30,7 +61,6 @@ export interface Content {
   summary: string
   body: string
   cover_url: string
-  video_url: string
   type: ContentType
   category: ContentCategory
   tags: string[]
@@ -43,6 +73,7 @@ export interface Content {
   updated_at: string
   author?: User
   speaker?: User
+  attachments?: Attachment[]
   liked?: boolean
 }
 
@@ -72,13 +103,13 @@ export interface CreateContentArgs {
   summary?: string
   body?: string
   cover_url?: string
-  video_url?: string
   type: ContentType
   category: ContentCategory
   tags?: string[]
   speaker_id?: string
   speaker_name?: string
   speaker_bio?: string
+  media_items?: CreateAttachmentArgs[]
 }
 
 // UpdateContentArgs represents the fields that can be updated for content.
@@ -87,13 +118,13 @@ export interface UpdateContentArgs {
   summary?: string
   body?: string
   cover_url?: string
-  video_url?: string
   type?: ContentType
   category?: ContentCategory
   tags?: string[]
   speaker_id?: string
   speaker_name?: string
   speaker_bio?: string
+  media_items?: CreateAttachmentArgs[]
 }
 
 // LegacyTalk represents the data structure from the old platform.

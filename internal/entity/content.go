@@ -6,10 +6,12 @@ import "time"
 type ContentType string
 
 const (
-	// ContentTypeArticle indicates an article (text + images).
-	ContentTypeArticle ContentType = "article"
-	// ContentTypeVideo indicates a video content.
+	// ContentTypeVideo indicates video content with a playlist.
 	ContentTypeVideo ContentType = "video"
+	// ContentTypeGallery indicates image/short-video gallery content.
+	ContentTypeGallery ContentType = "gallery"
+	// ContentTypeArticle indicates a long-form article.
+	ContentTypeArticle ContentType = "article"
 )
 
 // Content represents a piece of content in the system.
@@ -20,7 +22,6 @@ type Content struct {
 	Summary      string      `json:"summary"       gorm:"column:summary"`
 	Body         string      `json:"body"          gorm:"column:body;type:text"`
 	CoverURL     string      `json:"cover_url"     gorm:"column:cover_url"`
-	VideoURL     string      `json:"video_url"     gorm:"column:video_url"`
 	Type         ContentType `json:"type"          gorm:"column:type"`
 	Category     string      `json:"category"      gorm:"column:category;index:idx_contents_category"`
 	Tags         []string    `json:"tags"          gorm:"column:tags;serializer:json"`
@@ -32,8 +33,9 @@ type Content struct {
 	CreatedAt    time.Time   `json:"created_at"`
 	UpdatedAt    time.Time   `json:"updated_at"`
 
-	Author  *User `json:"author,omitempty"  gorm:"foreignKey:AuthorID"`
-	Speaker *User `json:"speaker,omitempty" gorm:"foreignKey:SpeakerID"`
+	Author      *User        `json:"author,omitempty"      gorm:"foreignKey:AuthorID"`
+	Speaker     *User        `json:"speaker,omitempty"     gorm:"foreignKey:SpeakerID"`
+	Attachments []Attachment `json:"attachments,omitempty" gorm:"foreignKey:ContentID"`
 }
 
 // TableName specifies the database table name for Content.
@@ -66,30 +68,30 @@ type ListContentsArgs struct {
 
 // CreateContentArgs represents the fields required to create content.
 type CreateContentArgs struct {
-	Title       string      `json:"title"        binding:"required"`
-	Summary     string      `json:"summary"`
-	Body        string      `json:"body"`
-	CoverURL    string      `json:"cover_url"`
-	VideoURL    string      `json:"video_url"`
-	Type        ContentType `json:"type"         binding:"required"`
-	Category    string      `json:"category"     binding:"required"`
-	Tags        []string    `json:"tags"`
-	SpeakerID   string      `json:"speaker_id"`
-	SpeakerName string      `json:"speaker_name"`
-	SpeakerBio  string      `json:"speaker_bio"`
+	Title       string                `json:"title"        binding:"required"`
+	Summary     string                `json:"summary"`
+	Body        string                `json:"body"`
+	CoverURL    string                `json:"cover_url"`
+	Type        ContentType           `json:"type"         binding:"required"`
+	Category    string                `json:"category"     binding:"required"`
+	Tags        []string              `json:"tags"`
+	SpeakerID   string                `json:"speaker_id"`
+	SpeakerName string                `json:"speaker_name"`
+	SpeakerBio  string                `json:"speaker_bio"`
+	MediaItems  []CreateAttachmentArgs `json:"media_items"`
 }
 
 // UpdateContentArgs represents the fields that can be updated for content.
 type UpdateContentArgs struct {
-	Title       *string      `json:"title"`
-	Summary     *string      `json:"summary"`
-	Body        *string      `json:"body"`
-	CoverURL    *string      `json:"cover_url"`
-	VideoURL    *string      `json:"video_url"`
-	Type        *ContentType `json:"type"`
-	Category    *string      `json:"category"`
-	Tags        []string     `json:"tags"`
-	SpeakerID   *string      `json:"speaker_id"`
-	SpeakerName *string      `json:"speaker_name"`
-	SpeakerBio  *string      `json:"speaker_bio"`
+	Title       *string               `json:"title"`
+	Summary     *string               `json:"summary"`
+	Body        *string               `json:"body"`
+	CoverURL    *string               `json:"cover_url"`
+	Type        *ContentType          `json:"type"`
+	Category    *string               `json:"category"`
+	Tags        []string              `json:"tags"`
+	SpeakerID   *string               `json:"speaker_id"`
+	SpeakerName *string               `json:"speaker_name"`
+	SpeakerBio  *string               `json:"speaker_bio"`
+	MediaItems  []CreateAttachmentArgs `json:"media_items"`
 }

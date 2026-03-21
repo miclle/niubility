@@ -64,7 +64,7 @@ const routes: RouteObject[] = [
           { path: 'followers', element: <ProfileFollowers /> },
         ],
       },
-      { path: 'contents/new', element: <ContentEditor /> },
+      { path: 'contents/new/:type', element: <ContentEditor /> },
       { path: 'contents/:id/edit', element: <ContentEditor /> },
       { path: 'contents/:id', element: <ContentDetail /> },
       {
@@ -87,7 +87,7 @@ const routes: RouteObject[] = [
     children: [
       { index: true, element: <Navigate to="/admin/contents" replace /> },
       { path: 'contents', element: <AdminContents /> },
-      { path: 'contents/new', element: <AdminContentEditor /> },
+      { path: 'contents/new/:type', element: <AdminContentEditor /> },
       { path: 'contents/:id', element: <AdminContentEditor /> },
       { path: 'users', element: <AdminUsers /> },
       { path: 'categories', element: <AdminCategories /> },

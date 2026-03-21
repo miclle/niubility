@@ -1,0 +1,46 @@
+package entity
+
+import "time"
+
+// AttachmentType represents the type of an attachment.
+type AttachmentType string
+
+const (
+	// AttachmentTypeVideo indicates a video attachment.
+	AttachmentTypeVideo AttachmentType = "video"
+	// AttachmentTypeImage indicates an image attachment.
+	AttachmentTypeImage AttachmentType = "image"
+)
+
+// Attachment represents a file (video, image, etc.) attached to a content.
+type Attachment struct {
+	ID          string         `json:"id"          gorm:"column:id;primaryKey;size:36"`
+	ContentID   string         `json:"content_id"  gorm:"column:content_id;index:idx_attachments_content_id"`
+	Title       string         `json:"title"       gorm:"column:title"`
+	Description string         `json:"description" gorm:"column:description"`
+	URL         string         `json:"url"         gorm:"column:url"`
+	Type        AttachmentType `json:"type"        gorm:"column:type"`
+	SortOrder   int            `json:"sort_order"  gorm:"column:sort_order;default:0"`
+	IsCover     bool           `json:"is_cover"    gorm:"column:is_cover;default:false"`
+	FileSize    int64          `json:"file_size"   gorm:"column:file_size;default:0"`
+	Duration    float64        `json:"duration"    gorm:"column:duration;default:0"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+}
+
+// TableName specifies the database table name for Attachment.
+func (Attachment) TableName() string {
+	return "attachments"
+}
+
+// CreateAttachmentArgs represents the fields required to create an attachment.
+type CreateAttachmentArgs struct {
+	Title       string         `json:"title"`
+	Description string         `json:"description"`
+	URL         string         `json:"url"        binding:"required"`
+	Type        AttachmentType `json:"type"       binding:"required"`
+	SortOrder   int            `json:"sort_order"`
+	IsCover     bool           `json:"is_cover"`
+	FileSize    int64          `json:"file_size"`
+	Duration    float64        `json:"duration"`
+}

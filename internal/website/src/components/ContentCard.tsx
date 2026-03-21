@@ -1,5 +1,5 @@
-import { Link, useNavigate } from 'react-router-dom'
-import { Play } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Play, Image, FileText } from 'lucide-react'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
@@ -10,10 +10,22 @@ import type { Content } from 'src/types/content'
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
 
-// ContentCard displays a content item as a YouTube-style video card.
+// getContentCover returns the best cover URL for a content item.
+function getContentCover(content: Content): string {
+  if (content.cover_url) return content.cover_url
+  const items = content.attachments || []
+  const coverItem = items.find((m) => m.is_cover)
+  if (coverItem) return coverItem.url
+  const first = items[0]
+  if (first) return first.url
+  return '/default-cover.svg'
+}
+
+// ContentCard displays a content item as a card with type-specific visual indicators.
 function ContentCard({ content, hideAuthor = false }: { content: Content; hideAuthor?: boolean }) {
   const navigate = useNavigate()
   const profilePath = content.author?.username ? `/@${content.author.username}` : ''
+  const mediaItems = content.attachments || []
 
   const handleCardClick = () => {
     navigate(`/contents/${content.id}`)
@@ -24,38 +36,63 @@ function ContentCard({ content, hideAuthor = false }: { content: Content; hideAu
     if (profilePath) navigate(profilePath)
   }
 
+  const coverUrl = getContentCover(content)
+
   return (
     <div
       className="group block no-underline cursor-pointer"
       style={{ color: 'inherit' }}
       onClick={handleCardClick}
     >
-      {/* Thumbnail - YouTube style */}
+      {/* Thumbnail */}
       <div className="relative" style={{ borderRadius: 12, overflow: 'hidden' }}>
         <div className="relative aspect-video bg-zinc-200">
           <img
-            src={content.cover_url || '/default-cover.svg'}
+            src={coverUrl}
             alt={content.title}
             className="w-full h-full object-cover"
             style={{ transition: 'transform 0.3s' }}
           />
-          {/* Video play icon overlay */}
+
+          {/* Type-specific overlay */}
           {content.type === 'video' && (
-            <div
-              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-              style={{ background: 'rgba(0,0,0,0.3)' }}
-            >
-              <div style={{ background: 'rgba(0,0,0,0.7)', borderRadius: '50%', padding: 12 }}>
-                <Play size={32} fill="white" style={{ color: 'white' }} />
+            <>
+              <div
+                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ background: 'rgba(0,0,0,0.3)' }}
+              >
+                <div style={{ background: 'rgba(0,0,0,0.7)', borderRadius: '50%', padding: 12 }}>
+                  <Play size={32} fill="white" style={{ color: 'white' }} />
+                </div>
               </div>
+              {/* Video count badge */}
+              {mediaItems.length > 1 && (
+                <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded text-xs font-medium" style={{ background: 'rgba(0,0,0,0.7)', color: 'white' }}>
+                  {mediaItems.length} 个视频
+                </div>
+              )}
+            </>
+          )}
+
+          {content.type === 'gallery' && mediaItems.length > 1 && (
+            <div className="absolute bottom-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium" style={{ background: 'rgba(0,0,0,0.7)', color: 'white' }}>
+              <Image size={12} />
+              {mediaItems.length}
+            </div>
+          )}
+
+          {content.type === 'article' && (
+            <div className="absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium" style={{ background: 'rgba(0,0,0,0.7)', color: 'white' }}>
+              <FileText size={12} />
+              长文
             </div>
           )}
         </div>
       </div>
 
       {/* Card info */}
-      <div className={`flex gap-3 mt-3`}>
-        {/* Author avatar - links to profile */}
+      <div className="flex gap-3 mt-3">
+        {/* Author avatar */}
         {!hideAuthor && (
           <div className="flex-shrink-0" onClick={handleProfileClick}>
             <Avatar className={profilePath ? 'cursor-pointer' : ''}>
@@ -67,15 +104,9 @@ function ContentCard({ content, hideAuthor = false }: { content: Content; hideAu
 
         {/* Text content */}
         <div className="flex-1 min-w-0">
-          {/* Title - max 2 lines */}
-          <h3
-            className="text-sm font-medium line-clamp-2 mb-1"
-            style={{ color: '#0f0f0f' }}
-          >
+          <h3 className="text-sm font-medium line-clamp-2 mb-1" style={{ color: '#0f0f0f' }}>
             {content.title}
           </h3>
-
-          {/* Author name - links to profile */}
           {!hideAuthor && (
             <span
               className="text-xs mb-0.5 block hover:underline cursor-pointer"
@@ -85,8 +116,6 @@ function ContentCard({ content, hideAuthor = false }: { content: Content; hideAu
               {content.author?.name || '未知作者'}
             </span>
           )}
-
-          {/* Meta info */}
           <div className="text-xs" style={{ color: '#606060' }}>
             {dayjs(content.created_at).fromNow()}
           </div>
