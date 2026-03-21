@@ -16,7 +16,6 @@ import MyContents from 'src/views/settings/contents'
 import SecuritySettings from 'src/views/settings/security'
 import NotificationSettings from 'src/views/settings/notifications'
 import AdminContents from 'src/views/admin/contents'
-import AdminContentEditor from 'src/views/admin/contents/editor'
 import AdminUsers from 'src/views/admin/users'
 import AdminImport from 'src/views/admin/import'
 import AdminSync from 'src/views/admin/sync'
@@ -87,8 +86,6 @@ const routes: RouteObject[] = [
     children: [
       { index: true, element: <Navigate to="/admin/contents" replace /> },
       { path: 'contents', element: <AdminContents /> },
-      { path: 'contents/new/:type', element: <AdminContentEditor /> },
-      { path: 'contents/:id', element: <AdminContentEditor /> },
       { path: 'users', element: <AdminUsers /> },
       { path: 'categories', element: <AdminCategories /> },
       { path: 'import', element: <AdminImport /> },

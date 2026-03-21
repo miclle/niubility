@@ -104,19 +104,19 @@ function AdminContents() {
           />
           <DropdownMenuContent align="end">
             <DropdownMenuItem>
-              <Link to="/admin/contents/new/video" className="flex items-center gap-2 no-underline" style={{ color: 'inherit' }}>
+              <Link to="/contents/new/video" className="flex items-center gap-2 no-underline" style={{ color: 'inherit' }}>
                 <Play size={16} />
                 视频
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem>
-              <Link to="/admin/contents/new/gallery" className="flex items-center gap-2 no-underline" style={{ color: 'inherit' }}>
+              <Link to="/contents/new/gallery" className="flex items-center gap-2 no-underline" style={{ color: 'inherit' }}>
                 <Image size={16} />
                 图文
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem>
-              <Link to="/admin/contents/new/article" className="flex items-center gap-2 no-underline" style={{ color: 'inherit' }}>
+              <Link to="/contents/new/article" className="flex items-center gap-2 no-underline" style={{ color: 'inherit' }}>
                 <FileText size={16} />
                 长文
               </Link>
@@ -200,7 +200,7 @@ function AdminContents() {
                     <td style={tdStyle}>{dayjs(content.created_at).format('YYYY-MM-DD')}</td>
                     <td style={tdStyle}>
                       <div className="flex gap-2">
-                        <Link to={`/admin/contents/${content.id}`}>
+                        <Link to={`/contents/${content.id}/edit`}>
                           <Button variant="ghost" style={{ color: '#606060' }}>
                             <Pencil size={14} />
                           </Button>
