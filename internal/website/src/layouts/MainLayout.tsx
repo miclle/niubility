@@ -292,7 +292,7 @@ function MainLayout() {
                   Niubility
                 </span>
               </div>
-              <nav className="py-3 overflow-y-auto" style={{ height: 'calc(100% - 56px)' }}>
+              <nav className="py-3 overflow-y-auto flex flex-col" style={{ height: 'calc(100% - 56px)' }}>
                 {/* Main navigation */}
                 {renderCategoryNav()}
 
@@ -348,6 +348,10 @@ function MainLayout() {
                     <span className="text-sm">长文</span>
                   </button>
                 </div>
+
+                <div className="mt-auto px-6 py-4 text-xs" style={{ color: '#909090' }}>
+                  &copy; {new Date().getFullYear()} Niubility
+                </div>
               </nav>
             </aside>
           </>
@@ -363,7 +367,7 @@ function MainLayout() {
               overflowX: 'hidden',
             }}
           >
-            <nav className="py-3" style={{ width: 240 }}>
+            <nav className="py-3 flex flex-col" style={{ width: 240, minHeight: '100%' }}>
               {/* Main navigation */}
               {renderCategoryNav()}
 
@@ -419,6 +423,10 @@ function MainLayout() {
                   <span className="text-sm">长文</span>
                 </button>
               </div>
+
+              <div className="mt-auto px-6 py-4 text-xs" style={{ color: '#909090' }}>
+                &copy; {new Date().getFullYear()} Niubility
+              </div>
             </nav>
           </aside>
         )}
@@ -426,11 +434,6 @@ function MainLayout() {
         {/* Main content */}
         <main className="flex-1 min-w-0 bg-white">
           <Outlet context={{ keyword, typeFilter, category }} />
-
-          {/* Footer */}
-          <footer className="py-4 text-center text-xs" style={{ color: '#909090', borderTop: '1px solid #e5e5e5' }}>
-            &copy; {new Date().getFullYear()} Niubility
-          </footer>
         </main>
       </div>
     </div>
