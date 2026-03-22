@@ -60,7 +60,7 @@ function GalleryDetail() {
   const isDraft = content.status === 'draft'
   const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin' || currentUser.id === content.author_id)
   const categoryLabel = content.category === 'culture' ? '七牛文化' : '学习分享'
-  const galleryItems = (content.attachments || []).filter((a) => a.type === 'image')
+  const galleryItems = content.attachments || []
 
   const handleImageClick = (index: number) => {
     setLightboxIndex(index)

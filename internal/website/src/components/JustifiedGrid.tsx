@@ -116,16 +116,21 @@ function JustifiedGrid({ items, targetRowHeight = 220, gap = 4, onImageClick }: 
         return (
           <div
             key={attachment.id || item.index}
-            className="absolute overflow-hidden rounded-sm cursor-pointer"
+            className="absolute overflow-hidden rounded-sm cursor-pointer group"
             style={{ top: item.top, left: item.left, width: item.width, height: item.height }}
             onClick={() => onImageClick(item.index)}
           >
-            <img
-              src={src}
-              alt={attachment.title || ''}
-              className="w-full h-full object-cover transition-[filter] duration-200 hover:brightness-90"
-              loading="lazy"
-            />
+            {attachment.type === 'video' ? (
+              <video src={src} className="w-full h-full object-cover" muted preload="metadata" />
+            ) : (
+              <img src={src} alt={attachment.title || ''} className="w-full h-full object-cover" loading="lazy" />
+            )}
+            <div className="absolute inset-0 transition-colors group-hover:bg-black/10" />
+            {attachment.type === 'video' && (
+              <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded text-[10px] font-medium" style={{ background: 'rgba(0,0,0,0.7)', color: 'white' }}>
+                视频
+              </div>
+            )}
           </div>
         )
       })}
