@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useOutletContext } from 'react-router-dom'
 
 import { listFollowing } from 'src/api/user'
-import { FollowButton, UserListItem } from './index'
+import { UserListItem } from './index'
 import type { User } from 'src/types/user'
 import type { ProfileContext } from './index'
 

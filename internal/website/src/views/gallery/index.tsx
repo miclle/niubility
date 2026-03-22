@@ -61,7 +61,7 @@ function GalleryDetail() {
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false))
-  }, [id])
+  }, [id, navigate])
 
   const handleImageClick = useCallback((index: number) => {
     window.location.hash = `photo=${index}`

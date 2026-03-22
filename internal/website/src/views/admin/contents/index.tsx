@@ -9,7 +9,7 @@ import dayjs from 'dayjs'
 import { listContents, deleteContent } from 'src/api/content'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
 import { useAppContext } from 'src/context/app'
-import type { Content, ContentType } from 'src/types/content'
+import type { Content } from 'src/types/content'
 
 const typeLabels: Record<string, string> = { video: '视频', gallery: '图文', article: '长文' }
 const typeIcons: Record<string, React.ReactNode> = {

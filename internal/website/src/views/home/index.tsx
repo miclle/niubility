@@ -60,7 +60,7 @@ function Home() {
     setContents([])
     setHasMore(true)
     fetchContents(1, false)
-  }, [category, typeFilter, keyword])
+  }, [category, typeFilter, keyword, fetchContents])
 
   // Setup intersection observer for infinite scroll
   useEffect(() => {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { NavLink } from 'react-router-dom'
-import { Loader2, FileText, Play, Image, Pencil, Heart, MessageSquare, Trash2, Send } from 'lucide-react'
+import { FileText, Play, Image, Pencil, Heart, MessageSquare, Trash2, Send } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
 import { listContents, updateContent, deleteContent } from 'src/api/content'

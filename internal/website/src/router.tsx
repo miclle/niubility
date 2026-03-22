@@ -35,6 +35,7 @@ import Forbidden from 'src/views/errors/Forbidden'
 import ServerError from 'src/views/errors/ServerError'
 
 // DynamicSlug renders ProfileLayout (with child routes) when the slug starts with '@', otherwise Home.
+// eslint-disable-next-line react-refresh/only-export-components
 function DynamicSlug() {
   const { slug } = useParams<{ slug: string }>()
   if (slug?.startsWith('@')) {

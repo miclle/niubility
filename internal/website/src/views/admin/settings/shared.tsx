@@ -14,6 +14,7 @@ export interface Setting {
 }
 
 // useSettings loads all settings from the API and provides a key-value map.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSettings() {
   const [loading, setLoading] = useState(true)
   const [settingsMap, setSettingsMap] = useState<Record<string, string>>({})
@@ -42,6 +43,7 @@ export function useSettings() {
 }
 
 // useSaveSettings provides save logic with success/error feedback for a settings sub-page.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSaveSettings(reload: () => Promise<void>) {
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)

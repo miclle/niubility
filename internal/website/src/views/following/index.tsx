@@ -53,7 +53,7 @@ function FollowingFeed() {
     setContents([])
     setHasMore(true)
     fetchContents(1, false)
-  }, [currentUser?.id])
+  }, [currentUser, fetchContents])
 
   // Setup intersection observer for infinite scroll
   useEffect(() => {

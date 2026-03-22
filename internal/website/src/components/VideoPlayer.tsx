@@ -24,7 +24,7 @@ function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = fals
   const [volume, setVolume] = useState(1)
   const [mutedState, setMutedState] = useState(muted)
   const [fullscreen, setFullscreen] = useState(false)
-  const [_isPiP, setIsPiP] = useState(false)
+  const [, setIsPiP] = useState(false)
   const [playbackRate, setPlaybackRate] = useState(1)
   const [showSpeedMenu, setShowSpeedMenu] = useState(false)
   const [showControls, setShowControls] = useState(true)
@@ -130,28 +130,6 @@ function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = fals
 
   const playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3]
 
-  // Save/restore playback progress
-  const saveProgress = (time: number) => {
-    if (!contentId) return
-    try {
-      const data = JSON.parse(localStorage.getItem(PLAYBACK_PROGRESS_KEY) || '{}')
-      data[contentId] = { time, savedAt: Date.now() }
-      localStorage.setItem(PLAYBACK_PROGRESS_KEY, JSON.stringify(data))
-    } catch {
-      // Ignore localStorage errors
-    }
-  }
-
-  const loadProgress = (): number | null => {
-    if (!contentId) return null
-    try {
-      const data = JSON.parse(localStorage.getItem(PLAYBACK_PROGRESS_KEY) || '{}')
-      return data[contentId]?.time ?? null
-    } catch {
-      return null
-    }
-  }
-
   // Show controls temporarily
   const showControlsTemporarily = () => {
     setShowControls(true)
@@ -169,6 +147,27 @@ function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = fals
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
+
+    const saveProgress = (time: number) => {
+      if (!contentId) return
+      try {
+        const data = JSON.parse(localStorage.getItem(PLAYBACK_PROGRESS_KEY) || '{}')
+        data[contentId] = { time, savedAt: Date.now() }
+        localStorage.setItem(PLAYBACK_PROGRESS_KEY, JSON.stringify(data))
+      } catch {
+        // Ignore localStorage errors
+      }
+    }
+
+    const loadProgress = (): number | null => {
+      if (!contentId) return null
+      try {
+        const data = JSON.parse(localStorage.getItem(PLAYBACK_PROGRESS_KEY) || '{}')
+        return data[contentId]?.time ?? null
+      } catch {
+        return null
+      }
+    }
 
     let lastSavedTime = 0
 

@@ -68,19 +68,19 @@ tasks:
   # ---------- Code Quality ----------
 
   lint:
-    desc: Auto-fix code style (go mod tidy + gofmt + vet + staticcheck)
+    desc: Auto-fix code style (go mod tidy + gofmt + vet + staticcheck + frontend eslint)
     cmds:
       - go mod tidy
       - gofmt -w .
       - go vet ./...
       - staticcheck ./...
+      - cd {{.WEBSITE_DIR}} && npm run lint
 
   check:
     desc: Run all checks without modifying files (CI-friendly)
     cmds:
+      - task: lint
       - task: check-mod-tidy
-      - go vet ./...
-      - staticcheck ./...
 
   check-mod-tidy:
     internal: true

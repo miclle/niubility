@@ -43,7 +43,7 @@ function ArticleDetail() {
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false))
-  }, [id])
+  }, [id, navigate])
 
   if (loading) {
     return <div className="p-6 text-center" style={{ color: '#606060' }}>加载中...</div>

@@ -257,7 +257,7 @@ function AdminUsers() {
     setUsers([])
     setHasMore(true)
     fetchUsers(1, true)
-  }, [search, departmentId])
+  }, [search, departmentId, fetchUsers])
 
   // Infinite scroll observer
   useEffect(() => {

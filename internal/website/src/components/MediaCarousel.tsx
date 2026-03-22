@@ -16,7 +16,21 @@ function MediaCarousel({ items }: MediaCarouselProps) {
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map())
 
   const total = items.length
-  if (total === 0) return null
+  const currentItem = total > 0 ? items[current] : null
+  const resolvedUrl = currentItem ? fileURL(currentItem.url) : ''
+
+  // Auto-play video when it becomes current
+  useEffect(() => {
+    if (currentItem?.type === 'video') {
+      const video = videoRefs.current.get(current)
+      if (video) {
+        video.currentTime = 0
+        video.play().catch(() => {})
+      }
+    }
+  }, [current, currentItem])
+
+  if (!currentItem) return null
 
   const goTo = (index: number) => {
     // Pause current video if any
@@ -27,20 +41,6 @@ function MediaCarousel({ items }: MediaCarouselProps) {
 
   const goPrev = () => goTo((current - 1 + total) % total)
   const goNext = () => goTo((current + 1) % total)
-
-  const currentItem = items[current]
-  const resolvedUrl = fileURL(currentItem.url)
-
-  // Auto-play video when it becomes current
-  useEffect(() => {
-    if (currentItem.type === 'video') {
-      const video = videoRefs.current.get(current)
-      if (video) {
-        video.currentTime = 0
-        video.play().catch(() => {})
-      }
-    }
-  }, [current, currentItem.type])
 
   return (
     <div className="relative bg-black rounded-xl overflow-hidden">

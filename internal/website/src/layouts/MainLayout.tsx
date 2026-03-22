@@ -31,22 +31,6 @@ function MainLayout() {
   const location = useLocation()
   const { slug } = useParams()
 
-  // If system is not initialized, show prompt instead of normal content
-  if (!initialized) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#f8f8f8' }}>
-        <div className="text-center px-8 py-10 rounded-2xl bg-white" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-5" style={{ background: '#f2f2f2' }}>
-            <ServerOff size={28} style={{ color: '#909090' }} />
-          </div>
-          <h1 className="text-2xl font-semibold mb-2" style={{ color: '#0f0f0f' }}>Niubility</h1>
-          <p className="text-sm mb-1" style={{ color: '#606060' }}>系统尚未初始化</p>
-          <p className="text-xs" style={{ color: '#909090' }}>请联系管理员完成初始设置</p>
-        </div>
-      </div>
-    )
-  }
-
   // Filter state managed in layout, passed to child via outlet context
   const [keyword, setKeyword] = useState('')
   const [searchValue, setSearchValue] = useState('')
@@ -72,12 +56,28 @@ function MainLayout() {
       // Restore user's saved state
       setSidebarCollapsed(userSidebarStateRef.current)
     }
-  }, [shouldHideSidebar])
+  }, [shouldHideSidebar]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close drawer when route changes
   useEffect(() => {
     setDrawerOpen(false)
   }, [location.pathname])
+
+  // If system is not initialized, show prompt instead of normal content
+  if (!initialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#f8f8f8' }}>
+        <div className="text-center px-8 py-10 rounded-2xl bg-white" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-5" style={{ background: '#f2f2f2' }}>
+            <ServerOff size={28} style={{ color: '#909090' }} />
+          </div>
+          <h1 className="text-2xl font-semibold mb-2" style={{ color: '#0f0f0f' }}>Niubility</h1>
+          <p className="text-sm mb-1" style={{ color: '#606060' }}>系统尚未初始化</p>
+          <p className="text-xs" style={{ color: '#909090' }}>请联系管理员完成初始设置</p>
+        </div>
+      </div>
+    )
+  }
 
   // Derive category from URL params or path (ignore @username profile routes)
   const category: string = (slug && !slug.startsWith('@') ? slug : '') || location.pathname.split('/')[1] || (categories[0]?.slug ?? 'learning')
