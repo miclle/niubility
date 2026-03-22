@@ -10,11 +10,15 @@ import (
 )
 
 // ListComments retrieves top-level comments for a content, with replies and user info preloaded.
-func (s *Service) ListComments(contentID string, pagination entity.Pagination) ([]entity.Comment, int64, error) {
+// If attachmentID is non-empty, only comments for that attachment are returned.
+func (s *Service) ListComments(contentID, attachmentID string, pagination entity.Pagination) ([]entity.Comment, int64, error) {
 	var comments []entity.Comment
 	var total int64
 
 	query := s.DB.Model(&entity.Comment{}).Where("content_id = ? AND parent_id = ''", contentID)
+	if attachmentID != "" {
+		query = query.Where("attachment_id = ?", attachmentID)
+	}
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, fmt.Errorf("count comments: %w", err)

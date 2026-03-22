@@ -9,12 +9,13 @@ import type { Comment, CreateCommentArgs } from 'src/types/content'
 
 interface CommentSectionProps {
   contentID: string
+  attachmentID?: string
   commentCount: number
   onCommentCountChange?: (count: number) => void
 }
 
 // CommentSection displays and manages comments for a content item.
-function CommentSection({ contentID, commentCount, onCommentCountChange }: CommentSectionProps) {
+function CommentSection({ contentID, attachmentID, commentCount, onCommentCountChange }: CommentSectionProps) {
   const { currentUser } = useAppContext()
   const [comments, setComments] = useState<Comment[]>([])
   const [likedCommentIDs, setLikedCommentIDs] = useState<Set<string>>(new Set())
@@ -66,7 +67,7 @@ function CommentSection({ contentID, commentCount, onCommentCountChange }: Comme
 
   const fetchComments = useCallback((pageNum: number) => {
     setLoading(true)
-    listComments(contentID, { page: pageNum, limit: 20 })
+    listComments(contentID, { page: pageNum, limit: 20, attachment_id: attachmentID })
       .then((res) => {
         if (pageNum === 1) {
           setComments(res.data.comments || [])
@@ -78,7 +79,7 @@ function CommentSection({ contentID, commentCount, onCommentCountChange }: Comme
       })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [contentID])
+  }, [contentID, attachmentID])
 
   useEffect(() => {
     fetchComments(1)
@@ -89,7 +90,7 @@ function CommentSection({ contentID, commentCount, onCommentCountChange }: Comme
   const handleSubmit = () => {
     if (!newComment.trim() || submitting) return
     setSubmitting(true)
-    createComment(contentID, { body: newComment.trim() })
+    createComment(contentID, { body: newComment.trim(), attachment_id: attachmentID })
       .then((res) => {
         setComments((prev) => [res.data, ...prev])
         setNewComment('')
@@ -108,6 +109,7 @@ function CommentSection({ contentID, commentCount, onCommentCountChange }: Comme
       body: replyText.trim(),
       parent_id: replyTo.parentID,
       reply_to_id: replyTo.commentID,
+      attachment_id: attachmentID,
     }
     createComment(contentID, data)
       .then((res) => {

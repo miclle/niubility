@@ -336,6 +336,7 @@ function Lightbox({
             <div className="pt-4 border-t border-gray-200">
               <CommentSection
                 contentID={contentId}
+                attachmentID={attachment.id}
                 commentCount={commentCount || 0}
                 onCommentCountChange={onCommentCountChange}
               />

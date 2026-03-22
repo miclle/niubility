@@ -177,6 +177,7 @@ export interface ImportResult {
 export interface Comment {
   id: string
   content_id: string
+  attachment_id: string
   user_id: string
   parent_id: string
   reply_to_id: string
@@ -201,6 +202,7 @@ export interface CreateCommentArgs {
   body: string
   parent_id?: string
   reply_to_id?: string
+  attachment_id?: string
 }
 
 // LikeResponse represents the response after toggling a like.

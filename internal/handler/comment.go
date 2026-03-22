@@ -17,12 +17,13 @@ type ListCommentsResponse struct {
 // ListComments returns comments for a content item.
 func (ctrl *Ctrl) ListComments(c *fox.Context, args entity.Pagination) (*ListCommentsResponse, error) {
 	contentID := c.Param("id")
+	attachmentID := c.Query("attachment_id")
 	user := CurrentUser(c)
 	if user == nil {
 		return nil, httperrors.ErrUnauthorized
 	}
 
-	comments, total, err := ctrl.service.ListComments(contentID, args)
+	comments, total, err := ctrl.service.ListComments(contentID, attachmentID, args)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -80,11 +81,12 @@ func (ctrl *Ctrl) CreateComment(c *fox.Context, args entity.CreateCommentArgs) (
 	}
 
 	comment := &entity.Comment{
-		ContentID: contentID,
-		UserID:    user.ID,
-		ParentID:  args.ParentID,
-		ReplyToID: args.ReplyToID,
-		Body:      args.Body,
+		ContentID:    contentID,
+		AttachmentID: args.AttachmentID,
+		UserID:       user.ID,
+		ParentID:     args.ParentID,
+		ReplyToID:    args.ReplyToID,
+		Body:         args.Body,
 	}
 
 	if err := ctrl.service.CreateComment(comment); err != nil {

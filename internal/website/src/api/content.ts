@@ -31,8 +31,8 @@ export function importContents(data: ImportContentsArgs) {
   return client.post<ImportResult>('/import', data)
 }
 
-// listComments fetches comments for a content item.
-export function listComments(contentID: string, params?: { page?: number; limit?: number }) {
+// listComments fetches comments for a content item, optionally filtered by attachment.
+export function listComments(contentID: string, params?: { page?: number; limit?: number; attachment_id?: string }) {
   return client.get<ListCommentsResponse>(`/contents/${contentID}/comments`, { params })
 }
 
