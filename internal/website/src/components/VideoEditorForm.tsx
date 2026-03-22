@@ -32,20 +32,24 @@ interface VideoItem {
   title: string
   description: string
   url: string
+  filename: string
+  mimeType: string
+  checksum: string
   fileSize: number
   duration: number
 }
 
 let videoItemCounter = 0
 function newVideoItem(): VideoItem {
-  return { localId: `vid_${++videoItemCounter}`, title: '', description: '', url: '', fileSize: 0, duration: 0 }
+  return { localId: `vid_${++videoItemCounter}`, title: '', description: '', url: '', filename: '', mimeType: '', checksum: '', fileSize: 0, duration: 0 }
 }
 
 // SortableVideoItem renders a single draggable video item in the playlist.
-function SortableVideoItem({ item, index, onChange, onRemove }: {
+function SortableVideoItem({ item, index, onChange, onFileMetadata, onRemove }: {
   item: VideoItem
   index: number
   onChange: (localId: string, field: keyof VideoItem, value: string | number) => void
+  onFileMetadata: (localId: string, meta: { filename: string; mimeType: string; checksum: string; fileSize: number }) => void
   onRemove: (localId: string) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.localId })
@@ -80,6 +84,7 @@ function SortableVideoItem({ item, index, onChange, onRemove }: {
           accept="video/*"
           value={item.url}
           onChange={(url) => onChange(item.localId, 'url', url)}
+          onFileUploaded={(_url, meta) => onFileMetadata(item.localId, meta)}
           placeholder="拖拽视频到此处或点击选择"
           renderPreview={(url) => (
             <video src={url} controls className="max-h-36 rounded mx-auto" />
@@ -154,6 +159,8 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
             title: m.title,
             description: m.description,
             url: m.url,
+            filename: m.filename || '',
+            mimeType: m.mime_type || '',
             fileSize: m.file_size,
             duration: m.duration,
           })))
@@ -200,6 +207,10 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
     setVideos((prev) => prev.map((v) => v.localId === localId ? { ...v, [field]: value } : v))
   }, [])
 
+  const handleFileMetadata = useCallback((localId: string, meta: { filename: string; mimeType: string; checksum: string; fileSize: number }) => {
+    setVideos((prev) => prev.map((v) => v.localId === localId ? { ...v, filename: meta.filename, mimeType: meta.mimeType, checksum: meta.checksum, fileSize: meta.fileSize } : v))
+  }, [])
+
   const handleRemoveVideo = useCallback((localId: string) => {
     setVideos((prev) => prev.filter((v) => v.localId !== localId))
   }, [])
@@ -223,6 +234,8 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
       const mediaItems: CreateAttachmentArgs[] = videos.filter((v) => v.url).map((v, i) => ({
         title: v.title,
         description: v.description,
+        filename: v.filename,
+        mime_type: v.mimeType,
         url: v.url,
         type: 'video' as const,
         sort_order: i,
@@ -314,6 +327,7 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
                   item={video}
                   index={index}
                   onChange={handleVideoChange}
+                  onFileMetadata={handleFileMetadata}
                   onRemove={handleRemoveVideo}
                 />
               ))}

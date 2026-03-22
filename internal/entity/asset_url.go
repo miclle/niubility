@@ -46,6 +46,7 @@ func (c *Content) ResolveAssetURLs() {
 	}
 	for i := range c.Attachments {
 		c.Attachments[i].URL = resolveURL(c.Attachments[i].URL, "/attachments/")
+		c.Attachments[i].CoverURL = resolveURL(c.Attachments[i].CoverURL, "/attachments/")
 	}
 }
 

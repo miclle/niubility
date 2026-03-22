@@ -18,7 +18,11 @@ type Attachment struct {
 	ContentID   string         `json:"content_id"  gorm:"column:content_id;index:idx_attachments_content_id"`
 	Title       string         `json:"title"       gorm:"column:title"`
 	Description string         `json:"description" gorm:"column:description"`
+	Filename    string         `json:"filename"    gorm:"column:filename"`
 	URL         string         `json:"url"         gorm:"column:url"`
+	CoverURL    string         `json:"cover_url"   gorm:"column:cover_url"`
+	MimeType    string         `json:"mime_type"   gorm:"column:mime_type"`
+	Checksum    string         `json:"checksum"    gorm:"column:checksum;index:idx_attachments_content_checksum"`
 	Type        AttachmentType `json:"type"        gorm:"column:type"`
 	SortOrder   int            `json:"sort_order"  gorm:"column:sort_order;default:0"`
 	IsCover     bool           `json:"is_cover"    gorm:"column:is_cover;default:false"`
@@ -40,7 +44,11 @@ func (Attachment) TableName() string {
 type CreateAttachmentArgs struct {
 	Title       string         `json:"title"`
 	Description string         `json:"description"`
+	Filename    string         `json:"filename"`
 	URL         string         `json:"url"        binding:"required"`
+	CoverURL    string         `json:"cover_url"`
+	MimeType    string         `json:"mime_type"`
+	Checksum    string         `json:"checksum"`
 	Type        AttachmentType `json:"type"       binding:"required"`
 	SortOrder   int            `json:"sort_order"`
 	IsCover     bool           `json:"is_cover"`

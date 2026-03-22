@@ -84,8 +84,11 @@ func (s *Service) GetContentByID(id string) (*entity.Content, error) {
 	return &content, nil
 }
 
-// createAttachments creates attachments for a content, validating gallery constraints.
+// createAttachments creates attachments for a content, validating gallery constraints and dedup.
 func (s *Service) createAttachments(tx *gorm.DB, contentID string, contentType entity.ContentType, items []entity.CreateAttachmentArgs) error {
+	// Collect non-empty checksums for dedup within the batch
+	seen := make(map[string]bool)
+
 	for i, item := range items {
 		// Validate gallery short video constraints
 		if contentType == entity.ContentTypeGallery && item.Type == entity.AttachmentTypeVideo {
@@ -94,12 +97,24 @@ func (s *Service) createAttachments(tx *gorm.DB, contentID string, contentType e
 			}
 		}
 
+		// Skip duplicate checksums within the same batch
+		if item.Checksum != "" {
+			if seen[item.Checksum] {
+				continue
+			}
+			seen[item.Checksum] = true
+		}
+
 		attachment := entity.Attachment{
 			ID:          entity.ID(),
 			ContentID:   contentID,
 			Title:       item.Title,
 			Description: item.Description,
+			Filename:    item.Filename,
 			URL:         item.URL,
+			CoverURL:    item.CoverURL,
+			MimeType:    item.MimeType,
+			Checksum:    item.Checksum,
 			Type:        item.Type,
 			SortOrder:   item.SortOrder,
 			IsCover:     item.IsCover,

@@ -2,6 +2,15 @@ import { useState, useRef, useCallback } from 'react'
 import { Upload, X, Loader2 } from 'lucide-react'
 
 import { uploadFile, fileURL } from 'src/api/upload'
+import { computeFileChecksum } from 'src/lib/file-checksum'
+
+// FileUploadMeta contains file metadata captured during upload.
+export interface FileUploadMeta {
+  filename: string
+  mimeType: string
+  fileSize: number
+  checksum: string
+}
 
 // FileUploadProps defines the configurable behavior of the FileUpload component.
 export interface FileUploadProps {
@@ -11,6 +20,8 @@ export interface FileUploadProps {
   value: string
   // Callback when file URL changes.
   onChange: (url: string) => void
+  // Optional callback with file metadata after upload completes.
+  onFileUploaded?: (url: string, meta: FileUploadMeta) => void
   // Optional preview renderer. If not provided, defaults to a link.
   renderPreview?: (url: string) => React.ReactNode
   // Placeholder text.
@@ -18,7 +29,7 @@ export interface FileUploadProps {
 }
 
 // FileUpload is a generic file upload component with drag-and-drop and progress support.
-function FileUpload({ accept, value, onChange, renderPreview, placeholder = '拖拽文件到此处或点击选择' }: FileUploadProps) {
+function FileUpload({ accept, value, onChange, onFileUploaded, renderPreview, placeholder = '拖拽文件到此处或点击选择' }: FileUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [dragOver, setDragOver] = useState(false)
@@ -28,14 +39,18 @@ function FileUpload({ accept, value, onChange, renderPreview, placeholder = '拖
     setUploading(true)
     setProgress(0)
     try {
-      const url = await uploadFile(file, setProgress)
+      const [url, checksum] = await Promise.all([
+        uploadFile(file, setProgress),
+        computeFileChecksum(file),
+      ])
       onChange(url)
+      onFileUploaded?.(url, { filename: file.name, mimeType: file.type, fileSize: file.size, checksum })
     } catch (err) {
       console.error('Upload failed:', err)
     } finally {
       setUploading(false)
     }
-  }, [onChange])
+  }, [onChange, onFileUploaded])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

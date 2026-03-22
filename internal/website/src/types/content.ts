@@ -34,7 +34,11 @@ export interface Attachment {
   content_id: string
   title: string
   description: string
+  filename: string
   url: string
+  cover_url: string
+  mime_type: string
+  checksum: string
   type: AttachmentType
   sort_order: number
   is_cover: boolean
@@ -51,7 +55,11 @@ export interface Attachment {
 export interface CreateAttachmentArgs {
   title?: string
   description?: string
+  filename?: string
   url: string
+  cover_url?: string
+  mime_type?: string
+  checksum?: string
   type: AttachmentType
   sort_order: number
   is_cover?: boolean

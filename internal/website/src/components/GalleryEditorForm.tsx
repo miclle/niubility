@@ -11,6 +11,7 @@ import { Save, X, Plus, GripVertical, Trash2, Star, Upload, Loader2 } from 'luci
 import { getContent, createContent, updateContent } from 'src/api/content'
 import { useAppContext } from 'src/context/app'
 import { uploadFile, fileURL } from 'src/api/upload'
+import { computeFileChecksum } from 'src/lib/file-checksum'
 import type { ContentStatus, CreateContentArgs, CreateAttachmentArgs, AttachmentType } from 'src/types/content'
 
 // GalleryEditorFormProps defines the configurable behavior of the gallery editor form.
@@ -25,6 +26,9 @@ export interface GalleryEditorFormProps {
 interface GalleryItem {
   localId: string
   url: string
+  filename: string
+  mimeType: string
+  checksum: string
   type: AttachmentType
   isCover: boolean
   width: number
@@ -34,9 +38,6 @@ interface GalleryItem {
 }
 
 let galleryItemCounter = 0
-function newGalleryItem(): GalleryItem {
-  return { localId: `gal_${++galleryItemCounter}`, url: '', type: 'image', isCover: false, width: 0, height: 0, fileSize: 0, duration: 0 }
-}
 
 // GalleryVideoMaxDuration is the max duration for gallery videos (seconds).
 const GALLERY_VIDEO_MAX_DURATION = 120
@@ -148,6 +149,9 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
           setItems(c.attachments.map((m) => ({
             localId: m.id || `gal_${++galleryItemCounter}`,
             url: m.url,
+            filename: m.filename || '',
+            mimeType: m.mime_type || '',
+            checksum: m.checksum || '',
             type: m.type,
             isCover: m.is_cover,
             width: m.width || 0,
@@ -182,11 +186,24 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
       }
 
       try {
+        // Compute checksum and check for duplicates before uploading
+        const checksum = await computeFileChecksum(file)
+        const isDuplicate = await new Promise<boolean>((resolve) => {
+          setItems((prev) => { resolve(prev.some((i) => i.checksum === checksum)); return prev })
+        })
+        if (isDuplicate) {
+          setUploadError(`文件 ${file.name} 已存在，已跳过`)
+          continue
+        }
+
         const url = await uploadFile(file)
         const localId = `gal_${++galleryItemCounter}`
         const newItem: GalleryItem = {
           localId,
           url,
+          filename: file.name,
+          mimeType: file.type,
+          checksum,
           type: mediaType,
           isCover: false,
           width: 0,
@@ -265,6 +282,9 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
     try {
       const mediaItems: CreateAttachmentArgs[] = items.map((item, i) => ({
         url: item.url,
+        filename: item.filename,
+        mime_type: item.mimeType,
+        checksum: item.checksum,
         type: item.type,
         sort_order: i,
         is_cover: item.isCover,
