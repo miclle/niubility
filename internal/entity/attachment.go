@@ -22,6 +22,8 @@ type Attachment struct {
 	Type        AttachmentType `json:"type"        gorm:"column:type"`
 	SortOrder   int            `json:"sort_order"  gorm:"column:sort_order;default:0"`
 	IsCover     bool           `json:"is_cover"    gorm:"column:is_cover;default:false"`
+	Width       int            `json:"width"       gorm:"column:width;default:0"`
+	Height      int            `json:"height"      gorm:"column:height;default:0"`
 	FileSize    int64          `json:"file_size"   gorm:"column:file_size;default:0"`
 	Duration    float64        `json:"duration"    gorm:"column:duration;default:0"`
 	CreatedAt   time.Time      `json:"created_at"`
@@ -41,6 +43,8 @@ type CreateAttachmentArgs struct {
 	Type        AttachmentType `json:"type"       binding:"required"`
 	SortOrder   int            `json:"sort_order"`
 	IsCover     bool           `json:"is_cover"`
+	Width       int            `json:"width"`
+	Height      int            `json:"height"`
 	FileSize    int64          `json:"file_size"`
 	Duration    float64        `json:"duration"`
 }

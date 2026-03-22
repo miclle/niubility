@@ -38,6 +38,8 @@ export interface Attachment {
   type: AttachmentType
   sort_order: number
   is_cover: boolean
+  width: number
+  height: number
   file_size: number
   duration: number
   created_at: string
@@ -52,6 +54,8 @@ export interface CreateAttachmentArgs {
   type: AttachmentType
   sort_order: number
   is_cover?: boolean
+  width?: number
+  height?: number
   file_size?: number
   duration?: number
 }

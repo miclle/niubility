@@ -11,8 +11,8 @@ import (
 	"github.com/miclle/niubility/internal/entity"
 )
 
-// GalleryVideoMaxFileSize is the maximum file size for short videos in gallery content (20 MB).
-const GalleryVideoMaxFileSize int64 = 20 * 1024 * 1024
+// GalleryVideoMaxFileSize is the maximum file size for videos in gallery content (200 MB).
+const GalleryVideoMaxFileSize int64 = 200 * 1024 * 1024
 
 // ListContents retrieves a paginated list of contents with optional filters.
 func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, int64, error) {
@@ -90,7 +90,7 @@ func (s *Service) createAttachments(tx *gorm.DB, contentID string, contentType e
 		// Validate gallery short video constraints
 		if contentType == entity.ContentTypeGallery && item.Type == entity.AttachmentTypeVideo {
 			if item.FileSize > GalleryVideoMaxFileSize {
-				return fmt.Errorf("gallery video #%d exceeds 20MB limit", i+1)
+				return fmt.Errorf("gallery video #%d exceeds 200MB limit", i+1)
 			}
 		}
 
@@ -103,6 +103,8 @@ func (s *Service) createAttachments(tx *gorm.DB, contentID string, contentType e
 			Type:        item.Type,
 			SortOrder:   item.SortOrder,
 			IsCover:     item.IsCover,
+			Width:       item.Width,
+			Height:      item.Height,
 			FileSize:    item.FileSize,
 			Duration:    item.Duration,
 		}

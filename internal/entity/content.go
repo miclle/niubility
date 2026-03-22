@@ -26,23 +26,23 @@ const (
 
 // Content represents a piece of content in the system.
 type Content struct {
-	ID           string      `json:"id"            gorm:"column:id;primaryKey;size:36"`
-	AuthorID     string      `json:"author_id"     gorm:"column:author_id;index:idx_contents_author_id"`
-	Title        string      `json:"title"         gorm:"column:title"`
-	Summary      string      `json:"summary"       gorm:"column:summary"`
-	Body         string      `json:"body"          gorm:"column:body;type:text"`
-	CoverURL     string      `json:"cover_url"     gorm:"column:cover_url"`
+	ID           string        `json:"id"            gorm:"column:id;primaryKey;size:36"`
+	AuthorID     string        `json:"author_id"     gorm:"column:author_id;index:idx_contents_author_id"`
+	Title        string        `json:"title"         gorm:"column:title"`
+	Summary      string        `json:"summary"       gorm:"column:summary"`
+	Body         string        `json:"body"          gorm:"column:body;type:text"`
+	CoverURL     string        `json:"cover_url"     gorm:"column:cover_url"`
 	Type         ContentType   `json:"type"          gorm:"column:type"`
 	Status       ContentStatus `json:"status"        gorm:"column:status;default:draft;index:idx_contents_status"`
 	Category     string        `json:"category"      gorm:"column:category;index:idx_contents_category"`
-	Tags         []string    `json:"tags"          gorm:"column:tags;serializer:json"`
-	SpeakerID    string      `json:"speaker_id"    gorm:"column:speaker_id;index:idx_contents_speaker_id"`
-	SpeakerName  string      `json:"speaker_name"  gorm:"column:speaker_name"`
-	SpeakerBio   string      `json:"speaker_bio"   gorm:"column:speaker_bio"`
-	LikeCount    int64       `json:"like_count"    gorm:"column:like_count;default:0"`
-	CommentCount int64       `json:"comment_count" gorm:"column:comment_count;default:0"`
-	CreatedAt    time.Time   `json:"created_at"`
-	UpdatedAt    time.Time   `json:"updated_at"`
+	Tags         []string      `json:"tags"          gorm:"column:tags;serializer:json"`
+	SpeakerID    string        `json:"speaker_id"    gorm:"column:speaker_id;index:idx_contents_speaker_id"`
+	SpeakerName  string        `json:"speaker_name"  gorm:"column:speaker_name"`
+	SpeakerBio   string        `json:"speaker_bio"   gorm:"column:speaker_bio"`
+	LikeCount    int64         `json:"like_count"    gorm:"column:like_count;default:0"`
+	CommentCount int64         `json:"comment_count" gorm:"column:comment_count;default:0"`
+	CreatedAt    time.Time     `json:"created_at"`
+	UpdatedAt    time.Time     `json:"updated_at"`
 
 	Author      *User        `json:"author,omitempty"      gorm:"foreignKey:AuthorID"`
 	Speaker     *User        `json:"speaker,omitempty"     gorm:"foreignKey:SpeakerID"`
@@ -80,32 +80,32 @@ type ListContentsArgs struct {
 
 // CreateContentArgs represents the fields required to create content.
 type CreateContentArgs struct {
-	Title       string                `json:"title"        binding:"required"`
-	Summary     string                `json:"summary"`
-	Body        string                `json:"body"`
-	CoverURL    string                `json:"cover_url"`
-	Type        ContentType           `json:"type"         binding:"required"`
-	Status      ContentStatus         `json:"status"`
-	Category    string                `json:"category"     binding:"required"`
-	Tags        []string              `json:"tags"`
-	SpeakerID   string                `json:"speaker_id"`
-	SpeakerName string                `json:"speaker_name"`
-	SpeakerBio  string                `json:"speaker_bio"`
+	Title       string                 `json:"title"        binding:"required"`
+	Summary     string                 `json:"summary"`
+	Body        string                 `json:"body"`
+	CoverURL    string                 `json:"cover_url"`
+	Type        ContentType            `json:"type"         binding:"required"`
+	Status      ContentStatus          `json:"status"`
+	Category    string                 `json:"category"     binding:"required"`
+	Tags        []string               `json:"tags"`
+	SpeakerID   string                 `json:"speaker_id"`
+	SpeakerName string                 `json:"speaker_name"`
+	SpeakerBio  string                 `json:"speaker_bio"`
 	Attachments []CreateAttachmentArgs `json:"attachments"`
 }
 
 // UpdateContentArgs represents the fields that can be updated for content.
 type UpdateContentArgs struct {
-	Title       *string               `json:"title"`
-	Summary     *string               `json:"summary"`
-	Body        *string               `json:"body"`
-	CoverURL    *string               `json:"cover_url"`
-	Type        *ContentType          `json:"type"`
-	Status      *ContentStatus        `json:"status"`
-	Category    *string               `json:"category"`
-	Tags        []string              `json:"tags"`
-	SpeakerID   *string               `json:"speaker_id"`
-	SpeakerName *string               `json:"speaker_name"`
-	SpeakerBio  *string               `json:"speaker_bio"`
+	Title       *string                `json:"title"`
+	Summary     *string                `json:"summary"`
+	Body        *string                `json:"body"`
+	CoverURL    *string                `json:"cover_url"`
+	Type        *ContentType           `json:"type"`
+	Status      *ContentStatus         `json:"status"`
+	Category    *string                `json:"category"`
+	Tags        []string               `json:"tags"`
+	SpeakerID   *string                `json:"speaker_id"`
+	SpeakerName *string                `json:"speaker_name"`
+	SpeakerBio  *string                `json:"speaker_bio"`
 	Attachments []CreateAttachmentArgs `json:"attachments"`
 }

@@ -7,6 +7,7 @@ import { Pencil, Trash2, Heart, MessageSquare, Play, Image, FileText } from 'luc
 import dayjs from 'dayjs'
 
 import { listContents, deleteContent } from 'src/api/content'
+import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
 import { useAppContext } from 'src/context/app'
 import type { Content, ContentType } from 'src/types/content'
 
@@ -118,7 +119,7 @@ function AdminContents() {
                 return (
                   <tr key={content.id} style={{ borderTop: '1px solid #e5e5e5' }}>
                     <td style={{ padding: '12px 16px' }}>
-                      <Link to={`/contents/${content.id}`} target="_blank" className="flex items-center gap-3 hover:underline" style={{ color: '#0f0f0f' }}>
+                      <Link to={contentDetailPath(content)} target="_blank" className="flex items-center gap-3 hover:underline" style={{ color: '#0f0f0f' }}>
                         <div className="w-[72px] h-[40px] rounded overflow-hidden flex-shrink-0" style={{ background: '#f2f2f2' }}>
                           {coverUrl ? (
                             <img src={coverUrl} alt="" className="w-full h-full object-cover" />
@@ -166,7 +167,7 @@ function AdminContents() {
                     <td style={tdStyle}>{dayjs(content.created_at).format('YYYY-MM-DD')}</td>
                     <td style={tdStyle}>
                       <div className="flex gap-2">
-                        <Link to={`/contents/${content.id}/edit`}>
+                        <Link to={contentEditPath(content)}>
                           <Button variant="ghost" style={{ color: '#606060' }}>
                             <Pencil size={14} />
                           </Button>

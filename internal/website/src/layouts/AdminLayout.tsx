@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { FileText, Users, ArrowLeft, LogOut, Upload, RefreshCw, Settings, Menu, FolderOpen, ChevronDown, UserPlus, HardDrive, MessageSquare, CircleUserRound, User, Plus, Play, ImageIcon, type LucideIcon } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
+import { contentNewPath } from 'src/lib/content-url'
 
 // NavChild represents a sub-menu item under a parent nav item.
 interface NavChild {
@@ -229,15 +230,15 @@ function AdminLayout() {
                 }
               />
               <DropdownMenuContent align="end">
-                <DropdownMenuItem render={<Link to="/contents/new/video" />}>
+                <DropdownMenuItem render={<Link to={contentNewPath('video')} />}>
                   <Play size={16} />
                   视频
                 </DropdownMenuItem>
-                <DropdownMenuItem render={<Link to="/contents/new/gallery" />}>
+                <DropdownMenuItem render={<Link to={contentNewPath('gallery')} />}>
                   <ImageIcon size={16} />
                   图文
                 </DropdownMenuItem>
-                <DropdownMenuItem render={<Link to="/contents/new/article" />}>
+                <DropdownMenuItem render={<Link to={contentNewPath('article')} />}>
                   <FileText size={16} />
                   长文
                 </DropdownMenuItem>

@@ -5,6 +5,7 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
 
 import { Avatar, AvatarImage, AvatarFallback } from 'src/components/ui/avatar'
+import { contentDetailPath } from 'src/lib/content-url'
 import type { Content } from 'src/types/content'
 
 dayjs.extend(relativeTime)
@@ -28,7 +29,7 @@ function ContentCard({ content, hideAuthor = false }: { content: Content; hideAu
   const mediaItems = content.attachments || []
 
   const handleCardClick = () => {
-    navigate(`/contents/${content.id}`)
+    navigate(contentDetailPath(content))
   }
 
   const handleProfileClick = (e: React.MouseEvent) => {

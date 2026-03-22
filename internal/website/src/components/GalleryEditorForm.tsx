@@ -27,19 +27,21 @@ interface GalleryItem {
   url: string
   type: AttachmentType
   isCover: boolean
+  width: number
+  height: number
   fileSize: number
   duration: number
 }
 
 let galleryItemCounter = 0
 function newGalleryItem(): GalleryItem {
-  return { localId: `gal_${++galleryItemCounter}`, url: '', type: 'image', isCover: false, fileSize: 0, duration: 0 }
+  return { localId: `gal_${++galleryItemCounter}`, url: '', type: 'image', isCover: false, width: 0, height: 0, fileSize: 0, duration: 0 }
 }
 
-// GalleryVideoMaxDuration is the max duration for gallery short videos (seconds).
-const GALLERY_VIDEO_MAX_DURATION = 15
-// GalleryVideoMaxSize is the max file size for gallery short videos (bytes).
-const GALLERY_VIDEO_MAX_SIZE = 20 * 1024 * 1024
+// GalleryVideoMaxDuration is the max duration for gallery videos (seconds).
+const GALLERY_VIDEO_MAX_DURATION = 120
+// GalleryVideoMaxSize is the max file size for gallery videos (bytes).
+const GALLERY_VIDEO_MAX_SIZE = 200 * 1024 * 1024
 
 // SortableGalleryItem renders a single draggable gallery item.
 function SortableGalleryItem({ item, onRemove, onSetCover }: {
@@ -148,6 +150,8 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
             url: m.url,
             type: m.type,
             isCover: m.is_cover,
+            width: m.width || 0,
+            height: m.height || 0,
             fileSize: m.file_size,
             duration: m.duration,
           })))
@@ -173,7 +177,7 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
       const mediaType: AttachmentType = isVideo ? 'video' : 'image'
 
       if (isVideo && file.size > GALLERY_VIDEO_MAX_SIZE) {
-        setUploadError(`文件 ${file.name} 超过 20MB 限制，已跳过`)
+        setUploadError(`文件 ${file.name} 超过 200MB 限制，已跳过`)
         continue
       }
 
@@ -185,6 +189,8 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
           url,
           type: mediaType,
           isCover: false,
+          width: 0,
+          height: 0,
           fileSize: file.size,
           duration: 0,
         }
@@ -194,6 +200,15 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
           const updated = [...prev, { ...newItem, isCover: prev.length === 0 }]
           return updated
         })
+
+        // Read image dimensions
+        if (!isVideo) {
+          const img = new Image()
+          img.src = fileURL(url)
+          img.onload = () => {
+            setItems((prev) => prev.map((i) => i.localId === localId ? { ...i, width: img.naturalWidth, height: img.naturalHeight } : i))
+          }
+        }
 
         // Validate video duration
         if (isVideo) {
@@ -253,6 +268,8 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
         type: item.type,
         sort_order: i,
         is_cover: item.isCover,
+        width: item.width,
+        height: item.height,
         file_size: item.fileSize,
         duration: item.duration,
       }))
@@ -324,7 +341,7 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
       {/* Gallery Items */}
       <div>
         <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>
-          图片/短视频 * <span className="font-normal text-xs" style={{ color: '#909090' }}>（短视频 ≤15 秒，≤20MB）</span>
+          图片/短视频 * <span className="font-normal text-xs" style={{ color: '#909090' }}>（视频 ≤120 秒，≤200MB）</span>
         </label>
         {uploadError && (
           <div className="text-xs mb-2" style={{ color: '#cc0000' }}>{uploadError}</div>

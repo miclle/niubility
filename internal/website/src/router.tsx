@@ -8,8 +8,12 @@ import ProfileLayout from 'src/views/profile'
 import ProfileContents from 'src/views/profile/contents'
 import ProfileFollowing from 'src/views/profile/following'
 import ProfileFollowers from 'src/views/profile/followers'
-import ContentDetail from 'src/views/contents/detail'
-import ContentEditor from 'src/views/contents/editor'
+import VideoDetail from 'src/views/watch'
+import VideoEditor from 'src/views/watch/editor'
+import GalleryDetail from 'src/views/gallery'
+import GalleryEditor from 'src/views/gallery/editor'
+import ArticleDetail from 'src/views/article'
+import ArticleEditor from 'src/views/article/editor'
 import FollowingFeed from 'src/views/following'
 import AccountSettings from 'src/views/settings/account'
 import MyContents from 'src/views/settings/contents'
@@ -63,9 +67,18 @@ const routes: RouteObject[] = [
           { path: 'followers', element: <ProfileFollowers /> },
         ],
       },
-      { path: 'contents/new/:type', element: <ContentEditor /> },
-      { path: 'contents/:id/edit', element: <ContentEditor /> },
-      { path: 'contents/:id', element: <ContentDetail /> },
+      // Video routes
+      { path: 'watch/new', element: <VideoEditor /> },
+      { path: 'watch/:id/edit', element: <VideoEditor /> },
+      { path: 'watch/:id', element: <VideoDetail /> },
+      // Gallery routes
+      { path: 'gallery/new', element: <GalleryEditor /> },
+      { path: 'gallery/:id/edit', element: <GalleryEditor /> },
+      { path: 'gallery/:id', element: <GalleryDetail /> },
+      // Article routes
+      { path: 'article/new', element: <ArticleEditor /> },
+      { path: 'article/:id/edit', element: <ArticleEditor /> },
+      { path: 'article/:id', element: <ArticleDetail /> },
       {
         path: 'settings',
         element: <SettingsLayout />,

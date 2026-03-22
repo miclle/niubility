@@ -4,6 +4,7 @@ import { Loader2, FileText, Play, Image, Pencil, Heart, MessageSquare, Trash2, S
 
 import { useAppContext } from 'src/context/app'
 import { listContents, updateContent, deleteContent } from 'src/api/content'
+import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
 import type { Content, ContentStatus } from 'src/types/content'
 
 const limit = 20
@@ -134,7 +135,7 @@ function MyContents() {
               {/* Title and meta */}
               <div className="flex-1 min-w-0">
                 <NavLink
-                  to={activeTab === 'draft' ? `/contents/${content.id}/edit` : `/contents/${content.id}`}
+                  to={activeTab === 'draft' ? contentEditPath(content) : contentDetailPath(content)}
                   className="text-sm font-medium no-underline hover:underline truncate block"
                   style={{ color: '#0f0f0f' }}
                 >
@@ -170,7 +171,7 @@ function MyContents() {
                   </button>
                 )}
                 <NavLink
-                  to={`/contents/${content.id}/edit`}
+                  to={contentEditPath(content)}
                   className="p-1.5 rounded-lg hover:bg-black/10 transition-colors no-underline"
                   style={{ color: '#606060' }}
                   title="编辑"

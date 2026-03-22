@@ -5,6 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { LogOut, Settings, User, Search, Menu, Home, Play, FileText, ChevronDown, Plus, ServerOff, BookOpen, GraduationCap, Heart, Star, Lightbulb, Trophy, Coffee, Briefcase, Globe, Flame, CircleUserRound, UserCheck, ImageIcon, type LucideIcon } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
+import { contentNewPath } from 'src/lib/content-url'
 import type { ContentType } from 'src/types/content'
 
 // iconMap maps icon name strings to Lucide icon components.
@@ -56,8 +57,8 @@ function MainLayout() {
   const userSidebarStateRef = useRef(false)
 
   // Detect if on detail page, editor page, or settings page (sidebar should be hidden)
-  const isDetailPage = /^\/contents\/[^/]+$/.test(location.pathname)
-  const isEditorPage = /^\/contents\/(new\/|[^/]+\/edit)/.test(location.pathname)
+  const isDetailPage = /^\/(watch|gallery|article)\/[^/]+$/.test(location.pathname)
+  const isEditorPage = /^\/(watch|gallery|article)\/(new|[^/]+\/edit)$/.test(location.pathname)
   const isSettingsPage = location.pathname.startsWith('/settings')
   const shouldHideSidebar = isDetailPage || isEditorPage || isSettingsPage
 
@@ -235,15 +236,15 @@ function MainLayout() {
                   }
                 />
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem render={<Link to="/contents/new/video" />}>
+                  <DropdownMenuItem render={<Link to={contentNewPath('video')} />}>
                     <Play size={16} />
                     视频
                   </DropdownMenuItem>
-                  <DropdownMenuItem render={<Link to="/contents/new/gallery" />}>
+                  <DropdownMenuItem render={<Link to={contentNewPath('gallery')} />}>
                     <ImageIcon size={16} />
                     图文
                   </DropdownMenuItem>
-                  <DropdownMenuItem render={<Link to="/contents/new/article" />}>
+                  <DropdownMenuItem render={<Link to={contentNewPath('article')} />}>
                     <FileText size={16} />
                     长文
                   </DropdownMenuItem>
