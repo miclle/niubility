@@ -17,16 +17,19 @@ function Home() {
   const { keyword, typeFilter, category } = useOutletContext<HomeContext>()
 
   const [contents, setContents] = useState<Content[]>([])
-  const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [loading, setLoading] = useState(false)
+  const loadingRef = useRef(false)
   const limit = 12
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadMoreRef = useRef<HTMLDivElement>(null)
+  const pageRef = useRef(1)
+  const hasMoreRef = useRef(true)
 
   // Fetch contents for a specific page
   const fetchContents = useCallback(async (pageNum: number, append: boolean = false) => {
-    if (loading) return
+    if (loadingRef.current) return
+    loadingRef.current = true
     setLoading(true)
     try {
       const res = await listContents({
@@ -43,22 +46,27 @@ function Home() {
         setContents(newContents)
       }
       // Check if there are more items to load
-      setHasMore(newContents.length === limit)
+      const more = newContents.length === limit
+      setHasMore(more)
+      hasMoreRef.current = more
     } catch {
       if (!append) {
         setContents([])
       }
       setHasMore(false)
+      hasMoreRef.current = false
     } finally {
+      loadingRef.current = false
       setLoading(false)
     }
-  }, [category, typeFilter, keyword, loading, limit])
+  }, [category, typeFilter, keyword, limit])
 
   // Reset and fetch first page when filters change
   useEffect(() => {
-    setPage(1)
+    pageRef.current = 1
     setContents([])
     setHasMore(true)
+    hasMoreRef.current = true
     fetchContents(1, false)
   }, [category, typeFilter, keyword, fetchContents])
 
@@ -70,9 +78,9 @@ function Home() {
 
     observerRef.current = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          const nextPage = page + 1
-          setPage(nextPage)
+        if (entries[0].isIntersecting && hasMoreRef.current && !loadingRef.current) {
+          const nextPage = pageRef.current + 1
+          pageRef.current = nextPage
           fetchContents(nextPage, true)
         }
       },
@@ -88,7 +96,7 @@ function Home() {
         observerRef.current.disconnect()
       }
     }
-  }, [page, hasMore, loading, fetchContents])
+  }, [fetchContents])
 
   return (
     <div className="p-6">
