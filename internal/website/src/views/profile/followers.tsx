@@ -19,11 +19,11 @@ export default function ProfileFollowers() {
       queryKey: ['followers', username],
       queryFn: ({ pageParam }) =>
         listFollowers(username, { cursor: pageParam, limit }),
-      getNextPageParam: (lastPage) => lastPage.data.pagination.next_cursor || undefined,
+      getNextPageParam: (lastPage) => lastPage.data.next_cursor || undefined,
       initialPageParam: undefined as string | undefined,
     })
 
-  const users = data?.pages.flatMap((p) => p.data.users) ?? []
+  const users = data?.pages.flatMap((p) => p.data.items) ?? []
   const loadMoreRef = useRef<HTMLDivElement>(null)
   const handleIntersect = useCallback(() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage() }, [hasNextPage, isFetchingNextPage, fetchNextPage])
   useIntersection(loadMoreRef, handleIntersect)

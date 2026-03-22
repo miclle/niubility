@@ -71,11 +71,11 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
       queryKey: ['comments', contentID, attachmentID],
       queryFn: ({ pageParam }) =>
         listComments(contentID, { cursor: pageParam, limit: 20, attachment_id: attachmentID }),
-      getNextPageParam: (lastPage) => lastPage.data.pagination.next_cursor || undefined,
+      getNextPageParam: (lastPage) => lastPage.data.next_cursor || undefined,
       initialPageParam: undefined as string | undefined,
     })
 
-  const total = (data?.pages[0]?.data.pagination.total ?? 0) + localCountDelta.current
+  const total = (data?.pages[0]?.data.total ?? 0) + localCountDelta.current
 
   // Merge liked IDs from all pages
   useEffect(() => {
@@ -90,7 +90,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
   }, [data])
 
   // Build the comment list from pages + local additions
-  const serverComments = data?.pages.flatMap((p) => p.data.comments) ?? []
+  const serverComments = data?.pages.flatMap((p) => p.data.items) ?? []
   const allComments = [...localComments, ...serverComments]
 
   // Apply like count overrides and local reply additions

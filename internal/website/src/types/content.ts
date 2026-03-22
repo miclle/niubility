@@ -1,4 +1,4 @@
-import type { User, Pagination } from './user'
+import type { User, PaginatedList } from './user'
 
 // ContentType represents the type of content.
 export type ContentType = 'video' | 'gallery' | 'article'
@@ -97,7 +97,6 @@ export interface Content {
 
 // ListContentsArgs represents the query parameters for listing contents.
 export interface ListContentsArgs {
-  page?: number
   limit?: number
   cursor?: string
   category?: ContentCategory
@@ -112,10 +111,7 @@ export interface ListContentsArgs {
 }
 
 // ListContentsResponse represents the response for listing contents.
-export interface ListContentsResponse {
-  contents: Content[]
-  pagination: Pagination
-}
+export type ListContentsResponse = PaginatedList<Content>
 
 // CreateContentArgs represents the fields required to create content.
 export interface CreateContentArgs {
@@ -200,9 +196,7 @@ export interface Comment {
 }
 
 // ListCommentsResponse represents the response for listing comments.
-export interface ListCommentsResponse {
-  comments: Comment[]
-  pagination: Pagination
+export interface ListCommentsResponse extends PaginatedList<Comment> {
   liked_comment_ids: string[]
 }
 

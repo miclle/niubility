@@ -409,8 +409,9 @@ func (ctrl *Ctrl) SearchUsers(c *fox.Context, args *SearchUsersArgs) (*SearchUse
 
 // ListUsersResponse represents the response for listing users.
 type ListUsersResponse struct {
-	Users      []entity.User     `json:"users"`
-	Pagination entity.Pagination `json:"pagination"`
+	Items      []entity.User `json:"items"`
+	NextCursor string        `json:"next_cursor,omitempty"`
+	Total      *int64        `json:"total,omitempty"`
 }
 
 // ListUsers returns a paginated list of users (admin only).
@@ -424,12 +425,10 @@ func (ctrl *Ctrl) ListUsers(c *fox.Context, args entity.ListUsersArgs) (*ListUse
 		users[i].ResolveAssetURLs()
 	}
 
-	args.Total = total
-	args.NextCursor = nextCursor
-
 	return &ListUsersResponse{
-		Users:      users,
-		Pagination: args.Pagination,
+		Items:      users,
+		NextCursor: nextCursor,
+		Total:      &total,
 	}, nil
 }
 

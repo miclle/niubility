@@ -80,38 +80,28 @@ func (s *Service) IsFollowing(followerID, followingID string) (bool, error) {
 }
 
 // ListFollowing returns a paginated list of users that the given user is following.
-// When pagination.Cursor is non-empty, cursor-based pagination is used instead of OFFSET.
-func (s *Service) ListFollowing(userID string, pagination entity.Pagination) ([]entity.User, int64, string, error) {
-	var total int64
-	err := s.DB.Model(&entity.Follow{}).Where("follower_id = ?", userID).Count(&total).Error
-	if err != nil {
-		return nil, 0, "", fmt.Errorf("count following: %w", err)
-	}
-
+func (s *Service) ListFollowing(userID string, pagination entity.Pagination) ([]entity.User, string, error) {
 	var users []entity.User
 	query := s.DB.
 		Joins("JOIN follows ON follows.following_id = users.id").
 		Where("follows.follower_id = ?", userID).
 		Order("follows.created_at DESC, follows.id DESC")
 
-	var queryErr error
 	if pagination.Cursor != "" {
 		parts, err := entity.DecodeCursor(pagination.Cursor, 2)
 		if err != nil {
-			return nil, 0, "", fmt.Errorf("decode cursor: %w", err)
+			return nil, "", fmt.Errorf("decode cursor: %w", err)
 		}
 		cursorTime, err := time.Parse(time.RFC3339Nano, parts[0])
 		if err != nil {
-			return nil, 0, "", fmt.Errorf("parse cursor created_at: %w", err)
+			return nil, "", fmt.Errorf("parse cursor created_at: %w", err)
 		}
 		cursorID := parts[1]
 		query = query.Where("(follows.created_at, follows.id) < (?, ?)", cursorTime, cursorID)
-		queryErr = query.Limit(pagination.GetLimit()).Find(&users).Error
-	} else {
-		queryErr = query.Offset(pagination.Offset()).Limit(pagination.GetLimit()).Find(&users).Error
 	}
-	if queryErr != nil {
-		return nil, 0, "", fmt.Errorf("list following: %w", queryErr)
+
+	if err := query.Limit(pagination.GetLimit()).Find(&users).Error; err != nil {
+		return nil, "", fmt.Errorf("list following: %w", err)
 	}
 
 	// Build next_cursor — need follow record's created_at and id
@@ -124,42 +114,32 @@ func (s *Service) ListFollowing(userID string, pagination entity.Pagination) ([]
 		}
 	}
 
-	return users, total, nextCursor, nil
+	return users, nextCursor, nil
 }
 
 // ListFollowers returns a paginated list of users who follow the given user.
-// When pagination.Cursor is non-empty, cursor-based pagination is used instead of OFFSET.
-func (s *Service) ListFollowers(userID string, pagination entity.Pagination) ([]entity.User, int64, string, error) {
-	var total int64
-	err := s.DB.Model(&entity.Follow{}).Where("following_id = ?", userID).Count(&total).Error
-	if err != nil {
-		return nil, 0, "", fmt.Errorf("count followers: %w", err)
-	}
-
+func (s *Service) ListFollowers(userID string, pagination entity.Pagination) ([]entity.User, string, error) {
 	var users []entity.User
 	query := s.DB.
 		Joins("JOIN follows ON follows.follower_id = users.id").
 		Where("follows.following_id = ?", userID).
 		Order("follows.created_at DESC, follows.id DESC")
 
-	var queryErr error
 	if pagination.Cursor != "" {
 		parts, err := entity.DecodeCursor(pagination.Cursor, 2)
 		if err != nil {
-			return nil, 0, "", fmt.Errorf("decode cursor: %w", err)
+			return nil, "", fmt.Errorf("decode cursor: %w", err)
 		}
 		cursorTime, err := time.Parse(time.RFC3339Nano, parts[0])
 		if err != nil {
-			return nil, 0, "", fmt.Errorf("parse cursor created_at: %w", err)
+			return nil, "", fmt.Errorf("parse cursor created_at: %w", err)
 		}
 		cursorID := parts[1]
 		query = query.Where("(follows.created_at, follows.id) < (?, ?)", cursorTime, cursorID)
-		queryErr = query.Limit(pagination.GetLimit()).Find(&users).Error
-	} else {
-		queryErr = query.Offset(pagination.Offset()).Limit(pagination.GetLimit()).Find(&users).Error
 	}
-	if queryErr != nil {
-		return nil, 0, "", fmt.Errorf("list followers: %w", queryErr)
+
+	if err := query.Limit(pagination.GetLimit()).Find(&users).Error; err != nil {
+		return nil, "", fmt.Errorf("list followers: %w", err)
 	}
 
 	// Build next_cursor
@@ -171,7 +151,7 @@ func (s *Service) ListFollowers(userID string, pagination entity.Pagination) ([]
 		}
 	}
 
-	return users, total, nextCursor, nil
+	return users, nextCursor, nil
 }
 
 // updateFollowCounts adjusts follower_count and following_count on both users.

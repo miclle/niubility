@@ -12,7 +12,6 @@ import (
 
 // ListComments retrieves top-level comments for a content, with replies and user info preloaded.
 // If attachmentID is non-empty, only comments for that attachment are returned.
-// When pagination.Cursor is non-empty, cursor-based pagination is used instead of OFFSET.
 func (s *Service) ListComments(contentID, attachmentID string, pagination entity.Pagination) ([]entity.Comment, int64, string, error) {
 	var comments []entity.Comment
 	var total int64
@@ -44,10 +43,8 @@ func (s *Service) ListComments(contentID, attachmentID string, pagination entity
 		}
 		cursorID := parts[1]
 		fetchQuery = fetchQuery.Where("(comments.created_at, comments.id) < (?, ?)", cursorTime, cursorID)
-		fetchQuery = fetchQuery.Limit(pagination.GetLimit())
-	} else {
-		fetchQuery = fetchQuery.Offset(pagination.Offset()).Limit(pagination.GetLimit())
 	}
+	fetchQuery = fetchQuery.Limit(pagination.GetLimit())
 
 	if err := fetchQuery.Find(&comments).Error; err != nil {
 		return nil, 0, "", fmt.Errorf("list comments: %w", err)

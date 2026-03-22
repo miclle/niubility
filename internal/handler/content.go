@@ -11,27 +11,24 @@ import (
 
 // ListContentsResponse represents the response for listing contents.
 type ListContentsResponse struct {
-	Contents   []entity.Content  `json:"contents"`
-	Pagination entity.Pagination `json:"pagination"`
+	Items      []entity.Content `json:"items"`
+	NextCursor string           `json:"next_cursor,omitempty"`
 }
 
 // ListContents returns a paginated list of contents with optional filters.
 func (ctrl *Ctrl) ListContents(c *fox.Context, args entity.ListContentsArgs) (*ListContentsResponse, error) {
-	contents, total, nextCursor, err := ctrl.service.ListContents(args)
+	contents, nextCursor, err := ctrl.service.ListContents(args)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
-
-	args.Total = total
-	args.NextCursor = nextCursor
 
 	for i := range contents {
 		contents[i].ResolveAssetURLs()
 	}
 
 	return &ListContentsResponse{
-		Contents:   contents,
-		Pagination: args.Pagination,
+		Items:      contents,
+		NextCursor: nextCursor,
 	}, nil
 }
 

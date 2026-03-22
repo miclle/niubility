@@ -15,11 +15,9 @@ import (
 // GalleryVideoMaxFileSize is the maximum file size for videos in gallery content (200 MB).
 const GalleryVideoMaxFileSize int64 = 200 * 1024 * 1024
 
-// ListContents retrieves a paginated list of contents with optional filters.
-// When args.Cursor is non-empty, cursor-based pagination is used instead of OFFSET.
-func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, int64, string, error) {
+// ListContents retrieves a paginated list of contents with optional filters using cursor-based pagination.
+func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, string, error) {
 	var contents []entity.Content
-	var total int64
 
 	query := s.DB.Model(&entity.Content{})
 
@@ -53,10 +51,6 @@ func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, 
 	}
 	// When args.Status == "all", no filter is applied
 
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, "", fmt.Errorf("count contents: %w", err)
-	}
-
 	// Determine sort mode
 	sortByLikes := args.Sort == entity.SortByLikeCount
 
@@ -66,15 +60,15 @@ func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, 
 			// cursor format: like_count|created_at|id
 			parts, err := entity.DecodeCursor(args.Cursor, 3)
 			if err != nil {
-				return nil, 0, "", fmt.Errorf("decode cursor: %w", err)
+				return nil, "", fmt.Errorf("decode cursor: %w", err)
 			}
 			likeCount, err := strconv.ParseInt(parts[0], 10, 64)
 			if err != nil {
-				return nil, 0, "", fmt.Errorf("parse cursor like_count: %w", err)
+				return nil, "", fmt.Errorf("parse cursor like_count: %w", err)
 			}
 			cursorTime, err := time.Parse(time.RFC3339Nano, parts[1])
 			if err != nil {
-				return nil, 0, "", fmt.Errorf("parse cursor created_at: %w", err)
+				return nil, "", fmt.Errorf("parse cursor created_at: %w", err)
 			}
 			cursorID := parts[2]
 			query = query.Where(
@@ -85,11 +79,11 @@ func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, 
 			// cursor format: created_at|id
 			parts, err := entity.DecodeCursor(args.Cursor, 2)
 			if err != nil {
-				return nil, 0, "", fmt.Errorf("decode cursor: %w", err)
+				return nil, "", fmt.Errorf("decode cursor: %w", err)
 			}
 			cursorTime, err := time.Parse(time.RFC3339Nano, parts[0])
 			if err != nil {
-				return nil, 0, "", fmt.Errorf("parse cursor created_at: %w", err)
+				return nil, "", fmt.Errorf("parse cursor created_at: %w", err)
 			}
 			cursorID := parts[1]
 			query = query.Where(
@@ -105,20 +99,10 @@ func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, 
 		orderClause = "like_count DESC, created_at DESC, id DESC"
 	}
 
-	if args.Cursor != "" {
-		// Cursor mode: no offset
-		if err := query.Preload("Author").Preload("Speaker").Preload("Attachments", func(db *gorm.DB) *gorm.DB {
-			return db.Order("sort_order ASC")
-		}).Limit(args.GetLimit()).Order(orderClause).Find(&contents).Error; err != nil {
-			return nil, 0, "", fmt.Errorf("list contents: %w", err)
-		}
-	} else {
-		// Offset mode (backward compatible)
-		if err := query.Preload("Author").Preload("Speaker").Preload("Attachments", func(db *gorm.DB) *gorm.DB {
-			return db.Order("sort_order ASC")
-		}).Offset(args.Offset()).Limit(args.GetLimit()).Order(orderClause).Find(&contents).Error; err != nil {
-			return nil, 0, "", fmt.Errorf("list contents: %w", err)
-		}
+	if err := query.Preload("Author").Preload("Speaker").Preload("Attachments", func(db *gorm.DB) *gorm.DB {
+		return db.Order("sort_order ASC")
+	}).Limit(args.GetLimit()).Order(orderClause).Find(&contents).Error; err != nil {
+		return nil, "", fmt.Errorf("list contents: %w", err)
 	}
 
 	// Build next_cursor from the last item
@@ -133,7 +117,7 @@ func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, 
 		}
 	}
 
-	return contents, total, nextCursor, nil
+	return contents, nextCursor, nil
 }
 
 // GetContentByID retrieves a content by ID with author and attachments preloaded.

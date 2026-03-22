@@ -36,12 +36,11 @@ export interface Department {
   updated_at: string
 }
 
-// Pagination represents pagination parameters for list queries.
-export interface Pagination {
-  page: number
-  limit: number
-  total: number
+// PaginatedList represents a cursor-paginated list response.
+export interface PaginatedList<T> {
+  items: T[]
   next_cursor?: string
+  total?: number
 }
 
 import type { Category } from './content'
@@ -58,10 +57,7 @@ export interface BootResponse {
 }
 
 // ListUsersResponse represents the response for listing users.
-export interface ListUsersResponse {
-  users: User[]
-  pagination: Pagination
-}
+export type ListUsersResponse = PaginatedList<User>
 
 // UpdateUserArgs represents the fields that can be updated for a user.
 export interface UpdateUserArgs {

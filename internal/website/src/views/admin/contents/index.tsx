@@ -37,11 +37,11 @@ function AdminContents() {
       queryKey: ['admin-contents'],
       queryFn: ({ pageParam }) =>
         listContents({ cursor: pageParam, limit, status: 'all' }),
-      getNextPageParam: (lastPage) => lastPage.data.pagination.next_cursor || undefined,
+      getNextPageParam: (lastPage) => lastPage.data.next_cursor || undefined,
       initialPageParam: undefined as string | undefined,
     })
 
-  const contents = data?.pages.flatMap((p) => p.data.contents) ?? []
+  const contents = data?.pages.flatMap((p) => p.data.items) ?? []
   const loaderRef = useRef<HTMLDivElement>(null)
   const handleIntersect = useCallback(() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage() }, [hasNextPage, isFetchingNextPage, fetchNextPage])
   useIntersection(loaderRef, handleIntersect)

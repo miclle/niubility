@@ -38,8 +38,7 @@ func (s *Service) GetUserByID(id string) (*entity.User, error) {
 	return &user, nil
 }
 
-// ListUsers retrieves a paginated list of users with optional search.
-// When args.Cursor is non-empty, cursor-based pagination is used instead of OFFSET.
+// ListUsers retrieves a paginated list of users with optional search using cursor-based pagination.
 func (s *Service) ListUsers(args entity.ListUsersArgs) ([]entity.User, int64, string, error) {
 	var users []entity.User
 	var total int64
@@ -77,13 +76,10 @@ func (s *Service) ListUsers(args entity.ListUsersArgs) ([]entity.User, int64, st
 		}
 		cursorID := parts[1]
 		query = query.Where("(created_at, id) < (?, ?)", cursorTime, cursorID)
-		if err := query.Limit(args.GetLimit()).Order("created_at DESC, id DESC").Find(&users).Error; err != nil {
-			return nil, 0, "", fmt.Errorf("list users: %w", err)
-		}
-	} else {
-		if err := query.Offset(args.Offset()).Limit(args.GetLimit()).Order("created_at DESC, id DESC").Find(&users).Error; err != nil {
-			return nil, 0, "", fmt.Errorf("list users: %w", err)
-		}
+	}
+
+	if err := query.Limit(args.GetLimit()).Order("created_at DESC, id DESC").Find(&users).Error; err != nil {
+		return nil, 0, "", fmt.Errorf("list users: %w", err)
 	}
 
 	// Build next_cursor from the last item

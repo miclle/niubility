@@ -14,21 +14,11 @@ func ID() string {
 	return uuid.New().String()
 }
 
-// Pagination represents pagination parameters for list queries.
+// Pagination represents cursor-based pagination request parameters.
+// This struct is used for form binding only; responses use flat fields (items, next_cursor, total).
 type Pagination struct {
-	Page       int    `json:"page"                  form:"page"`
-	Limit      int    `json:"limit"                 form:"limit"`
-	Total      int64  `json:"total"`
-	Cursor     string `json:"cursor,omitempty"       form:"cursor"`
-	NextCursor string `json:"next_cursor,omitempty"`
-}
-
-// Offset returns the offset for database queries based on page and limit.
-func (p *Pagination) Offset() int {
-	if p.Page <= 0 {
-		p.Page = 1
-	}
-	return (p.Page - 1) * p.GetLimit()
+	Limit  int    `form:"limit"`
+	Cursor string `form:"cursor"`
 }
 
 // GetLimit returns the limit with a default value.

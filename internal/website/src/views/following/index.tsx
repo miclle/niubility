@@ -16,12 +16,12 @@ function FollowingFeed() {
       queryKey: ['contents', { followed_by_user_id: currentUser?.id }],
       queryFn: ({ pageParam }) =>
         listContents({ cursor: pageParam, limit: 12, followed_by_user_id: currentUser?.id }),
-      getNextPageParam: (lastPage) => lastPage.data.pagination.next_cursor || undefined,
+      getNextPageParam: (lastPage) => lastPage.data.next_cursor || undefined,
       initialPageParam: undefined as string | undefined,
       enabled: !!currentUser,
     })
 
-  const contents = data?.pages.flatMap((p) => p.data.contents) ?? []
+  const contents = data?.pages.flatMap((p) => p.data.items) ?? []
   const loadMoreRef = useRef<HTMLDivElement>(null)
   const handleIntersect = useCallback(() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage() }, [hasNextPage, isFetchingNextPage, fetchNextPage])
   useIntersection(loadMoreRef, handleIntersect)

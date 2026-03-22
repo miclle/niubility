@@ -219,12 +219,12 @@ function AdminUsers() {
           search: search || undefined,
           department_id: departmentId ? parseInt(departmentId, 10) : undefined,
         }),
-      getNextPageParam: (lastPage) => lastPage.data.pagination.next_cursor || undefined,
+      getNextPageParam: (lastPage) => lastPage.data.next_cursor || undefined,
       initialPageParam: undefined as string | undefined,
     })
 
-  const users = data?.pages.flatMap((p) => p.data.users) ?? []
-  const total = data?.pages[0]?.data.pagination.total ?? 0
+  const users = data?.pages.flatMap((p) => p.data.items) ?? []
+  const total = data?.pages[0]?.data.total ?? 0
   const observerRef = useRef<HTMLDivElement>(null)
   const handleIntersect = useCallback(() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage() }, [hasNextPage, isFetchingNextPage, fetchNextPage])
   useIntersection(observerRef, handleIntersect)

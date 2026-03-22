@@ -22,12 +22,12 @@ function MyContents() {
       queryKey: ['my-contents', { authorId: currentUser?.id, status: activeTab }],
       queryFn: ({ pageParam }) =>
         listContents({ cursor: pageParam, limit, author_id: currentUser?.id, status: activeTab }),
-      getNextPageParam: (lastPage) => lastPage.data.pagination.next_cursor || undefined,
+      getNextPageParam: (lastPage) => lastPage.data.next_cursor || undefined,
       initialPageParam: undefined as string | undefined,
       enabled: !!currentUser,
     })
 
-  const contents = data?.pages.flatMap((p) => p.data.contents) ?? []
+  const contents = data?.pages.flatMap((p) => p.data.items) ?? []
   const loaderRef = useRef<HTMLDivElement>(null)
   const handleIntersect = useCallback(() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage() }, [hasNextPage, isFetchingNextPage, fetchNextPage])
   useIntersection(loaderRef, handleIntersect)

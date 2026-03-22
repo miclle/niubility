@@ -9,9 +9,10 @@ import (
 
 // ListCommentsResponse represents the response for listing comments.
 type ListCommentsResponse struct {
-	Comments        []entity.Comment  `json:"comments"`
-	Pagination      entity.Pagination `json:"pagination"`
-	LikedCommentIDs []string          `json:"liked_comment_ids"`
+	Items           []entity.Comment `json:"items"`
+	NextCursor      string           `json:"next_cursor,omitempty"`
+	Total           int64            `json:"total"`
+	LikedCommentIDs []string         `json:"liked_comment_ids"`
 }
 
 // ListComments returns comments for a content item.
@@ -27,9 +28,6 @@ func (ctrl *Ctrl) ListComments(c *fox.Context, args entity.Pagination) (*ListCom
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
-
-	args.Total = total
-	args.NextCursor = nextCursor
 
 	// Collect all comment IDs (top-level + replies) for liked check
 	var allIDs []string
@@ -47,8 +45,9 @@ func (ctrl *Ctrl) ListComments(c *fox.Context, args entity.Pagination) (*ListCom
 	}
 
 	return &ListCommentsResponse{
-		Comments:        comments,
-		Pagination:      args,
+		Items:           comments,
+		NextCursor:      nextCursor,
+		Total:           total,
 		LikedCommentIDs: likedIDs,
 	}, nil
 }
