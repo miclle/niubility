@@ -28,6 +28,13 @@ export async function computeFileChecksum(file: File): Promise<string> {
   final.set(new Uint8Array(buffer), 0)
   final.set(new Uint8Array(sizeBytes), buffer.byteLength)
 
+  // crypto.subtle is unavailable in insecure contexts (non-HTTPS).
+  // Fall back to a simple size-based fingerprint when it is missing.
+  if (!crypto.subtle) {
+    const fallback = Array.from(final.slice(0, 32)).map((b) => b.toString(16).padStart(2, '0')).join('')
+    return fallback + size.toString(16).padStart(16, '0')
+  }
+
   const hash = await crypto.subtle.digest('SHA-256', final)
   return Array.from(new Uint8Array(hash)).map((b) => b.toString(16).padStart(2, '0')).join('')
 }

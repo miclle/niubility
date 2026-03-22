@@ -50,9 +50,9 @@ function GalleryEditor() {
   const onLoadError = () => navigate('/')
 
   return (
-    <div className="max-w-[840px] mx-auto p-6">
+    <div className="max-w-[1200px] mx-auto p-6">
       <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>
-        {isNew ? '发布图文' : '编辑图文'}
+        {isNew ? '发布图集' : '编辑图集'}
       </h1>
       <GalleryEditorForm id={id} onSaved={onSaved} onCancel={onCancel} onLoadError={onLoadError} />
     </div>

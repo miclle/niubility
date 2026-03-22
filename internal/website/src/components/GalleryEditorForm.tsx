@@ -355,7 +355,7 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
       {/* Summary */}
       <div>
         <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>描述</label>
-        <Textarea placeholder="请输入图文描述" value={summary} onChange={(e) => setSummary(e.target.value)} rows={3} />
+        <Textarea placeholder="请输入图集描述" value={summary} onChange={(e) => setSummary(e.target.value)} rows={3} />
       </div>
 
       {/* Gallery Items */}

@@ -13,7 +13,7 @@ import { useAppContext } from 'src/context/app'
 import { useIntersection } from 'src/hooks/use-intersection'
 import type { Content } from 'src/types/content'
 
-const typeLabels: Record<string, string> = { video: '视频', gallery: '图文', article: '长文' }
+const typeLabels: Record<string, string> = { video: '视频', gallery: '图集', article: '文章' }
 const typeIcons: Record<string, React.ReactNode> = {
   video: <Play size={12} />,
   gallery: <Image size={12} />,

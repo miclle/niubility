@@ -85,7 +85,7 @@ function ContentCard({ content, hideAuthor = false }: { content: Content; hideAu
           {content.type === 'article' && (
             <div className="absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium" style={{ background: 'rgba(0,0,0,0.7)', color: 'white' }}>
               <FileText size={12} />
-              长文
+              文章
             </div>
           )}
         </div>

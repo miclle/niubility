@@ -236,11 +236,11 @@ function AdminLayout() {
                 </DropdownMenuItem>
                 <DropdownMenuItem render={<Link to={contentNewPath('gallery')} />}>
                   <ImageIcon size={16} />
-                  图文
+                  图集
                 </DropdownMenuItem>
                 <DropdownMenuItem render={<Link to={contentNewPath('article')} />}>
                   <FileText size={16} />
-                  长文
+                  文章
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -54,7 +54,7 @@ function ArticleEditor() {
   const onLoadError = () => navigate('/')
 
   return (
-    <div className="max-w-[840px] mx-auto p-6">
+    <div className="max-w-[840px] mx-auto py-6">
       <ArticleEditorForm id={id} defaultSpeaker={defaultSpeaker} onSaved={onSaved} onCancel={onCancel} onLoadError={onLoadError} />
     </div>
   )

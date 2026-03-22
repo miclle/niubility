@@ -133,7 +133,7 @@ function MainLayout() {
         style={{ color: '#0f0f0f' }}
       >
         <ImageIcon size={24} />
-        <span className="text-sm">图文</span>
+        <span className="text-sm">图集</span>
       </NavLink>
       <NavLink
         to={typeFilterPath('article')}
@@ -141,7 +141,7 @@ function MainLayout() {
         style={{ color: '#0f0f0f' }}
       >
         <FileText size={24} />
-        <span className="text-sm">长文</span>
+        <span className="text-sm">文章</span>
       </NavLink>
     </div>
   )
@@ -260,11 +260,11 @@ function MainLayout() {
                   </DropdownMenuItem>
                   <DropdownMenuItem render={<Link to={contentNewPath('gallery')} />}>
                     <ImageIcon size={16} />
-                    图文
+                    图集
                   </DropdownMenuItem>
                   <DropdownMenuItem render={<Link to={contentNewPath('article')} />}>
                     <FileText size={16} />
-                    长文
+                    文章
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
