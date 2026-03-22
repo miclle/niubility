@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect, useCallback } from 'react'
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ThumbsUp, Share2, ArrowLeft, MessageCircle, Pencil } from 'lucide-react'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -30,6 +30,7 @@ function getContentCover(content: Content): string {
 function VideoDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { currentUser } = useAppContext()
   const [content, setContent] = useState<Content | null>(null)
   const [relatedContents, setRelatedContents] = useState<Content[]>([])
@@ -40,12 +41,22 @@ function VideoDetail() {
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
   const [commentCount, setCommentCount] = useState(0)
-  const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
+
+  // Derive currentVideoIndex from URL search param ?v=N
+  const vParam = searchParams.get('v')
+  const currentVideoIndex = vParam !== null ? parseInt(vParam, 10) || 0 : 0
+
+  const setCurrentVideoIndex = useCallback((index: number) => {
+    if (index === 0) {
+      setSearchParams({}, { replace: true })
+    } else {
+      setSearchParams({ v: String(index) }, { replace: true })
+    }
+  }, [setSearchParams])
 
   useEffect(() => {
     if (!id) return
     setLoading(true)
-    setCurrentVideoIndex(0)
     getContent(id)
       .then((res) => {
         // Redirect if type doesn't match this route
@@ -157,8 +168,40 @@ function VideoDetail() {
     </div>
   )
 
+  const renderPlaylist = () => {
+    if (videoItems.length <= 1) return null
+    return (
+      <div className="rounded-xl overflow-hidden mb-4" style={{ border: '1px solid #e5e5e5' }}>
+        <div className="px-4 py-2 text-sm font-medium" style={{ background: '#f9f9f9', color: '#0f0f0f' }}>
+          播放列表 · {videoItems.length} 个视频
+        </div>
+        <div className="max-h-60 overflow-y-auto">
+          {videoItems.map((v, i) => (
+            <button
+              key={v.id}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors cursor-pointer"
+              style={{ background: i === currentVideoIndex ? 'rgba(0,0,0,0.05)' : 'transparent', borderTop: i > 0 ? '1px solid #f2f2f2' : 'none' }}
+              onClick={() => setCurrentVideoIndex(i)}
+            >
+              <span className="text-xs font-medium w-5 text-center flex-shrink-0" style={{ color: i === currentVideoIndex ? '#065fd4' : '#909090' }}>
+                {i + 1}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm line-clamp-1" style={{ color: '#0f0f0f', fontWeight: i === currentVideoIndex ? 600 : 400 }}>
+                  {v.title || `视频 ${i + 1}`}
+                </div>
+                {v.description && <div className="text-xs line-clamp-1" style={{ color: '#606060' }}>{v.description}</div>}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   const renderSidebar = () => (
     <div className="hidden xl:block flex-shrink-0 w-[400px]">
+      {renderPlaylist()}
       <Link to={categoryPath} className="inline-flex items-center gap-1 text-sm mb-4 hover:underline" style={{ color: '#606060' }}>
         <ArrowLeft size={16} />
         返回{categoryLabel}
@@ -204,6 +247,7 @@ function VideoDetail() {
         {currentVideo ? (
           <div className={`relative bg-black overflow-hidden ${theaterMode ? 'rounded-none' : 'rounded-xl'}`} style={{ width: '100%', aspectRatio: '16/9' }}>
             <VideoPlayer
+              key={currentVideo.id}
               src={currentVideo.url}
               poster={content.cover_url || '/default-cover.svg'}
               theaterMode={theaterMode}
@@ -217,33 +261,10 @@ function VideoDetail() {
           </div>
         )}
 
-        {videoItems.length > 1 && (
-          <div className="mt-3 rounded-xl overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
-            <div className="px-4 py-2 text-sm font-medium" style={{ background: '#f9f9f9', color: '#0f0f0f' }}>
-              播放列表 · {videoItems.length} 个视频
-            </div>
-            <div className="max-h-60 overflow-y-auto">
-              {videoItems.map((v, i) => (
-                <button
-                  key={v.id}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
-                  style={{ background: i === currentVideoIndex ? 'rgba(0,0,0,0.05)' : 'transparent', borderTop: i > 0 ? '1px solid #f2f2f2' : 'none' }}
-                  onClick={() => setCurrentVideoIndex(i)}
-                >
-                  <span className="text-xs font-medium w-5 text-center flex-shrink-0" style={{ color: i === currentVideoIndex ? '#065fd4' : '#909090' }}>
-                    {i + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm line-clamp-1" style={{ color: '#0f0f0f', fontWeight: i === currentVideoIndex ? 600 : 400 }}>
-                      {v.title || `视频 ${i + 1}`}
-                    </div>
-                    {v.description && <div className="text-xs line-clamp-1" style={{ color: '#606060' }}>{v.description}</div>}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Playlist below player on small screens (no sidebar) */}
+        <div className="xl:hidden mt-3">
+          {renderPlaylist()}
+        </div>
 
         <h1 className="text-xl font-medium mt-4 mb-3" style={{ color: '#0f0f0f', lineHeight: 1.4 }}>{content.title}</h1>
         {renderActions()}
