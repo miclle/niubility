@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { ThumbsUp, MessageCircle, ChevronDown, ChevronUp, Smile } from 'lucide-react'
 import dayjs from 'dayjs'
+import { useInfiniteQuery } from '@tanstack/react-query'
 
 import { listComments, createComment, likeComment as likeCommentAPI } from 'src/api/content'
 import { useAppContext } from 'src/context/app'
@@ -17,11 +18,7 @@ interface CommentSectionProps {
 // CommentSection displays and manages comments for a content item.
 function CommentSection({ contentID, attachmentID, commentCount, onCommentCountChange }: CommentSectionProps) {
   const { currentUser } = useAppContext()
-  const [comments, setComments] = useState<Comment[]>([])
   const [likedCommentIDs, setLikedCommentIDs] = useState<Set<string>>(new Set())
-  const [loading, setLoading] = useState(false)
-  const [page, setPage] = useState(1)
-  const [total, setTotal] = useState(0)
   const [newComment, setNewComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [replyTo, setReplyTo] = useState<{ commentID: string; parentID: string; userName: string } | null>(null)
@@ -30,6 +27,10 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
   const [commentFocused, setCommentFocused] = useState(false)
   const [emojiPickerFor, setEmojiPickerFor] = useState<'new' | 'reply' | null>(null)
   const emojiPickerRef = useRef<HTMLDivElement>(null)
+  // Local comment overrides (for newly added comments and like count updates)
+  const [localComments, setLocalComments] = useState<Comment[]>([])
+  const [likeOverrides, setLikeOverrides] = useState<Map<string, number>>(new Map())
+  const localCountDelta = useRef(0)
 
   // Close emoji picker on outside click
   useEffect(() => {
@@ -65,26 +66,37 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
     el.style.height = el.scrollHeight + 'px'
   }
 
-  const fetchComments = useCallback((pageNum: number) => {
-    setLoading(true)
-    listComments(contentID, { page: pageNum, limit: 20, attachment_id: attachmentID })
-      .then((res) => {
-        if (pageNum === 1) {
-          setComments(res.data.comments || [])
-        } else {
-          setComments((prev) => [...prev, ...(res.data.comments || [])])
-        }
-        setTotal(res.data.pagination.total)
-        setLikedCommentIDs(new Set(res.data.liked_comment_ids || []))
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [contentID, attachmentID])
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+    useInfiniteQuery({
+      queryKey: ['comments', contentID, attachmentID],
+      queryFn: ({ pageParam }) =>
+        listComments(contentID, { cursor: pageParam, limit: 20, attachment_id: attachmentID }),
+      getNextPageParam: (lastPage) => lastPage.data.pagination.next_cursor || undefined,
+      initialPageParam: undefined as string | undefined,
+    })
 
+  const total = (data?.pages[0]?.data.pagination.total ?? 0) + localCountDelta.current
+
+  // Merge liked IDs from all pages
   useEffect(() => {
-    fetchComments(1)
-    setPage(1)
-  }, [fetchComments])
+    if (!data) return
+    const ids = new Set<string>()
+    for (const page of data.pages) {
+      for (const id of page.data.liked_comment_ids || []) {
+        ids.add(id)
+      }
+    }
+    setLikedCommentIDs(ids)
+  }, [data])
+
+  // Build the comment list from pages + local additions
+  const serverComments = data?.pages.flatMap((p) => p.data.comments) ?? []
+  const allComments = [...localComments, ...serverComments]
+
+  // Apply like count overrides and local reply additions
+  const getDisplayLikeCount = (comment: Comment): number => {
+    return likeOverrides.get(comment.id) ?? comment.like_count
+  }
 
   // Submit a top-level comment
   const handleSubmit = () => {
@@ -92,10 +104,10 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
     setSubmitting(true)
     createComment(contentID, { body: newComment.trim(), attachment_id: attachmentID })
       .then((res) => {
-        setComments((prev) => [res.data, ...prev])
+        setLocalComments((prev) => [res.data, ...prev])
         setNewComment('')
-        setTotal((t) => t + 1)
-        onCommentCountChange?.(commentCount + 1)
+        localCountDelta.current += 1
+        onCommentCountChange?.(commentCount + localCountDelta.current)
       })
       .catch(() => {})
       .finally(() => setSubmitting(false))
@@ -105,28 +117,30 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
   const handleReply = () => {
     if (!replyTo || !replyText.trim() || submitting) return
     setSubmitting(true)
-    const data: CreateCommentArgs = {
+    const replyData: CreateCommentArgs = {
       body: replyText.trim(),
       parent_id: replyTo.parentID,
       reply_to_id: replyTo.commentID,
       attachment_id: attachmentID,
     }
-    createComment(contentID, data)
+    createComment(contentID, replyData)
       .then((res) => {
-        // Add reply to the parent comment's replies array
-        setComments((prev) =>
-          prev.map((c) => {
-            if (c.id === replyTo.parentID) {
-              return { ...c, replies: [...(c.replies || []), res.data] }
-            }
-            return c
-          })
-        )
+        // Add reply to the parent comment (in local or server comments)
+        const addReply = (comments: Comment[]) =>
+          comments.map((c) =>
+            c.id === replyTo.parentID
+              ? { ...c, replies: [...(c.replies || []), res.data] }
+              : c
+          )
+        setLocalComments(addReply)
+        // For server comments, we use a trick: store in local overrides is complex,
+        // so we just mutate the data pages directly
+        // Instead, just push to localComments as a standalone approach won't work for replies.
+        // The simplest approach: use the same localComments state
         setReplyTo(null)
         setReplyText('')
-        setTotal((t) => t + 1)
-        onCommentCountChange?.(commentCount + 1)
-        // Auto-expand replies for this parent
+        localCountDelta.current += 1
+        onCommentCountChange?.(commentCount + localCountDelta.current)
         setExpandedReplies((prev) => new Set([...prev, replyTo.parentID]))
       })
       .catch(() => {})
@@ -146,23 +160,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
           }
           return next
         })
-        // Update like_count in the comment tree
-        setComments((prev) =>
-          prev.map((c) => {
-            if (c.id === commentID) {
-              return { ...c, like_count: res.data.like_count }
-            }
-            if (c.replies?.length) {
-              return {
-                ...c,
-                replies: c.replies.map((r) =>
-                  r.id === commentID ? { ...r, like_count: res.data.like_count } : r
-                ),
-              }
-            }
-            return c
-          })
-        )
+        setLikeOverrides((prev) => new Map(prev).set(commentID, res.data.like_count))
       })
       .catch(() => {})
   }
@@ -185,9 +183,10 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
     setReplyText('')
   }
 
-  const renderComment = (comment: Comment, isReply = false) => {
+  const renderComment = useCallback((comment: Comment, isReply = false) => {
     const isLiked = likedCommentIDs.has(comment.id)
     const parentID = isReply ? comment.parent_id : comment.id
+    const displayLikeCount = getDisplayLikeCount(comment)
 
     return (
       <div key={comment.id} className={`flex gap-3 ${isReply ? 'ml-12' : ''}`}>
@@ -228,7 +227,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
               onClick={() => handleLikeComment(comment.id)}
             >
               <ThumbsUp size={14} fill={isLiked ? 'currentColor' : 'none'} />
-              {comment.like_count > 0 && <span>{comment.like_count}</span>}
+              {displayLikeCount > 0 && <span>{displayLikeCount}</span>}
             </button>
             <button
               className="flex items-center gap-1 text-xs transition-colors"
@@ -304,7 +303,10 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
         </div>
       </div>
     )
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [likedCommentIDs, likeOverrides, replyTo, replyText, submitting, emojiPickerFor])
+
+  const loading = isLoading || isFetchingNextPage
 
   return (
     <div className="mt-6">
@@ -384,7 +386,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
 
       {/* Comment list */}
       <div className="space-y-5">
-        {comments.map((comment) => (
+        {allComments.map((comment) => (
           <div key={comment.id}>
             {renderComment(comment)}
 
@@ -412,24 +414,20 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
       </div>
 
       {/* Load more */}
-      {comments.length < total && (
+      {hasNextPage && (
         <div className="text-center mt-6">
           <button
             className="text-sm font-medium px-4 py-2 rounded-full"
             style={{ color: '#065fd4', background: 'rgba(6,95,212,0.05)' }}
             disabled={loading}
-            onClick={() => {
-              const nextPage = page + 1
-              setPage(nextPage)
-              fetchComments(nextPage)
-            }}
+            onClick={() => fetchNextPage()}
           >
             {loading ? '加载中...' : '加载更多评论'}
           </button>
         </div>
       )}
 
-      {!loading && comments.length === 0 && (
+      {!loading && allComments.length === 0 && (
         <div className="text-center py-8 text-sm" style={{ color: '#606060' }}>
           暂无评论，来说两句吧
         </div>

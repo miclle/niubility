@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -79,49 +80,98 @@ func (s *Service) IsFollowing(followerID, followingID string) (bool, error) {
 }
 
 // ListFollowing returns a paginated list of users that the given user is following.
-func (s *Service) ListFollowing(userID string, pagination entity.Pagination) ([]entity.User, int64, error) {
+// When pagination.Cursor is non-empty, cursor-based pagination is used instead of OFFSET.
+func (s *Service) ListFollowing(userID string, pagination entity.Pagination) ([]entity.User, int64, string, error) {
 	var total int64
 	err := s.DB.Model(&entity.Follow{}).Where("follower_id = ?", userID).Count(&total).Error
 	if err != nil {
-		return nil, 0, fmt.Errorf("count following: %w", err)
+		return nil, 0, "", fmt.Errorf("count following: %w", err)
 	}
 
 	var users []entity.User
-	err = s.DB.
+	query := s.DB.
 		Joins("JOIN follows ON follows.following_id = users.id").
 		Where("follows.follower_id = ?", userID).
-		Order("follows.created_at DESC").
-		Offset(pagination.Offset()).
-		Limit(pagination.GetLimit()).
-		Find(&users).Error
-	if err != nil {
-		return nil, 0, fmt.Errorf("list following: %w", err)
+		Order("follows.created_at DESC, follows.id DESC")
+
+	var queryErr error
+	if pagination.Cursor != "" {
+		parts, err := entity.DecodeCursor(pagination.Cursor, 2)
+		if err != nil {
+			return nil, 0, "", fmt.Errorf("decode cursor: %w", err)
+		}
+		cursorTime, err := time.Parse(time.RFC3339Nano, parts[0])
+		if err != nil {
+			return nil, 0, "", fmt.Errorf("parse cursor created_at: %w", err)
+		}
+		cursorID := parts[1]
+		query = query.Where("(follows.created_at, follows.id) < (?, ?)", cursorTime, cursorID)
+		queryErr = query.Limit(pagination.GetLimit()).Find(&users).Error
+	} else {
+		queryErr = query.Offset(pagination.Offset()).Limit(pagination.GetLimit()).Find(&users).Error
+	}
+	if queryErr != nil {
+		return nil, 0, "", fmt.Errorf("list following: %w", queryErr)
 	}
 
-	return users, total, nil
+	// Build next_cursor — need follow record's created_at and id
+	var nextCursor string
+	if len(users) == pagination.GetLimit() {
+		// Fetch the last follow record to get its created_at and id
+		var lastFollow entity.Follow
+		if err := s.DB.Where("follower_id = ? AND following_id = ?", userID, users[len(users)-1].ID).First(&lastFollow).Error; err == nil {
+			nextCursor = entity.EncodeCursor(lastFollow.CreatedAt.Format(time.RFC3339Nano), lastFollow.ID)
+		}
+	}
+
+	return users, total, nextCursor, nil
 }
 
 // ListFollowers returns a paginated list of users who follow the given user.
-func (s *Service) ListFollowers(userID string, pagination entity.Pagination) ([]entity.User, int64, error) {
+// When pagination.Cursor is non-empty, cursor-based pagination is used instead of OFFSET.
+func (s *Service) ListFollowers(userID string, pagination entity.Pagination) ([]entity.User, int64, string, error) {
 	var total int64
 	err := s.DB.Model(&entity.Follow{}).Where("following_id = ?", userID).Count(&total).Error
 	if err != nil {
-		return nil, 0, fmt.Errorf("count followers: %w", err)
+		return nil, 0, "", fmt.Errorf("count followers: %w", err)
 	}
 
 	var users []entity.User
-	err = s.DB.
+	query := s.DB.
 		Joins("JOIN follows ON follows.follower_id = users.id").
 		Where("follows.following_id = ?", userID).
-		Order("follows.created_at DESC").
-		Offset(pagination.Offset()).
-		Limit(pagination.GetLimit()).
-		Find(&users).Error
-	if err != nil {
-		return nil, 0, fmt.Errorf("list followers: %w", err)
+		Order("follows.created_at DESC, follows.id DESC")
+
+	var queryErr error
+	if pagination.Cursor != "" {
+		parts, err := entity.DecodeCursor(pagination.Cursor, 2)
+		if err != nil {
+			return nil, 0, "", fmt.Errorf("decode cursor: %w", err)
+		}
+		cursorTime, err := time.Parse(time.RFC3339Nano, parts[0])
+		if err != nil {
+			return nil, 0, "", fmt.Errorf("parse cursor created_at: %w", err)
+		}
+		cursorID := parts[1]
+		query = query.Where("(follows.created_at, follows.id) < (?, ?)", cursorTime, cursorID)
+		queryErr = query.Limit(pagination.GetLimit()).Find(&users).Error
+	} else {
+		queryErr = query.Offset(pagination.Offset()).Limit(pagination.GetLimit()).Find(&users).Error
+	}
+	if queryErr != nil {
+		return nil, 0, "", fmt.Errorf("list followers: %w", queryErr)
 	}
 
-	return users, total, nil
+	// Build next_cursor
+	var nextCursor string
+	if len(users) == pagination.GetLimit() {
+		var lastFollow entity.Follow
+		if err := s.DB.Where("following_id = ? AND follower_id = ?", userID, users[len(users)-1].ID).First(&lastFollow).Error; err == nil {
+			nextCursor = entity.EncodeCursor(lastFollow.CreatedAt.Format(time.RFC3339Nano), lastFollow.ID)
+		}
+	}
+
+	return users, total, nextCursor, nil
 }
 
 // updateFollowCounts adjusts follower_count and following_count on both users.

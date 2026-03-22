@@ -23,12 +23,13 @@ func (ctrl *Ctrl) ListComments(c *fox.Context, args entity.Pagination) (*ListCom
 		return nil, httperrors.ErrUnauthorized
 	}
 
-	comments, total, err := ctrl.service.ListComments(contentID, attachmentID, args)
+	comments, total, nextCursor, err := ctrl.service.ListComments(contentID, attachmentID, args)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
 
 	args.Total = total
+	args.NextCursor = nextCursor
 
 	// Collect all comment IDs (top-level + replies) for liked check
 	var allIDs []string

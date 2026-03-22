@@ -22,7 +22,7 @@ export function register(data: { username: string; email: string; password: stri
 }
 
 // listUsers fetches a paginated list of users with optional search (admin only).
-export function listUsers(params?: { page?: number; limit?: number; search?: string; department_id?: number }) {
+export function listUsers(params?: { page?: number; limit?: number; cursor?: string; search?: string; department_id?: number }) {
   return client.get<ListUsersResponse>('/admin/users', { params })
 }
 
@@ -77,11 +77,11 @@ export function toggleFollow(username: string) {
 }
 
 // listFollowing fetches the list of users that a user is following.
-export function listFollowing(username: string, params?: { page?: number; limit?: number }) {
+export function listFollowing(username: string, params?: { page?: number; limit?: number; cursor?: string }) {
   return client.get<ListUsersResponse>(`/users/${username}/following`, { params })
 }
 
 // listFollowers fetches the list of users who follow a user.
-export function listFollowers(username: string, params?: { page?: number; limit?: number }) {
+export function listFollowers(username: string, params?: { page?: number; limit?: number; cursor?: string }) {
   return client.get<ListUsersResponse>(`/users/${username}/followers`, { params })
 }

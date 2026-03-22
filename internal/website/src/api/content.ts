@@ -32,7 +32,7 @@ export function importContents(data: ImportContentsArgs) {
 }
 
 // listComments fetches comments for a content item, optionally filtered by attachment.
-export function listComments(contentID: string, params?: { page?: number; limit?: number; attachment_id?: string }) {
+export function listComments(contentID: string, params?: { page?: number; limit?: number; cursor?: string; attachment_id?: string }) {
   return client.get<ListCommentsResponse>(`/contents/${contentID}/comments`, { params })
 }
 

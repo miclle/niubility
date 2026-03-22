@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useRef, useCallback } from 'react'
 import { useLocation, useOutletContext } from 'react-router-dom'
+import { useInfiniteQuery } from '@tanstack/react-query'
 
 import { listContents } from 'src/api/content'
 import ContentCard from 'src/components/ContentCard'
-import type { Content, ContentType, ListContentsArgs } from 'src/types/content'
+import { useIntersection } from 'src/hooks/use-intersection'
+import type { ContentType, ListContentsArgs } from 'src/types/content'
 import type { ProfileContext } from './index'
 
 type ContentTab = 'all' | 'video' | 'gallery' | 'article' | 'speaker'
@@ -17,105 +19,37 @@ function tabFromPath(pathname: string): ContentTab {
   return 'all'
 }
 
-const limit = 12
-
 // ProfileContents displays the content grid for a user profile (all/video/article/speaker).
 export default function ProfileContents() {
   const { profile } = useOutletContext<ProfileContext>()
   const location = useLocation()
   const tab = tabFromPath(location.pathname)
+  const userID = profile.user.id
 
-  const [contents, setContents] = useState<Content[]>([])
-  const [hasMore, setHasMore] = useState(true)
-  const [loading, setLoading] = useState(false)
-  const loadingRef = useRef(false)
-  const pageRef = useRef(1)
-  const hasMoreRef = useRef(true)
-  const tabRef = useRef(tab)
-  const userIdRef = useRef(profile.user.id)
-  const observerRef = useRef<IntersectionObserver | null>(null)
-  const loadMoreRef = useRef<HTMLDivElement>(null)
-
-  // Keep refs in sync
-  tabRef.current = tab
-  userIdRef.current = profile.user.id
-
-  // Build query params for content list
-  const buildParams = useCallback((userID: string, currentTab: ContentTab, pageNum: number): ListContentsArgs => {
-    const params: ListContentsArgs = { page: pageNum, limit }
-    if (currentTab === 'speaker') {
-      params.speaker_id = userID
-    } else {
-      params.author_id = userID
-      if (currentTab === 'video') params.type = 'video' as ContentType
-      if (currentTab === 'article') params.type = 'article' as ContentType
-    }
-    return params
-  }, [])
-
-  // Fetch contents by page
-  const fetchContents = useCallback(async (userID: string, currentTab: ContentTab, pageNum: number, append: boolean) => {
-    if (loadingRef.current) return
-    loadingRef.current = true
-    setLoading(true)
-
-    try {
-      const params = buildParams(userID, currentTab, pageNum)
-      const res = await listContents(params)
-      const newContents = res.data.contents || []
-      if (append) {
-        setContents((prev) => [...prev, ...newContents])
-      } else {
-        setContents(newContents)
-      }
-      const more = newContents.length === limit
-      setHasMore(more)
-      hasMoreRef.current = more
-    } catch {
-      if (!append) setContents([])
-      setHasMore(false)
-      hasMoreRef.current = false
-    } finally {
-      loadingRef.current = false
-      setLoading(false)
-    }
-  }, [buildParams])
-
-  // Stable infinite scroll observer — reads latest values from refs
-  useEffect(() => {
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMoreRef.current && !loadingRef.current) {
-          const nextPage = pageRef.current + 1
-          pageRef.current = nextPage
-          fetchContents(userIdRef.current, tabRef.current, nextPage, true)
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+    useInfiniteQuery({
+      queryKey: ['profile-contents', { userID, tab }],
+      queryFn: ({ pageParam }) => {
+        const params: ListContentsArgs = { cursor: pageParam, limit: 12 }
+        if (tab === 'speaker') {
+          params.speaker_id = userID
+        } else {
+          params.author_id = userID
+          if (tab === 'video') params.type = 'video' as ContentType
+          if (tab === 'article') params.type = 'article' as ContentType
         }
+        return listContents(params)
       },
-      { threshold: 0.1 }
-    )
+      getNextPageParam: (lastPage) => lastPage.data.pagination.next_cursor || undefined,
+      initialPageParam: undefined as string | undefined,
+    })
 
-    if (loadMoreRef.current) observerRef.current.observe(loadMoreRef.current)
+  const contents = data?.pages.flatMap((p) => p.data.contents) ?? []
+  const loadMoreRef = useRef<HTMLDivElement>(null)
+  const handleIntersect = useCallback(() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage() }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+  useIntersection(loadMoreRef, handleIntersect)
 
-    return () => { observerRef.current?.disconnect() }
-  }, [fetchContents])
-
-  // Reset and fetch first page when tab changes, then re-observe sentinel
-  useEffect(() => {
-    pageRef.current = 1
-    hasMoreRef.current = true
-    loadingRef.current = false
-    setContents([])
-    setHasMore(true)
-
-    ;(async () => {
-      await fetchContents(profile.user.id, tab, 1, false)
-      // Re-observe sentinel so observer fires if it's already in viewport
-      if (observerRef.current && loadMoreRef.current) {
-        observerRef.current.unobserve(loadMoreRef.current)
-        observerRef.current.observe(loadMoreRef.current)
-      }
-    })()
-  }, [tab, profile.user.id, fetchContents])
+  const loading = isLoading || isFetchingNextPage
 
   return (
     <>
@@ -132,7 +66,7 @@ export default function ProfileContents() {
       )}
       <div ref={loadMoreRef} className="text-center py-8" style={{ color: '#606060' }}>
         {loading && '加载中...'}
-        {!hasMore && contents.length > 0 && '没有更多内容了'}
+        {!hasNextPage && contents.length > 0 && '没有更多内容了'}
       </div>
     </>
   )

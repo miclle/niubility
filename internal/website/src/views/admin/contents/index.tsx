@@ -1,14 +1,16 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Pencil, Trash2, Heart, MessageSquare, Play, Image, FileText } from 'lucide-react'
 import dayjs from 'dayjs'
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 
 import { listContents, deleteContent } from 'src/api/content'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
 import { useAppContext } from 'src/context/app'
+import { useIntersection } from 'src/hooks/use-intersection'
 import type { Content } from 'src/types/content'
 
 const typeLabels: Record<string, string> = { video: '视频', gallery: '图文', article: '长文' }
@@ -27,51 +29,29 @@ const columnCount = 8
 // AdminContents displays the admin content management page.
 function AdminContents() {
   const { categories } = useAppContext()
+  const queryClient = useQueryClient()
   const categoryLabels = Object.fromEntries(categories.map((c) => [c.slug, c.name]))
 
-  const [contents, setContents] = useState<Content[]>([])
-  const [page, setPage] = useState(1)
-  const [total, setTotal] = useState(0)
-  const [loading, setLoading] = useState(false)
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+    useInfiniteQuery({
+      queryKey: ['admin-contents'],
+      queryFn: ({ pageParam }) =>
+        listContents({ cursor: pageParam, limit, status: 'all' }),
+      getNextPageParam: (lastPage) => lastPage.data.pagination.next_cursor || undefined,
+      initialPageParam: undefined as string | undefined,
+    })
+
+  const contents = data?.pages.flatMap((p) => p.data.contents) ?? []
   const loaderRef = useRef<HTMLDivElement>(null)
-  const hasMore = contents.length < total
+  const handleIntersect = useCallback(() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage() }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+  useIntersection(loaderRef, handleIntersect)
 
-  const fetchContents = useCallback(async (p: number, append: boolean) => {
-    setLoading(true)
-    try {
-      const res = await listContents({ page: p, limit, status: 'all' })
-      const list = res.data.contents || []
-      setContents((prev) => append ? [...prev, ...list] : list)
-      setTotal(res.data.pagination.total)
-    } catch {
-      if (!append) setContents([])
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => { fetchContents(1, false) }, [fetchContents])
-
-  useEffect(() => {
-    if (page > 1) fetchContents(page, true)
-  }, [page, fetchContents])
-
-  useEffect(() => {
-    const el = loaderRef.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      (entries) => { if (entries[0].isIntersecting && !loading && hasMore) setPage((p) => p + 1) },
-      { threshold: 0.1 },
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [loading, hasMore])
+  const loading = isLoading || isFetchingNextPage
 
   const handleDelete = async (id: string) => {
     try {
       await deleteContent(id)
-      setPage(1)
-      fetchContents(1, false)
+      queryClient.invalidateQueries({ queryKey: ['admin-contents'] })
     } catch {
       // Silently fail
     }
@@ -206,7 +186,7 @@ function AdminContents() {
       </div>
 
       <div ref={loaderRef} className="py-4 text-center text-sm" style={{ color: '#909090' }}>
-        {loading ? '加载中...' : hasMore ? '' : contents.length > 0 ? '没有更多了' : ''}
+        {loading ? '加载中...' : !hasNextPage && contents.length > 0 ? '没有更多了' : ''}
       </div>
     </div>
   )

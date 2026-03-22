@@ -387,7 +387,7 @@ func (ctrl *Ctrl) SearchUsers(c *fox.Context, args *SearchUsersArgs) (*SearchUse
 		return &SearchUsersResponse{Users: []SearchUserItem{}}, nil
 	}
 
-	users, _, err := ctrl.service.ListUsers(entity.ListUsersArgs{
+	users, _, _, err := ctrl.service.ListUsers(entity.ListUsersArgs{
 		Pagination: entity.Pagination{Limit: 20},
 		Search:     args.Q,
 	})
@@ -415,7 +415,7 @@ type ListUsersResponse struct {
 
 // ListUsers returns a paginated list of users (admin only).
 func (ctrl *Ctrl) ListUsers(c *fox.Context, args entity.ListUsersArgs) (*ListUsersResponse, error) {
-	users, total, err := ctrl.service.ListUsers(args)
+	users, total, nextCursor, err := ctrl.service.ListUsers(args)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -425,6 +425,7 @@ func (ctrl *Ctrl) ListUsers(c *fox.Context, args entity.ListUsersArgs) (*ListUse
 	}
 
 	args.Total = total
+	args.NextCursor = nextCursor
 
 	return &ListUsersResponse{
 		Users:      users,

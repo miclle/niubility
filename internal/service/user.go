@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -38,7 +39,8 @@ func (s *Service) GetUserByID(id string) (*entity.User, error) {
 }
 
 // ListUsers retrieves a paginated list of users with optional search.
-func (s *Service) ListUsers(args entity.ListUsersArgs) ([]entity.User, int64, error) {
+// When args.Cursor is non-empty, cursor-based pagination is used instead of OFFSET.
+func (s *Service) ListUsers(args entity.ListUsersArgs) ([]entity.User, int64, string, error) {
 	var users []entity.User
 	var total int64
 
@@ -61,14 +63,37 @@ func (s *Service) ListUsers(args entity.ListUsersArgs) ([]entity.User, int64, er
 	}
 
 	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, fmt.Errorf("count users: %w", err)
+		return nil, 0, "", fmt.Errorf("count users: %w", err)
 	}
 
-	if err := query.Offset(args.Offset()).Limit(args.GetLimit()).Order("created_at DESC").Find(&users).Error; err != nil {
-		return nil, 0, fmt.Errorf("list users: %w", err)
+	if args.Cursor != "" {
+		parts, err := entity.DecodeCursor(args.Cursor, 2)
+		if err != nil {
+			return nil, 0, "", fmt.Errorf("decode cursor: %w", err)
+		}
+		cursorTime, err := time.Parse(time.RFC3339Nano, parts[0])
+		if err != nil {
+			return nil, 0, "", fmt.Errorf("parse cursor created_at: %w", err)
+		}
+		cursorID := parts[1]
+		query = query.Where("(created_at, id) < (?, ?)", cursorTime, cursorID)
+		if err := query.Limit(args.GetLimit()).Order("created_at DESC, id DESC").Find(&users).Error; err != nil {
+			return nil, 0, "", fmt.Errorf("list users: %w", err)
+		}
+	} else {
+		if err := query.Offset(args.Offset()).Limit(args.GetLimit()).Order("created_at DESC, id DESC").Find(&users).Error; err != nil {
+			return nil, 0, "", fmt.Errorf("list users: %w", err)
+		}
 	}
 
-	return users, total, nil
+	// Build next_cursor from the last item
+	var nextCursor string
+	if len(users) == args.GetLimit() {
+		last := users[len(users)-1]
+		nextCursor = entity.EncodeCursor(last.CreatedAt.Format(time.RFC3339Nano), last.ID)
+	}
+
+	return users, total, nextCursor, nil
 }
 
 // UpsertUser creates a new user or updates the existing one by username.

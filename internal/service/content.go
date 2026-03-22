@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"gorm.io/gorm"
@@ -15,7 +16,8 @@ import (
 const GalleryVideoMaxFileSize int64 = 200 * 1024 * 1024
 
 // ListContents retrieves a paginated list of contents with optional filters.
-func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, int64, error) {
+// When args.Cursor is non-empty, cursor-based pagination is used instead of OFFSET.
+func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, int64, string, error) {
 	var contents []entity.Content
 	var total int64
 
@@ -52,22 +54,86 @@ func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, 
 	// When args.Status == "all", no filter is applied
 
 	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, fmt.Errorf("count contents: %w", err)
+		return nil, 0, "", fmt.Errorf("count contents: %w", err)
 	}
 
-	// sorting
-	orderClause := "created_at DESC"
-	if args.Sort == entity.SortByLikeCount {
-		orderClause = "like_count DESC"
+	// Determine sort mode
+	sortByLikes := args.Sort == entity.SortByLikeCount
+
+	// Apply cursor-based pagination if cursor is provided
+	if args.Cursor != "" {
+		if sortByLikes {
+			// cursor format: like_count|created_at|id
+			parts, err := entity.DecodeCursor(args.Cursor, 3)
+			if err != nil {
+				return nil, 0, "", fmt.Errorf("decode cursor: %w", err)
+			}
+			likeCount, err := strconv.ParseInt(parts[0], 10, 64)
+			if err != nil {
+				return nil, 0, "", fmt.Errorf("parse cursor like_count: %w", err)
+			}
+			cursorTime, err := time.Parse(time.RFC3339Nano, parts[1])
+			if err != nil {
+				return nil, 0, "", fmt.Errorf("parse cursor created_at: %w", err)
+			}
+			cursorID := parts[2]
+			query = query.Where(
+				"(like_count, created_at, id) < (?, ?, ?)",
+				likeCount, cursorTime, cursorID,
+			)
+		} else {
+			// cursor format: created_at|id
+			parts, err := entity.DecodeCursor(args.Cursor, 2)
+			if err != nil {
+				return nil, 0, "", fmt.Errorf("decode cursor: %w", err)
+			}
+			cursorTime, err := time.Parse(time.RFC3339Nano, parts[0])
+			if err != nil {
+				return nil, 0, "", fmt.Errorf("parse cursor created_at: %w", err)
+			}
+			cursorID := parts[1]
+			query = query.Where(
+				"(created_at, id) < (?, ?)",
+				cursorTime, cursorID,
+			)
+		}
 	}
 
-	if err := query.Preload("Author").Preload("Speaker").Preload("Attachments", func(db *gorm.DB) *gorm.DB {
-		return db.Order("sort_order ASC")
-	}).Offset(args.Offset()).Limit(args.GetLimit()).Order(orderClause).Find(&contents).Error; err != nil {
-		return nil, 0, fmt.Errorf("list contents: %w", err)
+	// sorting — always include id as tie-breaker for stable cursor pagination
+	orderClause := "created_at DESC, id DESC"
+	if sortByLikes {
+		orderClause = "like_count DESC, created_at DESC, id DESC"
 	}
 
-	return contents, total, nil
+	if args.Cursor != "" {
+		// Cursor mode: no offset
+		if err := query.Preload("Author").Preload("Speaker").Preload("Attachments", func(db *gorm.DB) *gorm.DB {
+			return db.Order("sort_order ASC")
+		}).Limit(args.GetLimit()).Order(orderClause).Find(&contents).Error; err != nil {
+			return nil, 0, "", fmt.Errorf("list contents: %w", err)
+		}
+	} else {
+		// Offset mode (backward compatible)
+		if err := query.Preload("Author").Preload("Speaker").Preload("Attachments", func(db *gorm.DB) *gorm.DB {
+			return db.Order("sort_order ASC")
+		}).Offset(args.Offset()).Limit(args.GetLimit()).Order(orderClause).Find(&contents).Error; err != nil {
+			return nil, 0, "", fmt.Errorf("list contents: %w", err)
+		}
+	}
+
+	// Build next_cursor from the last item
+	var nextCursor string
+	if len(contents) == args.GetLimit() {
+		last := contents[len(contents)-1]
+		ts := last.CreatedAt.Format(time.RFC3339Nano)
+		if sortByLikes {
+			nextCursor = entity.EncodeCursor(strconv.FormatInt(last.LikeCount, 10), ts, last.ID)
+		} else {
+			nextCursor = entity.EncodeCursor(ts, last.ID)
+		}
+	}
+
+	return contents, total, nextCursor, nil
 }
 
 // GetContentByID retrieves a content by ID with author and attachments preloaded.

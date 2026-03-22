@@ -1,79 +1,32 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useRef, useCallback } from 'react'
 import { UserPlus } from 'lucide-react'
+import { useInfiniteQuery } from '@tanstack/react-query'
 
 import { useAppContext } from 'src/context/app'
 import { listContents } from 'src/api/content'
 import ContentCard from 'src/components/ContentCard'
-import type { Content } from 'src/types/content'
+import { useIntersection } from 'src/hooks/use-intersection'
 
 // FollowingFeed displays contents from users that the current user follows.
 function FollowingFeed() {
   const { currentUser } = useAppContext()
 
-  const [contents, setContents] = useState<Content[]>([])
-  const [page, setPage] = useState(1)
-  const [hasMore, setHasMore] = useState(true)
-  const [loading, setLoading] = useState(false)
-  const loadingRef = useRef(false)
-  const limit = 12
-  const observerRef = useRef<IntersectionObserver | null>(null)
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+    useInfiniteQuery({
+      queryKey: ['contents', { followed_by_user_id: currentUser?.id }],
+      queryFn: ({ pageParam }) =>
+        listContents({ cursor: pageParam, limit: 12, followed_by_user_id: currentUser?.id }),
+      getNextPageParam: (lastPage) => lastPage.data.pagination.next_cursor || undefined,
+      initialPageParam: undefined as string | undefined,
+      enabled: !!currentUser,
+    })
+
+  const contents = data?.pages.flatMap((p) => p.data.contents) ?? []
   const loadMoreRef = useRef<HTMLDivElement>(null)
+  const handleIntersect = useCallback(() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage() }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+  useIntersection(loadMoreRef, handleIntersect)
 
-  // Fetch contents for a specific page
-  const fetchContents = useCallback(async (pageNum: number, append: boolean = false) => {
-    if (loadingRef.current || !currentUser) return
-    loadingRef.current = true
-    setLoading(true)
-    try {
-      const res = await listContents({
-        page: pageNum,
-        limit,
-        followed_by_user_id: currentUser.id,
-      })
-      const newContents = res.data.contents || []
-      if (append) {
-        setContents((prev) => [...prev, ...newContents])
-      } else {
-        setContents(newContents)
-      }
-      setHasMore(newContents.length === limit)
-    } catch {
-      if (!append) setContents([])
-      setHasMore(false)
-    } finally {
-      loadingRef.current = false
-      setLoading(false)
-    }
-  }, [currentUser, limit])
-
-  // Fetch first page on mount
-  useEffect(() => {
-    if (!currentUser) return
-    setPage(1)
-    setContents([])
-    setHasMore(true)
-    fetchContents(1, false)
-  }, [currentUser, fetchContents])
-
-  // Setup intersection observer for infinite scroll
-  useEffect(() => {
-    if (observerRef.current) observerRef.current.disconnect()
-
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingRef.current) {
-          const nextPage = page + 1
-          setPage(nextPage)
-          fetchContents(nextPage, true)
-        }
-      },
-      { threshold: 0.1 }
-    )
-
-    if (loadMoreRef.current) observerRef.current.observe(loadMoreRef.current)
-
-    return () => { observerRef.current?.disconnect() }
-  }, [page, hasMore, fetchContents])
+  const loading = isLoading || isFetchingNextPage
 
   return (
     <div className="p-6">
@@ -93,7 +46,7 @@ function FollowingFeed() {
 
       <div ref={loadMoreRef} className="text-center py-8" style={{ color: '#606060' }}>
         {loading && '加载中...'}
-        {!hasMore && contents.length > 0 && '没有更多内容了'}
+        {!hasNextPage && contents.length > 0 && '没有更多内容了'}
       </div>
     </div>
   )

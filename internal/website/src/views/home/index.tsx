@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useRef, useCallback } from 'react'
 import { useOutletContext } from 'react-router-dom'
+import { useInfiniteQuery } from '@tanstack/react-query'
 
 import { listContents } from 'src/api/content'
 import ContentCard from 'src/components/ContentCard'
-import type { Content, ContentType } from 'src/types/content'
+import { useIntersection } from 'src/hooks/use-intersection'
+import type { ContentType } from 'src/types/content'
 
 // Outlet context type from MainLayout
 interface HomeContext {
@@ -16,87 +18,21 @@ interface HomeContext {
 function Home() {
   const { keyword, typeFilter, category } = useOutletContext<HomeContext>()
 
-  const [contents, setContents] = useState<Content[]>([])
-  const [hasMore, setHasMore] = useState(true)
-  const [loading, setLoading] = useState(false)
-  const loadingRef = useRef(false)
-  const limit = 12
-  const observerRef = useRef<IntersectionObserver | null>(null)
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+    useInfiniteQuery({
+      queryKey: ['contents', { category, type: typeFilter, keyword }],
+      queryFn: ({ pageParam }) =>
+        listContents({ cursor: pageParam, limit: 12, category, type: typeFilter || undefined, keyword: keyword || undefined }),
+      getNextPageParam: (lastPage) => lastPage.data.pagination.next_cursor || undefined,
+      initialPageParam: undefined as string | undefined,
+    })
+
+  const contents = data?.pages.flatMap((p) => p.data.contents) ?? []
   const loadMoreRef = useRef<HTMLDivElement>(null)
-  const pageRef = useRef(1)
-  const hasMoreRef = useRef(true)
+  const handleIntersect = useCallback(() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage() }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+  useIntersection(loadMoreRef, handleIntersect)
 
-  // Fetch contents for a specific page
-  const fetchContents = useCallback(async (pageNum: number, append: boolean = false) => {
-    if (loadingRef.current) return
-    loadingRef.current = true
-    setLoading(true)
-    try {
-      const res = await listContents({
-        page: pageNum,
-        limit,
-        category,
-        type: typeFilter || undefined,
-        keyword: keyword || undefined,
-      })
-      const newContents = res.data.contents || []
-      if (append) {
-        setContents((prev) => [...prev, ...newContents])
-      } else {
-        setContents(newContents)
-      }
-      // Check if there are more items to load
-      const more = newContents.length === limit
-      setHasMore(more)
-      hasMoreRef.current = more
-    } catch {
-      if (!append) {
-        setContents([])
-      }
-      setHasMore(false)
-      hasMoreRef.current = false
-    } finally {
-      loadingRef.current = false
-      setLoading(false)
-    }
-  }, [category, typeFilter, keyword, limit])
-
-  // Reset and fetch first page when filters change
-  useEffect(() => {
-    pageRef.current = 1
-    setContents([])
-    setHasMore(true)
-    hasMoreRef.current = true
-    fetchContents(1, false)
-  }, [category, typeFilter, keyword, fetchContents])
-
-  // Setup intersection observer for infinite scroll
-  useEffect(() => {
-    if (observerRef.current) {
-      observerRef.current.disconnect()
-    }
-
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMoreRef.current && !loadingRef.current) {
-          const nextPage = pageRef.current + 1
-          pageRef.current = nextPage
-          fetchContents(nextPage, true)
-        }
-      },
-      { threshold: 0.1 }
-    )
-
-    if (loadMoreRef.current) {
-      observerRef.current.observe(loadMoreRef.current)
-    }
-
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect()
-      }
-    }
-  }, [fetchContents])
+  const loading = isLoading || isFetchingNextPage
 
   return (
     <div className="p-6">
@@ -121,7 +57,7 @@ function Home() {
       {/* Loading indicator / Infinite scroll trigger */}
       <div ref={loadMoreRef} className="text-center py-8" style={{ color: '#606060' }}>
         {loading && '加载中...'}
-        {!hasMore && contents.length > 0 && '没有更多内容了'}
+        {!hasNextPage && contents.length > 0 && '没有更多内容了'}
       </div>
     </div>
   )

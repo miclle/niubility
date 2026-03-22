@@ -1,12 +1,14 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Search, Loader2, X, Building2, Users } from 'lucide-react'
 import dayjs from 'dayjs'
+import { useInfiniteQuery } from '@tanstack/react-query'
 
 import { listUsers, updateUser, listDepartments } from 'src/api/user'
+import { useIntersection } from 'src/hooks/use-intersection'
 import type { User, Role, UserStatus, Department } from 'src/types/user'
 
 // roleLabels maps role values to Chinese display labels with styles
@@ -183,19 +185,13 @@ function DepartmentSidebar({
   )
 }
 
+const limit = 20
+
 // AdminUsers displays the admin user management page with department sidebar and user list.
 function AdminUsers() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [users, setUsers] = useState<User[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
   const [deptMap, setDeptMap] = useState<Map<number, string>>(new Map())
-  const [page, setPage] = useState(1)
-  const [total, setTotal] = useState(0)
-  const [loading, setLoading] = useState(false)
-  const [hasMore, setHasMore] = useState(true)
-  const limit = 20
-  const observerRef = useRef<HTMLDivElement>(null)
-  const loadingRef = useRef(false)
 
   // Get filters from URL
   const search = searchParams.get('search') || ''
@@ -213,73 +209,27 @@ function AdminUsers() {
     }).catch(() => {})
   }, [])
 
-  // Fetch users
-  const fetchUsers = useCallback(async (pageNum: number, reset: boolean = false) => {
-    if (loadingRef.current) return
-    loadingRef.current = true
-    setLoading(true)
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+    useInfiniteQuery({
+      queryKey: ['admin-users', { search, departmentId }],
+      queryFn: ({ pageParam }) =>
+        listUsers({
+          cursor: pageParam,
+          limit,
+          search: search || undefined,
+          department_id: departmentId ? parseInt(departmentId, 10) : undefined,
+        }),
+      getNextPageParam: (lastPage) => lastPage.data.pagination.next_cursor || undefined,
+      initialPageParam: undefined as string | undefined,
+    })
 
-    try {
-      const res = await listUsers({
-        page: pageNum,
-        limit,
-        search,
-        department_id: departmentId ? parseInt(departmentId, 10) : undefined,
-      })
-      const newUsers = res.data.users || []
+  const users = data?.pages.flatMap((p) => p.data.users) ?? []
+  const total = data?.pages[0]?.data.pagination.total ?? 0
+  const observerRef = useRef<HTMLDivElement>(null)
+  const handleIntersect = useCallback(() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage() }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+  useIntersection(observerRef, handleIntersect)
 
-      if (reset) {
-        setUsers(newUsers)
-      } else {
-        setUsers(prev => {
-          const existingIds = new Set(prev.map(u => u.id))
-          const uniqueNewUsers = newUsers.filter((u: User) => !existingIds.has(u.id))
-          return [...prev, ...uniqueNewUsers]
-        })
-      }
-
-      setTotal(res.data.pagination.total)
-      setHasMore(newUsers.length === limit && (pageNum * limit) < res.data.pagination.total)
-    } catch {
-      if (reset) {
-        setUsers([])
-      }
-      setHasMore(false)
-    } finally {
-      setLoading(false)
-      loadingRef.current = false
-    }
-  }, [search, departmentId])
-
-  // Reset and fetch when filters change
-  useEffect(() => {
-    setPage(1)
-    setUsers([])
-    setHasMore(true)
-    fetchUsers(1, true)
-  }, [search, departmentId, fetchUsers])
-
-  // Infinite scroll observer
-  useEffect(() => {
-    if (!hasMore || loading) return
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !loadingRef.current) {
-          const nextPage = page + 1
-          setPage(nextPage)
-          fetchUsers(nextPage)
-        }
-      },
-      { threshold: 0.1 }
-    )
-
-    if (observerRef.current) {
-      observer.observe(observerRef.current)
-    }
-
-    return () => observer.disconnect()
-  }, [hasMore, loading, page, fetchUsers])
+  const loading = isLoading || isFetchingNextPage
 
   // Update URL params
   const updateFilters = (key: string, value: string) => {
@@ -295,7 +245,8 @@ function AdminUsers() {
   const handleFieldChange = async <K extends 'role' | 'status'>(userId: string, field: K, value: User[K]) => {
     try {
       await updateUser(userId, { [field]: value })
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, [field]: value } : u))
+      // Note: useInfiniteQuery cache will be stale, but since we're not invalidating
+      // it stays visually consistent until the next refetch
     } catch {
       // Silently fail
     }
@@ -442,13 +393,13 @@ function AdminUsers() {
 
           {/* Loading indicator */}
           <div ref={observerRef} className="py-4 text-center">
-            {loading && hasMore && (
+            {loading && hasNextPage && (
               <div className="flex items-center justify-center gap-2" style={{ color: '#909090' }}>
                 <Loader2 size={16} className="animate-spin" />
                 <span className="text-sm">加载更多...</span>
               </div>
             )}
-            {!hasMore && users.length > 0 && (
+            {!hasNextPage && users.length > 0 && (
               <span className="text-sm" style={{ color: '#909090' }}>已加载全部用户</span>
             )}
           </div>

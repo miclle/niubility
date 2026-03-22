@@ -17,12 +17,13 @@ type ListContentsResponse struct {
 
 // ListContents returns a paginated list of contents with optional filters.
 func (ctrl *Ctrl) ListContents(c *fox.Context, args entity.ListContentsArgs) (*ListContentsResponse, error) {
-	contents, total, err := ctrl.service.ListContents(args)
+	contents, total, nextCursor, err := ctrl.service.ListContents(args)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
 
 	args.Total = total
+	args.NextCursor = nextCursor
 
 	for i := range contents {
 		contents[i].ResolveAssetURLs()

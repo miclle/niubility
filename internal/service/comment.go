@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -11,7 +12,8 @@ import (
 
 // ListComments retrieves top-level comments for a content, with replies and user info preloaded.
 // If attachmentID is non-empty, only comments for that attachment are returned.
-func (s *Service) ListComments(contentID, attachmentID string, pagination entity.Pagination) ([]entity.Comment, int64, error) {
+// When pagination.Cursor is non-empty, cursor-based pagination is used instead of OFFSET.
+func (s *Service) ListComments(contentID, attachmentID string, pagination entity.Pagination) ([]entity.Comment, int64, string, error) {
 	var comments []entity.Comment
 	var total int64
 
@@ -21,22 +23,44 @@ func (s *Service) ListComments(contentID, attachmentID string, pagination entity
 	}
 
 	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, fmt.Errorf("count comments: %w", err)
+		return nil, 0, "", fmt.Errorf("count comments: %w", err)
 	}
 
-	err := query.
+	fetchQuery := query.
 		Preload("User").
 		Preload("Replies", func(db *gorm.DB) *gorm.DB {
 			return db.Order("created_at ASC").Preload("User").Preload("ReplyTo.User")
 		}).
-		Offset(pagination.Offset()).Limit(pagination.GetLimit()).
-		Order("created_at DESC").
-		Find(&comments).Error
-	if err != nil {
-		return nil, 0, fmt.Errorf("list comments: %w", err)
+		Order("created_at DESC, id DESC")
+
+	if pagination.Cursor != "" {
+		parts, err := entity.DecodeCursor(pagination.Cursor, 2)
+		if err != nil {
+			return nil, 0, "", fmt.Errorf("decode cursor: %w", err)
+		}
+		cursorTime, err := time.Parse(time.RFC3339Nano, parts[0])
+		if err != nil {
+			return nil, 0, "", fmt.Errorf("parse cursor created_at: %w", err)
+		}
+		cursorID := parts[1]
+		fetchQuery = fetchQuery.Where("(comments.created_at, comments.id) < (?, ?)", cursorTime, cursorID)
+		fetchQuery = fetchQuery.Limit(pagination.GetLimit())
+	} else {
+		fetchQuery = fetchQuery.Offset(pagination.Offset()).Limit(pagination.GetLimit())
 	}
 
-	return comments, total, nil
+	if err := fetchQuery.Find(&comments).Error; err != nil {
+		return nil, 0, "", fmt.Errorf("list comments: %w", err)
+	}
+
+	// Build next_cursor from the last item
+	var nextCursor string
+	if len(comments) == pagination.GetLimit() {
+		last := comments[len(comments)-1]
+		nextCursor = entity.EncodeCursor(last.CreatedAt.Format(time.RFC3339Nano), last.ID)
+	}
+
+	return comments, total, nextCursor, nil
 }
 
 // CreateComment creates a new comment and updates the content's comment_count.

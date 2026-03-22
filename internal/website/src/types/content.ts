@@ -99,6 +99,7 @@ export interface Content {
 export interface ListContentsArgs {
   page?: number
   limit?: number
+  cursor?: string
   category?: ContentCategory
   type?: ContentType
   status?: ContentStatus | 'all'

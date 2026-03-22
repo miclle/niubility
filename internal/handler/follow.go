@@ -47,7 +47,7 @@ func (ctrl *Ctrl) ToggleFollow(c *fox.Context) (*entity.FollowResponse, error) {
 }
 
 // listFollowUsers is a shared handler for listing following/followers.
-func (ctrl *Ctrl) listFollowUsers(c *fox.Context, args entity.Pagination, fetcher func(string, entity.Pagination) ([]entity.User, int64, error)) (*ListUsersResponse, error) {
+func (ctrl *Ctrl) listFollowUsers(c *fox.Context, args entity.Pagination, fetcher func(string, entity.Pagination) ([]entity.User, int64, string, error)) (*ListUsersResponse, error) {
 	user := CurrentUser(c)
 	if user == nil {
 		return nil, httperrors.ErrUnauthorized
@@ -58,7 +58,7 @@ func (ctrl *Ctrl) listFollowUsers(c *fox.Context, args entity.Pagination, fetche
 		return nil, err
 	}
 
-	users, total, err := fetcher(targetID, args)
+	users, total, nextCursor, err := fetcher(targetID, args)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -68,6 +68,7 @@ func (ctrl *Ctrl) listFollowUsers(c *fox.Context, args entity.Pagination, fetche
 	}
 
 	args.Total = total
+	args.NextCursor = nextCursor
 	return &ListUsersResponse{Users: users, Pagination: args}, nil
 }
 

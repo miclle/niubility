@@ -41,6 +41,7 @@ export interface Pagination {
   page: number
   limit: number
   total: number
+  next_cursor?: string
 }
 
 import type { Category } from './content'

@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { NavLink } from 'react-router-dom'
 import { FileText, Play, Image, Pencil, Heart, MessageSquare, Trash2, Send } from 'lucide-react'
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 
 import { useAppContext } from 'src/context/app'
 import { listContents, updateContent, deleteContent } from 'src/api/content'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
+import { useIntersection } from 'src/hooks/use-intersection'
 import type { Content, ContentStatus } from 'src/types/content'
 
 const limit = 20
@@ -12,63 +14,32 @@ const limit = 20
 // MyContents displays the current user's content list with draft/published tabs and infinite scroll.
 function MyContents() {
   const { currentUser } = useAppContext()
-  const [contents, setContents] = useState<Content[]>([])
-  const [page, setPage] = useState(1)
-  const [total, setTotal] = useState(0)
-  const [loading, setLoading] = useState(false)
+  const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<ContentStatus>('published')
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+    useInfiniteQuery({
+      queryKey: ['my-contents', { authorId: currentUser?.id, status: activeTab }],
+      queryFn: ({ pageParam }) =>
+        listContents({ cursor: pageParam, limit, author_id: currentUser?.id, status: activeTab }),
+      getNextPageParam: (lastPage) => lastPage.data.pagination.next_cursor || undefined,
+      initialPageParam: undefined as string | undefined,
+      enabled: !!currentUser,
+    })
+
+  const contents = data?.pages.flatMap((p) => p.data.contents) ?? []
   const loaderRef = useRef<HTMLDivElement>(null)
-  const hasMore = contents.length < total
+  const handleIntersect = useCallback(() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage() }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+  useIntersection(loaderRef, handleIntersect)
 
-  const fetchContents = useCallback(async (p: number, append: boolean, status: ContentStatus) => {
-    if (!currentUser) return
-    setLoading(true)
-    try {
-      const res = await listContents({ author_id: currentUser.id, status, page: p, limit })
-      const list = res.data.contents || []
-      setContents((prev) => append ? [...prev, ...list] : list)
-      setTotal(res.data.pagination.total)
-    } catch {
-      if (!append) setContents([])
-    } finally {
-      setLoading(false)
-    }
-  }, [currentUser])
+  const loading = isLoading || isFetchingNextPage
 
-  // Reset and reload when tab changes
-  useEffect(() => {
-    setContents([])
-    setPage(1)
-    setTotal(0)
-    fetchContents(1, false, activeTab)
-  }, [activeTab, fetchContents])
-
-  // Load more when page changes (page > 1)
-  useEffect(() => {
-    if (page > 1) fetchContents(page, true, activeTab)
-  }, [page, fetchContents, activeTab])
-
-  // IntersectionObserver for infinite scroll
-  useEffect(() => {
-    const el = loaderRef.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !loading && hasMore) {
-          setPage((p) => p + 1)
-        }
-      },
-      { threshold: 0.1 },
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [loading, hasMore])
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['my-contents'] })
 
   const handlePublish = async (content: Content) => {
     try {
       await updateContent(content.id, { status: 'published' })
-      setContents((prev) => prev.filter((c) => c.id !== content.id))
-      setTotal((t) => t - 1)
+      invalidate()
     } catch {
       // Silently fail
     }
@@ -78,8 +49,7 @@ function MyContents() {
     if (!confirm('确定要删除这条内容吗？')) return
     try {
       await deleteContent(content.id)
-      setContents((prev) => prev.filter((c) => c.id !== content.id))
-      setTotal((t) => t - 1)
+      invalidate()
     } catch {
       // Silently fail
     }
@@ -193,7 +163,7 @@ function MyContents() {
       )}
 
       <div ref={loaderRef} className="py-4 text-center text-sm" style={{ color: '#909090' }}>
-        {loading ? '加载中...' : hasMore ? '' : contents.length > 0 ? '没有更多了' : ''}
+        {loading ? '加载中...' : !hasNextPage && contents.length > 0 ? '没有更多了' : ''}
       </div>
     </div>
   )
