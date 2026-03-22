@@ -50,3 +50,8 @@ export function likeContent(contentID: string) {
 export function likeComment(commentID: string) {
   return client.post<LikeResponse>(`/comments/${commentID}/like`)
 }
+
+// likeAttachment toggles like (favorite) on an attachment.
+export function likeAttachment(attachmentID: string) {
+  return client.post<LikeResponse>(`/attachments/${attachmentID}/like`)
+}

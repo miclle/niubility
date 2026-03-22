@@ -37,7 +37,8 @@ func (ctrl *Ctrl) ListContents(c *fox.Context, args entity.ListContentsArgs) (*L
 // GetContentResponse represents the response for getting a single content.
 type GetContentResponse struct {
 	*entity.Content
-	Liked bool `json:"liked"`
+	Liked              bool     `json:"liked"`
+	LikedAttachmentIDs []string `json:"liked_attachment_ids,omitempty"`
 }
 
 // GetContent returns a single content by ID, including the current user's liked status.
@@ -66,6 +67,16 @@ func (ctrl *Ctrl) GetContent(c *fox.Context) (*GetContentResponse, error) {
 	if user := CurrentUser(c); user != nil {
 		liked, _ := ctrl.service.IsLiked(user.ID, id, entity.TargetTypeContent)
 		resp.Liked = liked
+
+		// Check which attachments are liked by the current user
+		if len(content.Attachments) > 0 {
+			attachmentIDs := make([]string, len(content.Attachments))
+			for i, a := range content.Attachments {
+				attachmentIDs[i] = a.ID
+			}
+			likedIDs, _ := ctrl.service.GetLikedIDs(user.ID, attachmentIDs, entity.TargetTypeAttachment)
+			resp.LikedAttachmentIDs = likedIDs
+		}
 	}
 
 	return resp, nil
@@ -88,6 +99,22 @@ func (ctrl *Ctrl) LikeContent(c *fox.Context) (*entity.LikeResponse, error) {
 	}
 
 	resp, err := ctrl.service.ToggleLike(user.ID, contentID, entity.TargetTypeContent)
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+
+	return resp, nil
+}
+
+// LikeAttachment toggles like on an attachment (image/video in gallery).
+func (ctrl *Ctrl) LikeAttachment(c *fox.Context) (*entity.LikeResponse, error) {
+	attachmentID := c.Param("id")
+	user := CurrentUser(c)
+	if user == nil {
+		return nil, httperrors.ErrUnauthorized
+	}
+
+	resp, err := ctrl.service.ToggleLike(user.ID, attachmentID, entity.TargetTypeAttachment)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}

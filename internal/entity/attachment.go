@@ -26,6 +26,7 @@ type Attachment struct {
 	Height      int            `json:"height"      gorm:"column:height;default:0"`
 	FileSize    int64          `json:"file_size"   gorm:"column:file_size;default:0"`
 	Duration    float64        `json:"duration"    gorm:"column:duration;default:0"`
+	LikeCount   int64          `json:"like_count"  gorm:"column:like_count;default:0"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 }

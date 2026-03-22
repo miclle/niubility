@@ -97,6 +97,8 @@ func updateLikeCount(tx *gorm.DB, targetID string, targetType entity.TargetType,
 		model = &entity.Content{}
 	case entity.TargetTypeComment:
 		model = &entity.Comment{}
+	case entity.TargetTypeAttachment:
+		model = &entity.Attachment{}
 	default:
 		return fmt.Errorf("unknown target type: %s", targetType)
 	}
@@ -116,6 +118,9 @@ func getLikeCount(tx *gorm.DB, targetID string, targetType entity.TargetType) (i
 		return count, err
 	case entity.TargetTypeComment:
 		err := tx.Model(&entity.Comment{}).Where("id = ?", targetID).Pluck("like_count", &count).Error
+		return count, err
+	case entity.TargetTypeAttachment:
+		err := tx.Model(&entity.Attachment{}).Where("id = ?", targetID).Pluck("like_count", &count).Error
 		return count, err
 	default:
 		return 0, fmt.Errorf("unknown target type: %s", targetType)

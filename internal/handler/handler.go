@@ -75,6 +75,9 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	// comment routes
 	api.POST("/comments/:id/like", ctrl.LikeComment)
 
+	// attachment routes
+	api.POST("/attachments/:id/like", ctrl.LikeAttachment)
+
 	// follow routes (authenticated users)
 	api.POST("/users/:username/follow", ctrl.ToggleFollow)
 	api.GET("/users/:username/following", ctrl.ListFollowing)

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useState, useEffect, useCallback } from 'react'
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { ThumbsUp, Share2, MessageCircle, Pencil } from 'lucide-react'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -22,6 +22,7 @@ function GalleryDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { currentUser } = useAppContext()
+  const location = useLocation()
   const [content, setContent] = useState<Content | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -30,6 +31,18 @@ function GalleryDetail() {
   const [commentCount, setCommentCount] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [likedAttachmentIds, setLikedAttachmentIds] = useState<Set<string>>(new Set())
+
+  // Parse hash to restore lightbox state on load / hash change
+  useEffect(() => {
+    const match = location.hash.match(/^#photo=(\d+)$/)
+    if (match) {
+      setLightboxIndex(parseInt(match[1], 10))
+      setLightboxOpen(true)
+    } else {
+      setLightboxOpen(false)
+    }
+  }, [location.hash])
 
   useEffect(() => {
     if (!id) return
@@ -44,10 +57,41 @@ function GalleryDetail() {
         setLiked(!!res.data.liked)
         setLikeCount(res.data.like_count || 0)
         setCommentCount(res.data.comment_count || 0)
+        setLikedAttachmentIds(new Set(res.data.liked_attachment_ids || []))
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false))
   }, [id])
+
+  const handleImageClick = useCallback((index: number) => {
+    window.location.hash = `photo=${index}`
+  }, [])
+
+  const handleLightboxClose = useCallback(() => {
+    history.replaceState(null, '', window.location.pathname + window.location.search)
+    setLightboxOpen(false)
+  }, [])
+
+  const handleLightboxIndexChange = useCallback((index: number) => {
+    window.location.hash = `photo=${index}`
+  }, [])
+
+  const handleAttachmentLikeChange = useCallback((attachmentId: string, liked: boolean, likeCount: number) => {
+    setLikedAttachmentIds((prev) => {
+      const next = new Set(prev)
+      if (liked) next.add(attachmentId)
+      else next.delete(attachmentId)
+      return next
+    })
+    // Update attachment like_count in content state
+    setContent((prev) => {
+      if (!prev || !prev.attachments) return prev
+      return {
+        ...prev,
+        attachments: prev.attachments.map((a) => a.id === attachmentId ? { ...a, like_count: likeCount } : a),
+      }
+    })
+  }, [])
 
   if (loading) {
     return <div className="p-6 text-center" style={{ color: '#606060' }}>加载中...</div>
@@ -61,11 +105,6 @@ function GalleryDetail() {
   const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin' || currentUser.id === content.author_id)
   const categoryLabel = content.category === 'culture' ? '七牛文化' : '学习分享'
   const galleryItems = content.attachments || []
-
-  const handleImageClick = (index: number) => {
-    setLightboxIndex(index)
-    setLightboxOpen(true)
-  }
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-6">
@@ -148,7 +187,18 @@ function GalleryDetail() {
       </div>
 
       {/* Lightbox */}
-      <Lightbox items={galleryItems} initialIndex={lightboxIndex} open={lightboxOpen} onClose={() => setLightboxOpen(false)} />
+      <Lightbox
+        items={galleryItems}
+        initialIndex={lightboxIndex}
+        open={lightboxOpen}
+        onClose={handleLightboxClose}
+        onIndexChange={handleLightboxIndexChange}
+        contentId={content.id}
+        commentCount={commentCount}
+        onCommentCountChange={setCommentCount}
+        likedAttachmentIds={likedAttachmentIds}
+        onAttachmentLikeChange={handleAttachmentLikeChange}
+      />
     </div>
   )
 }

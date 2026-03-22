@@ -10,6 +10,8 @@ const (
 	TargetTypeContent TargetType = "content"
 	// TargetTypeComment indicates a comment.
 	TargetTypeComment TargetType = "comment"
+	// TargetTypeAttachment indicates an attachment (image/video in gallery).
+	TargetTypeAttachment TargetType = "attachment"
 )
 
 // Like represents a user's like on a content or comment.

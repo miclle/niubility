@@ -42,6 +42,7 @@ export interface Attachment {
   height: number
   file_size: number
   duration: number
+  like_count: number
   created_at: string
   updated_at: string
 }
@@ -83,6 +84,7 @@ export interface Content {
   speaker?: User
   attachments?: Attachment[]
   liked?: boolean
+  liked_attachment_ids?: string[]
 }
 
 // ListContentsArgs represents the query parameters for listing contents.
