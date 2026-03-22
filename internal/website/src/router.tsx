@@ -54,7 +54,7 @@ const routes: RouteObject[] = [
     path: '/',
     element: <MainLayout />,
     children: [
-      { index: true, element: <Navigate to="/learning" replace /> },
+      { index: true, element: <Home /> },
       { path: 'following', element: <FollowingFeed /> },
       {
         path: ':slug',

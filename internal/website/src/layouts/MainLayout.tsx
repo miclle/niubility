@@ -80,7 +80,9 @@ function MainLayout() {
   }
 
   // Derive category from URL params or path (ignore @username profile routes)
-  const category: string = (slug && !slug.startsWith('@') ? slug : '') || location.pathname.split('/')[1] || (categories[0]?.slug ?? 'learning')
+  // On homepage (/), category is empty to show all content
+  const isHome = location.pathname === '/'
+  const category: string = isHome ? '' : ((slug && !slug.startsWith('@') ? slug : '') || location.pathname.split('/')[1] || '')
 
   // Derive type filter from URL search params
   const searchParams = new URLSearchParams(location.search)
@@ -97,7 +99,10 @@ function MainLayout() {
   }
 
   // Build type filter path for a given content type
-  const typeFilterPath = (type: ContentType | '') => type ? `/${category}?type=${type}` : `/${category}`
+  const typeFilterPath = (type: ContentType | '') => {
+    if (!category) return type ? `/?type=${type}` : '/'
+    return type ? `/${category}?type=${type}` : `/${category}`
+  }
 
   // Render type filter nav items
   const renderTypeFilterNav = () => (
@@ -144,6 +149,19 @@ function MainLayout() {
   // Render category nav items
   const renderCategoryNav = () => (
     <div className="px-3">
+      <NavLink
+        to="/"
+        end
+        className={() =>
+          `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+            isHome ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+          }`
+        }
+        style={{ color: '#0f0f0f' }}
+      >
+        <Home size={24} />
+        <span className="text-sm">首页</span>
+      </NavLink>
       {currentUser && (
         <NavLink
           to="/following"
