@@ -1,7 +1,7 @@
 import type { ContentType } from 'src/types/content'
 
 const typePrefix: Record<ContentType, string> = {
-  video: 'watch',
+  video: 'video',
   gallery: 'gallery',
   article: 'article',
 }

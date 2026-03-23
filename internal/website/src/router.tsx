@@ -55,6 +55,9 @@ const routes: RouteObject[] = [
     element: <MainLayout />,
     children: [
       { index: true, element: <Home /> },
+      { path: 'videos', element: <Home /> },
+      { path: 'galleries', element: <Home /> },
+      { path: 'articles', element: <Home /> },
       { path: 'following', element: <FollowingFeed /> },
       {
         path: ':slug',
@@ -69,9 +72,9 @@ const routes: RouteObject[] = [
         ],
       },
       // Video routes
-      { path: 'watch/new', element: <VideoEditor /> },
-      { path: 'watch/:id/edit', element: <VideoEditor /> },
-      { path: 'watch/:id', element: <VideoDetail /> },
+      { path: 'video/new', element: <VideoEditor /> },
+      { path: 'video/:id/edit', element: <VideoEditor /> },
+      { path: 'video/:id', element: <VideoDetail /> },
       // Gallery routes
       { path: 'gallery/new', element: <GalleryEditor /> },
       { path: 'gallery/:id/edit', element: <GalleryEditor /> },

@@ -85,6 +85,10 @@ func (s *Service) GetCategoryByID(ctx context.Context, id string) (*entity.Categ
 func (s *Service) CreateCategory(ctx context.Context, category *entity.Category) error {
 	log := logger.NewWithContext(ctx)
 
+	if entity.ReservedSlugs[category.Slug] {
+		return fmt.Errorf("slug %q is reserved for content type routes", category.Slug)
+	}
+
 	category.ID = entity.ID()
 	if err := s.db.WithContext(ctx).Create(category).Error; err != nil {
 		log.Errorf("CreateCategory: %v", err)
@@ -110,6 +114,9 @@ func (s *Service) UpdateCategory(ctx context.Context, id string, args entity.Upd
 		updates["name"] = *args.Name
 	}
 	if args.Slug != nil {
+		if entity.ReservedSlugs[*args.Slug] {
+			return nil, fmt.Errorf("slug %q is reserved for content type routes", *args.Slug)
+		}
 		updates["slug"] = *args.Slug
 	}
 	if args.Icon != nil {

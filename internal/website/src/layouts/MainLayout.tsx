@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, Link, useLocation, useParams } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { LogOut, Settings, User, Search, Menu, Home, Play, FileText, ChevronDown, Plus, ServerOff, BookOpen, GraduationCap, Heart, Star, Lightbulb, Trophy, Coffee, Briefcase, Globe, Flame, CircleUserRound, UserCheck, ImageIcon, type LucideIcon } from 'lucide-react'
+import { LogOut, Settings, User, Search, Menu, Home, Play, FileText, Plus, ServerOff, BookOpen, GraduationCap, Heart, Star, Lightbulb, Trophy, Coffee, Briefcase, Globe, Flame, CircleUserRound, UserCheck, ImageIcon, type LucideIcon } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
 import { contentNewPath } from 'src/lib/content-url'
@@ -41,8 +41,8 @@ function MainLayout() {
   const userSidebarStateRef = useRef(false)
 
   // Detect if on detail page, editor page, or settings page (sidebar should be hidden)
-  const isDetailPage = /^\/(watch|gallery|article)\/[^/]+$/.test(location.pathname)
-  const isEditorPage = /^\/(watch|gallery|article)\/(new|[^/]+\/edit)$/.test(location.pathname)
+  const isDetailPage = /^\/(video|gallery|article)\/[^/]+$/.test(location.pathname)
+  const isEditorPage = /^\/(video|gallery|article)\/(new|[^/]+\/edit)$/.test(location.pathname)
   const isSettingsPage = location.pathname.startsWith('/settings')
   const shouldHideSidebar = isDetailPage || isEditorPage || isSettingsPage
 
@@ -79,14 +79,16 @@ function MainLayout() {
     )
   }
 
-  // Derive category from URL params or path (ignore @username profile routes)
+  // Derive category from URL params or path (ignore @username profile routes and content type routes)
   // On homepage (/), category is empty to show all content
   const isHome = location.pathname === '/'
-  const category: string = isHome ? '' : ((slug && !slug.startsWith('@') ? slug : '') || location.pathname.split('/')[1] || '')
+  const typeRouteMap: Record<string, ContentType> = { videos: 'video', galleries: 'gallery', articles: 'article' }
+  const firstSegment = slug || location.pathname.split('/')[1] || ''
+  const isTypeRoute = firstSegment in typeRouteMap
+  const category: string = (isHome || isTypeRoute) ? '' : ((slug && !slug.startsWith('@') ? slug : '') || firstSegment)
 
-  // Derive type filter from URL search params
-  const searchParams = new URLSearchParams(location.search)
-  const typeFilter = (searchParams.get('type') || '') as ContentType | ''
+  // Derive type filter from path (content type routes like /videos, /galleries, /articles)
+  const typeFilter = (isTypeRoute ? typeRouteMap[firstSegment] : '') as ContentType | ''
 
   const handleSearch = () => {
     setKeyword(searchValue)
@@ -98,29 +100,14 @@ function MainLayout() {
     }
   }
 
-  // Build type filter path for a given content type
-  const typeFilterPath = (type: ContentType | '') => {
-    if (!category) return type ? `/?type=${type}` : '/'
-    return type ? `/${category}?type=${type}` : `/${category}`
-  }
-
-  // Render type filter nav items
+  // Render type filter nav items (mutually exclusive with categories)
   const renderTypeFilterNav = () => (
     <div className="px-3">
-      <div className="flex items-center justify-between px-3 py-1 mb-1 cursor-pointer">
-        <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>类型筛选</span>
-        <ChevronDown size={16} style={{ color: '#0f0f0f' }} />
+      <div className="flex items-center justify-between px-3 py-1 mb-1">
+        <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>类型</span>
       </div>
       <NavLink
-        to={typeFilterPath('')}
-        className={`flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${typeFilter === '' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'}`}
-        style={{ color: '#0f0f0f' }}
-      >
-        <FileText size={24} />
-        <span className="text-sm">全部</span>
-      </NavLink>
-      <NavLink
-        to={typeFilterPath('video')}
+        to="/videos"
         className={`flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${typeFilter === 'video' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'}`}
         style={{ color: '#0f0f0f' }}
       >
@@ -128,7 +115,7 @@ function MainLayout() {
         <span className="text-sm">视频</span>
       </NavLink>
       <NavLink
-        to={typeFilterPath('gallery')}
+        to="/galleries"
         className={`flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${typeFilter === 'gallery' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'}`}
         style={{ color: '#0f0f0f' }}
       >
@@ -136,7 +123,7 @@ function MainLayout() {
         <span className="text-sm">图集</span>
       </NavLink>
       <NavLink
-        to={typeFilterPath('article')}
+        to="/articles"
         className={`flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${typeFilter === 'article' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'}`}
         style={{ color: '#0f0f0f' }}
       >
@@ -146,15 +133,15 @@ function MainLayout() {
     </div>
   )
 
-  // Render category nav items
-  const renderCategoryNav = () => (
+  // Render main nav items (Home + Following)
+  const renderMainNav = () => (
     <div className="px-3">
       <NavLink
         to="/"
         end
         className={() =>
           `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-            isHome ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+            isHome && !typeFilter ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
           }`
         }
         style={{ color: '#0f0f0f' }}
@@ -176,6 +163,12 @@ function MainLayout() {
           <span className="text-sm">关注</span>
         </NavLink>
       )}
+    </div>
+  )
+
+  // Render category nav items
+  const renderCategoryNav = () => (
+    <div className="px-3">
       {categories.map((cat) => {
         const IconComponent = iconMap[cat.icon] || Home
         return (
@@ -360,13 +353,19 @@ function MainLayout() {
               </div>
               <nav className="py-3 overflow-y-auto flex flex-col" style={{ height: 'calc(100% - 56px)' }}>
                 {/* Main navigation */}
-                {renderCategoryNav()}
+                {renderMainNav()}
 
                 {/* Divider */}
                 <div className="my-3 mx-3 h-px" style={{ background: '#e5e5e5' }} />
 
                 {/* Type filter */}
                 {renderTypeFilterNav()}
+
+                {/* Divider */}
+                <div className="my-3 mx-3 h-px" style={{ background: '#e5e5e5' }} />
+
+                {/* Categories */}
+                {renderCategoryNav()}
 
                 <div className="mt-auto px-6 py-4 text-xs" style={{ color: '#909090' }}>
                   &copy; {new Date().getFullYear()} Niubility
@@ -388,13 +387,19 @@ function MainLayout() {
           >
             <nav className="py-3 flex flex-col" style={{ width: 240, minHeight: '100%' }}>
               {/* Main navigation */}
-              {renderCategoryNav()}
+              {renderMainNav()}
 
               {/* Divider */}
               <div className="my-3 mx-3 h-px" style={{ background: '#e5e5e5' }} />
 
               {/* Type filter */}
               {renderTypeFilterNav()}
+
+              {/* Divider */}
+              <div className="my-3 mx-3 h-px" style={{ background: '#e5e5e5' }} />
+
+              {/* Categories */}
+              {renderCategoryNav()}
 
               <div className="mt-auto px-6 py-4 text-xs" style={{ color: '#909090' }}>
                 &copy; {new Date().getFullYear()} Niubility

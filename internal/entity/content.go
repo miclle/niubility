@@ -14,6 +14,13 @@ const (
 	ContentTypeArticle ContentType = "article"
 )
 
+// ReservedSlugs contains slugs reserved for content type routes that cannot be used as category slugs.
+var ReservedSlugs = map[string]bool{
+	"videos":    true,
+	"galleries": true,
+	"articles":  true,
+}
+
 // ContentStatus represents the publication status of content.
 type ContentStatus string
 
