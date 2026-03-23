@@ -176,30 +176,3 @@ func (s *Service) DeleteCategory(ctx context.Context, id string) error {
 	}
 	return nil
 }
-
-// seedCategories inserts default categories if the categories table is empty.
-func (s *Service) seedCategories(ctx context.Context) error {
-	log := logger.NewWithContext(ctx)
-
-	var count int64
-	if err := s.db.WithContext(ctx).Model(&entity.Category{}).Count(&count).Error; err != nil {
-		return fmt.Errorf("count categories: %w", err)
-	}
-	if count > 0 {
-		return nil
-	}
-
-	defaults := []entity.Category{
-		{ID: entity.ID(), Name: "学习交流", Slug: "learning", Icon: "Home", Visible: true, SortOrder: 1},
-		{ID: entity.ID(), Name: "企业文化", Slug: "culture", Icon: "Play", Visible: true, SortOrder: 2},
-	}
-
-	for _, cat := range defaults {
-		if err := s.db.WithContext(ctx).Create(&cat).Error; err != nil {
-			return fmt.Errorf("seed category %s: %w", cat.Slug, err)
-		}
-	}
-
-	log.Info("[Service] Default categories seeded")
-	return nil
-}

@@ -95,11 +95,6 @@ func New(ctx context.Context, driver, dsn string) (*Service, error) {
 	wechatApp := svc.initWechatClient(ctx)
 	svc.Wechat = wechatApp
 
-	// Seed default categories if empty
-	if err := svc.seedCategories(ctx); err != nil {
-		return nil, fmt.Errorf("seed categories: %w", err)
-	}
-
 	return svc, nil
 }
 
