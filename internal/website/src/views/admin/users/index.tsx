@@ -3,7 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { Search, Loader2, X, Building2, Users } from 'lucide-react'
+import { Search, Loader2, X, Building2, ChevronRight, ChevronDown } from 'lucide-react'
 import dayjs from 'dayjs'
 import { useInfiniteQuery } from '@tanstack/react-query'
 
@@ -75,8 +75,8 @@ function buildDepartmentTree(items: Department[], parentId: number = 0): Departm
     }))
 }
 
-// DepartmentSidebar renders a tree-structured department list for the sidebar
-function DepartmentSidebar({
+// DepartmentFilter renders a searchable dropdown with collapsible tree for departments
+function DepartmentFilter({
   departments,
   selectedId,
   onSelect,
@@ -85,24 +85,51 @@ function DepartmentSidebar({
   selectedId: string
   onSelect: (id: string) => void
 }) {
-  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set([1]))
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
+  const containerRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const tree = buildDepartmentTree(departments, 0)
+  const selectedDept = departments.find(d => String(d.id) === selectedId)
 
-  // Count total users
-  const totalUsers = departments.reduce((sum, d) => sum + (d.user_count || 0), 0)
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  // Focus search input on open
+  useEffect(() => {
+    if (open) {
+      setQuery('')
+      requestAnimationFrame(() => inputRef.current?.focus())
+    }
+  }, [open])
 
   const toggleExpand = (id: number, e: React.MouseEvent) => {
     e.stopPropagation()
     setExpandedIds(prev => {
       const next = new Set(prev)
-      if (next.has(id)) {
-        next.delete(id)
-      } else {
-        next.add(id)
-      }
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
       return next
     })
   }
+
+  const handleSelect = (id: string) => {
+    onSelect(id)
+    setOpen(false)
+  }
+
+  // Flat filtered list for search mode
+  const filteredDepts = query.trim()
+    ? departments.filter(d => d.name.toLowerCase().includes(query.trim().toLowerCase()) || d.name_en?.toLowerCase().includes(query.trim().toLowerCase()))
+    : null
 
   const renderNode = (node: DepartmentNode, level: number = 0): React.ReactNode => {
     const hasChildren = node.children && node.children.length > 0
@@ -112,75 +139,90 @@ function DepartmentSidebar({
     return (
       <div key={node.id}>
         <div
-          className="flex items-center gap-1 py-1.5 px-2 cursor-pointer rounded transition-colors"
-          style={{
-            paddingLeft: level * 16 + 8,
-            background: isSelected ? '#f2f2f2' : 'transparent',
-          }}
-          onClick={() => onSelect(String(node.id))}
+          className="flex items-center gap-1.5 py-1.5 px-2 cursor-pointer rounded transition-colors hover:bg-accent"
+          style={{ paddingLeft: level * 16 + 8, background: isSelected ? 'var(--color-accent)' : undefined }}
+          onClick={() => handleSelect(String(node.id))}
         >
-          <span
-            className="w-4 h-4 flex items-center justify-center flex-shrink-0"
-            onClick={(e) => hasChildren && toggleExpand(node.id, e)}
-          >
-            {hasChildren ? (
-              <span
-                className="text-xs transition-transform"
-                style={{
-                  color: '#909090',
-                  display: 'inline-block',
-                  transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                }}
-              >
-                ▶
-              </span>
-            ) : (
-              <span style={{ width: 8 }} />
-            )}
-          </span>
-          <Building2 size={14} style={{ color: '#606060', flexShrink: 0 }} />
-          <span className="text-sm flex-1 truncate" style={{ color: isSelected ? '#0f0f0f' : '#606060', fontWeight: isSelected ? 500 : 400 }}>
-            {node.name}
-          </span>
-          <span className="text-xs" style={{ color: '#909090' }}>
-            {node.user_count || 0}
-          </span>
+          {hasChildren ? (
+            <span className="w-4 h-4 flex items-center justify-center shrink-0" onClick={(e) => toggleExpand(node.id, e)}>
+              <ChevronRight size={12} className="transition-transform" style={{ color: '#909090', transform: isExpanded ? 'rotate(90deg)' : undefined }} />
+            </span>
+          ) : (
+            <span className="w-4" />
+          )}
+          <span className="text-sm flex-1 truncate" style={{ color: isSelected ? '#0f0f0f' : '#606060', fontWeight: isSelected ? 500 : 400 }}>{node.name}</span>
+          <span className="text-xs tabular-nums" style={{ color: '#909090' }}>{node.user_count || 0}</span>
         </div>
-        {hasChildren && isExpanded && (
-          <div>
-            {node.children?.map(child => renderNode(child, level + 1))}
-          </div>
-        )}
+        {hasChildren && isExpanded && node.children?.map(child => renderNode(child, level + 1))}
       </div>
     )
   }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="px-3 py-2 flex items-center gap-2" style={{ borderBottom: '1px solid #e5e5e5' }}>
-        <Building2 size={16} style={{ color: '#606060' }} />
-        <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>部门</span>
-      </div>
-
-      {/* All departments */}
-      <div
-        className="flex items-center gap-2 py-2 px-3 cursor-pointer transition-colors"
-        style={{ background: !selectedId ? '#f2f2f2' : 'transparent' }}
-        onClick={() => onSelect('')}
+    <div className="relative" ref={containerRef}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 rounded-lg border border-input bg-transparent px-3 h-8 text-sm whitespace-nowrap transition-colors hover:bg-accent/50"
       >
-        <span className="w-4 h-4" />
-        <Users size={14} style={{ color: '#606060', flexShrink: 0 }} />
-        <span className="text-sm flex-1" style={{ color: !selectedId ? '#0f0f0f' : '#606060', fontWeight: !selectedId ? 500 : 400 }}>
-          全部
-        </span>
-        <span className="text-xs" style={{ color: '#909090' }}>{totalUsers}</span>
-      </div>
-
-      {/* Department tree */}
-      <div className="flex-1 overflow-y-auto py-1">
-        {tree.map(node => renderNode(node))}
-      </div>
+        <Building2 size={14} style={{ color: '#606060' }} />
+        <span style={{ color: selectedDept ? '#0f0f0f' : '#606060' }}>{selectedDept ? selectedDept.name : '全部部门'}</span>
+        <ChevronDown size={14} style={{ color: '#909090' }} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 z-50 w-72 rounded-lg bg-popover shadow-md ring-1 ring-foreground/10 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2">
+          {/* Search input */}
+          <div className="p-2" style={{ borderBottom: '1px solid #e5e5e5' }}>
+            <div className="relative">
+              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: '#909090' }} />
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder="搜索部门..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="w-full h-8 rounded-md border border-input bg-transparent pl-8 pr-3 text-sm outline-none focus:border-ring focus:ring-1 focus:ring-ring/50"
+              />
+            </div>
+          </div>
+          {/* Options */}
+          <div className="max-h-64 overflow-y-auto py-1 px-1">
+            {filteredDepts ? (
+              // Search mode: flat list
+              filteredDepts.length === 0 ? (
+                <div className="py-4 text-center text-sm" style={{ color: '#909090' }}>无匹配部门</div>
+              ) : (
+                filteredDepts.map(dept => {
+                  const isSelected = String(dept.id) === selectedId
+                  return (
+                    <div
+                      key={dept.id}
+                      className="flex items-center gap-1.5 py-1.5 px-3 cursor-pointer rounded transition-colors hover:bg-accent"
+                      style={{ background: isSelected ? 'var(--color-accent)' : undefined }}
+                      onClick={() => handleSelect(String(dept.id))}
+                    >
+                      <span className="text-sm flex-1 truncate" style={{ color: isSelected ? '#0f0f0f' : '#606060', fontWeight: isSelected ? 500 : 400 }}>{dept.name}</span>
+                      <span className="text-xs tabular-nums" style={{ color: '#909090' }}>{dept.user_count || 0}</span>
+                    </div>
+                  )
+                })
+              )
+            ) : (
+              // Tree mode
+              <>
+                <div
+                  className="flex items-center gap-1.5 py-1.5 px-2 cursor-pointer rounded transition-colors hover:bg-accent"
+                  style={{ background: !selectedId ? 'var(--color-accent)' : undefined }}
+                  onClick={() => handleSelect('')}
+                >
+                  <span className="w-4" />
+                  <span className="text-sm flex-1" style={{ color: !selectedId ? '#0f0f0f' : '#606060', fontWeight: !selectedId ? 500 : 400 }}>全部部门</span>
+                </div>
+                {tree.map(node => renderNode(node))}
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -266,20 +308,12 @@ function AdminUsers() {
   }
 
   const hasFilters = search || departmentId
-  const selectedDept = departments.find(d => String(d.id) === departmentId)
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
       {/* Title */}
       <div className="flex items-center justify-between mb-4 shrink-0">
-        <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>
-          用户管理
-          {selectedDept && (
-            <span className="text-base font-normal ml-2" style={{ color: '#606060' }}>
-              · {selectedDept.name}
-            </span>
-          )}
-        </h1>
+        <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>用户管理</h1>
         <div className="text-sm" style={{ color: '#606060' }}>
           共 {total} 个用户
         </div>
@@ -297,6 +331,12 @@ function AdminUsers() {
           />
         </div>
 
+        <DepartmentFilter
+          departments={departments}
+          selectedId={departmentId}
+          onSelect={(id) => updateFilters('department_id', id)}
+        />
+
         {hasFilters && (
           <button
             onClick={clearFilters}
@@ -313,22 +353,8 @@ function AdminUsers() {
         )}
       </div>
 
-      {/* Content area: sidebar + table, fills remaining height */}
-      <div className="flex gap-4 flex-1 min-h-0">
-        {/* Left sidebar - Department tree */}
-        <div
-          className="shrink-0 bg-white rounded-xl overflow-y-auto"
-          style={{ width: 240, border: '1px solid #e5e5e5' }}
-        >
-          <DepartmentSidebar
-            departments={departments}
-            selectedId={departmentId}
-            onSelect={(id) => updateFilters('department_id', id)}
-          />
-        </div>
-
-        {/* Right side - Table with contained scroll */}
-        <div className="flex-1 min-w-0 bg-white rounded-xl overflow-auto" style={{ border: tableBorder }}>
+      {/* Table */}
+      <div className="flex-1 min-h-0 min-w-0 bg-white rounded-xl overflow-auto" style={{ border: tableBorder }}>
           <table style={{ minWidth: 1200, borderCollapse: 'separate', borderSpacing: 0, width: '100%' }}>
             <thead className="sticky top-0 z-20">
               <tr>
@@ -404,7 +430,6 @@ function AdminUsers() {
             )}
           </div>
         </div>
-      </div>
     </div>
   )
 }
