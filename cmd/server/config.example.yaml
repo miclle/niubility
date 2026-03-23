@@ -1,2 +1,9 @@
 addr: "0.0.0.0:9000"
+
+# Database driver: "postgres" (default) or "mysql"
+driver: postgres
 dsn: "host=localhost port=5432 user=postgres password=postgres dbname=niubility sslmode=disable"
+
+# MySQL example:
+# driver: mysql
+# dsn: "root:password@tcp(localhost:3306)/niubility?charset=utf8mb4&parseTime=True&loc=Local"

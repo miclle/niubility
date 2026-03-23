@@ -21,7 +21,7 @@ var sensitiveKeys = map[string]bool{
 // Automatically decrypts sensitive values if encryption is enabled.
 func (s *Service) GetSetting(key string) (string, error) {
 	var settings []entity.Setting
-	if err := s.DB.Where("key = ?", key).Limit(1).Find(&settings).Error; err != nil {
+	if err := s.DB.Where(map[string]any{"key": key}).Limit(1).Find(&settings).Error; err != nil {
 		return "", err
 	}
 	if len(settings) == 0 {

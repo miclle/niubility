@@ -9,8 +9,9 @@ import (
 
 // Config represents the application configuration.
 type Config struct {
-	Addr string `mapstructure:"addr"` // listen address, e.g. "0.0.0.0:9000"
-	DSN  string `mapstructure:"dsn"`  // PostgreSQL connection string
+	Addr   string `mapstructure:"addr"`   // listen address, e.g. "0.0.0.0:9000"
+	Driver string `mapstructure:"driver"` // database driver: "postgres" (default) or "mysql"
+	DSN    string `mapstructure:"dsn"`    // database connection string
 }
 
 // Load reads configuration from the given file path.
@@ -32,6 +33,12 @@ func Load(path string) (*Config, error) {
 	}
 	if cfg.DSN == "" {
 		return nil, fmt.Errorf("dsn is required")
+	}
+	if cfg.Driver == "" {
+		cfg.Driver = "postgres"
+	}
+	if cfg.Driver != "postgres" && cfg.Driver != "mysql" {
+		return nil, fmt.Errorf("unsupported driver: %s (supported: postgres, mysql)", cfg.Driver)
 	}
 
 	return &cfg, nil

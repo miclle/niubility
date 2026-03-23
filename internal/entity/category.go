@@ -6,7 +6,7 @@ import "time"
 type Category struct {
 	ID        string    `json:"id"         gorm:"column:id;primaryKey;size:36"`
 	Name      string    `json:"name"       gorm:"column:name"`
-	Slug      string    `json:"slug"       gorm:"column:slug;uniqueIndex:uniq_categories_slug"`
+	Slug      string    `json:"slug"       gorm:"column:slug;size:64;uniqueIndex:uniq_categories_slug"`
 	Icon      string    `json:"icon"       gorm:"column:icon"`
 	Visible   bool      `json:"visible"    gorm:"column:visible;default:true"`
 	SortOrder int       `json:"sort_order" gorm:"column:sort_order;default:0"`

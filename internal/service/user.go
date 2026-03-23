@@ -48,17 +48,14 @@ func (s *Service) ListUsers(args entity.ListUsersArgs) ([]entity.User, int64, st
 	// Apply search filter
 	if args.Search != "" {
 		searchPattern := "%" + args.Search + "%"
-		query = query.Where(
-			"name ILIKE ? OR username ILIKE ? OR email ILIKE ? OR mobile ILIKE ?",
-			searchPattern, searchPattern, searchPattern, searchPattern,
-		)
+		query = s.whereLike(query, []string{"name", "username", "email", "mobile"}, searchPattern)
 	}
 
 	// Apply department filter
 	if args.DepartmentID > 0 {
 		// Match department ID in comma-separated string (at start, middle, or end)
 		deptPattern := fmt.Sprintf("%%,%d,%%|^%d,%%|%%,%d$|^%d$", args.DepartmentID, args.DepartmentID, args.DepartmentID, args.DepartmentID)
-		query = query.Where("department_ids ~ ?", deptPattern)
+		query = s.whereRegexp(query, "department_ids", deptPattern)
 	}
 
 	if err := query.Count(&total).Error; err != nil {

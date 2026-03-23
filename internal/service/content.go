@@ -29,10 +29,10 @@ func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, 
 	}
 	if args.Keyword != "" {
 		keyword := "%" + args.Keyword + "%"
-		query = query.Where("title ILIKE ? OR summary ILIKE ?", keyword, keyword)
+		query = s.whereLike(query, []string{"title", "summary"}, keyword)
 	}
 	if args.Tag != "" {
-		query = query.Where("tags::jsonb @> ?", fmt.Sprintf(`[%q]`, args.Tag))
+		query = s.whereJSONContains(query, "tags", fmt.Sprintf(`[%q]`, args.Tag))
 	}
 	if args.AuthorID != "" {
 		query = query.Where("author_id = ?", args.AuthorID)

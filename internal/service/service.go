@@ -5,10 +5,16 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"log"
+	"os"
+	"strings"
 	"sync"
+	"time"
 
+	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 
 	"github.com/miclle/niubility/internal/entity"
 	"github.com/miclle/niubility/pkg/textencrypt"
@@ -21,15 +27,30 @@ type Service struct {
 	Wechat    *workwx.WorkwxApp
 	Encryptor *textencrypt.Encryptor
 
+	dialect     string // "postgres" or "mysql"
 	jwtSecret   string
 	wechatMutex sync.RWMutex
 }
 
-// New creates a new Service instance with the given DSN.
+// New creates a new Service instance with the given driver and DSN.
+// Supported drivers: "postgres", "mysql".
 // It auto-generates jwt_secret and encryption_key on first boot, loading them from DB on subsequent boots.
-func New(dsn string) (*Service, error) {
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+func New(driver, dsn string) (*Service, error) {
+	var dialector gorm.Dialector
+	switch driver {
+	case "mysql":
+		dialector = mysql.Open(dsn)
+	default:
+		dialector = postgres.Open(dsn)
+	}
+
+	db, err := gorm.Open(dialector, &gorm.Config{
 		DisableForeignKeyConstraintWhenMigrating: true,
+		Logger: logger.New(log.New(os.Stdout, "\r\n", log.LstdFlags), logger.Config{
+			SlowThreshold:             200 * time.Millisecond,
+			LogLevel:                  logger.Warn,
+			IgnoreRecordNotFoundError: true,
+		}),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("connect to database: %w", err)
@@ -46,7 +67,7 @@ func New(dsn string) (*Service, error) {
 		}
 	}
 
-	svc := &Service{DB: db}
+	svc := &Service{DB: db, dialect: driver}
 
 	// Initialize encryption key (auto-generate on first boot)
 	encKey, err := svc.ensureSetting(entity.SettingEncryptionKey, func() (string, error) {
@@ -131,7 +152,7 @@ func (s *Service) IsCookieSecure() bool {
 // If not present, it calls the generator to create a value and stores it.
 func (s *Service) ensureSetting(key string, generate func() (string, error)) (string, error) {
 	var setting entity.Setting
-	err := s.DB.Where("key = ?", key).First(&setting).Error
+	err := s.DB.Where(map[string]any{"key": key}).First(&setting).Error
 	if err == nil {
 		return setting.Value, nil
 	}
@@ -144,7 +165,7 @@ func (s *Service) ensureSetting(key string, generate func() (string, error)) (st
 	setting = entity.Setting{Key: key, Value: val}
 	if err := s.DB.Create(&setting).Error; err != nil {
 		// Another instance may have created it concurrently, try reading again
-		if err := s.DB.Where("key = ?", key).First(&setting).Error; err != nil {
+		if err := s.DB.Where(map[string]any{"key": key}).First(&setting).Error; err != nil {
 			return "", fmt.Errorf("get setting %s after create conflict: %w", key, err)
 		}
 		return setting.Value, nil
@@ -194,4 +215,43 @@ func generateHexKey(n int) (string, error) {
 		return "", fmt.Errorf("generate random bytes: %w", err)
 	}
 	return hex.EncodeToString(b), nil
+}
+
+// isMySQL returns true if the current database is MySQL.
+func (s *Service) isMySQL() bool {
+	return s.dialect == "mysql"
+}
+
+// whereLike adds a case-insensitive LIKE condition across multiple columns (OR).
+// PostgreSQL uses ILIKE; MySQL LIKE is case-insensitive by default with utf8mb4 collation.
+func (s *Service) whereLike(query *gorm.DB, columns []string, pattern string) *gorm.DB {
+	op := "ILIKE"
+	if s.isMySQL() {
+		op = "LIKE"
+	}
+	conds := make([]string, len(columns))
+	args := make([]any, len(columns))
+	for i, col := range columns {
+		conds[i] = fmt.Sprintf("%s %s ?", col, op)
+		args[i] = pattern
+	}
+	return query.Where(strings.Join(conds, " OR "), args...)
+}
+
+// whereJSONContains adds a JSON array contains condition.
+// PostgreSQL uses jsonb @>; MySQL uses JSON_CONTAINS.
+func (s *Service) whereJSONContains(query *gorm.DB, column string, value string) *gorm.DB {
+	if s.isMySQL() {
+		return query.Where("JSON_CONTAINS("+column+", ?)", value)
+	}
+	return query.Where(column+"::jsonb @> ?", value)
+}
+
+// whereRegexp adds a regular expression match condition.
+// PostgreSQL uses ~; MySQL uses REGEXP.
+func (s *Service) whereRegexp(query *gorm.DB, column string, pattern string) *gorm.DB {
+	if s.isMySQL() {
+		return query.Where(column+" REGEXP ?", pattern)
+	}
+	return query.Where(column+" ~ ?", pattern)
 }

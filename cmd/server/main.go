@@ -21,7 +21,7 @@ func main() {
 		log.Fatalf("load config: %v", err)
 	}
 
-	svc, err := service.New(cfg.DSN)
+	svc, err := service.New(cfg.Driver, cfg.DSN)
 	if err != nil {
 		log.Fatalf("init service: %v", err)
 	}

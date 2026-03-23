@@ -27,7 +27,7 @@ const (
 // User represents a user in the system.
 type User struct {
 	ID             string            `json:"id"              gorm:"column:id;primaryKey;size:36"`
-	Username       string            `json:"username"        gorm:"column:username;uniqueIndex:uniq_users_username"`
+	Username       string            `json:"username"        gorm:"column:username;size:191;uniqueIndex:uniq_users_username"`
 	Name           string            `json:"name"            gorm:"column:name"`
 	Email          string            `json:"email"           gorm:"column:email"`
 	Password       string            `json:"-"               gorm:"column:password"`
