@@ -15,6 +15,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/miclle/niubility/internal/entity"
+	"github.com/miclle/niubility/pkg/gormlog"
 	"github.com/miclle/niubility/pkg/textencrypt"
 	"github.com/xen0n/go-workwx/v2"
 )
@@ -46,7 +47,7 @@ func New(ctx context.Context, driver, dsn string) (*Service, error) {
 
 	db, err := gorm.Open(dialector, &gorm.Config{
 		DisableForeignKeyConstraintWhenMigrating: true,
-		Logger:                                   newGormLogger(defaultSlowThreshold),
+		Logger:                                   gormlog.New(0),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("connect to database: %w", err)

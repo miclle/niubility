@@ -1,4 +1,6 @@
-package service
+// Package gormlog provides a GORM logger adapter that bridges GORM SQL logs
+// to the fox logger, enabling structured logging with request-level trace IDs.
+package gormlog
 
 import (
 	"context"
@@ -10,28 +12,29 @@ import (
 	gormlogger "gorm.io/gorm/logger"
 )
 
-// defaultSlowThreshold is the default threshold for slow SQL queries.
-var defaultSlowThreshold = 200 * time.Millisecond
+// DefaultSlowThreshold is the default threshold for slow SQL queries.
+var DefaultSlowThreshold = 200 * time.Millisecond
 
-// gormLog implements gorm's logger.Interface, bridging GORM SQL logs to fox logger.
+// Logger implements gorm's logger.Interface, bridging GORM SQL logs to fox logger.
 // It extracts the trace ID from context to ensure SQL logs carry the same request ID
 // as the rest of the request processing chain.
-type gormLog struct {
+type Logger struct {
 	foxlogger.Logger
 	slowThreshold time.Duration
 }
 
-// newGormLogger creates a new gormLog with the given slow query threshold.
-func newGormLogger(slow time.Duration) *gormLog {
+// New creates a new Logger with the given slow query threshold.
+// If slow is zero or negative, DefaultSlowThreshold is used.
+func New(slow time.Duration) *Logger {
 	log := foxlogger.NewWithoutCaller("").Caller(6).WithFields(map[string]any{"type": "DATABASE"})
 	if slow <= 0 {
-		slow = defaultSlowThreshold
+		slow = DefaultSlowThreshold
 	}
-	return &gormLog{Logger: log, slowThreshold: slow}
+	return &Logger{Logger: log, slowThreshold: slow}
 }
 
 // fromContext returns a fox logger enriched with the request trace ID from context.
-func (l *gormLog) fromContext(ctx context.Context) foxlogger.Logger {
+func (l *Logger) fromContext(ctx context.Context) foxlogger.Logger {
 	if requestID, ok := ctx.Value(foxlogger.TraceID).(string); ok {
 		return l.WithFields(map[string]any{foxlogger.TraceID: requestID})
 	}
@@ -42,7 +45,7 @@ func (l *gormLog) fromContext(ctx context.Context) foxlogger.Logger {
 }
 
 // LogMode implements gorm's logger.Interface.
-func (l *gormLog) LogMode(lvl gormlogger.LogLevel) gormlogger.Interface {
+func (l *Logger) LogMode(lvl gormlogger.LogLevel) gormlogger.Interface {
 	var level foxlogger.Level
 	switch lvl {
 	case gormlogger.Error:
@@ -56,29 +59,29 @@ func (l *gormLog) LogMode(lvl gormlogger.LogLevel) gormlogger.Interface {
 	default:
 		level = foxlogger.TraceLevel
 	}
-	return &gormLog{
+	return &Logger{
 		Logger:        l.Logger.SetLevel(level),
 		slowThreshold: l.slowThreshold,
 	}
 }
 
 // Info implements gorm's logger.Interface.
-func (l *gormLog) Info(ctx context.Context, s string, vals ...any) {
+func (l *Logger) Info(ctx context.Context, s string, vals ...any) {
 	l.fromContext(ctx).Infof(s, vals...)
 }
 
 // Warn implements gorm's logger.Interface.
-func (l *gormLog) Warn(ctx context.Context, s string, vals ...any) {
+func (l *Logger) Warn(ctx context.Context, s string, vals ...any) {
 	l.fromContext(ctx).Warnf(s, vals...)
 }
 
 // Error implements gorm's logger.Interface.
-func (l *gormLog) Error(ctx context.Context, s string, vals ...any) {
+func (l *Logger) Error(ctx context.Context, s string, vals ...any) {
 	l.fromContext(ctx).Errorf(s, vals...)
 }
 
 // Trace implements gorm's logger.Interface.
-func (l *gormLog) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
+func (l *Logger) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
 	var (
 		elapsed   = time.Since(begin)
 		sql, rows = fc()
