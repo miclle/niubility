@@ -1,9 +1,11 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
+	"github.com/fox-gonic/fox/logger"
 	"gorm.io/gorm"
 
 	"github.com/miclle/niubility/internal/entity"
@@ -11,10 +13,12 @@ import (
 
 // ToggleLike toggles a like for a user on a target (content or comment).
 // Returns the new liked state and updated like count.
-func (s *Service) ToggleLike(userID, targetID string, targetType entity.TargetType) (*entity.LikeResponse, error) {
+func (s *Service) ToggleLike(ctx context.Context, userID, targetID string, targetType entity.TargetType) (*entity.LikeResponse, error) {
+	log := logger.NewWithContext(ctx)
+
 	var resp entity.LikeResponse
 
-	err := s.DB.Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var existing entity.Like
 		err := tx.Where("user_id = ? AND target_id = ? AND target_type = ?", userID, targetID, targetType).
 			First(&existing).Error
@@ -56,6 +60,7 @@ func (s *Service) ToggleLike(userID, targetID string, targetType entity.TargetTy
 		return nil
 	})
 	if err != nil {
+		log.Errorf("ToggleLike: %v", err)
 		return nil, err
 	}
 
@@ -63,27 +68,33 @@ func (s *Service) ToggleLike(userID, targetID string, targetType entity.TargetTy
 }
 
 // IsLiked checks whether a user has liked a specific target.
-func (s *Service) IsLiked(userID, targetID string, targetType entity.TargetType) (bool, error) {
+func (s *Service) IsLiked(ctx context.Context, userID, targetID string, targetType entity.TargetType) (bool, error) {
+	log := logger.NewWithContext(ctx)
+
 	var count int64
-	err := s.DB.Model(&entity.Like{}).
+	err := s.db.WithContext(ctx).Model(&entity.Like{}).
 		Where("user_id = ? AND target_id = ? AND target_type = ?", userID, targetID, targetType).
 		Count(&count).Error
 	if err != nil {
+		log.Errorf("IsLiked: %v", err)
 		return false, fmt.Errorf("check is liked: %w", err)
 	}
 	return count > 0, nil
 }
 
 // GetLikedIDs returns the subset of targetIDs that the user has liked.
-func (s *Service) GetLikedIDs(userID string, targetIDs []string, targetType entity.TargetType) ([]string, error) {
+func (s *Service) GetLikedIDs(ctx context.Context, userID string, targetIDs []string, targetType entity.TargetType) ([]string, error) {
+	log := logger.NewWithContext(ctx)
+
 	if len(targetIDs) == 0 {
 		return nil, nil
 	}
 	var ids []string
-	err := s.DB.Model(&entity.Like{}).
+	err := s.db.WithContext(ctx).Model(&entity.Like{}).
 		Where("user_id = ? AND target_id IN ? AND target_type = ?", userID, targetIDs, targetType).
 		Pluck("target_id", &ids).Error
 	if err != nil {
+		log.Errorf("GetLikedIDs: %v", err)
 		return nil, fmt.Errorf("get liked ids: %w", err)
 	}
 	return ids, nil

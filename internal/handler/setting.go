@@ -19,7 +19,9 @@ type UpdateSettingsRequest struct {
 
 // ListSettings returns all settings (admin only).
 func (ctrl *Ctrl) ListSettings(c *fox.Context) (*ListSettingsResponse, error) {
-	settings, err := ctrl.service.ListSettings()
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	settings, err := ctrl.service.ListSettings(ctx)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -28,7 +30,9 @@ func (ctrl *Ctrl) ListSettings(c *fox.Context) (*ListSettingsResponse, error) {
 
 // UpdateSettings updates the settings and refreshes WeChat client if needed.
 func (ctrl *Ctrl) UpdateSettings(c *fox.Context, req *UpdateSettingsRequest) (*ListSettingsResponse, error) {
-	if err := ctrl.service.UpdateSettingsBatch(req.Settings); err != nil {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	if err := ctrl.service.UpdateSettingsBatch(ctx, req.Settings); err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
 
@@ -47,13 +51,13 @@ func (ctrl *Ctrl) UpdateSettings(c *fox.Context, req *UpdateSettingsRequest) (*L
 	}
 
 	if shouldRefresh {
-		if err := ctrl.service.RefreshWechatClient(); err != nil {
+		if err := ctrl.service.RefreshWechatClient(ctx); err != nil {
 			return nil, httperrors.ErrInternalServerError
 		}
 	}
 
 	// Return updated settings
-	settings, err := ctrl.service.ListSettings()
+	settings, err := ctrl.service.ListSettings(ctx)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}

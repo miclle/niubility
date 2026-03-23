@@ -17,7 +17,9 @@ type ListContentsResponse struct {
 
 // ListContents returns a paginated list of contents with optional filters.
 func (ctrl *Ctrl) ListContents(c *fox.Context, args entity.ListContentsArgs) (*ListContentsResponse, error) {
-	contents, nextCursor, err := ctrl.service.ListContents(args)
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	contents, nextCursor, err := ctrl.service.ListContents(ctx, args)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -41,9 +43,10 @@ type GetContentResponse struct {
 
 // GetContent returns a single content by ID, including the current user's liked status.
 func (ctrl *Ctrl) GetContent(c *fox.Context) (*GetContentResponse, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
 	id := c.Param("id")
 
-	content, err := ctrl.service.GetContentByID(id)
+	content, err := ctrl.service.GetContentByID(ctx, id)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -63,7 +66,7 @@ func (ctrl *Ctrl) GetContent(c *fox.Context) (*GetContentResponse, error) {
 	resp := &GetContentResponse{Content: content}
 
 	if user := CurrentUser(c); user != nil {
-		liked, _ := ctrl.service.IsLiked(user.ID, id, entity.TargetTypeContent)
+		liked, _ := ctrl.service.IsLiked(ctx, user.ID, id, entity.TargetTypeContent)
 		resp.Liked = liked
 
 		// Check which attachments are liked by the current user
@@ -72,7 +75,7 @@ func (ctrl *Ctrl) GetContent(c *fox.Context) (*GetContentResponse, error) {
 			for i, a := range content.Attachments {
 				attachmentIDs[i] = a.ID
 			}
-			likedIDs, _ := ctrl.service.GetLikedIDs(user.ID, attachmentIDs, entity.TargetTypeAttachment)
+			likedIDs, _ := ctrl.service.GetLikedIDs(ctx, user.ID, attachmentIDs, entity.TargetTypeAttachment)
 			resp.LikedAttachmentIDs = likedIDs
 		}
 	}
@@ -82,13 +85,14 @@ func (ctrl *Ctrl) GetContent(c *fox.Context) (*GetContentResponse, error) {
 
 // LikeContent toggles like on a content item.
 func (ctrl *Ctrl) LikeContent(c *fox.Context) (*entity.LikeResponse, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
 	contentID := c.Param("id")
 	user := CurrentUser(c)
 	if user == nil {
 		return nil, httperrors.ErrUnauthorized
 	}
 
-	content, err := ctrl.service.GetContentByID(contentID)
+	content, err := ctrl.service.GetContentByID(ctx, contentID)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -96,7 +100,7 @@ func (ctrl *Ctrl) LikeContent(c *fox.Context) (*entity.LikeResponse, error) {
 		return nil, httperrors.ErrNotFound
 	}
 
-	resp, err := ctrl.service.ToggleLike(user.ID, contentID, entity.TargetTypeContent)
+	resp, err := ctrl.service.ToggleLike(ctx, user.ID, contentID, entity.TargetTypeContent)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -106,13 +110,14 @@ func (ctrl *Ctrl) LikeContent(c *fox.Context) (*entity.LikeResponse, error) {
 
 // LikeAttachment toggles like on an attachment (image/video in gallery).
 func (ctrl *Ctrl) LikeAttachment(c *fox.Context) (*entity.LikeResponse, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
 	attachmentID := c.Param("id")
 	user := CurrentUser(c)
 	if user == nil {
 		return nil, httperrors.ErrUnauthorized
 	}
 
-	resp, err := ctrl.service.ToggleLike(user.ID, attachmentID, entity.TargetTypeAttachment)
+	resp, err := ctrl.service.ToggleLike(ctx, user.ID, attachmentID, entity.TargetTypeAttachment)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -122,6 +127,8 @@ func (ctrl *Ctrl) LikeAttachment(c *fox.Context) (*entity.LikeResponse, error) {
 
 // CreateContent creates a new content (authenticated users).
 func (ctrl *Ctrl) CreateContent(c *fox.Context, args entity.CreateContentArgs) (*entity.Content, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
 	user := CurrentUser(c)
 	if user == nil {
 		return nil, httperrors.ErrUnauthorized
@@ -142,11 +149,11 @@ func (ctrl *Ctrl) CreateContent(c *fox.Context, args entity.CreateContentArgs) (
 		SpeakerBio:  args.SpeakerBio,
 	}
 
-	if err := ctrl.service.CreateContent(content, args.Attachments); err != nil {
+	if err := ctrl.service.CreateContent(ctx, content, args.Attachments); err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
 
-	created, err := ctrl.service.GetContentByID(content.ID)
+	created, err := ctrl.service.GetContentByID(ctx, content.ID)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -156,13 +163,14 @@ func (ctrl *Ctrl) CreateContent(c *fox.Context, args entity.CreateContentArgs) (
 
 // UpdateContent updates an existing content (author or admin).
 func (ctrl *Ctrl) UpdateContent(c *fox.Context, args entity.UpdateContentArgs) (*entity.Content, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
 	id := c.Param("id")
 	user := CurrentUser(c)
 	if user == nil {
 		return nil, httperrors.ErrUnauthorized
 	}
 
-	existing, err := ctrl.service.GetContentByID(id)
+	existing, err := ctrl.service.GetContentByID(ctx, id)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -173,7 +181,7 @@ func (ctrl *Ctrl) UpdateContent(c *fox.Context, args entity.UpdateContentArgs) (
 		return nil, httperrors.ErrForbidden
 	}
 
-	content, err := ctrl.service.UpdateContent(id, args)
+	content, err := ctrl.service.UpdateContent(ctx, id, args)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -187,13 +195,14 @@ func (ctrl *Ctrl) UpdateContent(c *fox.Context, args entity.UpdateContentArgs) (
 
 // DeleteContent deletes a content by ID (author or admin).
 func (ctrl *Ctrl) DeleteContent(c *fox.Context) error {
+	ctx := c.Logger.WithContext(c.Request.Context())
 	id := c.Param("id")
 	user := CurrentUser(c)
 	if user == nil {
 		return httperrors.ErrUnauthorized
 	}
 
-	existing, err := ctrl.service.GetContentByID(id)
+	existing, err := ctrl.service.GetContentByID(ctx, id)
 	if err != nil {
 		return httperrors.ErrInternalServerError
 	}
@@ -204,7 +213,7 @@ func (ctrl *Ctrl) DeleteContent(c *fox.Context) error {
 		return httperrors.ErrForbidden
 	}
 
-	if err := ctrl.service.DeleteContent(id); err != nil {
+	if err := ctrl.service.DeleteContent(ctx, id); err != nil {
 		return httperrors.ErrInternalServerError
 	}
 
@@ -214,8 +223,10 @@ func (ctrl *Ctrl) DeleteContent(c *fox.Context) error {
 
 // ImportContents imports contents from the legacy platform (admin only).
 func (ctrl *Ctrl) ImportContents(c *fox.Context, args entity.ImportContentsArgs) (*entity.ImportResult, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
 	user := CurrentUser(c)
-	result, err := ctrl.service.ImportContents(user.ID, args.Contents)
+	result, err := ctrl.service.ImportContents(ctx, user.ID, args.Contents)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}

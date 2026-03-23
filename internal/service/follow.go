@@ -1,10 +1,12 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
 
+	"github.com/fox-gonic/fox/logger"
 	"gorm.io/gorm"
 
 	"github.com/miclle/niubility/internal/entity"
@@ -12,14 +14,16 @@ import (
 
 // ToggleFollow toggles a follow relationship between two users.
 // Returns the new follow state and updated counts for the target user.
-func (s *Service) ToggleFollow(followerID, followingID string) (*entity.FollowResponse, error) {
+func (s *Service) ToggleFollow(ctx context.Context, followerID, followingID string) (*entity.FollowResponse, error) {
+	log := logger.NewWithContext(ctx)
+
 	if followerID == followingID {
 		return nil, fmt.Errorf("cannot follow yourself")
 	}
 
 	var resp entity.FollowResponse
 
-	err := s.DB.Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var existing entity.Follow
 		err := tx.Where("follower_id = ? AND following_id = ?", followerID, followingID).
 			First(&existing).Error
@@ -61,6 +65,7 @@ func (s *Service) ToggleFollow(followerID, followingID string) (*entity.FollowRe
 		return nil
 	})
 	if err != nil {
+		log.Errorf("ToggleFollow: %v", err)
 		return nil, err
 	}
 
@@ -68,21 +73,26 @@ func (s *Service) ToggleFollow(followerID, followingID string) (*entity.FollowRe
 }
 
 // IsFollowing checks whether followerID is following followingID.
-func (s *Service) IsFollowing(followerID, followingID string) (bool, error) {
+func (s *Service) IsFollowing(ctx context.Context, followerID, followingID string) (bool, error) {
+	log := logger.NewWithContext(ctx)
+
 	var count int64
-	err := s.DB.Model(&entity.Follow{}).
+	err := s.db.WithContext(ctx).Model(&entity.Follow{}).
 		Where("follower_id = ? AND following_id = ?", followerID, followingID).
 		Count(&count).Error
 	if err != nil {
+		log.Errorf("IsFollowing: %v", err)
 		return false, fmt.Errorf("check is following: %w", err)
 	}
 	return count > 0, nil
 }
 
 // ListFollowing returns a paginated list of users that the given user is following.
-func (s *Service) ListFollowing(userID string, pagination entity.Pagination) ([]entity.User, string, error) {
+func (s *Service) ListFollowing(ctx context.Context, userID string, pagination entity.Pagination) ([]entity.User, string, error) {
+	log := logger.NewWithContext(ctx)
+
 	var users []entity.User
-	query := s.DB.
+	query := s.db.WithContext(ctx).
 		Joins("JOIN follows ON follows.following_id = users.id").
 		Where("follows.follower_id = ?", userID).
 		Order("follows.created_at DESC, follows.id DESC")
@@ -101,6 +111,7 @@ func (s *Service) ListFollowing(userID string, pagination entity.Pagination) ([]
 	}
 
 	if err := query.Limit(pagination.GetLimit()).Find(&users).Error; err != nil {
+		log.Errorf("ListFollowing: %v", err)
 		return nil, "", fmt.Errorf("list following: %w", err)
 	}
 
@@ -109,7 +120,7 @@ func (s *Service) ListFollowing(userID string, pagination entity.Pagination) ([]
 	if len(users) == pagination.GetLimit() {
 		// Fetch the last follow record to get its created_at and id
 		var lastFollow entity.Follow
-		if err := s.DB.Where("follower_id = ? AND following_id = ?", userID, users[len(users)-1].ID).First(&lastFollow).Error; err == nil {
+		if err := s.db.WithContext(ctx).Where("follower_id = ? AND following_id = ?", userID, users[len(users)-1].ID).First(&lastFollow).Error; err == nil {
 			nextCursor = entity.EncodeCursor(lastFollow.CreatedAt.Format(time.RFC3339Nano), lastFollow.ID)
 		}
 	}
@@ -118,9 +129,11 @@ func (s *Service) ListFollowing(userID string, pagination entity.Pagination) ([]
 }
 
 // ListFollowers returns a paginated list of users who follow the given user.
-func (s *Service) ListFollowers(userID string, pagination entity.Pagination) ([]entity.User, string, error) {
+func (s *Service) ListFollowers(ctx context.Context, userID string, pagination entity.Pagination) ([]entity.User, string, error) {
+	log := logger.NewWithContext(ctx)
+
 	var users []entity.User
-	query := s.DB.
+	query := s.db.WithContext(ctx).
 		Joins("JOIN follows ON follows.follower_id = users.id").
 		Where("follows.following_id = ?", userID).
 		Order("follows.created_at DESC, follows.id DESC")
@@ -139,6 +152,7 @@ func (s *Service) ListFollowers(userID string, pagination entity.Pagination) ([]
 	}
 
 	if err := query.Limit(pagination.GetLimit()).Find(&users).Error; err != nil {
+		log.Errorf("ListFollowers: %v", err)
 		return nil, "", fmt.Errorf("list followers: %w", err)
 	}
 
@@ -146,7 +160,7 @@ func (s *Service) ListFollowers(userID string, pagination entity.Pagination) ([]
 	var nextCursor string
 	if len(users) == pagination.GetLimit() {
 		var lastFollow entity.Follow
-		if err := s.DB.Where("following_id = ? AND follower_id = ?", userID, users[len(users)-1].ID).First(&lastFollow).Error; err == nil {
+		if err := s.db.WithContext(ctx).Where("following_id = ? AND follower_id = ?", userID, users[len(users)-1].ID).First(&lastFollow).Error; err == nil {
 			nextCursor = entity.EncodeCursor(lastFollow.CreatedAt.Format(time.RFC3339Nano), lastFollow.ID)
 		}
 	}

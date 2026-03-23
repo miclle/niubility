@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/fox-gonic/fox/logger"
 	"github.com/google/uuid"
 
 	"github.com/miclle/niubility/internal/entity"
@@ -23,20 +24,23 @@ type PresignResult struct {
 
 // GetPresignedURL generates an S3 presigned PUT URL for attachment upload.
 // S3 key: attachments/{uuid}.{ext}, returned key: {uuid}.{ext}
-func (s *Service) GetPresignedURL(filename, contentType string) (*PresignResult, error) {
-	return s.presignUpload(filename, contentType, "attachments")
+func (s *Service) GetPresignedURL(ctx context.Context, filename, contentType string) (*PresignResult, error) {
+	return s.presignUpload(ctx, filename, contentType, "attachments")
 }
 
 // GetAvatarPresignedURL generates an S3 presigned PUT URL for avatar upload.
 // S3 key: avatars/{uuid}.{ext}, returned key: {uuid}.{ext}
-func (s *Service) GetAvatarPresignedURL(filename, contentType string) (*PresignResult, error) {
-	return s.presignUpload(filename, contentType, "avatars")
+func (s *Service) GetAvatarPresignedURL(ctx context.Context, filename, contentType string) (*PresignResult, error) {
+	return s.presignUpload(ctx, filename, contentType, "avatars")
 }
 
 // presignUpload generates an S3 presigned PUT URL under the given prefix.
-func (s *Service) presignUpload(filename, contentType, prefix string) (*PresignResult, error) {
-	cfg, err := s.GetS3Config()
+func (s *Service) presignUpload(ctx context.Context, filename, contentType, prefix string) (*PresignResult, error) {
+	log := logger.NewWithContext(ctx)
+
+	cfg, err := s.GetS3Config(ctx)
 	if err != nil {
+		log.Errorf("presignUpload: get s3 config: %v", err)
 		return nil, fmt.Errorf("get s3 config: %w", err)
 	}
 	if cfg == nil {
@@ -50,12 +54,13 @@ func (s *Service) presignUpload(filename, contentType, prefix string) (*PresignR
 	client := s.newS3Client(cfg)
 	presignClient := s3.NewPresignClient(client)
 
-	req, err := presignClient.PresignPutObject(context.Background(), &s3.PutObjectInput{
+	req, err := presignClient.PresignPutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(cfg.Bucket),
 		Key:         aws.String(s3Key),
 		ContentType: aws.String(contentType),
 	}, s3.WithPresignExpires(15*time.Minute))
 	if err != nil {
+		log.Errorf("presignUpload: presign put object: %v", err)
 		return nil, fmt.Errorf("presign put object: %w", err)
 	}
 
@@ -67,9 +72,12 @@ func (s *Service) presignUpload(filename, contentType, prefix string) (*PresignR
 
 // GetFileURL returns an access URL for the given S3 object key.
 // If PublicURL is configured, returns a direct public URL; otherwise returns a presigned GET URL.
-func (s *Service) GetFileURL(key string) (string, error) {
-	cfg, err := s.GetS3Config()
+func (s *Service) GetFileURL(ctx context.Context, key string) (string, error) {
+	log := logger.NewWithContext(ctx)
+
+	cfg, err := s.GetS3Config(ctx)
 	if err != nil {
+		log.Errorf("GetFileURL: get s3 config: %v", err)
 		return "", fmt.Errorf("get s3 config: %w", err)
 	}
 	if cfg == nil {
@@ -83,11 +91,12 @@ func (s *Service) GetFileURL(key string) (string, error) {
 	client := s.newS3Client(cfg)
 	presignClient := s3.NewPresignClient(client)
 
-	req, err := presignClient.PresignGetObject(context.Background(), &s3.GetObjectInput{
+	req, err := presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(cfg.Bucket),
 		Key:    aws.String(key),
 	}, s3.WithPresignExpires(1*time.Hour))
 	if err != nil {
+		log.Errorf("GetFileURL: presign get object: %v", err)
 		return "", fmt.Errorf("presign get object: %w", err)
 	}
 

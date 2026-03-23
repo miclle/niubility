@@ -1,9 +1,11 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
+	"github.com/fox-gonic/fox/logger"
 	"gorm.io/gorm"
 
 	"github.com/miclle/niubility/internal/entity"
@@ -11,29 +13,35 @@ import (
 
 // ListCategories retrieves all categories ordered by sort_order ascending.
 // If visibleOnly is true, only visible categories are returned.
-func (s *Service) ListCategories(visibleOnly bool) ([]entity.Category, error) {
+func (s *Service) ListCategories(ctx context.Context, visibleOnly bool) ([]entity.Category, error) {
+	log := logger.NewWithContext(ctx)
+
 	var categories []entity.Category
-	query := s.DB.Order("sort_order ASC, created_at ASC")
+	query := s.db.WithContext(ctx).Order("sort_order ASC, created_at ASC")
 	if visibleOnly {
 		query = query.Where("visible = ?", true)
 	}
 	if err := query.Find(&categories).Error; err != nil {
+		log.Errorf("ListCategories: %v", err)
 		return nil, fmt.Errorf("list categories: %w", err)
 	}
 	return categories, nil
 }
 
 // GetCategoryContentCounts returns a map of category slug to content count.
-func (s *Service) GetCategoryContentCounts() (map[string]int64, error) {
+func (s *Service) GetCategoryContentCounts(ctx context.Context) (map[string]int64, error) {
+	log := logger.NewWithContext(ctx)
+
 	type result struct {
 		Category string
 		Count    int64
 	}
 	var results []result
-	if err := s.DB.Model(&entity.Content{}).
+	if err := s.db.WithContext(ctx).Model(&entity.Content{}).
 		Select("category, count(*) as count").
 		Group("category").
 		Find(&results).Error; err != nil {
+		log.Errorf("GetCategoryContentCounts: %v", err)
 		return nil, fmt.Errorf("get category content counts: %w", err)
 	}
 	counts := make(map[string]int64, len(results))
@@ -44,41 +52,52 @@ func (s *Service) GetCategoryContentCounts() (map[string]int64, error) {
 }
 
 // GetCategoryBySlug retrieves a category by its slug.
-func (s *Service) GetCategoryBySlug(slug string) (*entity.Category, error) {
+func (s *Service) GetCategoryBySlug(ctx context.Context, slug string) (*entity.Category, error) {
+	log := logger.NewWithContext(ctx)
+
 	var category entity.Category
-	if err := s.DB.Where("slug = ?", slug).First(&category).Error; err != nil {
+	if err := s.db.WithContext(ctx).Where("slug = ?", slug).First(&category).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
+		log.Errorf("GetCategoryBySlug: %v", err)
 		return nil, fmt.Errorf("get category by slug: %w", err)
 	}
 	return &category, nil
 }
 
 // GetCategoryByID retrieves a category by its ID.
-func (s *Service) GetCategoryByID(id string) (*entity.Category, error) {
+func (s *Service) GetCategoryByID(ctx context.Context, id string) (*entity.Category, error) {
+	log := logger.NewWithContext(ctx)
+
 	var category entity.Category
-	if err := s.DB.Where("id = ?", id).First(&category).Error; err != nil {
+	if err := s.db.WithContext(ctx).Where("id = ?", id).First(&category).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
+		log.Errorf("GetCategoryByID: %v", err)
 		return nil, fmt.Errorf("get category by id: %w", err)
 	}
 	return &category, nil
 }
 
 // CreateCategory creates a new category record.
-func (s *Service) CreateCategory(category *entity.Category) error {
+func (s *Service) CreateCategory(ctx context.Context, category *entity.Category) error {
+	log := logger.NewWithContext(ctx)
+
 	category.ID = entity.ID()
-	if err := s.DB.Create(category).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(category).Error; err != nil {
+		log.Errorf("CreateCategory: %v", err)
 		return fmt.Errorf("create category: %w", err)
 	}
 	return nil
 }
 
 // UpdateCategory updates category fields by ID.
-func (s *Service) UpdateCategory(id string, args entity.UpdateCategoryArgs) (*entity.Category, error) {
-	category, err := s.GetCategoryByID(id)
+func (s *Service) UpdateCategory(ctx context.Context, id string, args entity.UpdateCategoryArgs) (*entity.Category, error) {
+	log := logger.NewWithContext(ctx)
+
+	category, err := s.GetCategoryByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -104,19 +123,23 @@ func (s *Service) UpdateCategory(id string, args entity.UpdateCategoryArgs) (*en
 	}
 
 	if len(updates) > 0 {
-		if err := s.DB.Model(category).Updates(updates).Error; err != nil {
+		if err := s.db.WithContext(ctx).Model(category).Updates(updates).Error; err != nil {
+			log.Errorf("UpdateCategory: %v", err)
 			return nil, fmt.Errorf("update category: %w", err)
 		}
 	}
 
-	return s.GetCategoryByID(id)
+	return s.GetCategoryByID(ctx, id)
 }
 
 // ReorderCategories updates sort_order for multiple categories in a single transaction.
-func (s *Service) ReorderCategories(items []entity.ReorderCategoryItem) error {
-	return s.DB.Transaction(func(tx *gorm.DB) error {
+func (s *Service) ReorderCategories(ctx context.Context, items []entity.ReorderCategoryItem) error {
+	log := logger.NewWithContext(ctx)
+
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for _, item := range items {
 			if err := tx.Model(&entity.Category{}).Where("id = ?", item.ID).Update("sort_order", item.SortOrder).Error; err != nil {
+				log.Errorf("ReorderCategories: %v", err)
 				return fmt.Errorf("reorder category %s: %w", item.ID, err)
 			}
 		}
@@ -126,8 +149,10 @@ func (s *Service) ReorderCategories(items []entity.ReorderCategoryItem) error {
 
 // DeleteCategory deletes a category by ID.
 // Returns an error if there are contents using this category.
-func (s *Service) DeleteCategory(id string) error {
-	category, err := s.GetCategoryByID(id)
+func (s *Service) DeleteCategory(ctx context.Context, id string) error {
+	log := logger.NewWithContext(ctx)
+
+	category, err := s.GetCategoryByID(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -137,23 +162,27 @@ func (s *Service) DeleteCategory(id string) error {
 
 	// Check if any contents use this category
 	var count int64
-	if err := s.DB.Model(&entity.Content{}).Where("category = ?", category.Slug).Count(&count).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(&entity.Content{}).Where("category = ?", category.Slug).Count(&count).Error; err != nil {
+		log.Errorf("DeleteCategory: count contents: %v", err)
 		return fmt.Errorf("count contents for category: %w", err)
 	}
 	if count > 0 {
 		return fmt.Errorf("cannot delete category: %d contents are using this category", count)
 	}
 
-	if err := s.DB.Where("id = ?", id).Delete(&entity.Category{}).Error; err != nil {
+	if err := s.db.WithContext(ctx).Where("id = ?", id).Delete(&entity.Category{}).Error; err != nil {
+		log.Errorf("DeleteCategory: %v", err)
 		return fmt.Errorf("delete category: %w", err)
 	}
 	return nil
 }
 
 // seedCategories inserts default categories if the categories table is empty.
-func (s *Service) seedCategories() error {
+func (s *Service) seedCategories(ctx context.Context) error {
+	log := logger.NewWithContext(ctx)
+
 	var count int64
-	if err := s.DB.Model(&entity.Category{}).Count(&count).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(&entity.Category{}).Count(&count).Error; err != nil {
 		return fmt.Errorf("count categories: %w", err)
 	}
 	if count > 0 {
@@ -166,11 +195,11 @@ func (s *Service) seedCategories() error {
 	}
 
 	for _, cat := range defaults {
-		if err := s.DB.Create(&cat).Error; err != nil {
+		if err := s.db.WithContext(ctx).Create(&cat).Error; err != nil {
 			return fmt.Errorf("seed category %s: %w", cat.Slug, err)
 		}
 	}
 
-	fmt.Println("[Service] Default categories seeded")
+	log.Info("[Service] Default categories seeded")
 	return nil
 }

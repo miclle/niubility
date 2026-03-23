@@ -38,7 +38,9 @@ type SSOCallbackArgs struct {
 
 // SSOCallback handles the OIDC authorization code callback.
 func (ctrl *Ctrl) SSOCallback(c *fox.Context, args *SSOCallbackArgs) any {
-	if ctrl.service.GetSSOType() != "oidc" {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	if ctrl.service.GetSSOType(ctx) != "oidc" {
 		return render.Redirect{Code: 302, Location: "/login"}
 	}
 
@@ -49,13 +51,13 @@ func (ctrl *Ctrl) SSOCallback(c *fox.Context, args *SSOCallbackArgs) any {
 		return render.Redirect{Code: 302, Location: "/login"}
 	}
 
-	provider, err := ctrl.getOIDCProvider(c)
+	provider, err := ctrl.getOIDCProvider(ctx)
 	if err != nil {
 		c.Logger.Errorf("get OIDC provider: %v", err)
 		return render.Redirect{Code: 302, Location: "/500"}
 	}
 
-	userinfo, err := provider.Exchange(c, sso.CallbackParams{Code: args.Code, State: args.State})
+	userinfo, err := provider.Exchange(ctx, sso.CallbackParams{Code: args.Code, State: args.State})
 	if err != nil {
 		c.Logger.Errorf("OIDC exchange failed: %v", err)
 		return render.Redirect{Code: 302, Location: "/500"}
@@ -72,7 +74,9 @@ type SSOAcsArgs struct {
 
 // SSOAcs handles the SAML 2.0 Assertion Consumer Service callback.
 func (ctrl *Ctrl) SSOAcs(c *fox.Context, args *SSOAcsArgs) any {
-	if ctrl.service.GetSSOType() != "saml" {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	if ctrl.service.GetSSOType(ctx) != "saml" {
 		return render.Redirect{Code: 302, Location: "/login"}
 	}
 
@@ -94,7 +98,9 @@ func (ctrl *Ctrl) SSOAcs(c *fox.Context, args *SSOAcsArgs) any {
 
 // SSOMetadata returns the SAML SP metadata XML for IdP import.
 func (ctrl *Ctrl) SSOMetadata(c *fox.Context) any {
-	if ctrl.service.GetSSOType() != "saml" {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	if ctrl.service.GetSSOType(ctx) != "saml" {
 		return httperrors.ErrNotFound
 	}
 
@@ -113,12 +119,14 @@ func (ctrl *Ctrl) SSOMetadata(c *fox.Context) any {
 
 // completeSSOLogin upserts the user, issues a JWT token, and redirects.
 func (ctrl *Ctrl) completeSSOLogin(c *fox.Context, userinfo *sso.UserInfo, redirect string) render.Redirect {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
 	if userinfo.Username == "" {
 		c.Logger.Error("SSO user username is empty")
 		return render.Redirect{Code: 302, Location: "/500"}
 	}
 
-	user, err := ctrl.service.UpsertUser(userinfo.Username, userinfo.Email)
+	user, err := ctrl.service.UpsertUser(ctx, userinfo.Username, userinfo.Email)
 	if err != nil {
 		c.Logger.Errorf("upsert user failed: %v", err)
 		return render.Redirect{Code: 302, Location: "/500"}
@@ -141,7 +149,7 @@ func (ctrl *Ctrl) completeSSOLogin(c *fox.Context, userinfo *sso.UserInfo, redir
 
 // getOIDCProvider creates an OIDC provider from database settings.
 func (ctrl *Ctrl) getOIDCProvider(ctx context.Context) (*sso.OIDCProvider, error) {
-	cfg, err := ctrl.service.GetOIDCConfig()
+	cfg, err := ctrl.service.GetOIDCConfig(ctx)
 	if err != nil || cfg == nil {
 		return nil, fmt.Errorf("OIDC not configured")
 	}
@@ -150,7 +158,9 @@ func (ctrl *Ctrl) getOIDCProvider(ctx context.Context) (*sso.OIDCProvider, error
 
 // getSAMLProvider creates a SAML provider from database settings.
 func (ctrl *Ctrl) getSAMLProvider(c *fox.Context) (*sso.SAMLProvider, error) {
-	cfg, err := ctrl.service.GetSAMLConfig()
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	cfg, err := ctrl.service.GetSAMLConfig(ctx)
 	if err != nil || cfg == nil {
 		return nil, fmt.Errorf("SAML not configured")
 	}
@@ -172,7 +182,9 @@ func (ctrl *Ctrl) getSAMLProvider(c *fox.Context) (*sso.SAMLProvider, error) {
 
 // buildSSOLoginURL constructs the SSO login URL based on sso_type.
 func (ctrl *Ctrl) buildSSOLoginURL(c *fox.Context) string {
-	ssoType := ctrl.service.GetSSOType()
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	ssoType := ctrl.service.GetSSOType(ctx)
 	scheme := "https"
 	if c.Request.TLS == nil {
 		scheme = "http"
@@ -181,11 +193,11 @@ func (ctrl *Ctrl) buildSSOLoginURL(c *fox.Context) string {
 
 	switch ssoType {
 	case "oidc":
-		cfg, err := ctrl.service.GetOIDCConfig()
+		cfg, err := ctrl.service.GetOIDCConfig(ctx)
 		if err != nil || cfg == nil {
 			return ""
 		}
-		provider, err := sso.NewOIDCProvider(context.Background(), cfg.Issuer, cfg.ClientID, cfg.ClientSecret)
+		provider, err := sso.NewOIDCProvider(ctx, cfg.Issuer, cfg.ClientID, cfg.ClientSecret)
 		if err != nil {
 			return ""
 		}
@@ -193,7 +205,7 @@ func (ctrl *Ctrl) buildSSOLoginURL(c *fox.Context) string {
 		return provider.AuthURL(state, baseURL+"/sso/callback")
 
 	case "saml":
-		cfg, err := ctrl.service.GetSAMLConfig()
+		cfg, err := ctrl.service.GetSAMLConfig(ctx)
 		if err != nil || cfg == nil {
 			return ""
 		}
@@ -217,6 +229,8 @@ func (ctrl *Ctrl) buildSSOLoginURL(c *fox.Context) string {
 // generateSSOState creates an HMAC-signed state parameter for OIDC CSRF protection.
 // Format: base64(redirect|expiry|hmac)
 func (ctrl *Ctrl) generateSSOState(c *fox.Context, redirect string) string {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
 	expiry := strconv.FormatInt(time.Now().Add(10*time.Minute).Unix(), 10)
 	payload := redirect + "|" + expiry
 	mac := hmac.New(sha256.New, []byte(ctrl.service.GetJWTSecret()))
@@ -225,7 +239,7 @@ func (ctrl *Ctrl) generateSSOState(c *fox.Context, redirect string) string {
 	state := base64.RawURLEncoding.EncodeToString([]byte(payload + "|" + sig))
 
 	// Store in cookie for validation
-	secure := ctrl.service.IsCookieSecure()
+	secure := ctrl.service.IsCookieSecure(ctx)
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "sso_state",
 		Value:    state,
@@ -297,9 +311,11 @@ type BootResponse struct {
 
 // Boot returns the current system and authentication state.
 func (ctrl *Ctrl) Boot(c *fox.Context) *BootResponse {
-	initialized := ctrl.service.IsInitialized()
+	ctx := c.Logger.WithContext(c.Request.Context())
 
-	categories, _ := ctrl.service.ListCategories(true)
+	initialized := ctrl.service.IsInitialized(ctx)
+
+	categories, _ := ctrl.service.ListCategories(ctx, true)
 	if categories == nil {
 		categories = []entity.Category{}
 	}
@@ -308,8 +324,8 @@ func (ctrl *Ctrl) Boot(c *fox.Context) *BootResponse {
 		Initialized:         initialized,
 		Authentication:      AuthenticationStateUnauthorized,
 		Categories:          categories,
-		RegistrationEnabled: ctrl.service.IsRegistrationEnabled(),
-		SSOEnabled:          ctrl.service.GetSSOType() != "disabled",
+		RegistrationEnabled: ctrl.service.IsRegistrationEnabled(ctx),
+		SSOEnabled:          ctrl.service.GetSSOType(ctx) != "disabled",
 	}
 
 	// Build SSO login URL if SSO is enabled
@@ -334,7 +350,8 @@ type LogoutArgs struct {
 
 // Logout clears the authentication cookie and redirects.
 func (ctrl *Ctrl) Logout(c *fox.Context, args *LogoutArgs) render.Redirect {
-	secure := ctrl.service.IsCookieSecure()
+	ctx := c.Logger.WithContext(c.Request.Context())
+	secure := ctrl.service.IsCookieSecure(ctx)
 
 	cookie := &http.Cookie{
 		Name:     CookieName,
@@ -378,6 +395,8 @@ type SearchUsersResponse struct {
 
 // SearchUsers returns a list of users matching the search query (authenticated users).
 func (ctrl *Ctrl) SearchUsers(c *fox.Context, args *SearchUsersArgs) (*SearchUsersResponse, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
 	user := CurrentUser(c)
 	if user == nil {
 		return nil, httperrors.ErrUnauthorized
@@ -387,7 +406,7 @@ func (ctrl *Ctrl) SearchUsers(c *fox.Context, args *SearchUsersArgs) (*SearchUse
 		return &SearchUsersResponse{Users: []SearchUserItem{}}, nil
 	}
 
-	users, _, _, err := ctrl.service.ListUsers(entity.ListUsersArgs{
+	users, _, _, err := ctrl.service.ListUsers(ctx, entity.ListUsersArgs{
 		Pagination: entity.Pagination{Limit: 20},
 		Search:     args.Q,
 	})
@@ -416,7 +435,9 @@ type ListUsersResponse struct {
 
 // ListUsers returns a paginated list of users (admin only).
 func (ctrl *Ctrl) ListUsers(c *fox.Context, args entity.ListUsersArgs) (*ListUsersResponse, error) {
-	users, total, nextCursor, err := ctrl.service.ListUsers(args)
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	users, total, nextCursor, err := ctrl.service.ListUsers(ctx, args)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -434,9 +455,10 @@ func (ctrl *Ctrl) ListUsers(c *fox.Context, args entity.ListUsersArgs) (*ListUse
 
 // UpdateUser updates a user's role or status (admin only).
 func (ctrl *Ctrl) UpdateUser(c *fox.Context, args entity.UpdateUserArgs) (*entity.User, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
 	id := c.Param("id")
 
-	user, err := ctrl.service.UpdateUser(id, args)
+	user, err := ctrl.service.UpdateUser(ctx, id, args)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -450,12 +472,14 @@ func (ctrl *Ctrl) UpdateUser(c *fox.Context, args entity.UpdateUserArgs) (*entit
 
 // SyncUserFromWechat syncs the current user's info from WeChat.
 func (ctrl *Ctrl) SyncUserFromWechat(c *fox.Context) (*entity.User, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
 	user := CurrentUser(c)
 	if user == nil {
 		return nil, httperrors.ErrUnauthorized
 	}
 
-	updatedUser, err := ctrl.service.SyncUserFromWechat(user.Username)
+	updatedUser, err := ctrl.service.SyncUserFromWechat(ctx, user.Username)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -476,14 +500,16 @@ type SyncFromWechatResponse struct {
 
 // SyncFromWechat syncs departments and all users from WeChat Work (admin only).
 func (ctrl *Ctrl) SyncFromWechat(c *fox.Context) (*SyncFromWechatResponse, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
 	// Sync departments first
-	deptCount, err := ctrl.service.SyncDepartmentsFromWechat()
+	deptCount, err := ctrl.service.SyncDepartmentsFromWechat(ctx)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
 
 	// Sync all users from WeChat
-	userSynced, userFailed, err := ctrl.service.SyncAllWechatUsers()
+	userSynced, userFailed, err := ctrl.service.SyncAllWechatUsers(ctx)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -508,13 +534,15 @@ type DepartmentWithCount struct {
 
 // ListDepartments returns all departments (admin only).
 func (ctrl *Ctrl) ListDepartments(c *fox.Context) (*ListDepartmentsResponse, error) {
-	departments, err := ctrl.service.ListDepartments()
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	departments, err := ctrl.service.ListDepartments(ctx)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
 
 	// Get user counts per department
-	userCounts, err := ctrl.service.GetDepartmentUserCounts()
+	userCounts, err := ctrl.service.GetDepartmentUserCounts(ctx)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -543,12 +571,14 @@ func (ctrl *Ctrl) GetProfile(c *fox.Context) (*entity.User, error) {
 
 // UpdateProfile updates the current authenticated user's own profile.
 func (ctrl *Ctrl) UpdateProfile(c *fox.Context, args entity.UpdateProfileArgs) (*entity.User, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
 	user := CurrentUser(c)
 	if user == nil {
 		return nil, httperrors.ErrUnauthorized
 	}
 
-	updated, err := ctrl.service.UpdateProfile(user.ID, args)
+	updated, err := ctrl.service.UpdateProfile(ctx, user.ID, args)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -571,13 +601,15 @@ type UserProfileResponse struct {
 
 // GetUserProfile returns a user's public profile with stats.
 func (ctrl *Ctrl) GetUserProfile(c *fox.Context) (*UserProfileResponse, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
 	currentUser := CurrentUser(c)
 	if currentUser == nil {
 		return nil, httperrors.ErrUnauthorized
 	}
 
 	username := c.Param("username")
-	user, err := ctrl.service.GetUserByUsername(username)
+	user, err := ctrl.service.GetUserByUsername(ctx, username)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -585,14 +617,14 @@ func (ctrl *Ctrl) GetUserProfile(c *fox.Context) (*UserProfileResponse, error) {
 		return nil, httperrors.ErrNotFound
 	}
 
-	contentCount, _ := ctrl.service.GetUserContentCount(user.ID)
-	totalLikes, _ := ctrl.service.GetUserTotalLikes(user.ID)
-	speakerContentCount, _ := ctrl.service.GetUserSpeakerContentCount(user.ID)
+	contentCount, _ := ctrl.service.GetUserContentCount(ctx, user.ID)
+	totalLikes, _ := ctrl.service.GetUserTotalLikes(ctx, user.ID)
+	speakerContentCount, _ := ctrl.service.GetUserSpeakerContentCount(ctx, user.ID)
 
 	// Check if current user is following this user
 	following := false
 	if currentUser.ID != user.ID {
-		following, _ = ctrl.service.IsFollowing(currentUser.ID, user.ID)
+		following, _ = ctrl.service.IsFollowing(ctx, currentUser.ID, user.ID)
 	}
 
 	user.ResolveAssetURLs()

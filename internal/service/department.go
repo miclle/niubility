@@ -1,15 +1,19 @@
 package service
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/fox-gonic/fox/logger"
 	"gorm.io/gorm/clause"
 
 	"github.com/miclle/niubility/internal/entity"
 )
 
 // SyncDepartmentsFromWechat syncs all departments from WeChat Work.
-func (s *Service) SyncDepartmentsFromWechat() (int, error) {
+func (s *Service) SyncDepartmentsFromWechat(ctx context.Context) (int, error) {
+	log := logger.NewWithContext(ctx)
+
 	if s.Wechat == nil {
 		return 0, fmt.Errorf("wechat client not configured")
 	}
@@ -17,10 +21,11 @@ func (s *Service) SyncDepartmentsFromWechat() (int, error) {
 	// Get all departments from WeChat
 	deptList, err := s.Wechat.ListAllDepts()
 	if err != nil {
+		log.Errorf("SyncDepartmentsFromWechat: list departments: %v", err)
 		return 0, fmt.Errorf("list departments from wechat: %w", err)
 	}
 
-	fmt.Printf("[WeChat Sync] Found %d departments\n", len(deptList))
+	log.Infof("[WeChat Sync] Found %d departments", len(deptList))
 
 	// Upsert each department
 	for _, dept := range deptList {
@@ -36,8 +41,8 @@ func (s *Service) SyncDepartmentsFromWechat() (int, error) {
 			Columns:   []clause.Column{{Name: "id"}},
 			DoUpdates: clause.AssignmentColumns([]string{"name", "name_en", "parent_id", "order"}),
 		}
-		if err := s.DB.Clauses(conds).Create(d).Error; err != nil {
-			fmt.Printf("[WeChat Sync] Error upserting department %d: %v\n", dept.ID, err)
+		if err := s.db.WithContext(ctx).Clauses(conds).Create(d).Error; err != nil {
+			log.Errorf("[WeChat Sync] Error upserting department %d: %v", dept.ID, err)
 			continue
 		}
 	}
@@ -46,31 +51,40 @@ func (s *Service) SyncDepartmentsFromWechat() (int, error) {
 }
 
 // GetDepartmentByID retrieves a department by ID.
-func (s *Service) GetDepartmentByID(id int64) (*entity.Department, error) {
+func (s *Service) GetDepartmentByID(ctx context.Context, id int64) (*entity.Department, error) {
+	log := logger.NewWithContext(ctx)
+
 	var dept entity.Department
-	if err := s.DB.Where("id = ?", id).First(&dept).Error; err != nil {
+	if err := s.db.WithContext(ctx).Where("id = ?", id).First(&dept).Error; err != nil {
+		log.Errorf("GetDepartmentByID: %v", err)
 		return nil, err
 	}
 	return &dept, nil
 }
 
 // ListDepartments retrieves all departments.
-func (s *Service) ListDepartments() ([]entity.Department, error) {
+func (s *Service) ListDepartments(ctx context.Context) ([]entity.Department, error) {
+	log := logger.NewWithContext(ctx)
+
 	var departments []entity.Department
-	if err := s.DB.Order("parent_id, \"order\"").Find(&departments).Error; err != nil {
+	if err := s.db.WithContext(ctx).Order("parent_id, \"order\"").Find(&departments).Error; err != nil {
+		log.Errorf("ListDepartments: %v", err)
 		return nil, err
 	}
 	return departments, nil
 }
 
 // GetDepartmentUserCounts returns a map of department ID to user count.
-func (s *Service) GetDepartmentUserCounts() (map[int64]int, error) {
+func (s *Service) GetDepartmentUserCounts(ctx context.Context) (map[int64]int, error) {
+	log := logger.NewWithContext(ctx)
+
 	// Query all users and count by department_ids
 	var users []struct {
 		DepartmentIDs string
 	}
 
-	if err := s.DB.Model(&entity.User{}).Select("department_ids").Find(&users).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(&entity.User{}).Select("department_ids").Find(&users).Error; err != nil {
+		log.Errorf("GetDepartmentUserCounts: %v", err)
 		return nil, err
 	}
 
@@ -111,8 +125,8 @@ func splitIDs(s string) []string {
 }
 
 // GetDepartmentNamesMap returns a map of department ID to name.
-func (s *Service) GetDepartmentNamesMap() (map[int64]string, error) {
-	departments, err := s.ListDepartments()
+func (s *Service) GetDepartmentNamesMap(ctx context.Context) (map[int64]string, error) {
+	departments, err := s.ListDepartments(ctx)
 	if err != nil {
 		return nil, err
 	}

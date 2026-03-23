@@ -24,7 +24,9 @@ type LoginResponse struct {
 
 // Login handles username+password authentication.
 func (ctrl *Ctrl) Login(c *fox.Context, req *LoginRequest) (any, error) {
-	user, err := ctrl.service.AuthenticateUser(req.Username, req.Password)
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	user, err := ctrl.service.AuthenticateUser(ctx, req.Username, req.Password)
 	if err != nil {
 		return nil, httperrors.New(http.StatusUnauthorized, "用户名或密码错误")
 	}
@@ -54,11 +56,13 @@ type RegisterRequest struct {
 // Register handles user self-registration.
 // Only available when registration is enabled.
 func (ctrl *Ctrl) Register(c *fox.Context, req *RegisterRequest) (any, error) {
-	if !ctrl.service.IsRegistrationEnabled() {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	if !ctrl.service.IsRegistrationEnabled(ctx) {
 		return nil, httperrors.New(http.StatusForbidden, "用户注册未开放")
 	}
 
-	user, err := ctrl.service.RegisterUser(req.Username, req.Email, req.Password)
+	user, err := ctrl.service.RegisterUser(ctx, req.Username, req.Email, req.Password)
 	if err != nil {
 		c.Logger.Errorf("register user failed: %v", err)
 		return nil, httperrors.New(http.StatusBadRequest, err.Error())
@@ -75,6 +79,8 @@ type ChangePasswordRequest struct {
 
 // ChangePassword handles password change for the current user.
 func (ctrl *Ctrl) ChangePassword(c *fox.Context, req *ChangePasswordRequest) (any, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
 	user := CurrentUser(c)
 	if user == nil {
 		return nil, httperrors.ErrUnauthorized
@@ -84,7 +90,7 @@ func (ctrl *Ctrl) ChangePassword(c *fox.Context, req *ChangePasswordRequest) (an
 		return nil, httperrors.New(http.StatusBadRequest, "密码长度不能少于 6 位")
 	}
 
-	if err := ctrl.service.ChangePassword(user.ID, req.OldPassword, req.NewPassword); err != nil {
+	if err := ctrl.service.ChangePassword(ctx, user.ID, req.OldPassword, req.NewPassword); err != nil {
 		return nil, httperrors.New(http.StatusBadRequest, err.Error())
 	}
 
@@ -98,12 +104,14 @@ type HasPasswordResponse struct {
 
 // HasPassword returns whether the current user has a password set.
 func (ctrl *Ctrl) HasPassword(c *fox.Context) (*HasPasswordResponse, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
 	user := CurrentUser(c)
 	if user == nil {
 		return nil, httperrors.ErrUnauthorized
 	}
 
-	has, err := ctrl.service.HasPassword(user.ID)
+	has, err := ctrl.service.HasPassword(ctx, user.ID)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -127,7 +135,8 @@ func (ctrl *Ctrl) issueToken(username string) (string, error) {
 
 // setAuthCookie sets the authentication cookie on the response.
 func (ctrl *Ctrl) setAuthCookie(c *fox.Context, tokenString string) {
-	secure := ctrl.service.IsCookieSecure()
+	ctx := c.Logger.WithContext(c.Request.Context())
+	secure := ctrl.service.IsCookieSecure(ctx)
 
 	cookie := &http.Cookie{
 		Name:     CookieName,

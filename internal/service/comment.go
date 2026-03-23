@@ -1,10 +1,12 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
 
+	"github.com/fox-gonic/fox/logger"
 	"gorm.io/gorm"
 
 	"github.com/miclle/niubility/internal/entity"
@@ -12,16 +14,19 @@ import (
 
 // ListComments retrieves top-level comments for a content, with replies and user info preloaded.
 // If attachmentID is non-empty, only comments for that attachment are returned.
-func (s *Service) ListComments(contentID, attachmentID string, pagination entity.Pagination) ([]entity.Comment, int64, string, error) {
+func (s *Service) ListComments(ctx context.Context, contentID, attachmentID string, pagination entity.Pagination) ([]entity.Comment, int64, string, error) {
+	log := logger.NewWithContext(ctx)
+
 	var comments []entity.Comment
 	var total int64
 
-	query := s.DB.Model(&entity.Comment{}).Where("content_id = ? AND parent_id = ''", contentID)
+	query := s.db.WithContext(ctx).Model(&entity.Comment{}).Where("content_id = ? AND parent_id = ''", contentID)
 	if attachmentID != "" {
 		query = query.Where("attachment_id = ?", attachmentID)
 	}
 
 	if err := query.Count(&total).Error; err != nil {
+		log.Errorf("ListComments: count: %v", err)
 		return nil, 0, "", fmt.Errorf("count comments: %w", err)
 	}
 
@@ -47,6 +52,7 @@ func (s *Service) ListComments(contentID, attachmentID string, pagination entity
 	fetchQuery = fetchQuery.Limit(pagination.GetLimit())
 
 	if err := fetchQuery.Find(&comments).Error; err != nil {
+		log.Errorf("ListComments: find: %v", err)
 		return nil, 0, "", fmt.Errorf("list comments: %w", err)
 	}
 
@@ -61,15 +67,19 @@ func (s *Service) ListComments(contentID, attachmentID string, pagination entity
 }
 
 // CreateComment creates a new comment and updates the content's comment_count.
-func (s *Service) CreateComment(comment *entity.Comment) error {
+func (s *Service) CreateComment(ctx context.Context, comment *entity.Comment) error {
+	log := logger.NewWithContext(ctx)
+
 	comment.ID = entity.ID()
 
-	return s.DB.Transaction(func(tx *gorm.DB) error {
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(comment).Error; err != nil {
+			log.Errorf("CreateComment: %v", err)
 			return fmt.Errorf("create comment: %w", err)
 		}
 		if err := tx.Model(&entity.Content{}).Where("id = ?", comment.ContentID).
 			UpdateColumn("comment_count", gorm.Expr("comment_count + 1")).Error; err != nil {
+			log.Errorf("CreateComment: update comment_count: %v", err)
 			return fmt.Errorf("update content comment_count: %w", err)
 		}
 		return nil
@@ -77,12 +87,15 @@ func (s *Service) CreateComment(comment *entity.Comment) error {
 }
 
 // GetCommentByID retrieves a single comment by ID.
-func (s *Service) GetCommentByID(id string) (*entity.Comment, error) {
+func (s *Service) GetCommentByID(ctx context.Context, id string) (*entity.Comment, error) {
+	log := logger.NewWithContext(ctx)
+
 	var comment entity.Comment
-	if err := s.DB.Where("id = ?", id).First(&comment).Error; err != nil {
+	if err := s.db.WithContext(ctx).Where("id = ?", id).First(&comment).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
+		log.Errorf("GetCommentByID: %v", err)
 		return nil, fmt.Errorf("get comment by id: %w", err)
 	}
 	return &comment, nil

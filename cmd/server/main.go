@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 
@@ -21,7 +22,8 @@ func main() {
 		log.Fatalf("load config: %v", err)
 	}
 
-	svc, err := service.New(cfg.Driver, cfg.DSN)
+	ctx := context.Background()
+	svc, err := service.New(ctx, cfg.Driver, cfg.DSN)
 	if err != nil {
 		log.Fatalf("init service: %v", err)
 	}

@@ -15,11 +15,13 @@ type InitRequest struct {
 // InitSystem handles the initial super admin setup.
 // Only available when the system has not been initialized.
 func (ctrl *Ctrl) InitSystem(c *fox.Context, req *InitRequest) (any, error) {
-	if ctrl.service.IsInitialized() {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	if ctrl.service.IsInitialized(ctx) {
 		return nil, httperrors.ErrForbidden
 	}
 
-	user, err := ctrl.service.InitSuperAdmin(req.Username, req.Email, req.Password)
+	user, err := ctrl.service.InitSuperAdmin(ctx, req.Username, req.Email, req.Password)
 	if err != nil {
 		c.Logger.Errorf("init super admin failed: %v", err)
 		return nil, httperrors.ErrInternalServerError

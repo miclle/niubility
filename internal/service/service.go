@@ -2,19 +2,17 @@
 package service
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"log"
-	"os"
 	"strings"
 	"sync"
-	"time"
 
+	"github.com/fox-gonic/fox/logger"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 
 	"github.com/miclle/niubility/internal/entity"
 	"github.com/miclle/niubility/pkg/textencrypt"
@@ -23,7 +21,7 @@ import (
 
 // Service holds the database connection and provides business logic methods.
 type Service struct {
-	DB        *gorm.DB
+	db        *gorm.DB
 	Wechat    *workwx.WorkwxApp
 	Encryptor *textencrypt.Encryptor
 
@@ -35,7 +33,9 @@ type Service struct {
 // New creates a new Service instance with the given driver and DSN.
 // Supported drivers: "postgres", "mysql".
 // It auto-generates jwt_secret and encryption_key on first boot, loading them from DB on subsequent boots.
-func New(driver, dsn string) (*Service, error) {
+func New(ctx context.Context, driver, dsn string) (*Service, error) {
+	l := logger.NewWithContext(ctx)
+
 	var dialector gorm.Dialector
 	switch driver {
 	case "mysql":
@@ -46,17 +46,13 @@ func New(driver, dsn string) (*Service, error) {
 
 	db, err := gorm.Open(dialector, &gorm.Config{
 		DisableForeignKeyConstraintWhenMigrating: true,
-		Logger: logger.New(log.New(os.Stdout, "\r\n", log.LstdFlags), logger.Config{
-			SlowThreshold:             200 * time.Millisecond,
-			LogLevel:                  logger.Warn,
-			IgnoreRecordNotFoundError: true,
-		}),
+		Logger:                                   newGormLogger(defaultSlowThreshold),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("connect to database: %w", err)
 	}
 
-	if err := db.AutoMigrate(&entity.User{}, &entity.Content{}, &entity.Attachment{}, &entity.Setting{}, &entity.Department{}, &entity.Comment{}, &entity.Like{}, &entity.Category{}, &entity.Follow{}); err != nil {
+	if err := db.WithContext(ctx).AutoMigrate(&entity.User{}, &entity.Content{}, &entity.Attachment{}, &entity.Setting{}, &entity.Department{}, &entity.Comment{}, &entity.Like{}, &entity.Category{}, &entity.Follow{}); err != nil {
 		return nil, fmt.Errorf("auto migrate: %w", err)
 	}
 
@@ -67,10 +63,10 @@ func New(driver, dsn string) (*Service, error) {
 		}
 	}
 
-	svc := &Service{DB: db, dialect: driver}
+	svc := &Service{db: db, dialect: driver}
 
 	// Initialize encryption key (auto-generate on first boot)
-	encKey, err := svc.ensureSetting(entity.SettingEncryptionKey, func() (string, error) {
+	encKey, err := svc.ensureSetting(ctx, entity.SettingEncryptionKey, func() (string, error) {
 		return generateHexKey(32)
 	})
 	if err != nil {
@@ -82,24 +78,24 @@ func New(driver, dsn string) (*Service, error) {
 		return nil, fmt.Errorf("create encryptor: %w", err)
 	}
 	svc.Encryptor = enc
-	fmt.Println("[Service] Encryptor initialized")
+	l.Info("[Service] Encryptor initialized")
 
 	// Initialize JWT secret (auto-generate on first boot)
-	jwtSecret, err := svc.ensureSetting(entity.SettingJWTSecret, func() (string, error) {
+	jwtSecret, err := svc.ensureSetting(ctx, entity.SettingJWTSecret, func() (string, error) {
 		return generateHexKey(64)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("ensure jwt secret: %w", err)
 	}
 	svc.jwtSecret = jwtSecret
-	fmt.Println("[Service] JWT secret loaded")
+	l.Info("[Service] JWT secret loaded")
 
 	// Initialize WeChat client from database config
-	wechatApp := svc.initWechatClient()
+	wechatApp := svc.initWechatClient(ctx)
 	svc.Wechat = wechatApp
 
 	// Seed default categories if empty
-	if err := svc.seedCategories(); err != nil {
+	if err := svc.seedCategories(ctx); err != nil {
 		return nil, fmt.Errorf("seed categories: %w", err)
 	}
 
@@ -112,8 +108,8 @@ func (s *Service) GetJWTSecret() string {
 }
 
 // IsInitialized checks whether the system has been initialized with a super admin.
-func (s *Service) IsInitialized() bool {
-	val, err := s.GetSetting(entity.SettingInitialized)
+func (s *Service) IsInitialized(ctx context.Context) bool {
+	val, err := s.GetSetting(ctx, entity.SettingInitialized)
 	if err != nil {
 		return false
 	}
@@ -121,8 +117,8 @@ func (s *Service) IsInitialized() bool {
 }
 
 // IsRegistrationEnabled checks whether user self-registration is enabled.
-func (s *Service) IsRegistrationEnabled() bool {
-	val, err := s.GetSetting(entity.SettingRegistrationEnabled)
+func (s *Service) IsRegistrationEnabled(ctx context.Context) bool {
+	val, err := s.GetSetting(ctx, entity.SettingRegistrationEnabled)
 	if err != nil {
 		return false
 	}
@@ -131,8 +127,8 @@ func (s *Service) IsRegistrationEnabled() bool {
 
 // GetSSOType returns the active SSO type ("disabled", "oidc", or "saml").
 // Returns "disabled" if not configured or on error.
-func (s *Service) GetSSOType() string {
-	val, err := s.GetSetting(entity.SettingSSOType)
+func (s *Service) GetSSOType(ctx context.Context) string {
+	val, err := s.GetSetting(ctx, entity.SettingSSOType)
 	if err != nil || val == "" {
 		return "disabled"
 	}
@@ -140,8 +136,8 @@ func (s *Service) GetSSOType() string {
 }
 
 // IsCookieSecure checks whether the Secure flag should be set on cookies.
-func (s *Service) IsCookieSecure() bool {
-	val, err := s.GetSetting(entity.SettingCookieSecure)
+func (s *Service) IsCookieSecure(ctx context.Context) bool {
+	val, err := s.GetSetting(ctx, entity.SettingCookieSecure)
 	if err != nil {
 		return false
 	}
@@ -150,9 +146,11 @@ func (s *Service) IsCookieSecure() bool {
 
 // ensureSetting ensures a setting key exists in the database.
 // If not present, it calls the generator to create a value and stores it.
-func (s *Service) ensureSetting(key string, generate func() (string, error)) (string, error) {
+func (s *Service) ensureSetting(ctx context.Context, key string, generate func() (string, error)) (string, error) {
+	database := s.db.WithContext(ctx)
+
 	var setting entity.Setting
-	err := s.DB.Where(map[string]any{"key": key}).First(&setting).Error
+	err := database.Where(map[string]any{"key": key}).First(&setting).Error
 	if err == nil {
 		return setting.Value, nil
 	}
@@ -163,9 +161,9 @@ func (s *Service) ensureSetting(key string, generate func() (string, error)) (st
 	}
 
 	setting = entity.Setting{Key: key, Value: val}
-	if err := s.DB.Create(&setting).Error; err != nil {
+	if err := database.Create(&setting).Error; err != nil {
 		// Another instance may have created it concurrently, try reading again
-		if err := s.DB.Where(map[string]any{"key": key}).First(&setting).Error; err != nil {
+		if err := database.Where(map[string]any{"key": key}).First(&setting).Error; err != nil {
 			return "", fmt.Errorf("get setting %s after create conflict: %w", key, err)
 		}
 		return setting.Value, nil
@@ -175,36 +173,40 @@ func (s *Service) ensureSetting(key string, generate func() (string, error)) (st
 }
 
 // initWechatClient initializes the WeChat client from database config.
-func (s *Service) initWechatClient() *workwx.WorkwxApp {
-	dbCfg, err := s.GetWechatConfig()
+func (s *Service) initWechatClient(ctx context.Context) *workwx.WorkwxApp {
+	l := logger.NewWithContext(ctx)
+
+	dbCfg, err := s.GetWechatConfig(ctx)
 	if err == nil && dbCfg != nil && dbCfg.CorpID != "" {
-		fmt.Printf("[Service] Initializing WeChat client from database: CorpID=%s\n", dbCfg.CorpID)
+		l.Infof("[Service] Initializing WeChat client from database: CorpID=%s", dbCfg.CorpID)
 		return workwx.New(dbCfg.CorpID).WithApp(dbCfg.AppSecret, dbCfg.AppAgentID)
 	}
 
-	fmt.Println("[Service] WeChat client not initialized: no valid configuration found")
+	l.Info("[Service] WeChat client not initialized: no valid configuration found")
 	return nil
 }
 
 // RefreshWechatClient re-initializes the WeChat client from database settings.
 // Call this after updating WeChat configuration in the database.
-func (s *Service) RefreshWechatClient() error {
+func (s *Service) RefreshWechatClient(ctx context.Context) error {
+	l := logger.NewWithContext(ctx)
+
 	s.wechatMutex.Lock()
 	defer s.wechatMutex.Unlock()
 
-	dbCfg, err := s.GetWechatConfig()
+	dbCfg, err := s.GetWechatConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("get wechat config from database: %w", err)
 	}
 
 	if dbCfg == nil || dbCfg.CorpID == "" {
 		s.Wechat = nil
-		fmt.Println("[Service] WeChat client disabled: no configuration in database")
+		l.Info("[Service] WeChat client disabled: no configuration in database")
 		return nil
 	}
 
 	s.Wechat = workwx.New(dbCfg.CorpID).WithApp(dbCfg.AppSecret, dbCfg.AppAgentID)
-	fmt.Printf("[Service] WeChat client refreshed: CorpID=%s\n", dbCfg.CorpID)
+	l.Infof("[Service] WeChat client refreshed: CorpID=%s", dbCfg.CorpID)
 	return nil
 }
 

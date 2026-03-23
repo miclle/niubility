@@ -60,8 +60,10 @@ func (ctrl *Ctrl) AuthMiddleware(c *fox.Context) (res any) {
 		}
 	}
 
+	ctx := c.Logger.WithContext(c.Request.Context())
+
 	// If system is not initialized, let frontend handle navigation
-	if !ctrl.service.IsInitialized() {
+	if !ctrl.service.IsInitialized(ctx) {
 		if strings.HasPrefix(path, "/api") && !isSoftPath(path) {
 			return httperrors.ErrUnauthorized
 		}
@@ -86,7 +88,7 @@ func (ctrl *Ctrl) AuthMiddleware(c *fox.Context) (res any) {
 	}
 
 	if len(claims.Issuer) > 0 {
-		user, err := ctrl.service.GetUserByUsername(claims.Issuer)
+		user, err := ctrl.service.GetUserByUsername(ctx, claims.Issuer)
 		if err == nil && user != nil {
 			if user.Status == entity.UserStatusActivated {
 				c.Set(currentUserKey, user)

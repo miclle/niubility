@@ -17,6 +17,7 @@ type ListCommentsResponse struct {
 
 // ListComments returns comments for a content item.
 func (ctrl *Ctrl) ListComments(c *fox.Context, args entity.Pagination) (*ListCommentsResponse, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
 	contentID := c.Param("id")
 	attachmentID := c.Query("attachment_id")
 	user := CurrentUser(c)
@@ -24,7 +25,7 @@ func (ctrl *Ctrl) ListComments(c *fox.Context, args entity.Pagination) (*ListCom
 		return nil, httperrors.ErrUnauthorized
 	}
 
-	comments, total, nextCursor, err := ctrl.service.ListComments(contentID, attachmentID, args)
+	comments, total, nextCursor, err := ctrl.service.ListComments(ctx, contentID, attachmentID, args)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -38,7 +39,7 @@ func (ctrl *Ctrl) ListComments(c *fox.Context, args entity.Pagination) (*ListCom
 		}
 	}
 
-	likedIDs, _ := ctrl.service.GetLikedIDs(user.ID, allIDs, entity.TargetTypeComment)
+	likedIDs, _ := ctrl.service.GetLikedIDs(ctx, user.ID, allIDs, entity.TargetTypeComment)
 
 	for i := range comments {
 		comments[i].ResolveAssetURLs()
@@ -54,6 +55,7 @@ func (ctrl *Ctrl) ListComments(c *fox.Context, args entity.Pagination) (*ListCom
 
 // CreateComment creates a new comment on a content item.
 func (ctrl *Ctrl) CreateComment(c *fox.Context, args entity.CreateCommentArgs) (*entity.Comment, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
 	contentID := c.Param("id")
 	user := CurrentUser(c)
 	if user == nil {
@@ -61,7 +63,7 @@ func (ctrl *Ctrl) CreateComment(c *fox.Context, args entity.CreateCommentArgs) (
 	}
 
 	// Verify content exists
-	content, err := ctrl.service.GetContentByID(contentID)
+	content, err := ctrl.service.GetContentByID(ctx, contentID)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -71,7 +73,7 @@ func (ctrl *Ctrl) CreateComment(c *fox.Context, args entity.CreateCommentArgs) (
 
 	// If replying, validate parent comment exists and belongs to the same content
 	if args.ParentID != "" {
-		parent, err := ctrl.service.GetCommentByID(args.ParentID)
+		parent, err := ctrl.service.GetCommentByID(ctx, args.ParentID)
 		if err != nil {
 			return nil, httperrors.ErrInternalServerError
 		}
@@ -89,7 +91,7 @@ func (ctrl *Ctrl) CreateComment(c *fox.Context, args entity.CreateCommentArgs) (
 		Body:         args.Body,
 	}
 
-	if err := ctrl.service.CreateComment(comment); err != nil {
+	if err := ctrl.service.CreateComment(ctx, comment); err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
 
@@ -101,13 +103,14 @@ func (ctrl *Ctrl) CreateComment(c *fox.Context, args entity.CreateCommentArgs) (
 
 // LikeComment toggles like on a comment.
 func (ctrl *Ctrl) LikeComment(c *fox.Context) (*entity.LikeResponse, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
 	commentID := c.Param("id")
 	user := CurrentUser(c)
 	if user == nil {
 		return nil, httperrors.ErrUnauthorized
 	}
 
-	comment, err := ctrl.service.GetCommentByID(commentID)
+	comment, err := ctrl.service.GetCommentByID(ctx, commentID)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -115,7 +118,7 @@ func (ctrl *Ctrl) LikeComment(c *fox.Context) (*entity.LikeResponse, error) {
 		return nil, httperrors.ErrNotFound
 	}
 
-	resp, err := ctrl.service.ToggleLike(user.ID, commentID, entity.TargetTypeComment)
+	resp, err := ctrl.service.ToggleLike(ctx, user.ID, commentID, entity.TargetTypeComment)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}

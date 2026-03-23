@@ -1,12 +1,14 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
 	"time"
 
+	"github.com/fox-gonic/fox/logger"
 	"gorm.io/gorm"
 
 	"github.com/miclle/niubility/internal/entity"
@@ -16,10 +18,12 @@ import (
 const GalleryVideoMaxFileSize int64 = 200 * 1024 * 1024
 
 // ListContents retrieves a paginated list of contents with optional filters using cursor-based pagination.
-func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, string, error) {
+func (s *Service) ListContents(ctx context.Context, args entity.ListContentsArgs) ([]entity.Content, string, error) {
+	log := logger.NewWithContext(ctx)
+
 	var contents []entity.Content
 
-	query := s.DB.Model(&entity.Content{})
+	query := s.db.WithContext(ctx).Model(&entity.Content{})
 
 	if args.Category != "" {
 		query = query.Where("category = ?", args.Category)
@@ -102,6 +106,7 @@ func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, 
 	if err := query.Preload("Author").Preload("Speaker").Preload("Attachments", func(db *gorm.DB) *gorm.DB {
 		return db.Order("sort_order ASC")
 	}).Limit(args.GetLimit()).Order(orderClause).Find(&contents).Error; err != nil {
+		log.Errorf("ListContents: %v", err)
 		return nil, "", fmt.Errorf("list contents: %w", err)
 	}
 
@@ -121,14 +126,17 @@ func (s *Service) ListContents(args entity.ListContentsArgs) ([]entity.Content, 
 }
 
 // GetContentByID retrieves a content by ID with author and attachments preloaded.
-func (s *Service) GetContentByID(id string) (*entity.Content, error) {
+func (s *Service) GetContentByID(ctx context.Context, id string) (*entity.Content, error) {
+	log := logger.NewWithContext(ctx)
+
 	var content entity.Content
-	if err := s.DB.Preload("Author").Preload("Speaker").Preload("Attachments", func(db *gorm.DB) *gorm.DB {
+	if err := s.db.WithContext(ctx).Preload("Author").Preload("Speaker").Preload("Attachments", func(db *gorm.DB) *gorm.DB {
 		return db.Order("sort_order ASC")
 	}).Where("id = ?", id).First(&content).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
+		log.Errorf("GetContentByID: %v", err)
 		return nil, fmt.Errorf("get content by id: %w", err)
 	}
 	return &content, nil
@@ -181,14 +189,17 @@ func (s *Service) createAttachments(tx *gorm.DB, contentID string, contentType e
 }
 
 // CreateContent creates a new content record with attachments.
-func (s *Service) CreateContent(content *entity.Content, attachments []entity.CreateAttachmentArgs) error {
+func (s *Service) CreateContent(ctx context.Context, content *entity.Content, attachments []entity.CreateAttachmentArgs) error {
+	log := logger.NewWithContext(ctx)
+
 	content.ID = entity.ID()
 	if content.Status == "" {
 		content.Status = entity.ContentStatusDraft
 	}
 
-	return s.DB.Transaction(func(tx *gorm.DB) error {
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(content).Error; err != nil {
+			log.Errorf("CreateContent: %v", err)
 			return fmt.Errorf("create content: %w", err)
 		}
 		if len(attachments) > 0 {
@@ -201,8 +212,10 @@ func (s *Service) CreateContent(content *entity.Content, attachments []entity.Cr
 }
 
 // UpdateContent updates content fields by ID, replacing attachments.
-func (s *Service) UpdateContent(id string, args entity.UpdateContentArgs) (*entity.Content, error) {
-	content, err := s.GetContentByID(id)
+func (s *Service) UpdateContent(ctx context.Context, id string, args entity.UpdateContentArgs) (*entity.Content, error) {
+	log := logger.NewWithContext(ctx)
+
+	content, err := s.GetContentByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -258,9 +271,10 @@ func (s *Service) UpdateContent(id string, args entity.UpdateContentArgs) (*enti
 		contentType = *args.Type
 	}
 
-	err = s.DB.Transaction(func(tx *gorm.DB) error {
+	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if len(updates) > 0 {
 			if err := tx.Model(content).Updates(updates).Error; err != nil {
+				log.Errorf("UpdateContent: %v", err)
 				return fmt.Errorf("update content: %w", err)
 			}
 		}
@@ -282,17 +296,21 @@ func (s *Service) UpdateContent(id string, args entity.UpdateContentArgs) (*enti
 		return nil, err
 	}
 
-	return s.GetContentByID(id)
+	return s.GetContentByID(ctx, id)
 }
 
 // DeleteContent deletes a content and its attachments by ID.
-func (s *Service) DeleteContent(id string) error {
-	return s.DB.Transaction(func(tx *gorm.DB) error {
+func (s *Service) DeleteContent(ctx context.Context, id string) error {
+	log := logger.NewWithContext(ctx)
+
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("content_id = ?", id).Delete(&entity.Attachment{}).Error; err != nil {
+			log.Errorf("DeleteContent: delete attachments: %v", err)
 			return fmt.Errorf("delete attachments: %w", err)
 		}
 		result := tx.Where("id = ?", id).Delete(&entity.Content{})
 		if result.Error != nil {
+			log.Errorf("DeleteContent: delete content: %v", result.Error)
 			return fmt.Errorf("delete content: %w", result.Error)
 		}
 		return nil
@@ -301,7 +319,9 @@ func (s *Service) DeleteContent(id string) error {
 
 // ImportContents imports contents from the legacy platform.
 // Category is determined by each talk's "type" field: "sharing" → learning, "training" → culture
-func (s *Service) ImportContents(authorID string, talks []entity.LegacyTalk) (*entity.ImportResult, error) {
+func (s *Service) ImportContents(ctx context.Context, authorID string, talks []entity.LegacyTalk) (*entity.ImportResult, error) {
+	log := logger.NewWithContext(ctx)
+
 	result := &entity.ImportResult{
 		Total: len(talks),
 	}
@@ -313,10 +333,11 @@ func (s *Service) ImportContents(authorID string, talks []entity.LegacyTalk) (*e
 		}
 
 		var existing entity.Content
-		if err := s.DB.Where("title = ?", talk.Title).First(&existing).Error; err == nil {
+		if err := s.db.WithContext(ctx).Where("title = ?", talk.Title).First(&existing).Error; err == nil {
 			result.Skipped++
 			continue
 		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Errorf("ImportContents: check existing %s: %v", talk.ID, err)
 			result.Errors = append(result.Errors, fmt.Sprintf("check existing %s: %v", talk.ID, err))
 			continue
 		}
@@ -360,7 +381,8 @@ func (s *Service) ImportContents(authorID string, talks []entity.LegacyTalk) (*e
 			})
 		}
 
-		if err := s.CreateContent(content, attachments); err != nil {
+		if err := s.CreateContent(ctx, content, attachments); err != nil {
+			log.Errorf("ImportContents: create %s: %v", talk.ID, err)
 			result.Errors = append(result.Errors, fmt.Sprintf("create %s: %v", talk.ID, err))
 			continue
 		}

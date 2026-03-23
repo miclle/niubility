@@ -1,8 +1,10 @@
 package service
 
 import (
+	"context"
 	"strconv"
 
+	"github.com/fox-gonic/fox/logger"
 	"gorm.io/gorm"
 
 	"github.com/miclle/niubility/internal/entity"
@@ -19,9 +21,12 @@ var sensitiveKeys = map[string]bool{
 
 // GetSetting retrieves a setting value by key.
 // Automatically decrypts sensitive values if encryption is enabled.
-func (s *Service) GetSetting(key string) (string, error) {
+func (s *Service) GetSetting(ctx context.Context, key string) (string, error) {
+	log := logger.NewWithContext(ctx)
+
 	var settings []entity.Setting
-	if err := s.DB.Where(map[string]any{"key": key}).Limit(1).Find(&settings).Error; err != nil {
+	if err := s.db.WithContext(ctx).Where(map[string]any{"key": key}).Limit(1).Find(&settings).Error; err != nil {
+		log.Errorf("GetSetting: failed to query setting %s: %v", key, err)
 		return "", err
 	}
 	if len(settings) == 0 {
@@ -33,6 +38,7 @@ func (s *Service) GetSetting(key string) (string, error) {
 	if sensitiveKeys[key] && s.Encryptor != nil && textencrypt.IsEncrypted(setting.Value) {
 		decrypted, err := s.Encryptor.Decrypt(setting.Value)
 		if err != nil {
+			log.Errorf("GetSetting: failed to decrypt setting %s: %v", key, err)
 			return "", err
 		}
 		return decrypted, nil
@@ -43,11 +49,14 @@ func (s *Service) GetSetting(key string) (string, error) {
 
 // SetSetting creates or updates a setting value.
 // Automatically encrypts sensitive values if encryption is enabled.
-func (s *Service) SetSetting(key, value string) error {
+func (s *Service) SetSetting(ctx context.Context, key, value string) error {
+	log := logger.NewWithContext(ctx)
+
 	// Encrypt if it's a sensitive key and encryption is enabled
 	if sensitiveKeys[key] && s.Encryptor != nil && value != "" {
 		encrypted, err := s.Encryptor.Encrypt(value)
 		if err != nil {
+			log.Errorf("SetSetting: failed to encrypt setting %s: %v", key, err)
 			return err
 		}
 		value = encrypted
@@ -57,14 +66,21 @@ func (s *Service) SetSetting(key, value string) error {
 		Key:   key,
 		Value: value,
 	}
-	return s.DB.Save(&setting).Error
+	if err := s.db.WithContext(ctx).Save(&setting).Error; err != nil {
+		log.Errorf("SetSetting: failed to save setting %s: %v", key, err)
+		return err
+	}
+	return nil
 }
 
 // ListSettings retrieves all settings from the database.
 // Sensitive values are masked for security.
-func (s *Service) ListSettings() ([]entity.Setting, error) {
+func (s *Service) ListSettings(ctx context.Context) ([]entity.Setting, error) {
+	log := logger.NewWithContext(ctx)
+
 	var settings []entity.Setting
-	if err := s.DB.Find(&settings).Error; err != nil {
+	if err := s.db.WithContext(ctx).Find(&settings).Error; err != nil {
+		log.Errorf("ListSettings: failed to list settings: %v", err)
 		return nil, err
 	}
 
@@ -82,13 +98,16 @@ func (s *Service) ListSettings() ([]entity.Setting, error) {
 
 // UpdateSettingsBatch updates multiple settings in a single transaction.
 // Automatically encrypts sensitive values if encryption is enabled.
-func (s *Service) UpdateSettingsBatch(settings map[string]string) error {
-	return s.DB.Transaction(func(tx *gorm.DB) error {
+func (s *Service) UpdateSettingsBatch(ctx context.Context, settings map[string]string) error {
+	log := logger.NewWithContext(ctx)
+
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for key, value := range settings {
 			// Encrypt if it's a sensitive key and encryption is enabled
 			if sensitiveKeys[key] && s.Encryptor != nil && value != "" {
 				encrypted, err := s.Encryptor.Encrypt(value)
 				if err != nil {
+					log.Errorf("UpdateSettingsBatch: failed to encrypt setting %s: %v", key, err)
 					return err
 				}
 				value = encrypted
@@ -99,6 +118,7 @@ func (s *Service) UpdateSettingsBatch(settings map[string]string) error {
 				Value: value,
 			}
 			if err := tx.Save(&setting).Error; err != nil {
+				log.Errorf("UpdateSettingsBatch: failed to save setting %s: %v", key, err)
 				return err
 			}
 		}
@@ -108,15 +128,15 @@ func (s *Service) UpdateSettingsBatch(settings map[string]string) error {
 
 // GetWechatConfig retrieves the WeChat Work configuration from settings.
 // Returns nil if CorpID is not configured.
-func (s *Service) GetWechatConfig() (*entity.WechatConfig, error) {
-	corpID, err := s.GetSetting(entity.SettingWechatCorpID)
+func (s *Service) GetWechatConfig(ctx context.Context) (*entity.WechatConfig, error) {
+	corpID, err := s.GetSetting(ctx, entity.SettingWechatCorpID)
 	if err != nil || corpID == "" {
 		return nil, err
 	}
 
-	appSecret, _ := s.GetSetting(entity.SettingWechatAppSecret)
+	appSecret, _ := s.GetSetting(ctx, entity.SettingWechatAppSecret)
 
-	appAgentIDStr, _ := s.GetSetting(entity.SettingWechatAppAgentID)
+	appAgentIDStr, _ := s.GetSetting(ctx, entity.SettingWechatAppAgentID)
 	appAgentID, _ := strconv.ParseInt(appAgentIDStr, 10, 64)
 
 	return &entity.WechatConfig{
@@ -128,14 +148,14 @@ func (s *Service) GetWechatConfig() (*entity.WechatConfig, error) {
 
 // GetOIDCConfig retrieves the OIDC configuration from settings.
 // Returns nil if issuer is not configured.
-func (s *Service) GetOIDCConfig() (*entity.OIDCConfig, error) {
-	issuer, err := s.GetSetting(entity.SettingSSOOIDCIssuer)
+func (s *Service) GetOIDCConfig(ctx context.Context) (*entity.OIDCConfig, error) {
+	issuer, err := s.GetSetting(ctx, entity.SettingSSOOIDCIssuer)
 	if err != nil || issuer == "" {
 		return nil, err
 	}
 
-	clientID, _ := s.GetSetting(entity.SettingSSOOIDCClientID)
-	clientSecret, _ := s.GetSetting(entity.SettingSSOOIDCClientSecret)
+	clientID, _ := s.GetSetting(ctx, entity.SettingSSOOIDCClientID)
+	clientSecret, _ := s.GetSetting(ctx, entity.SettingSSOOIDCClientSecret)
 
 	return &entity.OIDCConfig{
 		Issuer:       issuer,
@@ -146,15 +166,15 @@ func (s *Service) GetOIDCConfig() (*entity.OIDCConfig, error) {
 
 // GetSAMLConfig retrieves the SAML 2.0 configuration from settings.
 // Returns nil if IdP SSO URL is not configured.
-func (s *Service) GetSAMLConfig() (*entity.SAMLConfig, error) {
-	ssoURL, err := s.GetSetting(entity.SettingSSOSAMLIDPSSOURL)
+func (s *Service) GetSAMLConfig(ctx context.Context) (*entity.SAMLConfig, error) {
+	ssoURL, err := s.GetSetting(ctx, entity.SettingSSOSAMLIDPSSOURL)
 	if err != nil || ssoURL == "" {
 		return nil, err
 	}
 
-	metadataURL, _ := s.GetSetting(entity.SettingSSOSAMLIDPMetadataURL)
-	entityID, _ := s.GetSetting(entity.SettingSSOSAMLIDPEntityID)
-	certificate, _ := s.GetSetting(entity.SettingSSOSAMLIDPCertificate)
+	metadataURL, _ := s.GetSetting(ctx, entity.SettingSSOSAMLIDPMetadataURL)
+	entityID, _ := s.GetSetting(ctx, entity.SettingSSOSAMLIDPEntityID)
+	certificate, _ := s.GetSetting(ctx, entity.SettingSSOSAMLIDPCertificate)
 
 	return &entity.SAMLConfig{
 		IDPMetadataURL: metadataURL,
@@ -166,17 +186,17 @@ func (s *Service) GetSAMLConfig() (*entity.SAMLConfig, error) {
 
 // GetS3Config retrieves the S3 storage configuration from settings.
 // Returns nil if endpoint is not configured.
-func (s *Service) GetS3Config() (*entity.S3Config, error) {
-	endpoint, err := s.GetSetting(entity.SettingS3Endpoint)
+func (s *Service) GetS3Config(ctx context.Context) (*entity.S3Config, error) {
+	endpoint, err := s.GetSetting(ctx, entity.SettingS3Endpoint)
 	if err != nil || endpoint == "" {
 		return nil, err
 	}
 
-	region, _ := s.GetSetting(entity.SettingS3Region)
-	bucket, _ := s.GetSetting(entity.SettingS3Bucket)
-	accessKey, _ := s.GetSetting(entity.SettingS3AccessKey)
-	secretKey, _ := s.GetSetting(entity.SettingS3SecretKey)
-	publicURL, _ := s.GetSetting(entity.SettingS3PublicURL)
+	region, _ := s.GetSetting(ctx, entity.SettingS3Region)
+	bucket, _ := s.GetSetting(ctx, entity.SettingS3Bucket)
+	accessKey, _ := s.GetSetting(ctx, entity.SettingS3AccessKey)
+	secretKey, _ := s.GetSetting(ctx, entity.SettingS3SecretKey)
+	publicURL, _ := s.GetSetting(ctx, entity.SettingS3PublicURL)
 
 	return &entity.S3Config{
 		Endpoint:  endpoint,
