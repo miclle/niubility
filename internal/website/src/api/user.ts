@@ -1,5 +1,6 @@
 import client from './client'
 import type { BootResponse, ListUsersResponse, UpdateUserArgs, UpdateProfileArgs, User, SyncWechatResponse, ListDepartmentsResponse, SearchUsersResponse, UserProfileResponse, ChangePasswordArgs, HasPasswordResponse, FollowResponse } from 'src/types/user'
+import type { ListContentsResponse } from 'src/types/content'
 
 // boot fetches the current system and authentication state.
 export function boot() {
@@ -84,4 +85,9 @@ export function listFollowing(username: string, params?: { limit?: number; curso
 // listFollowers fetches the list of users who follow a user.
 export function listFollowers(username: string, params?: { limit?: number; cursor?: string }) {
   return client.get<ListUsersResponse>(`/users/${username}/followers`, { params })
+}
+
+// listUserFavorites fetches a paginated list of contents favorited by a user.
+export function listUserFavorites(username: string, params?: { limit?: number; cursor?: string }) {
+  return client.get<ListContentsResponse>(`/users/${username}/favorites`, { params })
 }

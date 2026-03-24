@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ThumbsUp, Share2, MessageCircle, Pencil } from 'lucide-react'
+import { ThumbsUp, Share2, MessageCircle, Pencil, Bookmark } from 'lucide-react'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
 
-import { getContent, likeContent } from 'src/api/content'
+import { getContent, likeContent, favoriteContent } from 'src/api/content'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
 import { useAppContext } from 'src/context/app'
 import CommentSection from 'src/components/CommentSection'
@@ -25,6 +25,8 @@ function ArticleDetail() {
   const [error, setError] = useState(false)
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
+  const [favorited, setFavorited] = useState(false)
+  const [favoriteCount, setFavoriteCount] = useState(0)
   const [commentCount, setCommentCount] = useState(0)
 
   useEffect(() => {
@@ -39,6 +41,8 @@ function ArticleDetail() {
         setContent(res.data)
         setLiked(!!res.data.liked)
         setLikeCount(res.data.like_count || 0)
+        setFavorited(!!res.data.favorited)
+        setFavoriteCount(res.data.favorite_count || 0)
         setCommentCount(res.data.comment_count || 0)
       })
       .catch(() => setError(true))
@@ -122,6 +126,16 @@ function ArticleDetail() {
             >
               <ThumbsUp size={18} fill={liked ? 'currentColor' : 'none'} />
               <span>{likeCount || 0}</span>
+            </button>
+            <button
+              className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
+              style={{ background: favorited ? 'rgba(234,179,8,0.1)' : 'rgba(0,0,0,0.05)', color: favorited ? '#b45309' : '#0f0f0f' }}
+              onClick={() => {
+                favoriteContent(content.id).then((res) => { setFavorited(res.data.favorited); setFavoriteCount(res.data.favorite_count) })
+              }}
+            >
+              <Bookmark size={18} fill={favorited ? 'currentColor' : 'none'} />
+              <span>{favoriteCount || 0}</span>
             </button>
             <a href="#comments" className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors no-underline" style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}>
               <MessageCircle size={18} />

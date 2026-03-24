@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { User, FileText, Shield, Bell, ArrowLeft, type LucideIcon } from 'lucide-react'
+import { User, FileText, Shield, Bell, ArrowLeft, Bookmark, type LucideIcon } from 'lucide-react'
 
 // NavItem represents a settings navigation item.
 interface NavItem {
@@ -12,6 +12,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { to: '/settings/account', icon: User, label: '账户' },
   { to: '/settings/contents', icon: FileText, label: '我的内容' },
+  { to: '/settings/favorites', icon: Bookmark, label: '我的收藏' },
   { to: '/settings/security', icon: Shield, label: '安全设置' },
   { to: '/settings/notifications', icon: Bell, label: '通知设置' },
 ]

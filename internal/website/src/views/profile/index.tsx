@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, NavLink, Outlet } from 'react-router-dom'
-import { CalendarDays, FileText, Heart, Video, BookOpen, Mic, MapPin, Github, Globe, ExternalLink, UserCheck, Users } from 'lucide-react'
+import { CalendarDays, FileText, Heart, Video, BookOpen, Mic, MapPin, Github, Globe, ExternalLink, UserCheck, Users, Bookmark } from 'lucide-react'
 import dayjs from 'dayjs'
 
 import { useAppContext } from 'src/context/app'
@@ -40,6 +40,7 @@ const profileTabs: { label: string; path: string; icon: React.ReactNode }[] = [
   { label: '主讲', path: 'speakers', icon: <Mic size={16} /> },
   { label: '关注', path: 'following', icon: <UserCheck size={16} /> },
   { label: '粉丝', path: 'followers', icon: <Users size={16} /> },
+  { label: '收藏', path: 'favorites', icon: <Bookmark size={16} /> },
 ]
 
 // FollowButton renders a follow/unfollow button for a user.

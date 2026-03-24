@@ -1,5 +1,5 @@
 import client from './client'
-import type { Content, ListContentsArgs, ListContentsResponse, CreateContentArgs, UpdateContentArgs, ImportContentsArgs, ImportResult, ListCommentsResponse, CreateCommentArgs, Comment, LikeResponse } from 'src/types/content'
+import type { Content, ListContentsArgs, ListContentsResponse, CreateContentArgs, UpdateContentArgs, ImportContentsArgs, ImportResult, ListCommentsResponse, CreateCommentArgs, Comment, LikeResponse, FavoriteResponse } from 'src/types/content'
 
 // listContents fetches a paginated list of contents with optional filters.
 export function listContents(params?: ListContentsArgs) {
@@ -54,4 +54,14 @@ export function likeComment(commentID: string) {
 // likeAttachment toggles like (favorite) on an attachment.
 export function likeAttachment(attachmentID: string) {
   return client.post<LikeResponse>(`/attachments/${attachmentID}/like`)
+}
+
+// favoriteContent toggles favorite on a content item.
+export function favoriteContent(contentID: string) {
+  return client.post<FavoriteResponse>(`/contents/${contentID}/favorite`)
+}
+
+// listFavorites fetches a paginated list of the current user's favorited contents.
+export function listFavorites(params?: { limit?: number; cursor?: string }) {
+  return client.get<ListContentsResponse>('/favorites', { params })
 }

@@ -38,6 +38,7 @@ func (ctrl *Ctrl) ListContents(c *fox.Context, args entity.ListContentsArgs) (*L
 type GetContentResponse struct {
 	*entity.Content
 	Liked              bool     `json:"liked"`
+	Favorited          bool     `json:"favorited"`
 	LikedAttachmentIDs []string `json:"liked_attachment_ids,omitempty"`
 }
 
@@ -68,6 +69,9 @@ func (ctrl *Ctrl) GetContent(c *fox.Context) (*GetContentResponse, error) {
 	if user := CurrentUser(c); user != nil {
 		liked, _ := ctrl.service.IsLiked(ctx, user.ID, id, entity.TargetTypeContent)
 		resp.Liked = liked
+
+		favorited, _ := ctrl.service.IsFavorited(ctx, user.ID, id)
+		resp.Favorited = favorited
 
 		// Check which attachments are liked by the current user
 		if len(content.Attachments) > 0 {

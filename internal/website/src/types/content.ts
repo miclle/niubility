@@ -85,6 +85,7 @@ export interface Content {
   speaker_name: string
   speaker_bio: string
   like_count: number
+  favorite_count: number
   comment_count: number
   created_at: string
   updated_at: string
@@ -92,6 +93,7 @@ export interface Content {
   speaker?: User
   attachments?: Attachment[]
   liked?: boolean
+  favorited?: boolean
   liked_attachment_ids?: string[]
 }
 
@@ -212,4 +214,10 @@ export interface CreateCommentArgs {
 export interface LikeResponse {
   liked: boolean
   like_count: number
+}
+
+// FavoriteResponse represents the response after toggling a favorite.
+export interface FavoriteResponse {
+  favorited: boolean
+  favorite_count: number
 }

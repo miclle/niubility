@@ -65,6 +65,8 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	api.POST("/contents/:id/comments", ctrl.CreateComment)
 	api.GET("/contents/:id/comments", ctrl.ListComments)
 	api.POST("/contents/:id/like", ctrl.LikeContent)
+	api.POST("/contents/:id/favorite", ctrl.FavoriteContent)
+	api.GET("/favorites", ctrl.ListFavorites)
 	api.POST("/contents", ctrl.CreateContent)
 	api.PUT("/contents/:id", ctrl.UpdateContent)
 	api.DELETE("/contents/:id", ctrl.DeleteContent)
@@ -82,6 +84,7 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	api.POST("/users/:username/follow", ctrl.ToggleFollow)
 	api.GET("/users/:username/following", ctrl.ListFollowing)
 	api.GET("/users/:username/followers", ctrl.ListFollowers)
+	api.GET("/users/:username/favorites", ctrl.ListUserFavorites)
 
 	// import routes (admin only)
 	api.POST("/import", ctrl.RequireAdmin, ctrl.ImportContents)

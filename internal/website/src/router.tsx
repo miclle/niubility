@@ -8,6 +8,7 @@ import ProfileLayout from 'src/views/profile'
 import ProfileContents from 'src/views/profile/contents'
 import ProfileFollowing from 'src/views/profile/following'
 import ProfileFollowers from 'src/views/profile/followers'
+import ProfileFavorites from 'src/views/profile/favorites'
 import VideoDetail from 'src/views/watch'
 import VideoEditor from 'src/views/watch/editor'
 import GalleryDetail from 'src/views/gallery'
@@ -17,6 +18,7 @@ import ArticleEditor from 'src/views/article/editor'
 import FollowingFeed from 'src/views/following'
 import AccountSettings from 'src/views/settings/account'
 import MyContents from 'src/views/settings/contents'
+import Favorites from 'src/views/settings/favorites'
 import SecuritySettings from 'src/views/settings/security'
 import NotificationSettings from 'src/views/settings/notifications'
 import AdminContents from 'src/views/admin/contents'
@@ -68,6 +70,7 @@ const routes: RouteObject[] = [
           { path: 'speakers', element: <ProfileContents /> },
           { path: 'following', element: <ProfileFollowing /> },
           { path: 'followers', element: <ProfileFollowers /> },
+          { path: 'favorites', element: <ProfileFavorites /> },
         ],
       },
       // Video routes
@@ -89,6 +92,7 @@ const routes: RouteObject[] = [
           { index: true, element: <Navigate to="/settings/account" replace /> },
           { path: 'account', element: <AccountSettings /> },
           { path: 'contents', element: <MyContents /> },
+          { path: 'favorites', element: <Favorites /> },
           { path: 'security', element: <SecuritySettings /> },
           { path: 'notifications', element: <NotificationSettings /> },
         ],
