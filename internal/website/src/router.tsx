@@ -22,7 +22,6 @@ import NotificationSettings from 'src/views/settings/notifications'
 import AdminContents from 'src/views/admin/contents'
 import AdminUsers from 'src/views/admin/users'
 import AdminImport from 'src/views/admin/import'
-import AdminSync from 'src/views/admin/sync'
 import SettingsAuth from 'src/views/admin/settings/auth'
 import SettingsStorage from 'src/views/admin/settings/storage'
 import SettingsWechat from 'src/views/admin/settings/wechat'
@@ -105,12 +104,13 @@ const routes: RouteObject[] = [
       { path: 'contents', element: <AdminContents /> },
       { path: 'users', element: <AdminUsers /> },
       { path: 'categories', element: <AdminCategories /> },
-      { path: 'import', element: <AdminImport /> },
-      { path: 'sync', element: <AdminSync /> },
+      { path: 'import', element: <Navigate to="/admin/settings/import" replace /> },
+      { path: 'sync', element: <Navigate to="/admin/settings/wechat" replace /> },
       { path: 'settings', element: <Navigate to="/admin/settings/auth" replace /> },
       { path: 'settings/auth', element: <SettingsAuth /> },
       { path: 'settings/storage', element: <SettingsStorage /> },
       { path: 'settings/wechat', element: <SettingsWechat /> },
+      { path: 'settings/import', element: <AdminImport /> },
     ],
   },
   // Error pages

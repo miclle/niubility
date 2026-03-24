@@ -3,7 +3,7 @@ import { Outlet, NavLink, Link, Navigate, useLocation } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { FileText, Users, ArrowLeft, LogOut, Upload, RefreshCw, Settings, Menu, FolderOpen, ChevronDown, UserPlus, HardDrive, MessageSquare, CircleUserRound, User, Plus, Play, ImageIcon, type LucideIcon } from 'lucide-react'
+import { FileText, Users, ArrowLeft, LogOut, Upload, Settings, Menu, FolderOpen, ChevronDown, UserPlus, HardDrive, MessageSquare, CircleUserRound, User, Plus, Play, ImageIcon, type LucideIcon } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
 import { contentNewPath } from 'src/lib/content-url'
@@ -40,8 +40,6 @@ function AdminLayout() {
     { to: '/admin/contents', icon: FileText, label: '内容管理' },
     { to: '/admin/categories', icon: FolderOpen, label: '分类管理' },
     { to: '/admin/users', icon: Users, label: '用户管理' },
-    { to: '/admin/import', icon: Upload, label: '数据导入' },
-    { to: '/admin/sync', icon: RefreshCw, label: '微信同步' },
     {
       to: '/admin/settings',
       icon: Settings,
@@ -50,6 +48,7 @@ function AdminLayout() {
         { to: '/admin/settings/auth', icon: UserPlus, label: '认证配置' },
         { to: '/admin/settings/storage', icon: HardDrive, label: '存储配置' },
         { to: '/admin/settings/wechat', icon: MessageSquare, label: '企业微信' },
+        { to: '/admin/settings/import', icon: Upload, label: '数据导入' },
       ],
     },
   ]
