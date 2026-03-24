@@ -70,6 +70,8 @@ const (
 	SettingS3SecretKey = "s3.secret_key"
 	// SettingS3PublicURL is the optional public URL prefix for accessing uploaded files (e.g., CDN domain).
 	SettingS3PublicURL = "s3.public_url"
+	// SettingS3CORSOrigin is the allowed CORS origin for browser-based S3 uploads (e.g., "http://localhost:9000").
+	SettingS3CORSOrigin = "s3.cors_origin"
 )
 
 // WechatConfig represents the WeChat Work configuration extracted from settings.
@@ -96,10 +98,11 @@ type SAMLConfig struct {
 
 // S3Config represents the S3 storage configuration extracted from settings.
 type S3Config struct {
-	Endpoint  string
-	Region    string
-	Bucket    string
-	AccessKey string
-	SecretKey string
-	PublicURL string
+	Endpoint   string
+	Region     string
+	Bucket     string
+	AccessKey  string
+	SecretKey  string
+	PublicURL  string
+	CORSOrigin string
 }

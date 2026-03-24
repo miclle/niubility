@@ -28,7 +28,7 @@ func (ctrl *Ctrl) ListSettings(c *fox.Context) (*ListSettingsResponse, error) {
 	return &ListSettingsResponse{Settings: settings}, nil
 }
 
-// UpdateSettings updates the settings and refreshes WeChat client if needed.
+// UpdateSettings updates the settings and refreshes related services if needed.
 func (ctrl *Ctrl) UpdateSettings(c *fox.Context, req *UpdateSettingsRequest) (*ListSettingsResponse, error) {
 	ctx := c.Logger.WithContext(c.Request.Context())
 
@@ -42,17 +42,40 @@ func (ctrl *Ctrl) UpdateSettings(c *fox.Context, req *UpdateSettingsRequest) (*L
 		entity.SettingWechatAppAgentID,
 		entity.SettingWechatAppSecret,
 	}
-	shouldRefresh := false
+	shouldRefreshWechat := false
 	for _, key := range wechatKeys {
 		if _, ok := req.Settings[key]; ok {
-			shouldRefresh = true
+			shouldRefreshWechat = true
 			break
 		}
 	}
 
-	if shouldRefresh {
+	if shouldRefreshWechat {
 		if err := ctrl.service.RefreshWechatClient(ctx); err != nil {
 			return nil, httperrors.ErrInternalServerError
+		}
+	}
+
+	// Check if S3 settings were updated, configure CORS if needed
+	s3Keys := []string{
+		entity.SettingS3Endpoint,
+		entity.SettingS3Region,
+		entity.SettingS3Bucket,
+		entity.SettingS3AccessKey,
+		entity.SettingS3SecretKey,
+		entity.SettingS3CORSOrigin,
+	}
+	shouldConfigureCORS := false
+	for _, key := range s3Keys {
+		if _, ok := req.Settings[key]; ok {
+			shouldConfigureCORS = true
+			break
+		}
+	}
+
+	if shouldConfigureCORS {
+		if err := ctrl.service.ConfigureS3CORS(ctx); err != nil {
+			c.Logger.Warnf("UpdateSettings: configure S3 CORS failed: %v", err)
 		}
 	}
 

@@ -197,13 +197,15 @@ func (s *Service) GetS3Config(ctx context.Context) (*entity.S3Config, error) {
 	accessKey, _ := s.GetSetting(ctx, entity.SettingS3AccessKey)
 	secretKey, _ := s.GetSetting(ctx, entity.SettingS3SecretKey)
 	publicURL, _ := s.GetSetting(ctx, entity.SettingS3PublicURL)
+	corsOrigin, _ := s.GetSetting(ctx, entity.SettingS3CORSOrigin)
 
 	return &entity.S3Config{
-		Endpoint:  endpoint,
-		Region:    region,
-		Bucket:    bucket,
-		AccessKey: accessKey,
-		SecretKey: secretKey,
-		PublicURL: publicURL,
+		Endpoint:   endpoint,
+		Region:     region,
+		Bucket:     bucket,
+		AccessKey:  accessKey,
+		SecretKey:  secretKey,
+		PublicURL:  publicURL,
+		CORSOrigin: corsOrigin,
 	}, nil
 }

@@ -1,8 +1,12 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"crypto/md5"
+	"encoding/base64"
 	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
 	"time"
@@ -10,6 +14,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/smithy-go/middleware"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/fox-gonic/fox/logger"
 	"github.com/google/uuid"
 
@@ -114,5 +121,89 @@ func (s *Service) newS3Client(cfg *entity.S3Config) *s3.Client {
 		BaseEndpoint: aws.String(endpoint),
 		Region:       cfg.Region,
 		Credentials:  credentials.NewStaticCredentialsProvider(cfg.AccessKey, cfg.SecretKey, ""),
+	})
+}
+
+// ConfigureS3CORS sets the CORS configuration on the S3 bucket to allow browser-based uploads.
+// It uses the CORSOrigin from S3Config as AllowedOrigin. Skips if CORSOrigin is empty.
+func (s *Service) ConfigureS3CORS(ctx context.Context) error {
+	log := logger.NewWithContext(ctx)
+
+	cfg, err := s.GetS3Config(ctx)
+	if err != nil {
+		return fmt.Errorf("get s3 config: %w", err)
+	}
+	if cfg == nil {
+		return fmt.Errorf("s3 storage not configured")
+	}
+	if cfg.CORSOrigin == "" {
+		log.Info("ConfigureS3CORS: cors_origin is empty, skipping")
+		return nil
+	}
+
+	// Parse origins: one per line, skip empty lines
+	var origins []string
+	for _, line := range strings.Split(cfg.CORSOrigin, "\n") {
+		origin := strings.TrimSpace(line)
+		if origin != "" {
+			origins = append(origins, origin)
+		}
+	}
+	if len(origins) == 0 {
+		log.Info("ConfigureS3CORS: no valid origins, skipping")
+		return nil
+	}
+
+	client := s.newS3Client(cfg)
+
+	_, err = client.PutBucketCors(ctx, &s3.PutBucketCorsInput{
+		Bucket: aws.String(cfg.Bucket),
+		CORSConfiguration: &s3types.CORSConfiguration{
+			CORSRules: []s3types.CORSRule{
+				{
+					AllowedOrigins: origins,
+					AllowedMethods: []string{"GET", "PUT", "POST", "HEAD"},
+					AllowedHeaders: []string{"Content-Type"},
+					ExposeHeaders:  []string{"ETag"},
+					MaxAgeSeconds:  aws.Int32(3600),
+				},
+			},
+		},
+	}, withContentMD5)
+	if err != nil {
+		log.Errorf("ConfigureS3CORS: put bucket cors: %v", err)
+		return fmt.Errorf("put bucket cors: %w", err)
+	}
+
+	log.Infof("ConfigureS3CORS: configured CORS for bucket %s, origin: %s", cfg.Bucket, cfg.CORSOrigin)
+	return nil
+}
+
+// withContentMD5 is an S3 option that adds Content-MD5 header computation middleware.
+// Some S3-compatible services (e.g., Qiniu) require Content-MD5 for certain operations,
+// but aws-sdk-go-v2 no longer adds it by default.
+func withContentMD5(o *s3.Options) {
+	o.APIOptions = append(o.APIOptions, func(stack *middleware.Stack) error {
+		return stack.Build.Add(middleware.BuildMiddlewareFunc("ContentMD5",
+			func(ctx context.Context, in middleware.BuildInput, next middleware.BuildHandler) (middleware.BuildOutput, middleware.Metadata, error) {
+				req, ok := in.Request.(*smithyhttp.Request)
+				if !ok {
+					return next.HandleBuild(ctx, in)
+				}
+				body := req.GetStream()
+				if body == nil {
+					return next.HandleBuild(ctx, in)
+				}
+				content, err := io.ReadAll(body)
+				if err != nil {
+					return middleware.BuildOutput{}, middleware.Metadata{}, fmt.Errorf("read request body: %w", err)
+				}
+				hash := md5.Sum(content)
+				req.Header.Set("Content-MD5", base64.StdEncoding.EncodeToString(hash[:]))
+				req, _ = req.SetStream(bytes.NewReader(content))
+				in.Request = req
+				return next.HandleBuild(ctx, in)
+			},
+		), middleware.Before)
 	})
 }

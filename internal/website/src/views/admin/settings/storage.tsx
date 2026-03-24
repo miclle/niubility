@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { HardDrive, Shield } from 'lucide-react'
 
 import { MASKED_VALUE, useSettings, useSaveSettings, SettingsLoading, SettingsFeedback, SaveButton } from './shared'
@@ -10,7 +11,7 @@ function SettingsStorage() {
   const { saving, success, error, save } = useSaveSettings(reload)
 
   const [hasExistingS3Secret, setHasExistingS3Secret] = useState(false)
-  const [s3Form, setS3Form] = useState({ endpoint: '', region: '', bucket: '', access_key: '', secret_key: '', public_url: '' })
+  const [s3Form, setS3Form] = useState({ endpoint: '', region: '', bucket: '', access_key: '', secret_key: '', public_url: '', cors_origin: '' })
 
   useEffect(() => {
     if (loading) return
@@ -21,6 +22,7 @@ function SettingsStorage() {
       access_key: settingsMap['s3.access_key'] || '',
       secret_key: '',
       public_url: settingsMap['s3.public_url'] || '',
+      cors_origin: settingsMap['s3.cors_origin'] || '',
     }
     if (settingsMap['s3.secret_key'] === MASKED_VALUE) {
       setHasExistingS3Secret(true)
@@ -37,6 +39,7 @@ function SettingsStorage() {
       's3.bucket': s3Form.bucket,
       's3.access_key': s3Form.access_key,
       's3.public_url': s3Form.public_url,
+      's3.cors_origin': s3Form.cors_origin,
     }
     if (s3Form.secret_key || !hasExistingS3Secret) {
       settings['s3.secret_key'] = s3Form.secret_key
@@ -115,6 +118,16 @@ function SettingsStorage() {
               onChange={(e) => setS3Form({ ...s3Form, public_url: e.target.value })}
             />
             <p className="text-xs mt-1" style={{ color: '#909090' }}>CDN 或自定义域名，用于生成文件的公开访问地址</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>CORS Origin (可选)</label>
+            <Textarea
+              rows={3}
+              placeholder={"http://localhost:9000\nhttps://example.com"}
+              value={s3Form.cors_origin}
+              onChange={(e) => setS3Form({ ...s3Form, cors_origin: e.target.value })}
+            />
+            <p className="text-xs mt-1" style={{ color: '#909090' }}>允许浏览器跨域上传的来源地址，每行一个，保存时会自动配置 S3 存储桶 CORS 规则</p>
           </div>
         </div>
       </div>
