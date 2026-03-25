@@ -81,7 +81,7 @@ function SortableVideoItem({ item, index, onChange, onRemove }: {
         <GripVertical size={16} style={{ color: '#909090' }} />
       </button>
       <div className="flex-1 space-y-3">
-        {/* Header with index, filename and remove button */}
+        {/* Header with index and filename */}
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium px-2 py-0.5 rounded" style={{ background: '#f2f2f2', color: '#606060' }}>#{index + 1}</span>
           <span className="text-xs flex-1 truncate" style={{ color: '#909090' }}>{item.filename}</span>
@@ -90,17 +90,23 @@ function SortableVideoItem({ item, index, onChange, onRemove }: {
           </button>
         </div>
 
-        {/* Video preview */}
-        <video src={fileURL(item.url)} controls className="max-h-36 rounded" />
+        {/* Horizontal layout: Video | Cover | Title + Description */}
+        <div className="flex gap-4">
+          {/* Video preview */}
+          <div className="flex-shrink-0">
+            <video src={fileURL(item.url)} controls className="w-56 h-32 object-cover rounded" />
+          </div>
 
-        {/* Title and description */}
-        <Input placeholder="视频标题（可选）" value={item.title} onChange={(e) => onChange(item.localId, 'title', e.target.value)} />
-        <Input placeholder="视频描述（可选）" value={item.description} onChange={(e) => onChange(item.localId, 'description', e.target.value)} />
+          {/* Cover image */}
+          <div className="flex-shrink-0 w-40">
+            <ImageUpload value={item.coverUrl} onChange={(url) => onChange(item.localId, 'coverUrl', url)} placeholder="上传封面" />
+          </div>
 
-        {/* Per-video cover image */}
-        <div>
-          <label className="block text-xs mb-1" style={{ color: '#909090' }}>视频封面</label>
-          <ImageUpload value={item.coverUrl} onChange={(url) => onChange(item.localId, 'coverUrl', url)} placeholder="上传视频封面（可选）" />
+          {/* Title and description */}
+          <div className="flex-1 space-y-2">
+            <Input placeholder="视频标题（可选）" value={item.title} onChange={(e) => onChange(item.localId, 'title', e.target.value)} />
+            <Textarea placeholder="视频描述（可选）" value={item.description} onChange={(e) => onChange(item.localId, 'description', e.target.value)} rows={3} />
+          </div>
         </div>
       </div>
     </div>
@@ -116,7 +122,7 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
   const [title, setTitle] = useState('')
   const [summary, setSummary] = useState('')
   const [coverUrl, setCoverUrl] = useState('')
-  const [category, setCategory] = useState<string>(categories[0]?.slug || 'learning')
+  const [category, setCategory] = useState<string>(categories[0]?.slug || '')
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
   const [videos, setVideos] = useState<VideoItem[]>([])
@@ -237,14 +243,14 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
       const localId = item.localId
       setVideos((prev) => [...prev, item])
 
-      // Start upload in background
+      // Upload file and compute checksum in parallel
       Promise.all([
         uploadFile(file, (percent) => {
           setVideos((prev) => prev.map((v) => v.localId === localId ? { ...v, progress: percent } : v))
         }),
         computeFileChecksum(file),
-      ]).then(([url, checksum]) => {
-        setVideos((prev) => prev.map((v) => v.localId === localId ? { ...v, url, checksum, uploading: false, progress: 100 } : v))
+      ]).then(([key, checksum]) => {
+        setVideos((prev) => prev.map((v) => v.localId === localId ? { ...v, url: key, checksum, uploading: false, progress: 100 } : v))
       }).catch(() => {
         // Remove failed item
         setVideos((prev) => prev.filter((v) => v.localId !== localId))
@@ -323,24 +329,23 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
       </div>
 
       {/* Category */}
-      <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>分类 *</label>
-        <Select value={category} onValueChange={(val) => val && setCategory(val)}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="选择分类">
-              {(value: string) => {
-                const cat = categories.find((c) => c.slug === value)
-                return cat?.name || value
-              }}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((cat) => (
-              <SelectItem key={cat.slug} value={cat.slug}>{cat.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {categories.length > 0 && (
+        <div>
+          <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>分类 *</label>
+          <Select value={category} onValueChange={(val) => val && setCategory(val)}>
+            <SelectTrigger className="w-full">
+              <span className="flex-1 text-left">
+                {category ? categories.find((c) => c.slug === category)?.name || category : '选择分类'}
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((cat) => (
+                <SelectItem key={cat.slug} value={cat.slug}>{cat.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {/* Summary */}
       <div>

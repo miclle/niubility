@@ -31,7 +31,7 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [coverUrl, setCoverUrl] = useState('')
-  const [category, setCategory] = useState<string>(categories[0]?.slug || 'learning')
+  const [category, setCategory] = useState<string>(categories[0]?.slug || '')
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
   const [contentStatus, setContentStatus] = useState<ContentStatus>('draft')
@@ -204,24 +204,23 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
         <h3 className="text-sm font-medium" style={{ color: '#0f0f0f' }}>文章设置</h3>
 
         {/* Category */}
-        <div>
-          <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>分类 *</label>
-          <Select value={category} onValueChange={(val) => val && setCategory(val)}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="选择分类">
-                {(value: string) => {
-                  const cat = categories.find((c) => c.slug === value)
-                  return cat?.name || value
-                }}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((cat) => (
+        {categories.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>分类 *</label>
+            <Select value={category} onValueChange={(val) => val && setCategory(val)}>
+              <SelectTrigger className="w-full">
+                <span className="flex-1 text-left">
+                  {category ? categories.find((c) => c.slug === category)?.name || category : '选择分类'}
+                </span>
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((cat) => (
                 <SelectItem key={cat.slug} value={cat.slug}>{cat.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
+        )}
 
         {/* Tags */}
         <div>

@@ -22,7 +22,7 @@ type Attachment struct {
 	URL         string         `json:"url"         gorm:"column:url"`
 	CoverURL    string         `json:"cover_url"   gorm:"column:cover_url"`
 	MimeType    string         `json:"mime_type"   gorm:"column:mime_type"`
-	Checksum    string         `json:"checksum"    gorm:"column:checksum;size:64;index:idx_attachments_content_checksum"`
+	Checksum    string         `json:"checksum"    gorm:"column:checksum;size:128;index:idx_attachments_content_checksum"`
 	Type        AttachmentType `json:"type"        gorm:"column:type"`
 	SortOrder   int            `json:"sort_order"  gorm:"column:sort_order;default:0"`
 	IsCover     bool           `json:"is_cover"    gorm:"column:is_cover;default:false"`

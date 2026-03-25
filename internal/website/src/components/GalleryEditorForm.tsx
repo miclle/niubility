@@ -115,7 +115,7 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
 
   const [title, setTitle] = useState('')
   const [summary, setSummary] = useState('')
-  const [category, setCategory] = useState<string>(categories[0]?.slug || 'learning')
+  const [category, setCategory] = useState<string>(categories[0]?.slug || '')
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
   const [items, setItems] = useState<GalleryItem[]>([])
@@ -333,24 +333,23 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
       </div>
 
       {/* Category */}
-      <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>分类 *</label>
-        <Select value={category} onValueChange={(val) => val && setCategory(val)}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="选择分类">
-              {(value: string) => {
-                const cat = categories.find((c) => c.slug === value)
-                return cat?.name || value
-              }}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((cat) => (
-              <SelectItem key={cat.slug} value={cat.slug}>{cat.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {categories.length > 0 && (
+        <div>
+          <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>分类 *</label>
+          <Select value={category} onValueChange={(val) => val && setCategory(val)}>
+            <SelectTrigger className="w-full">
+              <span className="flex-1 text-left">
+                {category ? categories.find((c) => c.slug === category)?.name || category : '选择分类'}
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((cat) => (
+                <SelectItem key={cat.slug} value={cat.slug}>{cat.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {/* Summary */}
       <div>

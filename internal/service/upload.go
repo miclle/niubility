@@ -65,6 +65,8 @@ func (s *Service) presignUpload(ctx context.Context, filename, contentType, pref
 		Bucket:      aws.String(cfg.Bucket),
 		Key:         aws.String(s3Key),
 		ContentType: aws.String(contentType),
+		// Note: ChecksumAlgorithm is not set here for better compatibility with S3-compatible services
+		// (e.g., Qiniu, MinIO) which may not support this parameter
 	}, s3.WithPresignExpires(15*time.Minute))
 	if err != nil {
 		log.Errorf("presignUpload: presign put object: %v", err)
