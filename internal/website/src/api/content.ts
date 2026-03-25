@@ -1,5 +1,5 @@
 import client from './client'
-import type { Content, ListContentsArgs, ListContentsResponse, CreateContentArgs, UpdateContentArgs, ImportContentsArgs, ImportResult, ListCommentsResponse, CreateCommentArgs, Comment, LikeResponse, FavoriteResponse } from 'src/types/content'
+import type { Content, ListContentsArgs, ListContentsResponse, CreateContentArgs, UpdateContentArgs, ListCommentsResponse, CreateCommentArgs, Comment, LikeResponse, FavoriteResponse } from 'src/types/content'
 
 // listContents fetches a paginated list of contents with optional filters.
 export function listContents(params?: ListContentsArgs) {
@@ -24,11 +24,6 @@ export function updateContent(id: string, data: UpdateContentArgs) {
 // deleteContent deletes a content by ID.
 export function deleteContent(id: string) {
   return client.delete(`/contents/${id}`)
-}
-
-// importContents imports contents from the legacy platform (admin only).
-export function importContents(data: ImportContentsArgs) {
-  return client.post<ImportResult>('/import', data)
 }
 
 // listComments fetches comments for a content item, optionally filtered by attachment.

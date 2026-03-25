@@ -100,6 +100,7 @@ type CreateContentArgs struct {
 	SpeakerName string                 `json:"speaker_name"`
 	SpeakerBio  string                 `json:"speaker_bio"`
 	Attachments []CreateAttachmentArgs `json:"attachments"`
+	CreatedAt   *time.Time             `json:"created_at"`
 }
 
 // UpdateContentArgs represents the fields that can be updated for content.

@@ -86,9 +86,6 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	api.GET("/users/:username/followers", ctrl.ListFollowers)
 	api.GET("/users/:username/favorites", ctrl.ListUserFavorites)
 
-	// import routes (admin only)
-	api.POST("/import", ctrl.RequireAdmin, ctrl.ImportContents)
-
 	// upload routes (authenticated users)
 	api.POST("/upload/presign", ctrl.GetPresignedURL)
 

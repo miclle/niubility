@@ -153,6 +153,12 @@ func (ctrl *Ctrl) CreateContent(c *fox.Context, args entity.CreateContentArgs) (
 		SpeakerBio:  args.SpeakerBio,
 	}
 
+	// Admin can override creation time (e.g. for importing legacy content)
+	if args.CreatedAt != nil && user.IsAdmin() {
+		content.CreatedAt = *args.CreatedAt
+		content.UpdatedAt = *args.CreatedAt
+	}
+
 	if err := ctrl.service.CreateContent(ctx, content, args.Attachments); err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -223,16 +229,4 @@ func (ctrl *Ctrl) DeleteContent(c *fox.Context) error {
 
 	c.Status(http.StatusNoContent)
 	return nil
-}
-
-// ImportContents imports contents from the legacy platform (admin only).
-func (ctrl *Ctrl) ImportContents(c *fox.Context, args entity.ImportContentsArgs) (*entity.ImportResult, error) {
-	ctx := c.Logger.WithContext(c.Request.Context())
-
-	user := CurrentUser(c)
-	result, err := ctrl.service.ImportContents(ctx, user.ID, args.Contents)
-	if err != nil {
-		return nil, httperrors.ErrInternalServerError
-	}
-	return result, nil
 }
