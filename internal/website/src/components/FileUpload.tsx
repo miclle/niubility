@@ -22,6 +22,10 @@ export interface FileUploadProps {
   onChange: (url: string) => void
   // Optional callback with file metadata after upload completes.
   onFileUploaded?: (url: string, meta: FileUploadMeta) => void
+  // Optional callback when multiple files are selected (for batch upload).
+  onMultipleFiles?: (files: File[]) => void
+  // Allow selecting multiple files at once.
+  multiple?: boolean
   // Optional preview renderer. If not provided, defaults to a link.
   renderPreview?: (url: string) => React.ReactNode
   // Placeholder text.
@@ -29,7 +33,7 @@ export interface FileUploadProps {
 }
 
 // FileUpload is a generic file upload component with drag-and-drop and progress support.
-function FileUpload({ accept, value, onChange, onFileUploaded, renderPreview, placeholder = '拖拽文件到此处或点击选择' }: FileUploadProps) {
+function FileUpload({ accept, value, onChange, onFileUploaded, onMultipleFiles, multiple, renderPreview, placeholder = '拖拽文件到此处或点击选择' }: FileUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [dragOver, setDragOver] = useState(false)
@@ -53,8 +57,13 @@ function FileUpload({ accept, value, onChange, onFileUploaded, renderPreview, pl
   }, [onChange, onFileUploaded])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) handleUpload(file)
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    if (multiple && files.length > 1 && onMultipleFiles) {
+      onMultipleFiles(Array.from(files))
+    } else {
+      handleUpload(files[0])
+    }
     // Reset input so the same file can be re-selected
     e.target.value = ''
   }
@@ -62,8 +71,13 @@ function FileUpload({ accept, value, onChange, onFileUploaded, renderPreview, pl
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setDragOver(false)
-    const file = e.dataTransfer.files?.[0]
-    if (file) handleUpload(file)
+    const files = e.dataTransfer.files
+    if (!files || files.length === 0) return
+    if (multiple && files.length > 1 && onMultipleFiles) {
+      onMultipleFiles(Array.from(files))
+    } else {
+      handleUpload(files[0])
+    }
   }
 
   const handleRemove = () => {
@@ -116,7 +130,7 @@ function FileUpload({ accept, value, onChange, onFileUploaded, renderPreview, pl
           <span className="text-sm" style={{ color: '#909090' }}>{placeholder}</span>
         </>
       )}
-      <input ref={inputRef} type="file" accept={accept} onChange={handleFileChange} className="hidden" />
+      <input ref={inputRef} type="file" accept={accept} multiple={multiple} onChange={handleFileChange} className="hidden" />
     </div>
   )
 }

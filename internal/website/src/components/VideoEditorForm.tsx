@@ -7,13 +7,14 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Save, X, Plus, GripVertical, Trash2 } from 'lucide-react'
+import { Save, X, Plus, GripVertical, Trash2, Upload, Loader2 } from 'lucide-react'
 
 import { getContent, createContent, updateContent } from 'src/api/content'
 import { searchUsers } from 'src/api/user'
+import { uploadFile, fileURL } from 'src/api/upload'
+import { computeFileChecksum } from 'src/lib/file-checksum'
 import { useAppContext } from 'src/context/app'
 import ImageUpload from 'src/components/ImageUpload'
-import FileUpload from 'src/components/FileUpload'
 import type { ContentStatus, CreateContentArgs, CreateAttachmentArgs } from 'src/types/content'
 import type { SearchUserItem } from 'src/types/user'
 
@@ -32,64 +33,75 @@ interface VideoItem {
   title: string
   description: string
   url: string
+  coverUrl: string
   filename: string
   mimeType: string
   checksum: string
   fileSize: number
   duration: number
+  uploading: boolean
+  progress: number
 }
 
 let videoItemCounter = 0
-function newVideoItem(): VideoItem {
-  return { localId: `vid_${++videoItemCounter}`, title: '', description: '', url: '', filename: '', mimeType: '', checksum: '', fileSize: 0, duration: 0 }
+function newVideoItem(overrides?: Partial<VideoItem>): VideoItem {
+  return { localId: `vid_${++videoItemCounter}`, title: '', description: '', url: '', coverUrl: '', filename: '', mimeType: '', checksum: '', fileSize: 0, duration: 0, uploading: false, progress: 0, ...overrides }
 }
 
 // SortableVideoItem renders a single draggable video item in the playlist.
-function SortableVideoItem({ item, index, onChange, onFileMetadata, onRemove }: {
+function SortableVideoItem({ item, index, onChange, onRemove }: {
   item: VideoItem
   index: number
   onChange: (localId: string, field: keyof VideoItem, value: string | number) => void
-  onFileMetadata: (localId: string, meta: { filename: string; mimeType: string; checksum: string; fileSize: number }) => void
   onRemove: (localId: string) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.localId })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
+
+  // Still uploading — show progress
+  if (item.uploading) {
+    return (
+      <div ref={setNodeRef} style={style} className="flex gap-3 p-3 rounded-lg" {...attributes}>
+        <div className="flex-shrink-0 mt-1"><GripVertical size={16} style={{ color: '#d4d4d4' }} /></div>
+        <div className="flex-1 flex flex-col items-center gap-2 py-4">
+          <Loader2 size={24} className="animate-spin" style={{ color: '#909090' }} />
+          <span className="text-sm" style={{ color: '#909090' }}>上传中 {item.progress}%</span>
+          <div className="w-full max-w-xs h-1.5 rounded-full overflow-hidden" style={{ background: '#e5e5e5' }}>
+            <div className="h-full rounded-full transition-all" style={{ width: `${item.progress}%`, background: '#0f0f0f' }} />
+          </div>
+          <span className="text-xs" style={{ color: '#b0b0b0' }}>{item.filename}</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div ref={setNodeRef} style={style} className="flex gap-3 p-3 rounded-lg" {...attributes}>
       <button type="button" className="flex-shrink-0 cursor-grab mt-1" {...listeners}>
         <GripVertical size={16} style={{ color: '#909090' }} />
       </button>
-      <div className="flex-1 space-y-2">
+      <div className="flex-1 space-y-3">
+        {/* Header with index, filename and remove button */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium px-2 py-0.5 rounded" style={{ background: '#f2f2f2', color: '#606060' }}>
-            #{index + 1}
-          </span>
-          <Input
-            placeholder="视频标题（可选）"
-            value={item.title}
-            onChange={(e) => onChange(item.localId, 'title', e.target.value)}
-            className="flex-1"
-          />
+          <span className="text-xs font-medium px-2 py-0.5 rounded" style={{ background: '#f2f2f2', color: '#606060' }}>#{index + 1}</span>
+          <span className="text-xs flex-1 truncate" style={{ color: '#909090' }}>{item.filename}</span>
           <button type="button" onClick={() => onRemove(item.localId)} className="p-1.5 rounded hover:bg-red-50 transition-colors">
             <Trash2 size={14} style={{ color: '#cc0000' }} />
           </button>
         </div>
-        <Input
-          placeholder="视频描述（可选）"
-          value={item.description}
-          onChange={(e) => onChange(item.localId, 'description', e.target.value)}
-        />
-        <FileUpload
-          accept="video/*"
-          value={item.url}
-          onChange={(url) => onChange(item.localId, 'url', url)}
-          onFileUploaded={(_url, meta) => onFileMetadata(item.localId, meta)}
-          placeholder="拖拽视频到此处或点击选择"
-          renderPreview={(url) => (
-            <video src={url} controls className="max-h-36 rounded mx-auto" />
-          )}
-        />
+
+        {/* Video preview */}
+        <video src={fileURL(item.url)} controls className="max-h-36 rounded" />
+
+        {/* Title and description */}
+        <Input placeholder="视频标题（可选）" value={item.title} onChange={(e) => onChange(item.localId, 'title', e.target.value)} />
+        <Input placeholder="视频描述（可选）" value={item.description} onChange={(e) => onChange(item.localId, 'description', e.target.value)} />
+
+        {/* Per-video cover image */}
+        <div>
+          <label className="block text-xs mb-1" style={{ color: '#909090' }}>视频封面</label>
+          <ImageUpload value={item.coverUrl} onChange={(url) => onChange(item.localId, 'coverUrl', url)} placeholder="上传视频封面（可选）" />
+        </div>
       </div>
     </div>
   )
@@ -107,7 +119,7 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
   const [category, setCategory] = useState<string>(categories[0]?.slug || 'learning')
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
-  const [videos, setVideos] = useState<VideoItem[]>([newVideoItem()])
+  const [videos, setVideos] = useState<VideoItem[]>([])
   const [contentStatus, setContentStatus] = useState<ContentStatus>('draft')
 
   // Speaker state
@@ -159,10 +171,13 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
             title: m.title,
             description: m.description,
             url: m.url,
+            coverUrl: m.cover_url || '',
             filename: m.filename || '',
             mimeType: m.mime_type || '',
             fileSize: m.file_size,
             duration: m.duration,
+            uploading: false,
+            progress: 0,
           })))
         }
 
@@ -207,12 +222,34 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
     setVideos((prev) => prev.map((v) => v.localId === localId ? { ...v, [field]: value } : v))
   }, [])
 
-  const handleFileMetadata = useCallback((localId: string, meta: { filename: string; mimeType: string; checksum: string; fileSize: number }) => {
-    setVideos((prev) => prev.map((v) => v.localId === localId ? { ...v, filename: meta.filename, mimeType: meta.mimeType, checksum: meta.checksum, fileSize: meta.fileSize } : v))
-  }, [])
-
   const handleRemoveVideo = useCallback((localId: string) => {
     setVideos((prev) => prev.filter((v) => v.localId !== localId))
+  }, [])
+
+  // handleUploadFiles uploads one or more video files, creating VideoItem entries with upload progress.
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const handleUploadFiles = useCallback((files: File[]) => {
+    const videoFiles = files.filter((f) => f.type.startsWith('video/'))
+    if (videoFiles.length === 0) return
+
+    for (const file of videoFiles) {
+      const item = newVideoItem({ filename: file.name, mimeType: file.type, fileSize: file.size, uploading: true })
+      const localId = item.localId
+      setVideos((prev) => [...prev, item])
+
+      // Start upload in background
+      Promise.all([
+        uploadFile(file, (percent) => {
+          setVideos((prev) => prev.map((v) => v.localId === localId ? { ...v, progress: percent } : v))
+        }),
+        computeFileChecksum(file),
+      ]).then(([url, checksum]) => {
+        setVideos((prev) => prev.map((v) => v.localId === localId ? { ...v, url, checksum, uploading: false, progress: 100 } : v))
+      }).catch(() => {
+        // Remove failed item
+        setVideos((prev) => prev.filter((v) => v.localId !== localId))
+      })
+    }
   }, [])
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -236,7 +273,9 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
         description: v.description,
         filename: v.filename,
         mime_type: v.mimeType,
+        checksum: v.checksum,
         url: v.url,
+        cover_url: v.coverUrl,
         type: 'video' as const,
         sort_order: i,
         file_size: v.fileSize,
@@ -315,30 +354,43 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
         <ImageUpload value={coverUrl} onChange={setCoverUrl} />
       </div>
 
-      {/* Video Playlist */}
+      {/* Video Upload Area */}
       <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>视频列表 *</label>
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={videos.map((v) => v.localId)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-2 rounded-lg" style={{ border: '1px solid #e5e5e5' }}>
-              {videos.map((video, index) => (
-                <SortableVideoItem
-                  key={video.localId}
-                  item={video}
-                  index={index}
-                  onChange={handleVideoChange}
-                  onFileMetadata={handleFileMetadata}
-                  onRemove={handleRemoveVideo}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-        <Button type="button" variant="outline" className="mt-2" onClick={() => setVideos([...videos, newVideoItem()])}>
-          <Plus size={14} />
-          添加视频
-        </Button>
+        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>上传视频 *</label>
+        <div
+          className="rounded-lg cursor-pointer transition-colors flex flex-col items-center justify-center gap-2 p-8"
+          style={{ border: '2px dashed #d4d4d4', background: '#fafafa' }}
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => { e.preventDefault(); handleUploadFiles(Array.from(e.dataTransfer.files)) }}
+        >
+          <Upload size={24} style={{ color: '#909090' }} />
+          <span className="text-sm" style={{ color: '#909090' }}>拖拽视频到此处或点击选择，支持多个文件</span>
+        </div>
+        <input ref={fileInputRef} type="file" accept="video/*" multiple onChange={(e) => { if (e.target.files) handleUploadFiles(Array.from(e.target.files)); e.target.value = '' }} className="hidden" />
       </div>
+
+      {/* Video List */}
+      {videos.length > 0 && (
+        <div>
+          <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>视频列表</label>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={videos.map((v) => v.localId)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-2 rounded-lg" style={{ border: '1px solid #e5e5e5' }}>
+                {videos.map((video, index) => (
+                  <SortableVideoItem
+                    key={video.localId}
+                    item={video}
+                    index={index}
+                    onChange={handleVideoChange}
+                    onRemove={handleRemoveVideo}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </div>
+      )}
 
       {/* Tags */}
       <div>
