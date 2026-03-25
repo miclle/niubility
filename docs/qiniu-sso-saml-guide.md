@@ -27,17 +27,7 @@
 
 > **注意**：七牛 SSO 的 Entity ID 是 metadata URL（`/saml2/meta`），SSO URL 是根路径（`/`），这与一些 IdP 的常见约定不同。
 
-### 第二步：提取 IdP 证书
-
-从 metadata XML 中提取 `<X509Certificate>` 的 Base64 内容，添加 PEM 头尾：
-
-```
------BEGIN CERTIFICATE-----
-（从 metadata XML 的 <X509Certificate> 中复制 Base64 内容，注意保留完整内容）
------END CERTIFICATE-----
-```
-
-### 第三步：在 Niubility 管理后台配置 SSO
+### 第二步：在 Niubility 管理后台配置 SSO
 
 进入 **管理后台 → 系统配置 → SSO 配置**，填写以下内容：
 
@@ -45,13 +35,12 @@
 |------|-----|
 | SSO 类型 | `SAML 2.0` |
 | IdP Metadata URL | `{SSO_HOST}/saml2/meta` |
-| IdP Entity ID | `{SSO_HOST}/saml2/meta` |
-| IdP SSO URL | `{SSO_HOST}` |
-| IdP Certificate (PEM) | 第二步中提取的 PEM 证书 |
+
+系统会自动从 Metadata URL 解析 Entity ID、SSO URL 和证书，无需手动配置。
 
 点击 **保存配置**。
 
-### 第四步：在七牛 SSO 注册 SP（关键步骤）
+### 第三步：在七牛 SSO 注册 SP（关键步骤）
 
 七牛 SSO 使用**文件方式**管理 SP 注册。SP metadata XML 文件必须放到七牛 SSO 的 `sp_conf_dir` 目录并重启服务后才能生效。
 
@@ -79,7 +68,7 @@
 
 6. **重启七牛 SSO 服务**（SP 配置仅在启动时加载，不支持热更新）
 
-### 第五步：验证
+### 第四步：验证
 
 1. 打开 Niubility 登录页面，应显示 SSO 登录按钮
 2. 点击 SSO 登录，应跳转到七牛 SSO 的 LDAP 登录页

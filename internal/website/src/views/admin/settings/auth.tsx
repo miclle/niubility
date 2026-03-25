@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
-import { UserPlus, Globe, Shield } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { UserPlus, Globe, Shield, Copy, Download } from 'lucide-react'
 
 import { MASKED_VALUE, useSettings, useSaveSettings, SettingsLoading, SettingsFeedback, SaveButton } from './shared'
 
@@ -20,8 +21,37 @@ function SettingsAuth() {
   const [ssoType, setSSOType] = useState<SSOType>('disabled')
   const [oidcForm, setOidcForm] = useState({ issuer: '', client_id: '', client_secret: '' })
   const [hasExistingOidcSecret, setHasExistingOidcSecret] = useState(false)
-  const [samlForm, setSamlForm] = useState({ idp_metadata_url: '', idp_entity_id: '', idp_sso_url: '', idp_certificate: '' })
-  const [hasExistingSamlCert, setHasExistingSamlCert] = useState(false)
+  const [samlMetadataURL, setSamlMetadataURL] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  const spMetadataURL = `${window.location.origin}/sso/metadata`
+
+  const handleCopyURL = async () => {
+    try {
+      await navigator.clipboard.writeText(spMetadataURL)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea')
+      textArea.value = spMetadataURL
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  const handleDownloadXML = () => {
+    const link = document.createElement('a')
+    link.href = spMetadataURL
+    link.download = 'sp-metadata.xml'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   useEffect(() => {
     if (loading) return
@@ -43,16 +73,7 @@ function SettingsAuth() {
     }
     setOidcForm(oidc)
 
-    const saml = { idp_metadata_url: '', idp_entity_id: '', idp_sso_url: '', idp_certificate: '' }
-    saml.idp_metadata_url = settingsMap['sso_saml_idp_metadata_url'] || ''
-    saml.idp_entity_id = settingsMap['sso_saml_idp_entity_id'] || ''
-    saml.idp_sso_url = settingsMap['sso_saml_idp_sso_url'] || ''
-    if (settingsMap['sso_saml_idp_certificate'] === MASKED_VALUE) {
-      setHasExistingSamlCert(true)
-    } else {
-      saml.idp_certificate = settingsMap['sso_saml_idp_certificate'] || ''
-    }
-    setSamlForm(saml)
+    setSamlMetadataURL(settingsMap['sso_saml_idp_metadata_url'] || '')
   }, [loading, settingsMap])
 
   const handleSave = () => {
@@ -64,15 +85,10 @@ function SettingsAuth() {
       'sso_type': ssoType,
       'sso_oidc_issuer': oidcForm.issuer,
       'sso_oidc_client_id': oidcForm.client_id,
-      'sso_saml_idp_metadata_url': samlForm.idp_metadata_url,
-      'sso_saml_idp_entity_id': samlForm.idp_entity_id,
-      'sso_saml_idp_sso_url': samlForm.idp_sso_url,
+      'sso_saml_idp_metadata_url': samlMetadataURL,
     }
     if (oidcForm.client_secret || !hasExistingOidcSecret) {
       settings['sso_oidc_client_secret'] = oidcForm.client_secret
-    }
-    if (samlForm.idp_certificate || !hasExistingSamlCert) {
-      settings['sso_saml_idp_certificate'] = samlForm.idp_certificate
     }
     save(settings)
   }
@@ -194,54 +210,32 @@ function SettingsAuth() {
           {ssoType === 'saml' && (
             <div className="space-y-4 pt-2" style={{ borderTop: '1px solid #f0f0f0' }}>
               <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>IdP Metadata URL（可选）</label>
+                <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>IdP Metadata URL（身份提供者）</label>
                 <Input
-                  placeholder="https://sso.example.com/metadata"
-                  value={samlForm.idp_metadata_url}
-                  onChange={(e) => setSamlForm({ ...samlForm, idp_metadata_url: e.target.value })}
+                  placeholder="https://sso.example.com/saml2/meta"
+                  value={samlMetadataURL}
+                  onChange={(e) => setSamlMetadataURL(e.target.value)}
                 />
-                <p className="text-xs mt-1" style={{ color: '#909090' }}>IdP 的 SAML Metadata URL，用于参考配置</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>IdP Entity ID</label>
-                <Input
-                  placeholder="https://sso.example.com"
-                  value={samlForm.idp_entity_id}
-                  onChange={(e) => setSamlForm({ ...samlForm, idp_entity_id: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>IdP SSO URL</label>
-                <Input
-                  placeholder="https://sso.example.com/saml/sso"
-                  value={samlForm.idp_sso_url}
-                  onChange={(e) => setSamlForm({ ...samlForm, idp_sso_url: e.target.value })}
-                />
-                <p className="text-xs mt-1" style={{ color: '#909090' }}>IdP 的 SAML 单点登录端点地址</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
-                  IdP Certificate (PEM)
-                  {hasExistingSamlCert && (
-                    <span className="ml-2 text-xs" style={{ color: '#166534' }}>(已设置，留空保持不变)</span>
-                  )}
-                </label>
-                <textarea
-                  className="w-full px-3 py-2 border rounded-md text-sm font-mono"
-                  style={{ borderColor: '#e5e5e5', minHeight: '120px' }}
-                  placeholder={hasExistingSamlCert ? '留空保持现有证书不变' : '-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----'}
-                  value={samlForm.idp_certificate}
-                  onChange={(e) => setSamlForm({ ...samlForm, idp_certificate: e.target.value })}
-                />
+                <p className="text-xs mt-1" style={{ color: '#909090' }}>IdP 的 SAML Metadata URL，系统将自动解析 Entity ID、SSO URL 和证书</p>
               </div>
               <div className="p-3 rounded-lg" style={{ background: '#f0f9ff', border: '1px solid #bae6fd' }}>
-                <p className="text-sm font-medium" style={{ color: '#0369a1' }}>SP Metadata</p>
+                <p className="text-sm font-medium" style={{ color: '#0369a1' }}>SP Metadata（服务提供者，即本系统）</p>
                 <p className="text-xs mt-1" style={{ color: '#0369a1' }}>
-                  将以下地址提供给 IdP 以导入 SP 配置：
+                  将以下地址提供给身份提供者（IdP）管理员以导入本系统配置：
                 </p>
                 <code className="block text-xs mt-1 p-2 rounded" style={{ background: '#e0f2fe', color: '#0c4a6e' }}>
-                  {window.location.origin}/sso/metadata
+                  {spMetadataURL}
                 </code>
+                <div className="flex gap-2 mt-2">
+                  <Button variant="outline" size="sm" onClick={handleCopyURL} className="h-7 text-xs">
+                    <Copy size={12} className="mr-1" />
+                    {copied ? '已复制' : '复制链接'}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleDownloadXML} className="h-7 text-xs">
+                    <Download size={12} className="mr-1" />
+                    下载 XML
+                  </Button>
+                </div>
               </div>
             </div>
           )}
@@ -253,7 +247,7 @@ function SettingsAuth() {
       <div className="p-4 rounded-xl" style={{ background: '#f9f9f9', border: '1px solid #e5e5e5' }}>
         <div className="flex items-center gap-2">
           <Shield size={14} style={{ color: '#166534' }} />
-          <span className="text-xs" style={{ color: '#166534' }}>敏感信息（如 Secret、Certificate）使用 AES-256-GCM 加密存储</span>
+          <span className="text-xs" style={{ color: '#166534' }}>敏感信息（如 Client Secret、Secret Key）使用 AES-256-GCM 加密存储</span>
         </div>
       </div>
     </div>

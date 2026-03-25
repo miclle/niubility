@@ -41,12 +41,6 @@ const (
 	// SAML settings.
 	// SettingSSOSAMLIDPMetadataURL is the SAML IdP metadata URL.
 	SettingSSOSAMLIDPMetadataURL = "sso_saml_idp_metadata_url"
-	// SettingSSOSAMLIDPEntityID is the SAML IdP entity ID.
-	SettingSSOSAMLIDPEntityID = "sso_saml_idp_entity_id"
-	// SettingSSOSAMLIDPSSOURL is the SAML IdP SSO endpoint URL.
-	SettingSSOSAMLIDPSSOURL = "sso_saml_idp_sso_url"
-	// SettingSSOSAMLIDPCertificate is the SAML IdP signing certificate (PEM, encrypted in storage).
-	SettingSSOSAMLIDPCertificate = "sso_saml_idp_certificate"
 )
 
 // Setting key constants for WeChat configuration.
@@ -91,9 +85,6 @@ type OIDCConfig struct {
 // SAMLConfig represents the SAML 2.0 configuration extracted from settings.
 type SAMLConfig struct {
 	IDPMetadataURL string
-	IDPEntityID    string
-	IDPSSOURL      string
-	IDPCertificate string
 }
 
 // S3Config represents the S3 storage configuration extracted from settings.

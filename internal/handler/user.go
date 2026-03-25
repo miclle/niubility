@@ -165,6 +165,12 @@ func (ctrl *Ctrl) getSAMLProvider(c *fox.Context) (*sso.SAMLProvider, error) {
 		return nil, fmt.Errorf("SAML not configured")
 	}
 
+	// Fetch and parse IdP metadata
+	metadata, err := sso.ParseIDPMetadata(ctx, cfg.IDPMetadataURL)
+	if err != nil {
+		return nil, fmt.Errorf("parse IdP metadata: %w", err)
+	}
+
 	scheme := "https"
 	if c.Request.TLS == nil {
 		scheme = "http"
@@ -172,9 +178,9 @@ func (ctrl *Ctrl) getSAMLProvider(c *fox.Context) (*sso.SAMLProvider, error) {
 	baseURL := fmt.Sprintf("%s://%s", scheme, c.Request.Host)
 
 	return sso.NewSAMLProvider(sso.SAMLConfig{
-		IDPEntityID:    cfg.IDPEntityID,
-		IDPSSOURL:      cfg.IDPSSOURL,
-		IDPCertificate: cfg.IDPCertificate,
+		IDPEntityID:    metadata.EntityID,
+		IDPSSOURL:      metadata.SSOURL,
+		IDPCertificate: metadata.Certificate,
 		SPEntityID:     baseURL + "/sso/metadata",
 		SPACSURL:       baseURL + "/sso/acs",
 	})
@@ -205,17 +211,7 @@ func (ctrl *Ctrl) buildSSOLoginURL(c *fox.Context) string {
 		return provider.AuthURL(state, baseURL+"/sso/callback")
 
 	case "saml":
-		cfg, err := ctrl.service.GetSAMLConfig(ctx)
-		if err != nil || cfg == nil {
-			return ""
-		}
-		provider, err := sso.NewSAMLProvider(sso.SAMLConfig{
-			IDPEntityID:    cfg.IDPEntityID,
-			IDPSSOURL:      cfg.IDPSSOURL,
-			IDPCertificate: cfg.IDPCertificate,
-			SPEntityID:     baseURL + "/sso/metadata",
-			SPACSURL:       baseURL + "/sso/acs",
-		})
+		provider, err := ctrl.getSAMLProvider(c)
 		if err != nil {
 			return ""
 		}

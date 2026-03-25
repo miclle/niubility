@@ -7,10 +7,98 @@ import (
 	"encoding/pem"
 	"encoding/xml"
 	"fmt"
+	"io"
+	"net/http"
 	"net/url"
+	"strings"
+	"time"
 
 	"github.com/crewjam/saml"
 )
+
+// httpClient is used for fetching metadata. Can be overridden for testing.
+var httpClient = &http.Client{Timeout: 10 * time.Second}
+
+// IDPMetadata contains the parsed IdP metadata information.
+type IDPMetadata struct {
+	EntityID    string
+	SSOURL      string
+	Certificate string // PEM-encoded certificate
+}
+
+// ParseIDPMetadata fetches and parses SAML IdP metadata from the given URL.
+func ParseIDPMetadata(ctx context.Context, metadataURL string) (*IDPMetadata, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", metadataURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("fetch metadata: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("fetch metadata: status %d", resp.StatusCode)
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read metadata: %w", err)
+	}
+
+	return ParseIDPMetadataXML(data)
+}
+
+// ParseIDPMetadataXML parses SAML IdP metadata from XML bytes.
+func ParseIDPMetadataXML(data []byte) (*IDPMetadata, error) {
+	// Use crewjam/saml to parse the metadata
+	metadata := &saml.EntityDescriptor{}
+	if err := xml.Unmarshal(data, metadata); err != nil {
+		return nil, fmt.Errorf("parse metadata XML: %w", err)
+	}
+
+	result := &IDPMetadata{
+		EntityID: metadata.EntityID,
+	}
+
+	// Extract from IDPSSODescriptor
+	if len(metadata.IDPSSODescriptors) > 0 {
+		idp := metadata.IDPSSODescriptors[0]
+
+		// Get SSO URL from SingleSignOnService (prefer HTTP-Redirect binding)
+		for _, sso := range idp.SingleSignOnServices {
+			if sso.Binding == string(saml.HTTPRedirectBinding) || sso.Binding == string(saml.HTTPPostBinding) {
+				result.SSOURL = sso.Location
+				break
+			}
+		}
+
+		// Get signing certificate
+		for _, kd := range idp.KeyDescriptors {
+			if kd.Use == "signing" || kd.Use == "" {
+				if len(kd.KeyInfo.X509Data.X509Certificates) > 0 {
+					certData := kd.KeyInfo.X509Data.X509Certificates[0].Data
+					result.Certificate = certToPEM(certData)
+					break
+				}
+			}
+		}
+	}
+
+	if result.EntityID == "" {
+		return nil, fmt.Errorf("metadata missing EntityID")
+	}
+
+	return result, nil
+}
+
+// certToPEM converts a base64 certificate to PEM format.
+func certToPEM(base64Cert string) string {
+	cert := strings.TrimSpace(base64Cert)
+	return "-----BEGIN CERTIFICATE-----\n" + cert + "\n-----END CERTIFICATE-----"
+}
 
 // SAMLProvider implements the Provider interface using SAML 2.0.
 type SAMLProvider struct {

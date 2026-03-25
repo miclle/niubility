@@ -13,10 +13,9 @@ import (
 
 // sensitiveKeys are setting keys that should be encrypted in storage.
 var sensitiveKeys = map[string]bool{
-	entity.SettingWechatAppSecret:       true,
-	entity.SettingSSOOIDCClientSecret:   true,
-	entity.SettingSSOSAMLIDPCertificate: true,
-	entity.SettingS3SecretKey:           true,
+	entity.SettingWechatAppSecret:     true,
+	entity.SettingSSOOIDCClientSecret: true,
+	entity.SettingS3SecretKey:         true,
 }
 
 // GetSetting retrieves a setting value by key.
@@ -165,22 +164,16 @@ func (s *Service) GetOIDCConfig(ctx context.Context) (*entity.OIDCConfig, error)
 }
 
 // GetSAMLConfig retrieves the SAML 2.0 configuration from settings.
-// Returns nil if IdP SSO URL is not configured.
+// If IdP Metadata URL is provided, it fetches and parses the metadata to get EntityID, SSO URL, and Certificate.
+// Returns nil if IdP Metadata URL is not configured.
 func (s *Service) GetSAMLConfig(ctx context.Context) (*entity.SAMLConfig, error) {
-	ssoURL, err := s.GetSetting(ctx, entity.SettingSSOSAMLIDPSSOURL)
-	if err != nil || ssoURL == "" {
+	metadataURL, err := s.GetSetting(ctx, entity.SettingSSOSAMLIDPMetadataURL)
+	if err != nil || metadataURL == "" {
 		return nil, err
 	}
 
-	metadataURL, _ := s.GetSetting(ctx, entity.SettingSSOSAMLIDPMetadataURL)
-	entityID, _ := s.GetSetting(ctx, entity.SettingSSOSAMLIDPEntityID)
-	certificate, _ := s.GetSetting(ctx, entity.SettingSSOSAMLIDPCertificate)
-
 	return &entity.SAMLConfig{
 		IDPMetadataURL: metadataURL,
-		IDPEntityID:    entityID,
-		IDPSSOURL:      ssoURL,
-		IDPCertificate: certificate,
 	}, nil
 }
 
