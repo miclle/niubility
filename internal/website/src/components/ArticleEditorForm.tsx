@@ -10,29 +10,13 @@ import { searchUsers } from 'src/api/user'
 import { uploadFile } from 'src/api/upload'
 import { computeFileChecksum } from 'src/lib/file-checksum'
 import { formatFileSize } from 'src/lib/utils'
+import { newDocumentItem } from 'src/lib/document'
 import { useAppContext } from 'src/context/app'
 import ImageUpload from 'src/components/ImageUpload'
 import RichTextEditor from 'src/components/RichTextEditor'
 import type { ContentStatus, CreateContentArgs, CreateAttachmentArgs } from 'src/types/content'
 import type { SearchUserItem } from 'src/types/user'
-
-// DocumentItem is a local state item for document attachments.
-interface DocumentItem {
-  localId: string
-  title: string
-  filename: string
-  url: string
-  mimeType: string
-  checksum: string
-  fileSize: number
-  uploading: boolean
-  progress: number
-}
-
-let documentItemCounter = 0
-function newDocumentItem(overrides?: Partial<DocumentItem>): DocumentItem {
-  return { localId: `doc_${++documentItemCounter}`, title: '', filename: '', url: '', mimeType: '', checksum: '', fileSize: 0, uploading: false, progress: 0, ...overrides }
-}
+import type { DocumentItem } from 'src/lib/document'
 
 // ArticleEditorFormProps defines the configurable behavior of the article editor form.
 export interface ArticleEditorFormProps {

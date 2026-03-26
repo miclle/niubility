@@ -14,10 +14,12 @@ import { searchUsers } from 'src/api/user'
 import { uploadFile, fileURL } from 'src/api/upload'
 import { computeFileChecksum } from 'src/lib/file-checksum'
 import { formatFileSize } from 'src/lib/utils'
+import { newDocumentItem } from 'src/lib/document'
 import { useAppContext } from 'src/context/app'
 import ImageUpload from 'src/components/ImageUpload'
 import type { ContentStatus, CreateContentArgs, CreateAttachmentArgs } from 'src/types/content'
 import type { SearchUserItem } from 'src/types/user'
+import type { DocumentItem } from 'src/lib/document'
 
 // VideoEditorFormProps defines the configurable behavior of the video editor form.
 export interface VideoEditorFormProps {
@@ -47,24 +49,6 @@ interface VideoItem {
 let videoItemCounter = 0
 function newVideoItem(overrides?: Partial<VideoItem>): VideoItem {
   return { localId: `vid_${++videoItemCounter}`, title: '', description: '', url: '', coverUrl: '', filename: '', mimeType: '', checksum: '', fileSize: 0, duration: 0, uploading: false, progress: 0, ...overrides }
-}
-
-// DocumentItem is a local state item for document attachments.
-interface DocumentItem {
-  localId: string
-  title: string
-  filename: string
-  url: string
-  mimeType: string
-  checksum: string
-  fileSize: number
-  uploading: boolean
-  progress: number
-}
-
-let documentItemCounter = 0
-function newDocumentItem(overrides?: Partial<DocumentItem>): DocumentItem {
-  return { localId: `doc_${++documentItemCounter}`, title: '', filename: '', url: '', mimeType: '', checksum: '', fileSize: 0, uploading: false, progress: 0, ...overrides }
 }
 
 // SortableVideoItem renders a single draggable video item in the playlist.
