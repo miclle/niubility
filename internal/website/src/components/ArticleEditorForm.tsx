@@ -18,6 +18,8 @@ import type { ContentStatus, CreateContentArgs, CreateAttachmentArgs } from 'src
 import type { SearchUserItem } from 'src/types/user'
 import type { DocumentItem } from 'src/lib/document'
 
+let documentItemCounter = 0
+
 // ArticleEditorFormProps defines the configurable behavior of the article editor form.
 export interface ArticleEditorFormProps {
   id?: string

@@ -276,7 +276,7 @@ export default function ProfileLayout() {
 
       {/* Child route content */}
       <div className="mx-auto p-6" style={{ maxWidth: 1284 }}>
-        <Outlet context={{ profile, setProfile, currentUser } satisfies ProfileContext} />
+        <Outlet context={{ profile, setProfile, currentUser: currentUser ?? undefined } satisfies ProfileContext} />
       </div>
     </>
   )

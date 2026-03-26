@@ -47,6 +47,7 @@ interface VideoItem {
 }
 
 let videoItemCounter = 0
+let documentItemCounter = 0
 function newVideoItem(overrides?: Partial<VideoItem>): VideoItem {
   return { localId: `vid_${++videoItemCounter}`, title: '', description: '', url: '', coverUrl: '', filename: '', mimeType: '', checksum: '', fileSize: 0, duration: 0, uploading: false, progress: 0, ...overrides }
 }
