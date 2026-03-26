@@ -444,21 +444,21 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
       <div className="flex items-center gap-3 pt-4" style={{ borderTop: '1px solid #e5e5e5' }}>
         {(isNew || contentStatus === 'draft') ? (
           <>
-            <Button type="button" variant="outline" disabled={saving || !title.trim() || items.length === 0} onClick={() => handleSubmit('draft')}>
+            <Button type="button" variant="outline" disabled={saving || uploading || !title.trim() || items.length === 0} onClick={() => handleSubmit('draft')}>
               <Save size={16} />
               {saving ? '保存中...' : '保存草稿'}
             </Button>
-            <Button type="button" disabled={saving || !title.trim() || items.length === 0} onClick={() => handleSubmit('published')} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
+            <Button type="button" disabled={saving || uploading || !title.trim() || items.length === 0} onClick={() => handleSubmit('published')} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
               {saving ? '发布中...' : '发布'}
             </Button>
           </>
         ) : (
           <>
-            <Button type="button" disabled={saving || !title.trim() || items.length === 0} onClick={() => handleSubmit('published')} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
+            <Button type="button" disabled={saving || uploading || !title.trim() || items.length === 0} onClick={() => handleSubmit('published')} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
               <Save size={16} />
               {saving ? '保存中...' : '保存'}
             </Button>
-            <Button type="button" variant="outline" disabled={saving} onClick={() => handleSubmit('draft')}>
+            <Button type="button" variant="outline" disabled={saving || uploading} onClick={() => handleSubmit('draft')}>
               转为草稿
             </Button>
           </>

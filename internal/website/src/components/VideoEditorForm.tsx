@@ -144,6 +144,7 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
 
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [uploadError, setUploadError] = useState('')
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -251,27 +252,38 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
 
   // handleUploadFiles uploads one or more video files, creating VideoItem entries with upload progress.
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const handleUploadFiles = useCallback((files: File[]) => {
+  const videosRef = useRef<VideoItem[]>([])
+  videosRef.current = videos // Keep ref in sync with state
+
+  const handleUploadFiles = useCallback(async (files: File[]) => {
     const videoFiles = files.filter((f) => f.type.startsWith('video/'))
     if (videoFiles.length === 0) return
+    setUploadError('') // Clear previous errors
 
     for (const file of videoFiles) {
-      const item = newVideoItem({ filename: file.name, mimeType: file.type, fileSize: file.size, uploading: true })
-      const localId = item.localId
-      setVideos((prev) => [...prev, item])
+      try {
+        // Compute checksum first to check for duplicates
+        const checksum = await computeFileChecksum(file)
 
-      // Upload file and compute checksum in parallel
-      Promise.all([
-        uploadFile(file, (percent) => {
+        // Check for duplicates in existing videos (use ref to avoid stale closure)
+        const existingVideo = videosRef.current.find((v) => v.checksum === checksum && v.checksum !== '')
+        if (existingVideo) {
+          setUploadError(`视频 ${file.name} 与已有视频 "${existingVideo.filename}" 内容相同，已跳过`)
+          continue
+        }
+
+        const item = newVideoItem({ filename: file.name, mimeType: file.type, fileSize: file.size, checksum, uploading: true })
+        const localId = item.localId
+        setVideos((prev) => [...prev, item])
+
+        // Upload file
+        const key = await uploadFile(file, (percent) => {
           setVideos((prev) => prev.map((v) => v.localId === localId ? { ...v, progress: percent } : v))
-        }),
-        computeFileChecksum(file),
-      ]).then(([key, checksum]) => {
-        setVideos((prev) => prev.map((v) => v.localId === localId ? { ...v, url: key, checksum, uploading: false, progress: 100 } : v))
-      }).catch(() => {
-        // Remove failed item
-        setVideos((prev) => prev.filter((v) => v.localId !== localId))
-      })
+        })
+        setVideos((prev) => prev.map((v) => v.localId === localId ? { ...v, url: key, uploading: false, progress: 100 } : v))
+      } catch (err) {
+        setUploadError(`视频 ${file.name} 上传失败: ${err instanceof Error ? err.message : '未知错误'}`)
+      }
     }
   }, [])
 
@@ -427,6 +439,9 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
       {/* Video Upload Area */}
       <div>
         <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>上传视频 *</label>
+        {uploadError && (
+          <div className="text-xs mb-2 p-2 rounded" style={{ color: '#cc0000', background: '#fff0f0' }}>{uploadError}</div>
+        )}
         <div
           className="rounded-lg cursor-pointer transition-colors flex flex-col items-center justify-center gap-2 p-8"
           style={{ border: '2px dashed #d4d4d4', background: '#fafafa' }}
@@ -587,21 +602,21 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
       <div className="flex items-center gap-3 pt-4" style={{ borderTop: '1px solid #e5e5e5' }}>
         {(isNew || contentStatus === 'draft') ? (
           <>
-            <Button type="button" variant="outline" disabled={saving || !title.trim()} onClick={() => handleSubmit('draft')}>
+            <Button type="button" variant="outline" disabled={saving || !title.trim() || videos.some((v) => v.uploading) || documents.some((d) => d.uploading)} onClick={() => handleSubmit('draft')}>
               <Save size={16} />
               {saving ? '保存中...' : '保存草稿'}
             </Button>
-            <Button type="button" disabled={saving || !title.trim()} onClick={() => handleSubmit('published')} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
+            <Button type="button" disabled={saving || !title.trim() || videos.some((v) => v.uploading) || documents.some((d) => d.uploading)} onClick={() => handleSubmit('published')} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
               {saving ? '发布中...' : '发布'}
             </Button>
           </>
         ) : (
           <>
-            <Button type="button" disabled={saving || !title.trim()} onClick={() => handleSubmit('published')} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
+            <Button type="button" disabled={saving || !title.trim() || videos.some((v) => v.uploading) || documents.some((d) => d.uploading)} onClick={() => handleSubmit('published')} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
               <Save size={16} />
               {saving ? '保存中...' : '保存'}
             </Button>
-            <Button type="button" variant="outline" disabled={saving} onClick={() => handleSubmit('draft')}>
+            <Button type="button" variant="outline" disabled={saving || videos.some((v) => v.uploading) || documents.some((d) => d.uploading)} onClick={() => handleSubmit('draft')}>
               转为草稿
             </Button>
           </>

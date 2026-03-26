@@ -29,18 +29,15 @@ export async function computeFileChecksum(file: File): Promise<string> {
   final.set(new Uint8Array(buffer), 0)
   final.set(new Uint8Array(sizeBytes), buffer.byteLength)
 
-  // crypto.subtle is unavailable in insecure contexts (non-HTTPS).
-  // Fall back to a simple hash when it is missing, ensuring the result is exactly 64 hex chars.
-  if (!crypto.subtle) {
-    // Use the first 32 bytes of the file data, then hash with a simple algorithm
-    // to produce a consistent 64-character hex string
-    const data = final.slice(0, 32)
-    const hash = simpleHash(data)
-    return hash
+  // Use crypto.subtle if available (HTTPS or localhost)
+  // Fall back to a simple hash that includes more data for uniqueness
+  if (crypto.subtle) {
+    const hash = await crypto.subtle.digest('SHA-256', final)
+    return Array.from(new Uint8Array(hash)).map((b) => b.toString(16).padStart(2, '0')).join('')
   }
 
-  const hash = await crypto.subtle.digest('SHA-256', final)
-  return Array.from(new Uint8Array(hash)).map((b) => b.toString(16).padStart(2, '0')).join('')
+  // Fallback: hash the entire data (not just first 32 bytes) for better uniqueness
+  return simpleHash(final)
 }
 
 // simpleHash produces a 64-character hex hash from a byte array using a simple algorithm.
