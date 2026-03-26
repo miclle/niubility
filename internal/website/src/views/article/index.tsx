@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ThumbsUp, Share2, MessageCircle, Pencil, Bookmark } from 'lucide-react'
+import { ThumbsUp, Share2, MessageCircle, Pencil, Bookmark, Download, FileText } from 'lucide-react'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
@@ -14,6 +14,13 @@ import type { Content } from 'src/types/content'
 
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
+
+// formatFileSize formats a file size in bytes to a human-readable string.
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
 
 // ArticleDetail displays a single article content item in a Medium-style layout.
 function ArticleDetail() {
@@ -60,6 +67,40 @@ function ArticleDetail() {
   const isDraft = content.status === 'draft'
   const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin' || currentUser.id === content.author_id)
 
+  const renderDocuments = () => {
+    const docs = (content.attachments || []).filter((a) => a.type === 'document')
+    if (docs.length === 0) return null
+
+    return (
+      <div className="mb-8 p-4 rounded-xl" style={{ background: '#fff', border: '1px solid #e5e5e5' }}>
+        <h3 className="text-base font-medium mb-3" style={{ color: '#0f0f0f' }}>资料下载</h3>
+        <div className="space-y-2">
+          {docs.map((doc) => (
+            <a
+              key={doc.id}
+              href={doc.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+              style={{ border: '1px solid #e5e5e5' }}
+            >
+              <FileText size={20} style={{ color: '#909090' }} />
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium truncate" style={{ color: '#0f0f0f' }}>
+                  {doc.title || doc.filename}
+                </div>
+                <div className="text-xs" style={{ color: '#909090' }}>
+                  {doc.filename} • {formatFileSize(doc.file_size)}
+                </div>
+              </div>
+              <Download size={16} style={{ color: '#909090' }} />
+            </a>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   const draftBanner = isDraft ? (
     <div className="mb-4 px-4 py-3 rounded-xl text-sm font-medium" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
       草稿预览 — 此内容尚未发布，仅作者可见
@@ -104,6 +145,9 @@ function ArticleDetail() {
             dangerouslySetInnerHTML={{ __html: content.body }}
           />
         )}
+
+        {/* Document Attachments */}
+        {renderDocuments()}
 
         {/* Tags */}
         {content.tags?.length > 0 && (

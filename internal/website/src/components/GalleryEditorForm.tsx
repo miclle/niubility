@@ -5,7 +5,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { Save, X, Plus, GripVertical, Trash2, Star, Upload, Loader2 } from 'lucide-react'
 
 import { getContent, createContent, updateContent } from 'src/api/content'

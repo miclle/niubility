@@ -267,7 +267,8 @@ function VideoDetail() {
             <a
               key={doc.id}
               href={doc.url}
-              download={doc.filename}
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
               style={{ border: '1px solid #e5e5e5' }}
             >

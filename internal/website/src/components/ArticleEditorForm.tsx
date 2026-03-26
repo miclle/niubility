@@ -1,17 +1,44 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Save, X, Plus } from 'lucide-react'
+import { Save, X, Plus, FileText, Trash2 } from 'lucide-react'
 
 import { getContent, createContent, updateContent } from 'src/api/content'
 import { searchUsers } from 'src/api/user'
+import { uploadFile } from 'src/api/upload'
+import { computeFileChecksum } from 'src/lib/file-checksum'
 import { useAppContext } from 'src/context/app'
 import ImageUpload from 'src/components/ImageUpload'
 import RichTextEditor from 'src/components/RichTextEditor'
 import type { ContentStatus, CreateContentArgs, CreateAttachmentArgs } from 'src/types/content'
 import type { SearchUserItem } from 'src/types/user'
+
+// formatFileSize formats a file size in bytes to a human-readable string.
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
+
+// DocumentItem is a local state item for document attachments.
+interface DocumentItem {
+  localId: string
+  title: string
+  filename: string
+  url: string
+  mimeType: string
+  checksum: string
+  fileSize: number
+  uploading: boolean
+  progress: number
+}
+
+let documentItemCounter = 0
+function newDocumentItem(overrides?: Partial<DocumentItem>): DocumentItem {
+  return { localId: `doc_${++documentItemCounter}`, title: '', filename: '', url: '', mimeType: '', checksum: '', fileSize: 0, uploading: false, progress: 0, ...overrides }
+}
 
 // ArticleEditorFormProps defines the configurable behavior of the article editor form.
 export interface ArticleEditorFormProps {
@@ -34,6 +61,7 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
   const [category, setCategory] = useState<string>(categories[0]?.slug || '')
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
+  const [documents, setDocuments] = useState<DocumentItem[]>([])
   const [contentStatus, setContentStatus] = useState<ContentStatus>('draft')
 
   // Speaker state
@@ -75,6 +103,21 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
         setTags(c.tags || [])
         setContentStatus(c.status || 'published')
 
+        // Load document attachments
+        if (c.attachments && c.attachments.length > 0) {
+          setDocuments(c.attachments.filter((m) => m.type === 'document').map((m) => ({
+            localId: m.id || `doc_${++documentItemCounter}`,
+            title: m.title || '',
+            filename: m.filename || '',
+            url: m.url,
+            mimeType: m.mime_type || '',
+            checksum: m.checksum || '',
+            fileSize: m.file_size,
+            uploading: false,
+            progress: 0,
+          })))
+        }
+
         if (c.speaker_id && c.speaker) {
           setSpeakerId(c.speaker_id)
           setSelectedSpeaker({ id: c.speaker.id, name: c.speaker.name, avatar: c.speaker.avatar })
@@ -114,6 +157,40 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
 
   const handleClearSpeaker = () => { setSpeakerId(''); setSelectedSpeaker(null); setSpeakerInput('') }
 
+  // handleDocumentUpload uploads one or more document files.
+  const docInputRef = useRef<HTMLInputElement>(null)
+  const handleDocumentUpload = useCallback((files: File[]) => {
+    const docFiles = files.filter((f) => !f.type.startsWith('image/'))
+    if (docFiles.length === 0) return
+
+    for (const file of docFiles) {
+      const item = newDocumentItem({ filename: file.name, mimeType: file.type, fileSize: file.size, uploading: true })
+      const localId = item.localId
+      setDocuments((prev) => [...prev, item])
+
+      // Upload file and compute checksum in parallel
+      Promise.all([
+        uploadFile(file, (percent) => {
+          setDocuments((prev) => prev.map((d) => d.localId === localId ? { ...d, progress: percent } : d))
+        }),
+        computeFileChecksum(file),
+      ]).then(([key, checksum]) => {
+        setDocuments((prev) => prev.map((d) => d.localId === localId ? { ...d, url: key, checksum, uploading: false, progress: 100 } : d))
+      }).catch(() => {
+        // Remove failed item
+        setDocuments((prev) => prev.filter((d) => d.localId !== localId))
+      })
+    }
+  }, [])
+
+  const handleDocumentChange = useCallback((localId: string, field: keyof DocumentItem, value: string | number) => {
+    setDocuments((prev) => prev.map((d) => d.localId === localId ? { ...d, [field]: value } : d))
+  }, [])
+
+  const handleRemoveDocument = useCallback((localId: string) => {
+    setDocuments((prev) => prev.filter((d) => d.localId !== localId))
+  }, [])
+
   const handleAddTag = () => {
     const tag = tagInput.trim()
     if (tag && !tags.includes(tag)) setTags([...tags, tag])
@@ -140,6 +217,20 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
         mediaItems.push({ url: match[1], type: 'image', sort_order: sortOrder++ })
       }
 
+      // Add document attachments
+      const documentItems: CreateAttachmentArgs[] = documents.filter((d) => d.url).map((d, i) => ({
+        title: d.title || d.filename,
+        filename: d.filename,
+        mime_type: d.mimeType,
+        checksum: d.checksum,
+        url: d.url,
+        type: 'document' as const,
+        sort_order: mediaItems.length + i,
+        file_size: d.fileSize,
+      }))
+
+      const allAttachments = [...mediaItems, ...documentItems]
+
       const data: CreateContentArgs = {
         title: title.trim(),
         body,
@@ -151,7 +242,7 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
         speaker_id: speakerId || '',
         speaker_name: speakerId ? '' : speakerInput.trim(),
         speaker_bio: speakerBio.trim(),
-        attachments: mediaItems,
+        attachments: allAttachments,
       }
 
       if (isNew) {
@@ -197,6 +288,61 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
       {/* Body - Rich Text Editor */}
       <div>
         <RichTextEditor value={body} onChange={setBody} />
+      </div>
+
+      {/* Document Attachments */}
+      <div>
+        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>资料附件</label>
+        <div
+          className="rounded-lg cursor-pointer transition-colors flex flex-col items-center justify-center gap-2 p-6"
+          style={{ border: '2px dashed #d4d4d4', background: '#fafafa' }}
+          onClick={() => docInputRef.current?.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => { e.preventDefault(); handleDocumentUpload(Array.from(e.dataTransfer.files)) }}
+        >
+          <FileText size={20} style={{ color: '#909090' }} />
+          <span className="text-sm" style={{ color: '#909090' }}>拖拽文件到此处或点击选择（PDF, PPT, DOC, XLS, TXT等）</span>
+        </div>
+        <input
+          ref={docInputRef}
+          type="file"
+          accept=".pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx,.txt,.md"
+          multiple
+          onChange={(e) => { if (e.target.files) handleDocumentUpload(Array.from(e.target.files)); e.target.value = '' }}
+          className="hidden"
+        />
+        {documents.length > 0 && (
+          <div className="mt-3 space-y-2">
+            {documents.map((doc) => (
+              <div key={doc.localId} className="flex items-center gap-3 p-3 rounded-lg" style={{ border: '1px solid #e5e5e5' }}>
+                <FileText size={20} style={{ color: '#909090' }} />
+                <div className="flex-1 min-w-0">
+                  <Input
+                    placeholder="文件标题（可选）"
+                    value={doc.title}
+                    onChange={(e) => handleDocumentChange(doc.localId, 'title', e.target.value)}
+                    className="mb-1"
+                  />
+                  <div className="text-xs truncate" style={{ color: '#909090' }}>
+                    {doc.filename} {doc.fileSize > 0 && `(${formatFileSize(doc.fileSize)})`}
+                  </div>
+                  {doc.uploading && (
+                    <div className="w-full h-1 rounded-full overflow-hidden mt-2" style={{ background: '#e5e5e5' }}>
+                      <div className="h-full rounded-full transition-all" style={{ width: `${doc.progress}%`, background: '#0f0f0f' }} />
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveDocument(doc.localId)}
+                  className="p-1.5 rounded hover:bg-red-50 transition-colors"
+                >
+                  <Trash2 size={14} style={{ color: '#cc0000' }} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Meta fields in a compact section */}
