@@ -9,6 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/miclle/niubility/internal/entity"
+	"github.com/miclle/niubility/internal/errors"
 )
 
 // LoginRequest represents the request body for password login.
@@ -28,11 +29,11 @@ func (ctrl *Ctrl) Login(c *fox.Context, req *LoginRequest) (any, error) {
 
 	user, err := ctrl.service.AuthenticateUser(ctx, req.Username, req.Password)
 	if err != nil {
-		return nil, httperrors.New(http.StatusUnauthorized, "用户名或密码错误")
+		return nil, httperrors.New(errors.ErrInvalidCredentials.Code, errors.ErrInvalidCredentials.Message)
 	}
 
 	if user.Status != entity.UserStatusActivated {
-		return nil, httperrors.New(http.StatusForbidden, "账户未激活，请联系管理员")
+		return nil, httperrors.New(errors.ErrAccountInactive.Code, errors.ErrAccountInactive.Message)
 	}
 
 	tokenString, err := ctrl.issueToken(user.Username)
@@ -59,7 +60,7 @@ func (ctrl *Ctrl) Register(c *fox.Context, req *RegisterRequest) (any, error) {
 	ctx := c.Logger.WithContext(c.Request.Context())
 
 	if !ctrl.service.IsRegistrationEnabled(ctx) {
-		return nil, httperrors.New(http.StatusForbidden, "用户注册未开放")
+		return nil, httperrors.New(errors.ErrRegistrationClosed.Code, errors.ErrRegistrationClosed.Message)
 	}
 
 	user, err := ctrl.service.RegisterUser(ctx, req.Username, req.Email, req.Password)
@@ -87,7 +88,7 @@ func (ctrl *Ctrl) ChangePassword(c *fox.Context, req *ChangePasswordRequest) (an
 	}
 
 	if len(req.NewPassword) < 6 {
-		return nil, httperrors.New(http.StatusBadRequest, "密码长度不能少于 6 位")
+		return nil, httperrors.New(errors.ErrPasswordTooShort.Code, errors.ErrPasswordTooShort.Message)
 	}
 
 	if err := ctrl.service.ChangePassword(ctx, user.ID, req.OldPassword, req.NewPassword); err != nil {

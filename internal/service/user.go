@@ -14,6 +14,7 @@ import (
 	"gorm.io/gorm/clause"
 
 	"github.com/miclle/niubility/internal/entity"
+	apperrors "github.com/miclle/niubility/internal/errors"
 )
 
 // GetUserByUsername retrieves a user by username.
@@ -549,7 +550,7 @@ func (s *Service) ChangePassword(ctx context.Context, userID, oldPassword, newPa
 	// If user has an existing password, verify the old password
 	if user.Password != "" {
 		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(oldPassword)); err != nil {
-			return fmt.Errorf("旧密码不正确")
+			return apperrors.ErrOldPasswordIncorrect
 		}
 	}
 
@@ -584,7 +585,12 @@ func (s *Service) GetUserTotalLikes(ctx context.Context, userID string) (int64, 
 	log := logger.NewWithContext(ctx)
 
 	var total int64
-	if err := s.db.WithContext(ctx).Model(&entity.Content{}).Where("author_id = ?", userID).Select("COALESCE(SUM(like_count), 0)").Row().Scan(&total); err != nil {
+	err := s.db.WithContext(ctx).
+		Model(&entity.Content{}).
+		Where("author_id = ?", userID).
+		Select("COALESCE(SUM(like_count), 0)").
+		Scan(&total).Error
+	if err != nil {
 		log.Errorf("sum user likes: %v", err)
 		return 0, fmt.Errorf("sum user likes: %w", err)
 	}
