@@ -156,6 +156,11 @@ func (ctrl *Ctrl) CreateContent(c *fox.Context, args entity.CreateContentArgs) (
 	// Admin can override creation time (e.g. for importing legacy content)
 	if args.CreatedAt != nil && user.IsAdmin() {
 		content.CreatedAt = *args.CreatedAt
+	}
+	if args.UpdatedAt != nil && user.IsAdmin() {
+		content.UpdatedAt = *args.UpdatedAt
+	} else if args.CreatedAt != nil && user.IsAdmin() {
+		// If only CreatedAt is specified, use it for UpdatedAt as well
 		content.UpdatedAt = *args.CreatedAt
 	}
 
@@ -189,6 +194,12 @@ func (ctrl *Ctrl) UpdateContent(c *fox.Context, args entity.UpdateContentArgs) (
 	}
 	if user.ID != existing.AuthorID && !user.IsAdmin() {
 		return nil, httperrors.ErrForbidden
+	}
+
+	// Only admin can override timestamps
+	if !user.IsAdmin() {
+		args.CreatedAt = nil
+		args.UpdatedAt = nil
 	}
 
 	content, err := ctrl.service.UpdateContent(ctx, id, args)

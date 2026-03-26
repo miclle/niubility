@@ -264,6 +264,13 @@ func (s *Service) UpdateContent(ctx context.Context, id string, args entity.Upda
 	if args.Status != nil {
 		updates["status"] = *args.Status
 	}
+	// Admin can override timestamps (e.g. for importing legacy content)
+	if args.CreatedAt != nil {
+		updates["created_at"] = *args.CreatedAt
+	}
+	if args.UpdatedAt != nil {
+		updates["updated_at"] = *args.UpdatedAt
+	}
 
 	// Determine content type for validation
 	contentType := content.Type
