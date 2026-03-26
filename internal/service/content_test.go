@@ -1,0 +1,267 @@
+package service
+
+import (
+	"context"
+	"testing"
+
+	"github.com/miclle/niubility/internal/entity"
+)
+
+func TestService_CreateContent(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	// Create author
+	user := &entity.User{
+		ID:       entity.ID(),
+		Username: "contentauthor",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	if err := s.db.Create(user).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	content := &entity.Content{
+		AuthorID: user.ID,
+		Title:    "Test Content",
+		Summary:  "Test summary",
+		Body:     "Test body",
+		Type:     entity.ContentTypeArticle,
+		Category: "test",
+	}
+
+	if err := s.CreateContent(ctx, content, nil); err != nil {
+		t.Fatalf("CreateContent() error = %v", err)
+	}
+
+	if content.ID == "" {
+		t.Error("CreateContent() should set content.ID")
+	}
+
+	if content.Status != entity.ContentStatusDraft {
+		t.Errorf("Default Status = %q, want %q", content.Status, entity.ContentStatusDraft)
+	}
+}
+
+func TestService_GetContentByID(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	// Create author
+	user := &entity.User{
+		ID:       entity.ID(),
+		Username: "getcontentauthor",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	if err := s.db.Create(user).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	// Create content
+	content := &entity.Content{
+		ID:       entity.ID(),
+		AuthorID: user.ID,
+		Title:    "Test Content",
+		Type:     entity.ContentTypeArticle,
+		Category: "test",
+		Status:   entity.ContentStatusPublished,
+	}
+	if err := s.db.Create(content).Error; err != nil {
+		t.Fatalf("Failed to create test content: %v", err)
+	}
+
+	// Test getting existing content
+	got, err := s.GetContentByID(ctx, content.ID)
+	if err != nil {
+		t.Fatalf("GetContentByID() error = %v", err)
+	}
+	if got == nil {
+		t.Fatal("GetContentByID() returned nil")
+	}
+	if got.ID != content.ID {
+		t.Errorf("ID = %q, want %q", got.ID, content.ID)
+	}
+
+	// Test getting non-existent content
+	got, err = s.GetContentByID(ctx, "nonexistent-id")
+	if err != nil {
+		t.Fatalf("GetContentByID() error = %v", err)
+	}
+	if got != nil {
+		t.Errorf("GetContentByID() = %v, want nil", got)
+	}
+}
+
+func TestService_UpdateContent(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	// Create author
+	user := &entity.User{
+		ID:       entity.ID(),
+		Username: "updatecontentauthor",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	if err := s.db.Create(user).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	// Create content
+	content := &entity.Content{
+		ID:       entity.ID(),
+		AuthorID: user.ID,
+		Title:    "Original Title",
+		Type:     entity.ContentTypeArticle,
+		Category: "test",
+		Status:   entity.ContentStatusDraft,
+	}
+	if err := s.db.Create(content).Error; err != nil {
+		t.Fatalf("Failed to create test content: %v", err)
+	}
+
+	// Update title
+	newTitle := "Updated Title"
+	updated, err := s.UpdateContent(ctx, content.ID, entity.UpdateContentArgs{Title: &newTitle})
+	if err != nil {
+		t.Fatalf("UpdateContent() error = %v", err)
+	}
+	if updated.Title != newTitle {
+		t.Errorf("Title = %q, want %q", updated.Title, newTitle)
+	}
+
+	// Update status
+	publishedStatus := entity.ContentStatusPublished
+	updated, err = s.UpdateContent(ctx, content.ID, entity.UpdateContentArgs{Status: &publishedStatus})
+	if err != nil {
+		t.Fatalf("UpdateContent() error = %v", err)
+	}
+	if updated.Status != entity.ContentStatusPublished {
+		t.Errorf("Status = %q, want %q", updated.Status, entity.ContentStatusPublished)
+	}
+
+	// Update non-existent content
+	updated, err = s.UpdateContent(ctx, "nonexistent-id", entity.UpdateContentArgs{Title: &newTitle})
+	if err != nil {
+		t.Fatalf("UpdateContent() error = %v", err)
+	}
+	if updated != nil {
+		t.Errorf("UpdateContent() = %v, want nil", updated)
+	}
+}
+
+func TestService_DeleteContent(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	// Create author
+	user := &entity.User{
+		ID:       entity.ID(),
+		Username: "deletecontentauthor",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	if err := s.db.Create(user).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	// Create content
+	content := &entity.Content{
+		ID:       entity.ID(),
+		AuthorID: user.ID,
+		Title:    "To Delete",
+		Type:     entity.ContentTypeArticle,
+		Category: "test",
+		Status:   entity.ContentStatusPublished,
+	}
+	if err := s.db.Create(content).Error; err != nil {
+		t.Fatalf("Failed to create test content: %v", err)
+	}
+
+	// Delete content
+	if err := s.DeleteContent(ctx, content.ID); err != nil {
+		t.Fatalf("DeleteContent() error = %v", err)
+	}
+
+	// Verify content was deleted
+	got, err := s.GetContentByID(ctx, content.ID)
+	if err != nil {
+		t.Fatalf("GetContentByID() error = %v", err)
+	}
+	if got != nil {
+		t.Error("Content should be deleted")
+	}
+}
+
+func TestService_ListContents(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	// Create author
+	user := &entity.User{
+		ID:       entity.ID(),
+		Username: "listcontentauthor",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	if err := s.db.Create(user).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	// Create contents
+	contents := []*entity.Content{
+		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 1", Type: entity.ContentTypeArticle, Category: "cat1", Status: entity.ContentStatusPublished},
+		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 2", Type: entity.ContentTypeArticle, Category: "cat1", Status: entity.ContentStatusPublished},
+		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 3", Type: entity.ContentTypeVideo, Category: "cat2", Status: entity.ContentStatusDraft},
+	}
+	for _, c := range contents {
+		if err := s.db.Create(c).Error; err != nil {
+			t.Fatalf("Failed to create test content: %v", err)
+		}
+	}
+
+	// List published contents (default)
+	got, _, err := s.ListContents(ctx, entity.ListContentsArgs{Pagination: entity.Pagination{Limit: 10}})
+	if err != nil {
+		t.Fatalf("ListContents() error = %v", err)
+	}
+	if len(got) != 2 {
+		t.Errorf("len(got) = %d, want 2 (only published)", len(got))
+	}
+
+	// List all contents
+	got, _, err = s.ListContents(ctx, entity.ListContentsArgs{Status: "all", Pagination: entity.Pagination{Limit: 10}})
+	if err != nil {
+		t.Fatalf("ListContents() error = %v", err)
+	}
+	if len(got) != 3 {
+		t.Errorf("len(got) = %d, want 3", len(got))
+	}
+
+	// List by category
+	got, _, err = s.ListContents(ctx, entity.ListContentsArgs{Category: "cat1", Status: "all", Pagination: entity.Pagination{Limit: 10}})
+	if err != nil {
+		t.Fatalf("ListContents() error = %v", err)
+	}
+	if len(got) != 2 {
+		t.Errorf("len(got) = %d, want 2", len(got))
+	}
+
+	// List by type
+	got, _, err = s.ListContents(ctx, entity.ListContentsArgs{Type: entity.ContentTypeVideo, Status: "all", Pagination: entity.Pagination{Limit: 10}})
+	if err != nil {
+		t.Fatalf("ListContents() error = %v", err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len(got) = %d, want 1", len(got))
+	}
+}
+
+func TestGalleryVideoMaxFileSize(t *testing.T) {
+	expected := int64(200 * 1024 * 1024) // 200 MB
+	if GalleryVideoMaxFileSize != expected {
+		t.Errorf("GalleryVideoMaxFileSize = %d, want %d", GalleryVideoMaxFileSize, expected)
+	}
+}
