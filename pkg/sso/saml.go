@@ -1,6 +1,8 @@
 package sso
 
 import (
+	"bytes"
+	"compress/flate"
 	"context"
 	"crypto/x509"
 	"encoding/base64"
@@ -152,6 +154,7 @@ func (p *SAMLProvider) AuthURL(state, _ string) string {
 	req := saml.AuthnRequest{
 		AssertionConsumerServiceURL: p.spACSURL,
 		Destination:                 p.idpSSOURL,
+		IssueInstant:                saml.TimeNow(),
 		Issuer: &saml.Issuer{
 			Value: p.spEntityID,
 		},
@@ -163,7 +166,14 @@ func (p *SAMLProvider) AuthURL(state, _ string) string {
 	}
 
 	reqBuf, _ := xml.Marshal(req)
-	encoded := base64.StdEncoding.EncodeToString(reqBuf)
+
+	// SAML HTTP-Redirect binding requires DEFLATE compression before base64 encoding
+	var compressed bytes.Buffer
+	writer, _ := flate.NewWriter(&compressed, flate.DefaultCompression)
+	_, _ = writer.Write(reqBuf)
+	_ = writer.Close()
+
+	encoded := base64.StdEncoding.EncodeToString(compressed.Bytes())
 
 	u, _ := url.Parse(p.idpSSOURL)
 	q := u.Query()

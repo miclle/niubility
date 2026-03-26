@@ -47,7 +47,7 @@ function SettingsAuth() {
   const handleDownloadXML = () => {
     const link = document.createElement('a')
     link.href = spMetadataURL
-    link.download = 'sp-metadata.xml'
+    link.download = 'sp-niubility-metadata.xml'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
