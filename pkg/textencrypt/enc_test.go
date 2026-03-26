@@ -2,11 +2,28 @@ package textencrypt
 
 import (
 	"encoding/base64"
+	"flag"
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/miclle/niubility/pkg/textencrypt/aesgcm"
 )
+
+// Command line flag for specifying plaintext to encrypt
+var plaintextFlag = flag.String("plaintext", "", "plaintext string to encrypt")
+
+// getPlaintext returns the plaintext from flag, environment variable, or default value.
+// Priority: -plaintext flag > PLAINTEXT env var > default value
+func getPlaintext(defaultValue string) string {
+	if *plaintextFlag != "" {
+		return *plaintextFlag
+	}
+	if env := os.Getenv("PLAINTEXT"); env != "" {
+		return env
+	}
+	return defaultValue
+}
 
 func TestAutoDecrypt(t *testing.T) {
 	// First encrypt some test values
@@ -127,10 +144,19 @@ func encrypt(plaintext string) (string, error) {
 }
 
 // TestEncryptString is a helper test to generate encrypted strings.
-// Usage: go test -run TestEncryptString -v
-// To encrypt a custom string, modify the plaintext variable below.
+//
+// Usage:
+//
+//	# Use default value
+//	go test -run TestEncryptString -v
+//
+//	# Use flag (recommended)
+//	go test -run TestEncryptString -args -plaintext="your-secret" -v
+//
+//	# Use environment variable
+//	PLAINTEXT="your-secret" go test -run TestEncryptString -v
 func TestEncryptString(t *testing.T) {
-	plaintext := "postgres" // Modify this value to encrypt different strings
+	plaintext := getPlaintext("postgres")
 
 	encrypted, err := encrypt(plaintext)
 	if err != nil {
