@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ThumbsUp, Share2, ArrowLeft, MessageCircle, Pencil, Bookmark, Download, FileText } from 'lucide-react'
+import { ThumbsUp, Share2, MessageCircle, Pencil, Bookmark, Download, FileText } from 'lucide-react'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
 
 import { getContent, listContents, likeContent, favoriteContent } from 'src/api/content'
+import { fileURL } from 'src/api/upload'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
 import { formatFileSize } from 'src/lib/utils'
 import { useAppContext } from 'src/context/app'
@@ -32,7 +33,7 @@ function VideoDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { currentUser } = useAppContext()
+  const { currentUser, categories } = useAppContext()
   const [content, setContent] = useState<Content | null>(null)
   const [relatedContents, setRelatedContents] = useState<Content[]>([])
   const [loading, setLoading] = useState(true)
@@ -92,8 +93,7 @@ function VideoDetail() {
 
   const isDraft = content.status === 'draft'
   const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin' || currentUser.id === content.author_id)
-  const categoryPath = content.category === 'culture' ? '/culture' : '/learning'
-  const categoryLabel = content.category === 'culture' ? '七牛文化' : '学习分享'
+  const categoryLabel = categories.find((c) => c.slug === content.category)?.name || content.category
   const videoItems = (content.attachments || []).filter((m) => m.type === 'video')
   const currentVideo = videoItems[currentVideoIndex]
 
@@ -190,7 +190,7 @@ function VideoDetail() {
         <div className="px-4 py-2 text-sm font-medium" style={{ background: '#f9f9f9', color: '#0f0f0f' }}>
           播放列表 · {videoItems.length} 个视频
         </div>
-        <div className="max-h-60 overflow-y-auto">
+        <div>
           {videoItems.map((v, i) => (
             <button
               key={v.id}
@@ -201,6 +201,13 @@ function VideoDetail() {
               <span className="text-xs font-medium w-5 text-center flex-shrink-0" style={{ color: i === currentVideoIndex ? '#065fd4' : '#909090' }}>
                 {i + 1}
               </span>
+              <div className="relative flex-shrink-0 rounded overflow-hidden" style={{ width: 80, aspectRatio: '16/9' }}>
+                <img
+                  src={fileURL(v.cover_url || content.cover_url) || '/default-cover.svg'}
+                  alt={v.title || `视频 ${i + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm line-clamp-1" style={{ color: '#0f0f0f', fontWeight: i === currentVideoIndex ? 600 : 400 }}>
                   {v.title || `视频 ${i + 1}`}
@@ -217,10 +224,6 @@ function VideoDetail() {
   const renderSidebar = () => (
     <div className="hidden xl:block flex-shrink-0 w-[400px]">
       {renderPlaylist()}
-      <Link to={categoryPath} className="inline-flex items-center gap-1 text-sm mb-4 hover:underline" style={{ color: '#606060' }}>
-        <ArrowLeft size={16} />
-        返回{categoryLabel}
-      </Link>
       <div className="space-y-3">
         {relatedContents.map((item) => (
           <Link key={item.id} to={contentDetailPath(item)} className="flex gap-2 no-underline group" style={{ color: 'inherit' }}>
