@@ -57,7 +57,7 @@ tasks:
     desc: Build the server binary with embedded website
     cmds:
       - cd {{.WEBSITE_DIR}} && npm install && npm run build
-      - go build -trimpath -ldflags "{{.LDFLAGS}}" -o bin/niubility ./cmd/niubility/
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "{{.LDFLAGS}}" -o bin/niubility ./cmd/niubility/
 
   clean:
     desc: Clean build artifacts
