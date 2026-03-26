@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
-import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, RectangleHorizontal, RectangleVertical, RotateCcw, RotateCw, PictureInPicture2, Gauge } from 'lucide-react'
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, RectangleHorizontal, RectangleVertical, RotateCcw, RotateCw, PictureInPicture2, Gauge, SkipBack, SkipForward } from 'lucide-react'
 
 interface VideoPlayerProps {
   src: string
@@ -10,12 +10,17 @@ interface VideoPlayerProps {
   theaterMode?: boolean
   onToggleTheater?: () => void
   contentId?: string
+  hasPlaylist?: boolean
+  onPrev?: () => void
+  onNext?: () => void
+  hasPrev?: boolean
+  hasNext?: boolean
 }
 
 const PLAYBACK_PROGRESS_KEY = 'video_playback_progress'
 
 // VideoPlayer uses native HTML5 video with custom controls.
-function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = false, theaterMode = false, onToggleTheater, contentId }: VideoPlayerProps) {
+function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = false, theaterMode = false, onToggleTheater, contentId, hasPlaylist = false, onPrev, onNext, hasPrev = false, hasNext = false }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [playing, setPlaying] = useState(false)
@@ -307,10 +312,22 @@ function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = fals
           {/* Control buttons */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1">
+              {/* Previous video */}
+              {hasPlaylist && (
+                <button onClick={onPrev} disabled={!hasPrev} className={`rounded-full p-1.5 transition-colors cursor-pointer ${hasPrev ? 'text-white hover:bg-white/20' : 'text-white/30 cursor-not-allowed'}`} title="上一个视频">
+                  <SkipBack size={20} />
+                </button>
+              )}
               {/* Play/Pause */}
               <button onClick={togglePlay} className="text-white hover:bg-white/20 rounded-full p-1.5 transition-colors cursor-pointer" title={playing ? '暂停' : '播放'}>
                 {playing ? <Pause size={22} /> : <Play size={22} />}
               </button>
+              {/* Next video */}
+              {hasPlaylist && (
+                <button onClick={onNext} disabled={!hasNext} className={`rounded-full p-1.5 transition-colors cursor-pointer ${hasNext ? 'text-white hover:bg-white/20' : 'text-white/30 cursor-not-allowed'}`} title="下一个视频">
+                  <SkipForward size={20} />
+                </button>
+              )}
               {/* Seek backward 15s */}
               <button onClick={seekBackward} className="text-white hover:bg-white/20 rounded-full p-1.5 transition-colors cursor-pointer relative" title="后退 15 秒">
                 <RotateCcw size={20} />

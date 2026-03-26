@@ -45,12 +45,14 @@ function VideoDetail() {
   const [favorited, setFavorited] = useState(false)
   const [favoriteCount, setFavoriteCount] = useState(0)
   const [commentCount, setCommentCount] = useState(0)
+  const [autoplay, setAutoplay] = useState(false)
 
   // Derive currentVideoIndex from URL search param ?v=N
   const vParam = searchParams.get('v')
   const currentVideoIndex = vParam !== null ? parseInt(vParam, 10) || 0 : 0
 
-  const setCurrentVideoIndex = useCallback((index: number) => {
+  const setCurrentVideoIndex = useCallback((index: number, shouldAutoplay = false) => {
+    setAutoplay(shouldAutoplay)
     if (index === 0) {
       setSearchParams({}, { replace: true })
     } else {
@@ -196,7 +198,7 @@ function VideoDetail() {
               key={v.id}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors cursor-pointer"
               style={{ background: i === currentVideoIndex ? 'rgba(0,0,0,0.05)' : 'transparent', borderTop: i > 0 ? '1px solid #f2f2f2' : 'none' }}
-              onClick={() => setCurrentVideoIndex(i)}
+              onClick={() => setCurrentVideoIndex(i, true)}
             >
               <span className="text-xs font-medium w-5 text-center flex-shrink-0" style={{ color: i === currentVideoIndex ? '#065fd4' : '#909090' }}>
                 {i + 1}
@@ -302,9 +304,15 @@ function VideoDetail() {
               key={currentVideo.id}
               src={currentVideo.url}
               poster={content.cover_url || '/default-cover.svg'}
+              autoplay={autoplay}
               theaterMode={theaterMode}
               onToggleTheater={() => setTheaterMode(!theaterMode)}
               contentId={`${content.id}_${currentVideoIndex}`}
+              hasPlaylist={videoItems.length > 1}
+              onPrev={() => setCurrentVideoIndex(currentVideoIndex - 1, true)}
+              onNext={() => setCurrentVideoIndex(currentVideoIndex + 1, true)}
+              hasPrev={currentVideoIndex > 0}
+              hasNext={currentVideoIndex < videoItems.length - 1}
             />
           </div>
         ) : (
@@ -318,7 +326,12 @@ function VideoDetail() {
           {renderPlaylist()}
         </div>
 
-        <h1 className="text-xl font-medium mt-4 mb-3" style={{ color: '#0f0f0f', lineHeight: 1.4 }}>{content.title}</h1>
+        <h1 className="text-xl font-medium mt-4 mb-3" style={{ color: '#0f0f0f', lineHeight: 1.4 }}>
+          {content.title}
+          {videoItems.length > 1 && currentVideo && (
+            <span className="font-normal ml-2" style={{ color: '#606060' }}>— {currentVideo.title || `视频 ${currentVideoIndex + 1}`}</span>
+          )}
+        </h1>
         {renderActions()}
         {renderDescription()}
         {renderDocuments()}

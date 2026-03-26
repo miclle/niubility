@@ -12,10 +12,12 @@ export interface DocumentItem {
   progress: number
 }
 
+let documentItemCounter = 0
+
 // newDocumentItem creates a new DocumentItem with a unique local ID.
 export function newDocumentItem(overrides?: Partial<DocumentItem>): DocumentItem {
   return {
-    localId: crypto.randomUUID(),
+    localId: `doc_${++documentItemCounter}`,
     title: '',
     filename: '',
     url: '',
