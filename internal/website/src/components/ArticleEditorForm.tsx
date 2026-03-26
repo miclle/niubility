@@ -9,18 +9,12 @@ import { getContent, createContent, updateContent } from 'src/api/content'
 import { searchUsers } from 'src/api/user'
 import { uploadFile } from 'src/api/upload'
 import { computeFileChecksum } from 'src/lib/file-checksum'
+import { formatFileSize } from 'src/lib/utils'
 import { useAppContext } from 'src/context/app'
 import ImageUpload from 'src/components/ImageUpload'
 import RichTextEditor from 'src/components/RichTextEditor'
 import type { ContentStatus, CreateContentArgs, CreateAttachmentArgs } from 'src/types/content'
 import type { SearchUserItem } from 'src/types/user'
-
-// formatFileSize formats a file size in bytes to a human-readable string.
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-}
 
 // DocumentItem is a local state item for document attachments.
 interface DocumentItem {

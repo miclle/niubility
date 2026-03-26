@@ -7,6 +7,7 @@ import 'dayjs/locale/zh-cn'
 
 import { getContent, likeContent, favoriteContent } from 'src/api/content'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
+import { formatFileSize } from 'src/lib/utils'
 import { useAppContext } from 'src/context/app'
 import CommentSection from 'src/components/CommentSection'
 import { Avatar, AvatarImage, AvatarFallback } from 'src/components/ui/avatar'
@@ -14,13 +15,6 @@ import type { Content } from 'src/types/content'
 
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
-
-// formatFileSize formats a file size in bytes to a human-readable string.
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-}
 
 // ArticleDetail displays a single article content item in a Medium-style layout.
 function ArticleDetail() {

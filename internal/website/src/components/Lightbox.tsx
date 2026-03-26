@@ -6,6 +6,7 @@ import dayjs from 'dayjs'
 import { fileURL } from 'src/api/upload'
 import { likeAttachment } from 'src/api/content'
 import CommentSection from 'src/components/CommentSection'
+import { formatFileSize } from 'src/lib/utils'
 import type { Attachment } from 'src/types/content'
 
 // LightboxProps defines the props for the Lightbox component.
@@ -28,14 +29,6 @@ const THUMB_SIZE = 56
 const THUMB_GAP = 4
 // ZOOM_LEVELS defines available zoom levels.
 const ZOOM_LEVELS = [1, 1.5, 2, 3]
-
-// formatFileSize formats bytes into a human-readable string.
-function formatFileSize(bytes: number): string {
-  if (!bytes) return '-'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
 
 // Lightbox displays a fullscreen image/video viewer with toolbar and info panel.
 function Lightbox({

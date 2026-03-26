@@ -9,17 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/u
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Save, X, Plus, GripVertical, Trash2, Upload, Loader2, FileText } from 'lucide-react'
 
-// formatFileSize formats a file size in bytes to a human-readable string.
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-}
-
 import { getContent, createContent, updateContent } from 'src/api/content'
 import { searchUsers } from 'src/api/user'
 import { uploadFile, fileURL } from 'src/api/upload'
 import { computeFileChecksum } from 'src/lib/file-checksum'
+import { formatFileSize } from 'src/lib/utils'
 import { useAppContext } from 'src/context/app'
 import ImageUpload from 'src/components/ImageUpload'
 import type { ContentStatus, CreateContentArgs, CreateAttachmentArgs } from 'src/types/content'
