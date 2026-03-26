@@ -25,7 +25,7 @@ const (
 
 var (
 	// defaultKey is the default encryption key derived from a seed string.
-	defaultKey      [32]byte
+	defaultKey       [32]byte
 	autoDecryptRegex *regexp.Regexp
 )
 
