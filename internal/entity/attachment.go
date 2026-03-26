@@ -10,6 +10,8 @@ const (
 	AttachmentTypeVideo AttachmentType = "video"
 	// AttachmentTypeImage indicates an image attachment.
 	AttachmentTypeImage AttachmentType = "image"
+	// AttachmentTypeDocument indicates a document attachment (PDF, PPT, DOC, etc.).
+	AttachmentTypeDocument AttachmentType = "document"
 )
 
 // Attachment represents a file (video, image, etc.) attached to a content.
