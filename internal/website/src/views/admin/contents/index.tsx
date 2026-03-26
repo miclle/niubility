@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
-import { Pencil, Trash2, Heart, MessageSquare, Play, Image, FileText } from 'lucide-react'
+import { Pencil, Trash2, Heart, MessageSquare, Play, Image, FileText, Bookmark } from 'lucide-react'
 import dayjs from 'dayjs'
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 
@@ -24,7 +24,7 @@ const limit = 20
 // Table cell styles
 const thStyle: React.CSSProperties = { padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap' }
 const tdStyle: React.CSSProperties = { padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }
-const columnCount = 8
+const columnCount = 10
 
 // AdminContents displays the admin content management page.
 function AdminContents() {
@@ -81,7 +81,9 @@ function AdminContents() {
               <th style={thStyle}>状态</th>
               <th style={thStyle}>分类</th>
               <th style={thStyle}>作者</th>
-              <th style={thStyle}>互动</th>
+              <th style={thStyle}>点赞</th>
+              <th style={thStyle}>评论</th>
+              <th style={thStyle}>收藏</th>
               <th style={thStyle}>创建时间</th>
               <th style={thStyle}>操作</th>
             </tr>
@@ -139,10 +141,13 @@ function AdminContents() {
                       </div>
                     </td>
                     <td style={tdStyle}>
-                      <div className="flex items-center gap-3">
-                        <span className="flex items-center gap-1 text-xs"><Heart size={12} />{content.like_count}</span>
-                        <span className="flex items-center gap-1 text-xs"><MessageSquare size={12} />{content.comment_count}</span>
-                      </div>
+                      <span className="flex items-center gap-1 text-xs"><Heart size={12} />{content.like_count}</span>
+                    </td>
+                    <td style={tdStyle}>
+                      <span className="flex items-center gap-1 text-xs"><MessageSquare size={12} />{content.comment_count}</span>
+                    </td>
+                    <td style={tdStyle}>
+                      <span className="flex items-center gap-1 text-xs"><Bookmark size={12} />{content.favorite_count}</span>
                     </td>
                     <td style={tdStyle}>{dayjs(content.created_at).format('YYYY-MM-DD')}</td>
                     <td style={tdStyle}>
