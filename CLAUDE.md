@@ -48,7 +48,7 @@ task update-tools
 ## Architecture
 
 ```
-cmd/server/
+cmd/niubility/
 ├── main.go                  # Entry point, loads config and starts server
 ├── config.example.yaml      # Configuration template (only server.address + database.dsn)
 └── config.local.yaml        # Local config (gitignored)
@@ -211,7 +211,7 @@ docs/
 
 ## Configuration
 
-Copy `cmd/server/config.example.yaml` to `cmd/server/config.local.yaml` and configure:
+Copy `cmd/niubility/config.example.yaml` to `cmd/niubility/config.local.yaml` and configure:
 - `server.address`: Listen address (e.g., `0.0.0.0:9000`)
 - `database.dsn`: PostgreSQL connection string
 

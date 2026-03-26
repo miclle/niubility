@@ -19,10 +19,10 @@ tasks:
   init-config:
     internal: true
     cmds:
-      - cp cmd/server/config.example.yaml cmd/server/config.local.yaml
-      - echo "Created cmd/server/config.local.yaml from config.example.yaml"
+      - cp cmd/niubility/config.example.yaml cmd/niubility/config.local.yaml
+      - echo "Created cmd/niubility/config.local.yaml from config.example.yaml"
     status:
-      - test -f cmd/server/config.local.yaml
+      - test -f cmd/niubility/config.local.yaml
 
   install:
     desc: Install all dependencies (Go modules + frontend)
@@ -43,13 +43,13 @@ tasks:
           -d none -s \
           -r '\.go$' \
           -R 'internal/website/' \
-          -- go run -trimpath -tags development ./cmd/server/ -c cmd/server/config.local.yaml
+          -- go run -trimpath -tags development ./cmd/niubility/ -c cmd/niubility/config.local.yaml
 
   run:
     desc: Run the server (production mode, requires build first)
     deps: [init-config]
     cmds:
-      - go run ./cmd/server/ -c cmd/server/config.local.yaml
+      - go run ./cmd/niubility/ -c cmd/niubility/config.local.yaml
 
   # ---------- Build ----------
 
@@ -57,7 +57,7 @@ tasks:
     desc: Build the server binary with embedded website
     cmds:
       - cd {{.WEBSITE_DIR}} && npm install && npm run build
-      - go build -trimpath -ldflags "{{.LDFLAGS}}" -o bin/niubility ./cmd/server/
+      - go build -trimpath -ldflags "{{.LDFLAGS}}" -o bin/niubility ./cmd/niubility/
 
   clean:
     desc: Clean build artifacts

@@ -31,7 +31,7 @@ cd Niubility
 task install
 
 # 3. 初始化配置文件（自动从 config.example.yaml 复制）
-# 编辑 cmd/server/config.local.yaml，填写数据库连接字符串
+# 编辑 cmd/niubility/config.local.yaml，填写数据库连接字符串
 task dev
 ```
 
@@ -54,7 +54,7 @@ task update-tools   # 安装/更新开发工具（reflex, staticcheck）
 ## 项目结构
 
 ```
-cmd/server/
+cmd/niubility/
 ├── main.go                  # 入口，加载配置并启动服务
 ├── config.example.yaml      # 配置模板（仅 server.address + database.dsn）
 └── config.local.yaml        # 本地配置（gitignore）
@@ -110,7 +110,7 @@ docs/
 
 ## 配置说明
 
-复制 `cmd/server/config.example.yaml` 为 `cmd/server/config.local.yaml` 并配置：
+复制 `cmd/niubility/config.example.yaml` 为 `cmd/niubility/config.local.yaml` 并配置：
 
 | 配置项 | 说明 |
 |--------|------|
