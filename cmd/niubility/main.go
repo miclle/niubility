@@ -23,7 +23,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	svc, err := service.New(ctx, cfg.Driver, cfg.DSN)
+	svc, err := service.New(ctx, cfg.Driver, cfg.DSN.Value())
 	if err != nil {
 		log.Fatalf("init service: %v", err)
 	}

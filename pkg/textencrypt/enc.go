@@ -4,9 +4,12 @@ package textencrypt
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/miclle/niubility/pkg/textencrypt/aesgcm"
 )
@@ -19,6 +22,18 @@ const (
 	// Suffix marks the end of an encrypted value.
 	Suffix = "]"
 )
+
+var (
+	// defaultKey is the default encryption key derived from a seed string.
+	defaultKey      [32]byte
+	autoDecryptRegex *regexp.Regexp
+)
+
+func init() {
+	// Derive a 32-byte key from seed
+	defaultKey = sha256.Sum256([]byte("Niubility@2024!SecretKey" + Prefix))
+	autoDecryptRegex = regexp.MustCompile(regexp.QuoteMeta(Prefix) + `([^]]*)` + regexp.QuoteMeta(Suffix))
+}
 
 // Encryptor provides encryption and decryption capabilities.
 type Encryptor struct {
@@ -115,4 +130,68 @@ func IsEncrypted(s string) bool {
 		return false
 	}
 	return s[:len(Prefix)] == Prefix && s[len(s)-len(Suffix):] == Suffix
+}
+
+// AutoDecrypt automatically decrypts text containing ENC[...] patterns.
+// If the text contains ENC[<ciphertext>], it decrypts it; otherwise returns unchanged.
+// If the text contains multiple ENC[<ciphertext>] patterns, all are decrypted.
+func AutoDecrypt(src string) (string, error) {
+	matches := autoDecryptRegex.FindAllStringIndex(src, -1)
+	if len(matches) == 0 {
+		return src, nil
+	}
+
+	var builder strings.Builder
+	builder.Grow(len(src))
+	lastIndex := 0
+
+	for _, match := range matches {
+		start, end := match[0], match[1]
+
+		// Append text before the current match
+		builder.WriteString(src[lastIndex:start])
+
+		// Decrypt the matched part
+		decryptedPart, err := decryptOne(src[start:end])
+		if err != nil {
+			// On error, return the original string
+			return src, err
+		}
+		builder.WriteString(decryptedPart)
+		lastIndex = end
+	}
+
+	// Append the remaining part of the string after the last match
+	builder.WriteString(src[lastIndex:])
+
+	return builder.String(), nil
+}
+
+// decryptOne decrypts a single encrypted segment. Returns unchanged if not encrypted.
+func decryptOne(auth string) (string, error) {
+	if !strings.HasPrefix(auth, Prefix) || !strings.HasSuffix(auth, Suffix) {
+		return auth, nil
+	}
+
+	encoded := auth[len(Prefix) : len(auth)-len(Suffix)]
+	buf, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return "", fmt.Errorf("decode base64: %w", err)
+	}
+
+	if len(buf) < 1 {
+		return "", fmt.Errorf("invalid encrypted text: content is empty")
+	}
+
+	ver := buf[0]
+	switch ver {
+	case versionV1:
+		plaintext, err := aesgcm.Decrypt(defaultKey[:], buf[1:])
+		if err != nil {
+			return "", fmt.Errorf("decrypt: %w", err)
+		}
+		return string(plaintext), nil
+	default:
+		return "", fmt.Errorf("invalid encryption version: %d", ver)
+	}
 }
