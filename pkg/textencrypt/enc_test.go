@@ -125,3 +125,29 @@ func encrypt(plaintext string) (string, error) {
 	copy(buf[1:], ciphertext)
 	return Prefix + base64.StdEncoding.EncodeToString(buf) + Suffix, nil
 }
+
+// TestEncryptString is a helper test to generate encrypted strings.
+// Usage: go test -run TestEncryptString -v
+// To encrypt a custom string, modify the plaintext variable below.
+func TestEncryptString(t *testing.T) {
+	plaintext := "postgres" // Modify this value to encrypt different strings
+
+	encrypted, err := encrypt(plaintext)
+	if err != nil {
+		t.Fatalf("encrypt %q failed: %v", plaintext, err)
+	}
+
+	t.Logf("Plaintext:  %q", plaintext)
+	t.Logf("Encrypted:  %s", encrypted)
+
+	// Verify round-trip
+	decrypted, err := AutoDecrypt(encrypted)
+	if err != nil {
+		t.Fatalf("AutoDecrypt failed: %v", err)
+	}
+	if decrypted != plaintext {
+		t.Errorf("round-trip failed: got %q, want %q", decrypted, plaintext)
+	}
+
+	t.Logf("Decrypted:  %q (verified)", decrypted)
+}
