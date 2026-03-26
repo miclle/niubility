@@ -41,6 +41,14 @@ const (
 	// SAML settings.
 	// SettingSSOSAMLIDPMetadataURL is the SAML IdP metadata URL.
 	SettingSSOSAMLIDPMetadataURL = "sso_saml_idp_metadata_url"
+	// SettingSSOSAMLSPCertificate is the SP certificate in PEM format (for signing AuthnRequest).
+	SettingSSOSAMLSPCertificate = "sso_saml_sp_certificate"
+	// SettingSSOSAMLSPPrivateKey is the SP private key in PEM format (encrypted in storage).
+	SettingSSOSAMLSPPrivateKey = "sso_saml_sp_private_key"
+	// SettingSSOSAMLNameIDFormat is the NameID format (unspecified, email, transient, persistent).
+	SettingSSOSAMLNameIDFormat = "sso_saml_nameid_format"
+	// SettingSSOSAMLAttributeMapping is the JSON mapping from IdP attributes to system fields.
+	SettingSSOSAMLAttributeMapping = "sso_saml_attribute_mapping"
 )
 
 // Setting key constants for WeChat configuration.
@@ -84,7 +92,17 @@ type OIDCConfig struct {
 
 // SAMLConfig represents the SAML 2.0 configuration extracted from settings.
 type SAMLConfig struct {
+	// IDPMetadataURL is the IdP metadata URL for auto-discovery.
 	IDPMetadataURL string
+	// SPCertificate is the SP certificate in PEM format (optional, for signing AuthnRequest).
+	SPCertificate string
+	// SPPrivateKey is the SP private key in PEM format (optional, encrypted in storage).
+	SPPrivateKey string
+	// NameIDFormat is the NameID format: unspecified, email, transient, persistent.
+	NameIDFormat string
+	// AttributeMapping is the JSON mapping from IdP attributes to system fields.
+	// Example: {"uid": "username", "mail": "email", "displayName": "name"}
+	AttributeMapping string
 }
 
 // S3Config represents the S3 storage configuration extracted from settings.

@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"net/http"
@@ -165,6 +166,14 @@ func (ctrl *Ctrl) getSAMLProvider(c *fox.Context) (*sso.SAMLProvider, error) {
 		return nil, fmt.Errorf("SAML not configured")
 	}
 
+	// Parse attribute mapping JSON if provided
+	var attrMapping map[string]string
+	if cfg.AttributeMapping != "" {
+		if err := json.Unmarshal([]byte(cfg.AttributeMapping), &attrMapping); err != nil {
+			c.Logger.Warnf("parse SAML attribute mapping: %v", err)
+		}
+	}
+
 	// Fetch and parse IdP metadata
 	metadata, err := sso.ParseIDPMetadata(ctx, cfg.IDPMetadataURL)
 	if err != nil {
@@ -178,11 +187,15 @@ func (ctrl *Ctrl) getSAMLProvider(c *fox.Context) (*sso.SAMLProvider, error) {
 	baseURL := fmt.Sprintf("%s://%s", scheme, c.Request.Host)
 
 	return sso.NewSAMLProvider(sso.SAMLConfig{
-		IDPEntityID:    metadata.EntityID,
-		IDPSSOURL:      metadata.SSOURL,
-		IDPCertificate: metadata.Certificate,
-		SPEntityID:     baseURL + "/sso/metadata",
-		SPACSURL:       baseURL + "/sso/acs",
+		IDPEntityID:      metadata.EntityID,
+		IDPSSOURL:        metadata.SSOURL,
+		IDPCertificate:   metadata.Certificate,
+		SPEntityID:       baseURL + "/sso/metadata",
+		SPACSURL:         baseURL + "/sso/acs",
+		SPCertificate:    cfg.SPCertificate,
+		SPPrivateKey:     cfg.SPPrivateKey,
+		NameIDFormat:     cfg.NameIDFormat,
+		AttributeMapping: attrMapping,
 	})
 }
 

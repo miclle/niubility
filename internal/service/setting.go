@@ -16,6 +16,7 @@ var sensitiveKeys = map[string]bool{
 	entity.SettingWechatAppSecret:     true,
 	entity.SettingSSOOIDCClientSecret: true,
 	entity.SettingS3SecretKey:         true,
+	entity.SettingSSOSAMLSPPrivateKey: true,
 }
 
 // GetSetting retrieves a setting value by key.
@@ -172,9 +173,17 @@ func (s *Service) GetSAMLConfig(ctx context.Context) (*entity.SAMLConfig, error)
 		return nil, err
 	}
 
-	return &entity.SAMLConfig{
+	cfg := &entity.SAMLConfig{
 		IDPMetadataURL: metadataURL,
-	}, nil
+	}
+
+	// Load optional advanced configuration
+	cfg.SPCertificate, _ = s.GetSetting(ctx, entity.SettingSSOSAMLSPCertificate)
+	cfg.SPPrivateKey, _ = s.GetSetting(ctx, entity.SettingSSOSAMLSPPrivateKey)
+	cfg.NameIDFormat, _ = s.GetSetting(ctx, entity.SettingSSOSAMLNameIDFormat)
+	cfg.AttributeMapping, _ = s.GetSetting(ctx, entity.SettingSSOSAMLAttributeMapping)
+
+	return cfg, nil
 }
 
 // GetS3Config retrieves the S3 storage configuration from settings.

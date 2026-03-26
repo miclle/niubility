@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { UserPlus, Globe, Shield, Copy, Download } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { UserPlus, Globe, Shield, Copy, Download, ChevronDown, ChevronRight } from 'lucide-react'
 
 import { MASKED_VALUE, useSettings, useSaveSettings, SettingsLoading, SettingsFeedback, SaveButton } from './shared'
 
 // SSOType represents the active SSO protocol.
 type SSOType = 'disabled' | 'oidc' | 'saml'
+
+// NameIDFormat represents the NameID format options.
+type NameIDFormat = 'unspecified' | 'email' | 'transient' | 'persistent'
 
 // SettingsAuth provides the authentication and SSO settings page.
 function SettingsAuth() {
@@ -21,7 +26,18 @@ function SettingsAuth() {
   const [ssoType, setSSOType] = useState<SSOType>('disabled')
   const [oidcForm, setOidcForm] = useState({ issuer: '', client_id: '', client_secret: '' })
   const [hasExistingOidcSecret, setHasExistingOidcSecret] = useState(false)
+
+  // SAML settings
   const [samlMetadataURL, setSamlMetadataURL] = useState('')
+  const [samlAdvancedExpanded, setSamlAdvancedExpanded] = useState(false)
+  const [samlForm, setSamlForm] = useState({
+    sp_certificate: '',
+    sp_private_key: '',
+    nameid_format: 'unspecified' as NameIDFormat,
+    attribute_mapping: '',
+  })
+  const [hasExistingSAMLPrivateKey, setHasExistingSAMLPrivateKey] = useState(false)
+
   const [copied, setCopied] = useState(false)
 
   const spMetadataURL = `${window.location.origin}/sso/metadata`
@@ -63,6 +79,7 @@ function SettingsAuth() {
     // SSO
     setSSOType((settingsMap['sso_type'] || 'disabled') as SSOType)
 
+    // OIDC
     const oidc = { issuer: '', client_id: '', client_secret: '' }
     oidc.issuer = settingsMap['sso_oidc_issuer'] || ''
     oidc.client_id = settingsMap['sso_oidc_client_id'] || ''
@@ -73,7 +90,25 @@ function SettingsAuth() {
     }
     setOidcForm(oidc)
 
+    // SAML
     setSamlMetadataURL(settingsMap['sso_saml_idp_metadata_url'] || '')
+    const saml = {
+      sp_certificate: settingsMap['sso_saml_sp_certificate'] || '',
+      sp_private_key: '',
+      nameid_format: (settingsMap['sso_saml_nameid_format'] || 'unspecified') as NameIDFormat,
+      attribute_mapping: settingsMap['sso_saml_attribute_mapping'] || '',
+    }
+    if (settingsMap['sso_saml_sp_private_key'] === MASKED_VALUE) {
+      setHasExistingSAMLPrivateKey(true)
+    } else {
+      saml.sp_private_key = settingsMap['sso_saml_sp_private_key'] || ''
+    }
+    setSamlForm(saml)
+
+    // Expand advanced section if any advanced config exists
+    if (saml.sp_certificate || settingsMap['sso_saml_sp_private_key'] || saml.attribute_mapping) {
+      setSamlAdvancedExpanded(true)
+    }
   }, [loading, settingsMap])
 
   const handleSave = () => {
@@ -83,13 +118,26 @@ function SettingsAuth() {
       'cookie_secure': cookieSecure ? 'true' : 'false',
       // SSO
       'sso_type': ssoType,
+      // OIDC
       'sso_oidc_issuer': oidcForm.issuer,
       'sso_oidc_client_id': oidcForm.client_id,
+      // SAML
       'sso_saml_idp_metadata_url': samlMetadataURL,
+      'sso_saml_sp_certificate': samlForm.sp_certificate,
+      'sso_saml_nameid_format': samlForm.nameid_format,
+      'sso_saml_attribute_mapping': samlForm.attribute_mapping,
     }
+
+    // OIDC secret
     if (oidcForm.client_secret || !hasExistingOidcSecret) {
       settings['sso_oidc_client_secret'] = oidcForm.client_secret
     }
+
+    // SAML private key
+    if (samlForm.sp_private_key || !hasExistingSAMLPrivateKey) {
+      settings['sso_saml_sp_private_key'] = samlForm.sp_private_key
+    }
+
     save(settings)
   }
 
@@ -237,6 +285,110 @@ function SettingsAuth() {
                   </Button>
                 </div>
               </div>
+
+              {/* Advanced SAML configuration */}
+              <div className="pt-2" style={{ borderTop: '1px solid #f0f0f0' }}>
+                <button
+                  type="button"
+                  onClick={() => setSamlAdvancedExpanded(!samlAdvancedExpanded)}
+                  className="flex items-center gap-2 text-sm font-medium cursor-pointer bg-transparent border-0 p-0"
+                  style={{ color: '#0f0f0f' }}
+                >
+                  {samlAdvancedExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                  高级配置
+                </button>
+
+                {samlAdvancedExpanded && (
+                  <div className="mt-4 space-y-4 pl-6">
+                    {/* SP Signing */}
+                    <div className="p-3 rounded-lg" style={{ background: '#fafafa' }}>
+                      <p className="text-sm font-medium mb-3" style={{ color: '#0f0f0f' }}>
+                        SP 签名配置（可选）
+                      </p>
+                      <p className="text-xs mb-3" style={{ color: '#606060' }}>
+                        某些 IdP 要求 SP 对 AuthnRequest 签名。配置后 Metadata 中的 AuthnRequestsSigned 将为 true。
+                      </p>
+
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                            SP Certificate (PEM)
+                          </label>
+                          <Textarea
+                            rows={4}
+                            placeholder={'-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----'}
+                            value={samlForm.sp_certificate}
+                            onChange={(e) => setSamlForm({ ...samlForm, sp_certificate: e.target.value })}
+                            className="font-mono text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                            SP Private Key (PEM)
+                            {hasExistingSAMLPrivateKey && (
+                              <span className="ml-2 text-xs" style={{ color: '#166534' }}>
+                                (已设置，留空保持不变)
+                              </span>
+                            )}
+                          </label>
+                          <Textarea
+                            rows={4}
+                            placeholder={hasExistingSAMLPrivateKey ? '留空保持现有密钥不变' : '-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----'}
+                            value={samlForm.sp_private_key}
+                            onChange={(e) => setSamlForm({ ...samlForm, sp_private_key: e.target.value })}
+                            className="font-mono text-xs"
+                          />
+                          <p className="text-xs mt-1" style={{ color: '#909090' }}>
+                            私钥使用 AES-256-GCM 加密存储
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* NameID Format */}
+                    <div>
+                      <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                        NameID 格式
+                      </label>
+                      <Select
+                        value={samlForm.nameid_format}
+                        onValueChange={(v) => setSamlForm({ ...samlForm, nameid_format: v as NameIDFormat })}
+                      >
+                        <SelectTrigger className="w-64">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unspecified">Unspecified（默认）</SelectItem>
+                          <SelectItem value="email">Email Address</SelectItem>
+                          <SelectItem value="transient">Transient</SelectItem>
+                          <SelectItem value="persistent">Persistent</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs mt-1" style={{ color: '#909090' }}>
+                        选择 IdP 返回的 NameID 格式
+                      </p>
+                    </div>
+
+                    {/* Attribute Mapping */}
+                    <div>
+                      <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                        属性映射（JSON 格式）
+                      </label>
+                      <Textarea
+                        rows={4}
+                        placeholder={'{\n  "uid": "username",\n  "mail": "email",\n  "displayName": "name"\n}'}
+                        value={samlForm.attribute_mapping}
+                        onChange={(e) => setSamlForm({ ...samlForm, attribute_mapping: e.target.value })}
+                        className="font-mono text-xs"
+                      />
+                      <p className="text-xs mt-1" style={{ color: '#909090' }}>
+                        映射 IdP 属性到系统字段，留空使用默认映射。键为 IdP 属性名，值为系统字段名（username/email/name）。
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -247,7 +399,7 @@ function SettingsAuth() {
       <div className="p-4 rounded-xl" style={{ background: '#f9f9f9', border: '1px solid #e5e5e5' }}>
         <div className="flex items-center gap-2">
           <Shield size={14} style={{ color: '#166534' }} />
-          <span className="text-xs" style={{ color: '#166534' }}>敏感信息（如 Client Secret、Secret Key）使用 AES-256-GCM 加密存储</span>
+          <span className="text-xs" style={{ color: '#166534' }}>敏感信息（如 Client Secret、Private Key）使用 AES-256-GCM 加密存储</span>
         </div>
       </div>
     </div>
