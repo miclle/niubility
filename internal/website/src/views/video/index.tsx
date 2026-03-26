@@ -76,10 +76,10 @@ function VideoDetail() {
         setFavorited(!!res.data.favorited)
         setFavoriteCount(res.data.favorite_count || 0)
         setCommentCount(res.data.comment_count || 0)
-        return listContents({ category: res.data.category, limit: 10 })
+        return listContents({ category: res.data.category, type: 'video', limit: 10 })
       })
       .then((res) => {
-        if (res) setRelatedContents((res.data.contents || []).filter((c) => c.id !== id))
+        if (res) setRelatedContents((res.data.items || []).filter((c) => c.id !== id))
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false))
@@ -226,6 +226,9 @@ function VideoDetail() {
   const renderSidebar = () => (
     <div className="hidden xl:block flex-shrink-0 w-[400px]">
       {renderPlaylist()}
+      {relatedContents.length > 0 && (
+        <div className="text-sm font-medium mb-3" style={{ color: '#0f0f0f' }}>其他相关视频</div>
+      )}
       <div className="space-y-3">
         {relatedContents.map((item) => (
           <Link key={item.id} to={contentDetailPath(item)} className="flex gap-2 no-underline group" style={{ color: 'inherit' }}>
