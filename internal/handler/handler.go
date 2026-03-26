@@ -62,9 +62,9 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	// content routes (authenticated users can CRUD their own content, admin can manage all)
 	api.GET("/contents", ctrl.ListContents)
 	api.GET("/contents/:id", ctrl.GetContent)
-	api.POST("/contents/:id/comments", ctrl.CreateComment)
-	api.GET("/contents/:id/comments", ctrl.ListComments)
-	api.POST("/contents/:id/like", ctrl.LikeContent)
+	api.POST("/contents/:id/comments", ctrl.CreateComment) // deprecated: use POST /comments
+	api.GET("/contents/:id/comments", ctrl.ListComments)   // deprecated: use GET /comments?content_id=
+	api.POST("/contents/:id/like", ctrl.LikeContent)       // deprecated: use POST /likes
 	api.POST("/contents/:id/favorite", ctrl.FavoriteContent)
 	api.GET("/favorites", ctrl.ListFavorites)
 	api.POST("/contents", ctrl.CreateContent)
@@ -74,11 +74,16 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	// category routes (public read, admin write)
 	api.GET("/categories", ctrl.ListCategories)
 
-	// comment routes
-	api.POST("/comments/:id/like", ctrl.LikeComment)
+	// comment routes (new unified endpoints)
+	api.GET("/comments", ctrl.ListCommentsQuery)
+	api.POST("/comments", ctrl.CreateCommentBody)
 
-	// attachment routes
-	api.POST("/attachments/:id/like", ctrl.LikeAttachment)
+	// like routes (new unified endpoint)
+	api.POST("/likes", ctrl.ToggleLike)
+
+	// deprecated: old comment/attachment like routes
+	api.POST("/comments/:id/like", ctrl.LikeComment)       // deprecated: use POST /likes
+	api.POST("/attachments/:id/like", ctrl.LikeAttachment) // deprecated: use POST /likes
 
 	// follow routes (authenticated users)
 	api.POST("/users/:username/follow", ctrl.ToggleFollow)

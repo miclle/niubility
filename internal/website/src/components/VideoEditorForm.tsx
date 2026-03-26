@@ -6,17 +6,17 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Save, X, Plus, GripVertical, Trash2, Upload, Loader2, FileText } from 'lucide-react'
+import { Save, X, GripVertical, Trash2, Upload, Loader2, FileText } from 'lucide-react'
 
 import { getContent, createContent, updateContent } from 'src/api/content'
-import { searchUsers } from 'src/api/user'
 import { uploadFile, fileURL } from 'src/api/upload'
 import { computeFileChecksum } from 'src/lib/file-checksum'
 import { formatFileSize } from 'src/lib/utils'
 import { newDocumentItem } from 'src/lib/document'
 import { useAppContext } from 'src/context/app'
 import ImageUpload from 'src/components/ImageUpload'
+import SpeakerSelector from 'src/components/SpeakerSelector'
+import TagInput from 'src/components/TagInput'
 import type { ContentStatus, CreateContentArgs, CreateAttachmentArgs } from 'src/types/content'
 import type { SearchUserItem } from 'src/types/user'
 import type { DocumentItem } from 'src/lib/document'
@@ -128,20 +128,14 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
   const [coverUrl, setCoverUrl] = useState('')
   const [category, setCategory] = useState<string>(categories[0]?.slug || '')
   const [tags, setTags] = useState<string[]>([])
-  const [tagInput, setTagInput] = useState('')
   const [videos, setVideos] = useState<VideoItem[]>([])
   const [documents, setDocuments] = useState<DocumentItem[]>([])
   const [contentStatus, setContentStatus] = useState<ContentStatus>('draft')
 
-  // Speaker state
+  // Speaker state (simplified)
   const [speakerId, setSpeakerId] = useState(defaultSpeaker?.id || '')
   const [selectedSpeaker, setSelectedSpeaker] = useState<SearchUserItem | null>(defaultSpeaker || null)
-  const [speakerInput, setSpeakerInput] = useState('')
   const [speakerBio, setSpeakerBio] = useState('')
-  const [speakerResults, setSpeakerResults] = useState<SearchUserItem[]>([])
-  const [showSpeakerDropdown, setShowSpeakerDropdown] = useState(false)
-  const speakerDropdownRef = useRef<HTMLDivElement>(null)
-  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>()
 
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -154,13 +148,7 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (speakerDropdownRef.current && !speakerDropdownRef.current.contains(e.target as Node)) {
-        setShowSpeakerDropdown(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    // Placeholder - handled by SpeakerSelector component
   }, [])
 
   // Load existing content for editing
@@ -209,8 +197,6 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
         if (c.speaker_id && c.speaker) {
           setSpeakerId(c.speaker_id)
           setSelectedSpeaker({ id: c.speaker.id, name: c.speaker.name, avatar: c.speaker.avatar })
-        } else if (c.speaker_name) {
-          setSpeakerInput(c.speaker_name)
         }
         setSpeakerBio(c.speaker_bio || '')
       })
@@ -218,29 +204,9 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
       .finally(() => setLoading(false))
   }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleSpeakerInputChange = (value: string) => {
-    setSpeakerInput(value)
-    if (speakerId) { setSpeakerId(''); setSelectedSpeaker(null) }
-    if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
-    if (!value.trim()) { setSpeakerResults([]); setShowSpeakerDropdown(false); return }
-    searchTimerRef.current = setTimeout(() => {
-      searchUsers(value.trim()).then((res) => {
-        setSpeakerResults(res.data.users)
-        setShowSpeakerDropdown(res.data.users.length > 0)
-      })
-    }, 300)
-  }
-
-  const handleSelectSpeaker = (user: SearchUserItem) => {
-    setSpeakerId(user.id); setSelectedSpeaker(user); setSpeakerInput(''); setSpeakerResults([]); setShowSpeakerDropdown(false)
-  }
-
-  const handleClearSpeaker = () => { setSpeakerId(''); setSelectedSpeaker(null); setSpeakerInput('') }
-
-  const handleAddTag = () => {
-    const tag = tagInput.trim()
-    if (tag && !tags.includes(tag)) setTags([...tags, tag])
-    setTagInput('')
+  const handleSpeakerChange = (speaker: SearchUserItem | null) => {
+    setSpeakerId(speaker?.id || '')
+    setSelectedSpeaker(speaker)
   }
 
   const handleVideoChange = useCallback((localId: string, field: keyof VideoItem, value: string | number) => {
@@ -375,7 +341,7 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
         category,
         tags,
         speaker_id: speakerId || '',
-        speaker_name: speakerId ? '' : speakerInput.trim(),
+        speaker_name: speakerId ? '' : (selectedSpeaker?.name || ''),
         speaker_bio: speakerBio.trim(),
         attachments: allAttachments,
       }
@@ -534,64 +500,16 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
       </div>
 
       {/* Tags */}
-      <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>标签</label>
-        <div className="flex items-center gap-2 mb-2">
-          <Input
-            placeholder="输入标签后按回车或点击添加"
-            value={tagInput}
-            onChange={(e) => setTagInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag() } }}
-            className="flex-1"
-          />
-          <Button type="button" variant="outline" onClick={handleAddTag}><Plus size={14} />添加</Button>
-        </div>
-        {tags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => (
-              <span key={tag} className="px-2 py-1 rounded-full text-xs cursor-pointer" style={{ background: '#f2f2f2', color: '#606060' }} onClick={() => setTags(tags.filter((t) => t !== tag))}>
-                {tag} ×
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+      <TagInput tags={tags} onChange={setTags} label="标签" />
 
       {/* Speaker (admin only) */}
       {isAdmin && (
         <div className="space-y-3">
-          <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>主讲人</label>
-            {selectedSpeaker ? (
-              <div className="flex items-center gap-3 p-3 rounded-lg" style={{ background: '#f8f8f8', border: '1px solid #e5e5e5' }}>
-                <Avatar size="sm">
-                  <AvatarImage src={selectedSpeaker.avatar} alt={selectedSpeaker.name} />
-                  <AvatarFallback>{selectedSpeaker.name?.charAt(0) || '?'}</AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-medium flex-1" style={{ color: '#0f0f0f' }}>{selectedSpeaker.name}</span>
-                <button type="button" className="p-1 rounded-full hover:bg-gray-200 transition-colors" onClick={handleClearSpeaker}>
-                  <X size={14} style={{ color: '#909090' }} />
-                </button>
-              </div>
-            ) : (
-              <div className="relative" ref={speakerDropdownRef}>
-                <Input placeholder="输入主讲人姓名，可自动匹配员工" value={speakerInput} onChange={(e) => handleSpeakerInputChange(e.target.value)} onFocus={() => { if (speakerResults.length > 0) setShowSpeakerDropdown(true) }} />
-                {showSpeakerDropdown && speakerResults.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 rounded-lg shadow-lg overflow-hidden" style={{ background: '#ffffff', border: '1px solid #e5e5e5', maxHeight: 240, overflowY: 'auto' }}>
-                    {speakerResults.map((user) => (
-                      <button key={user.id} type="button" className="flex items-center gap-3 w-full px-3 py-2.5 text-left hover:bg-gray-50 transition-colors" onClick={() => handleSelectSpeaker(user)}>
-                        <Avatar size="sm">
-                          <AvatarImage src={user.avatar} alt={user.name} />
-                          <AvatarFallback>{user.name?.charAt(0) || '?'}</AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm" style={{ color: '#0f0f0f' }}>{user.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          <SpeakerSelector
+            defaultSpeaker={selectedSpeaker || undefined}
+            onChange={handleSpeakerChange}
+            label="主讲人"
+          />
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>主讲人简介</label>
             <Input placeholder="主讲人简介" value={speakerBio} onChange={(e) => setSpeakerBio(e.target.value)} />

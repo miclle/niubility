@@ -26,27 +26,43 @@ export function deleteContent(id: string) {
   return client.delete(`/contents/${id}`)
 }
 
-// listComments fetches comments for a content item, optionally filtered by attachment.
+// listComments fetches comments for a content item, optionally filtered by attachment (deprecated: use listCommentsQuery).
 export function listComments(contentID: string, params?: { limit?: number; cursor?: string; attachment_id?: string }) {
   return client.get<ListCommentsResponse>(`/contents/${contentID}/comments`, { params })
 }
 
-// createComment creates a new comment on a content item.
+// listCommentsQuery fetches comments using query parameters (new unified endpoint).
+export function listCommentsQuery(params: { content_id: string; limit?: number; cursor?: string; attachment_id?: string }) {
+  return client.get<ListCommentsResponse>('/comments', { params })
+}
+
+// createComment creates a new comment on a content item (deprecated: use createCommentBody).
 export function createComment(contentID: string, data: CreateCommentArgs) {
   return client.post<Comment>(`/contents/${contentID}/comments`, data)
 }
 
-// likeContent toggles like on a content item.
+// createCommentBody creates a new comment using body parameters (new unified endpoint).
+export function createCommentBody(data: { content_id: string; attachment_id?: string; parent_id?: string; reply_to_id?: string; body: string }) {
+  return client.post<Comment>('/comments', data)
+}
+
+// toggleLike toggles like on any target (content, comment, or attachment).
+// This is the preferred unified API. Use targetType: "content" | "comment" | "attachment".
+export function toggleLike(targetType: string, targetID: string) {
+  return client.post<LikeResponse>('/likes', { target_type: targetType, target_id: targetID })
+}
+
+// likeContent toggles like on a content item (deprecated: use toggleLike).
 export function likeContent(contentID: string) {
   return client.post<LikeResponse>(`/contents/${contentID}/like`)
 }
 
-// likeComment toggles like on a comment.
+// likeComment toggles like on a comment (deprecated: use toggleLike).
 export function likeComment(commentID: string) {
   return client.post<LikeResponse>(`/comments/${commentID}/like`)
 }
 
-// likeAttachment toggles like (favorite) on an attachment.
+// likeAttachment toggles like on an attachment (deprecated: use toggleLike).
 export function likeAttachment(attachmentID: string) {
   return client.post<LikeResponse>(`/attachments/${attachmentID}/like`)
 }

@@ -1,29 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
-import { Outlet, NavLink, Link, useLocation, useParams } from 'react-router-dom'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { LogOut, Settings, User, Search, Menu, Home, Play, FileText, Plus, ServerOff, BookOpen, GraduationCap, Heart, Star, Lightbulb, Trophy, Coffee, Briefcase, Globe, Flame, CircleUserRound, UserCheck, ImageIcon, type LucideIcon } from 'lucide-react'
+import { Outlet, NavLink, useLocation, useParams } from 'react-router-dom'
+import { Search, Menu, User, ServerOff } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
-import { contentNewPath } from 'src/lib/content-url'
 import type { ContentType } from 'src/types/content'
 
-// iconMap maps icon name strings to Lucide icon components.
-const iconMap: Record<string, LucideIcon> = {
-  Home,
-  Play,
-  FileText,
-  BookOpen,
-  GraduationCap,
-  Heart,
-  Star,
-  Lightbulb,
-  Trophy,
-  Coffee,
-  Briefcase,
-  Globe,
-  Flame,
-}
+import SidebarNav from './SidebarNav'
+import CreateMenu from './CreateMenu'
+import UserMenu from './UserMenu'
 
 // MainLayout provides YouTube-style layout with top nav and left sidebar.
 function MainLayout() {
@@ -49,11 +33,9 @@ function MainLayout() {
   // Auto-hide sidebar on detail/settings page, restore user's state on other pages
   useEffect(() => {
     if (shouldHideSidebar) {
-      // Save current state before auto-hide
       userSidebarStateRef.current = sidebarCollapsed
       setSidebarCollapsed(true)
     } else {
-      // Restore user's saved state
       setSidebarCollapsed(userSidebarStateRef.current)
     }
   }, [shouldHideSidebar]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -79,15 +61,14 @@ function MainLayout() {
     )
   }
 
-  // Derive category from URL params or path (ignore @username profile routes and content type routes)
-  // On homepage (/), category is empty to show all content
+  // Derive category from URL params or path
   const isHome = location.pathname === '/'
   const typeRouteMap: Record<string, ContentType> = { videos: 'video', galleries: 'gallery', articles: 'article' }
   const firstSegment = slug || location.pathname.split('/')[1] || ''
   const isTypeRoute = firstSegment in typeRouteMap
   const category: string = (isHome || isTypeRoute) ? '' : ((slug && !slug.startsWith('@') ? slug : '') || firstSegment)
 
-  // Derive type filter from path (content type routes like /videos, /galleries, /articles)
+  // Derive type filter from path
   const typeFilter = (isTypeRoute ? typeRouteMap[firstSegment] : '') as ContentType | ''
 
   const handleSearch = () => {
@@ -100,99 +81,19 @@ function MainLayout() {
     }
   }
 
-  // Render type filter nav items (mutually exclusive with categories)
-  const renderTypeFilterNav = () => (
-    <div className="px-3">
-      <div className="flex items-center justify-between px-3 py-1 mb-1">
-        <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>类型</span>
-      </div>
-      <NavLink
-        to="/videos"
-        className={`flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${typeFilter === 'video' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'}`}
-        style={{ color: '#0f0f0f' }}
-      >
-        <Play size={24} />
-        <span className="text-sm">视频</span>
-      </NavLink>
-      <NavLink
-        to="/galleries"
-        className={`flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${typeFilter === 'gallery' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'}`}
-        style={{ color: '#0f0f0f' }}
-      >
-        <ImageIcon size={24} />
-        <span className="text-sm">图集</span>
-      </NavLink>
-      <NavLink
-        to="/articles"
-        className={`flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${typeFilter === 'article' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'}`}
-        style={{ color: '#0f0f0f' }}
-      >
-        <FileText size={24} />
-        <span className="text-sm">文章</span>
-      </NavLink>
-    </div>
-  )
-
-  // Render main nav items (Home + Following)
-  const renderMainNav = () => (
-    <div className="px-3">
-      <NavLink
-        to="/"
-        end
-        className={() =>
-          `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-            isHome && !typeFilter ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
-          }`
-        }
-        style={{ color: '#0f0f0f' }}
-      >
-        <Home size={24} />
-        <span className="text-sm">首页</span>
-      </NavLink>
-      {currentUser && (
-        <NavLink
-          to="/following"
-          className={() =>
-            `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-              location.pathname === '/following' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
-            }`
-          }
-          style={{ color: '#0f0f0f' }}
-        >
-          <UserCheck size={24} />
-          <span className="text-sm">关注</span>
-        </NavLink>
-      )}
-    </div>
-  )
-
-  // Render category nav items
-  const renderCategoryNav = () => (
-    <div className="px-3">
-      {categories.map((cat) => {
-        const IconComponent = iconMap[cat.icon] || Home
-        return (
-          <NavLink
-            key={cat.slug}
-            to={`/${cat.slug}`}
-            className={() =>
-              `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                category === cat.slug ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
-              }`
-            }
-            style={{ color: '#0f0f0f' }}
-          >
-            <IconComponent size={24} />
-            <span className="text-sm">{cat.name}</span>
-          </NavLink>
-        )
-      })}
-    </div>
-  )
+  // Shared props for SidebarNav
+  const sidebarNavProps = {
+    category,
+    typeFilter,
+    isHome,
+    currentUser,
+    categories,
+    locationPathname: location.pathname,
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      {/* Top Navigation - YouTube style */}
+      {/* Top Navigation */}
       <header className="sticky top-0 z-50 h-14 bg-white flex items-center justify-between px-4">
         {/* Left: Menu + Logo */}
         <div className="flex items-center gap-4">
@@ -215,7 +116,7 @@ function MainLayout() {
           </NavLink>
         </div>
 
-        {/* Center: Search box - YouTube style */}
+        {/* Center: Search box */}
         <div className="yt-search-box">
           <input
             type="text"
@@ -234,75 +135,8 @@ function MainLayout() {
         <div className="flex items-center gap-2">
           {currentUser ? (
             <>
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <button
-                      className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-colors cursor-pointer border-0"
-                      style={{ background: '#0f0f0f', color: '#ffffff' }}
-                    >
-                      <Plus size={16} />
-                      创建
-                    </button>
-                  }
-                />
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem render={<Link to={contentNewPath('video')} />}>
-                    <Play size={16} />
-                    视频
-                  </DropdownMenuItem>
-                  <DropdownMenuItem render={<Link to={contentNewPath('gallery')} />}>
-                    <ImageIcon size={16} />
-                    图集
-                  </DropdownMenuItem>
-                  <DropdownMenuItem render={<Link to={contentNewPath('article')} />}>
-                    <FileText size={16} />
-                    文章
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <button className="p-1 rounded-full hover:bg-zinc-100 transition-colors cursor-pointer border-0 bg-transparent">
-                    <Avatar>
-                      <AvatarImage src={currentUser.avatar} alt={currentUser.name || currentUser.username} />
-                      <AvatarFallback>{currentUser.name?.charAt(0) || currentUser.username.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                  </button>
-                }
-              />
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem disabled>
-                  {currentUser.name || currentUser.username}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem render={<Link to={`/@${currentUser.username}`} />}>
-                  <CircleUserRound size={16} />
-                  个人主页
-                </DropdownMenuItem>
-                <DropdownMenuItem render={<Link to="/settings/account" />}>
-                  <User size={16} />
-                  个人设置
-                </DropdownMenuItem>
-                {(currentUser.role === 'admin' || currentUser.role === 'super_admin') && (
-                  <DropdownMenuItem render={<Link to="/admin" />}>
-                    <Settings size={16} />
-                    管理后台
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={() => {
-                    window.location.href = '/logout?redirect=' + encodeURIComponent(window.location.pathname)
-                  }}
-                >
-                  <LogOut size={16} />
-                  退出登录
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              <CreateMenu />
+              <UserMenu user={currentUser} />
             </>
           ) : (
             <a
@@ -351,31 +185,12 @@ function MainLayout() {
                   Niubility
                 </span>
               </div>
-              <nav className="py-3 overflow-y-auto flex flex-col" style={{ height: 'calc(100% - 56px)' }}>
-                {/* Main navigation */}
-                {renderMainNav()}
-
-                {/* Divider */}
-                <div className="my-3 mx-3 h-px" style={{ background: '#e5e5e5' }} />
-
-                {/* Type filter */}
-                {renderTypeFilterNav()}
-
-                {/* Divider */}
-                <div className="my-3 mx-3 h-px" style={{ background: '#e5e5e5' }} />
-
-                {/* Categories */}
-                {renderCategoryNav()}
-
-                <div className="mt-auto px-6 py-4 text-xs" style={{ color: '#909090' }}>
-                  &copy; {new Date().getFullYear()} Niubility
-                </div>
-              </nav>
+              <SidebarNav {...sidebarNavProps} />
             </aside>
           </>
         )}
 
-        {/* Sidebar - YouTube style (hidden on detail/settings page) */}
+        {/* Sidebar (hidden on detail/settings page) */}
         {!shouldHideSidebar && (
           <aside
             className="flex-shrink-0 sticky top-14 overflow-y-auto bg-white transition-all duration-200"
@@ -386,24 +201,7 @@ function MainLayout() {
             }}
           >
             <nav className="py-3 flex flex-col" style={{ width: 240, minHeight: '100%' }}>
-              {/* Main navigation */}
-              {renderMainNav()}
-
-              {/* Divider */}
-              <div className="my-3 mx-3 h-px" style={{ background: '#e5e5e5' }} />
-
-              {/* Type filter */}
-              {renderTypeFilterNav()}
-
-              {/* Divider */}
-              <div className="my-3 mx-3 h-px" style={{ background: '#e5e5e5' }} />
-
-              {/* Categories */}
-              {renderCategoryNav()}
-
-              <div className="mt-auto px-6 py-4 text-xs" style={{ color: '#909090' }}>
-                &copy; {new Date().getFullYear()} Niubility
-              </div>
+              <SidebarNav {...sidebarNavProps} />
             </nav>
           </aside>
         )}
