@@ -193,9 +193,9 @@ func TestService_WhereLike(t *testing.T) {
 
 	// Test with different dialects
 	tests := []struct {
-		name     string
-		dialect  string
-		wantOp   string
+		name    string
+		dialect string
+		wantOp  string
 	}{
 		{"postgres uses ILIKE", "postgres", "ILIKE"},
 		{"mysql uses LIKE", "mysql", "LIKE"},

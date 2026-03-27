@@ -92,16 +92,8 @@ func TestLogger_LogMode(t *testing.T) {
 func TestLogger_FromContext(t *testing.T) {
 	logger := New(200 * time.Millisecond)
 
-	t.Run("context with TraceID", func(t *testing.T) {
-		ctx := context.WithValue(context.Background(), foxlogger.TraceID, "test-trace-id")
-		derivedLogger := logger.fromContext(ctx)
-		if derivedLogger == nil {
-			t.Error("fromContext() returned nil")
-		}
-	})
-
 	t.Run("context with TraceIDKey", func(t *testing.T) {
-		ctx := context.WithValue(context.Background(), foxlogger.TraceIDKey, "test-trace-key")
+		ctx := context.WithValue(context.Background(), foxlogger.TraceIDKey, "test-trace-id")
 		derivedLogger := logger.fromContext(ctx)
 		if derivedLogger == nil {
 			t.Error("fromContext() returned nil")
@@ -186,7 +178,7 @@ func TestLogger_Trace(t *testing.T) {
 
 func TestLogger_Trace_WithTraceID(t *testing.T) {
 	logger := New(200 * time.Millisecond)
-	ctx := context.WithValue(context.Background(), foxlogger.TraceID, "trace-123")
+	ctx := context.WithValue(context.Background(), foxlogger.TraceIDKey, "trace-123")
 
 	begin := time.Now().Add(-10 * time.Millisecond)
 	logger.Trace(ctx, begin, func() (string, int64) {
