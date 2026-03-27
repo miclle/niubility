@@ -157,6 +157,7 @@ export interface Comment {
   reply_to_id: string
   body: string
   like_count: number
+  pinned_at?: string
   created_at: string
   updated_at: string
   user?: User

@@ -107,6 +107,7 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	admin.POST("/categories/reorder", ctrl.ReorderCategories)
 	admin.PUT("/categories/:id", ctrl.UpdateCategory)
 	admin.DELETE("/categories/:id", ctrl.DeleteCategory)
+	admin.POST("/comments/:id/pin", ctrl.PinComment)
 }
 
 // Health returns a simple health check response.

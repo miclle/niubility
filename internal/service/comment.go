@@ -35,7 +35,9 @@ func (s *Service) ListComments(ctx context.Context, contentID, attachmentID stri
 		Preload("Replies", func(db *gorm.DB) *gorm.DB {
 			return db.Order("created_at ASC").Preload("User").Preload("ReplyTo.User")
 		}).
-		Order("created_at DESC, id DESC")
+		// Pinned comments first (by pinned_at DESC), then non-pinned (by created_at DESC)
+		Order("CASE WHEN pinned_at IS NOT NULL THEN 0 ELSE 1 END").
+		Order("pinned_at DESC, created_at DESC, id DESC")
 
 	if pagination.Cursor != "" {
 		parts, err := entity.DecodeCursor(pagination.Cursor, 2)
@@ -98,5 +100,49 @@ func (s *Service) GetCommentByID(ctx context.Context, id string) (*entity.Commen
 		log.Errorf("GetCommentByID: %v", err)
 		return nil, fmt.Errorf("get comment by id: %w", err)
 	}
+	return &comment, nil
+}
+
+// GetCommentWithUser retrieves a single comment by ID with user info preloaded.
+func (s *Service) GetCommentWithUser(ctx context.Context, id string) (*entity.Comment, error) {
+	log := logger.NewWithContext(ctx)
+
+	var comment entity.Comment
+	if err := s.db.WithContext(ctx).Preload("User").Where("id = ?", id).First(&comment).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		log.Errorf("GetCommentWithUser: %v", err)
+		return nil, fmt.Errorf("get comment with user: %w", err)
+	}
+	return &comment, nil
+}
+
+// PinComment pins or unpins a comment. Only top-level comments can be pinned.
+func (s *Service) PinComment(ctx context.Context, id string, pinned bool) (*entity.Comment, error) {
+	log := logger.NewWithContext(ctx)
+
+	var comment entity.Comment
+	if err := s.db.WithContext(ctx).Where("id = ? AND parent_id = ''", id).First(&comment).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		log.Errorf("PinComment: find comment: %v", err)
+		return nil, fmt.Errorf("find comment: %w", err)
+	}
+
+	var pinnedAt *time.Time
+	if pinned {
+		now := time.Now()
+		pinnedAt = &now
+	}
+
+	if err := s.db.WithContext(ctx).Model(&entity.Comment{}).Where("id = ?", id).
+		Update("pinned_at", pinnedAt).Error; err != nil {
+		log.Errorf("PinComment: update: %v", err)
+		return nil, fmt.Errorf("update comment pin status: %w", err)
+	}
+
+	comment.PinnedAt = pinnedAt
 	return &comment, nil
 }

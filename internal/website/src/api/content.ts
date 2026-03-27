@@ -76,3 +76,8 @@ export function favoriteContent(contentID: string) {
 export function listFavorites(params?: { limit?: number; cursor?: string }) {
   return client.get<ListContentsResponse>('/favorites', { params })
 }
+
+// pinComment pins or unpins a comment (admin only).
+export function pinComment(commentID: string, pinned: boolean) {
+  return client.post<Comment>(`/admin/comments/${commentID}/pin`, { pinned })
+}

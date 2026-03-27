@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { ThumbsUp, MessageCircle, ChevronDown, ChevronUp, Smile } from 'lucide-react'
+import { ThumbsUp, MessageCircle, ChevronDown, ChevronUp, Smile, Pin } from 'lucide-react'
 import dayjs from 'dayjs'
 import { useInfiniteQuery } from '@tanstack/react-query'
 
-import { listComments, createComment, likeComment as likeCommentAPI } from 'src/api/content'
+import { listComments, createComment, likeComment as likeCommentAPI, pinComment } from 'src/api/content'
 import { useAppContext } from 'src/context/app'
 import { Avatar, AvatarImage, AvatarFallback } from 'src/components/ui/avatar'
 import type { Comment, CreateCommentArgs } from 'src/types/content'
@@ -30,7 +30,11 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
   // Local comment overrides (for newly added comments and like count updates)
   const [localComments, setLocalComments] = useState<Comment[]>([])
   const [likeOverrides, setLikeOverrides] = useState<Map<string, number>>(new Map())
+  const [pinOverrides, setPinOverrides] = useState<Map<string, string | null>>(new Map())
   const localCountDelta = useRef(0)
+
+  // Check if current user is admin
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'super_admin'
 
   // Close emoji picker on outside click
   useEffect(() => {
@@ -183,10 +187,33 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
     setReplyText('')
   }
 
+  // Toggle pin on a comment (admin only)
+  const handlePinComment = (commentID: string, currentlyPinned: boolean) => {
+    pinComment(commentID, !currentlyPinned)
+      .then((res) => {
+        setPinOverrides((prev) => {
+          const next = new Map(prev)
+          next.set(commentID, res.data.pinned_at || null)
+          return next
+        })
+      })
+      .catch(() => {})
+  }
+
+  // Get display pinned_at considering local overrides
+  const getDisplayPinnedAt = (comment: Comment): string | undefined => {
+    if (pinOverrides.has(comment.id)) {
+      return pinOverrides.get(comment.id) ?? undefined
+    }
+    return comment.pinned_at
+  }
+
   const renderComment = useCallback((comment: Comment, isReply = false) => {
     const isLiked = likedCommentIDs.has(comment.id)
     const parentID = isReply ? comment.parent_id : comment.id
     const displayLikeCount = getDisplayLikeCount(comment)
+    const displayPinnedAt = getDisplayPinnedAt(comment)
+    const isPinned = !!displayPinnedAt
 
     return (
       <div key={comment.id} className={`flex gap-3 ${isReply ? 'ml-12' : ''}`}>
@@ -202,6 +229,12 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
             <span className="text-[13px] font-medium" style={{ color: '#0f0f0f' }}>
               {comment.user?.name || '匿名用户'}
             </span>
+            {isPinned && (
+              <span className="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded" style={{ color: '#065fd4', background: 'rgba(6,95,212,0.1)' }}>
+                <Pin size={10} />
+                置顶
+              </span>
+            )}
             <span className="text-xs" style={{ color: '#606060' }}>
               {dayjs(comment.created_at).fromNow()}
             </span>
@@ -237,6 +270,16 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
               <MessageCircle size={14} />
               <span>回复</span>
             </button>
+            {isAdmin && !isReply && (
+              <button
+                className="flex items-center gap-1 text-xs transition-colors"
+                style={{ color: isPinned ? '#065fd4' : '#606060' }}
+                onClick={() => handlePinComment(comment.id, isPinned)}
+              >
+                <Pin size={14} fill={isPinned ? 'currentColor' : 'none'} />
+                <span>{isPinned ? '取消置顶' : '置顶'}</span>
+              </button>
+            )}
           </div>
 
           {/* Reply input for this comment */}
@@ -304,7 +347,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
       </div>
     )
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [likedCommentIDs, likeOverrides, replyTo, replyText, submitting, emojiPickerFor])
+  }, [likedCommentIDs, likeOverrides, pinOverrides, replyTo, replyText, submitting, emojiPickerFor, isAdmin])
 
   const loading = isLoading || isFetchingNextPage
 

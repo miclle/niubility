@@ -4,16 +4,17 @@ import "time"
 
 // Comment represents a comment on a content item.
 type Comment struct {
-	ID           string    `json:"id"            gorm:"column:id;primaryKey;size:36"`
-	ContentID    string    `json:"content_id"    gorm:"column:content_id;size:36;index:idx_comments_content_id"`
-	AttachmentID string    `json:"attachment_id" gorm:"column:attachment_id;size:36;index:idx_comments_attachment_id"`
-	UserID       string    `json:"user_id"       gorm:"column:user_id;size:36;index:idx_comments_user_id"`
-	ParentID     string    `json:"parent_id"     gorm:"column:parent_id;size:36;index:idx_comments_parent_id"`
-	ReplyToID    string    `json:"reply_to_id"   gorm:"column:reply_to_id"`
-	Body         string    `json:"body"          gorm:"column:body;type:text"`
-	LikeCount    int64     `json:"like_count"    gorm:"column:like_count;default:0"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID           string     `json:"id"            gorm:"column:id;primaryKey;size:36"`
+	ContentID    string     `json:"content_id"    gorm:"column:content_id;size:36;index:idx_comments_content_id"`
+	AttachmentID string     `json:"attachment_id" gorm:"column:attachment_id;size:36;index:idx_comments_attachment_id"`
+	UserID       string     `json:"user_id"       gorm:"column:user_id;size:36;index:idx_comments_user_id"`
+	ParentID     string     `json:"parent_id"     gorm:"column:parent_id;size:36;index:idx_comments_parent_id"`
+	ReplyToID    string     `json:"reply_to_id"   gorm:"column:reply_to_id"`
+	Body         string     `json:"body"          gorm:"column:body;type:text"`
+	LikeCount    int64      `json:"like_count"    gorm:"column:like_count;default:0"`
+	PinnedAt     *time.Time `json:"pinned_at"     gorm:"column:pinned_at;index:idx_comments_pinned_at"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
 
 	User    *User     `json:"user,omitempty"     gorm:"foreignKey:UserID"`
 	ReplyTo *Comment  `json:"reply_to,omitempty" gorm:"foreignKey:ReplyToID"`

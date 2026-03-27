@@ -231,3 +231,32 @@ func (ctrl *Ctrl) LikeComment(c *fox.Context) (*entity.LikeResponse, error) {
 
 	return resp, nil
 }
+
+// PinCommentRequest represents the request body for pinning a comment.
+type PinCommentRequest struct {
+	Pinned bool `json:"pinned"`
+}
+
+// PinComment pins or unpins a comment (admin only).
+// POST /api/v1/admin/comments/:id/pin
+func (ctrl *Ctrl) PinComment(c *fox.Context, args PinCommentRequest) (*entity.Comment, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+	commentID := c.Param("id")
+
+	comment, err := ctrl.service.PinComment(ctx, commentID, args.Pinned)
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+	if comment == nil {
+		return nil, httperrors.ErrNotFound
+	}
+
+	// Reload with user info
+	comment, err = ctrl.service.GetCommentWithUser(ctx, commentID)
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+
+	comment.ResolveAssetURLs()
+	return comment, nil
+}
