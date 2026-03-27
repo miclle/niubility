@@ -7,10 +7,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/miclle/niubility-cli/internal/api"
-	"github.com/miclle/niubility-cli/internal/auth"
-	"github.com/miclle/niubility-cli/internal/config"
-	"github.com/miclle/niubility-cli/internal/output"
+	"github.com/miclle/niubility/cli/internal/api"
+	"github.com/miclle/niubility/cli/internal/auth"
+	"github.com/miclle/niubility/cli/internal/config"
+	"github.com/miclle/niubility/cli/internal/output"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

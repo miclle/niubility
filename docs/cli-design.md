@@ -644,7 +644,7 @@ my-gallery/
 ## 项目结构（预期）
 
 ```text
-niubility-cli/
+cli/
 ├── cmd/
 │   ├── root.go
 │   ├── login.go

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/miclle/niubility-cli/internal/api"
-	"github.com/miclle/niubility-cli/internal/content"
-	"github.com/miclle/niubility-cli/internal/output"
+	"github.com/miclle/niubility/cli/internal/api"
+	"github.com/miclle/niubility/cli/internal/content"
+	"github.com/miclle/niubility/cli/internal/output"
 	"github.com/spf13/cobra"
 )
 

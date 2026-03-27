@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/gabriel-vasile/mimetype"
-	"github.com/miclle/niubility-cli/internal/api"
+	"github.com/miclle/niubility/cli/internal/api"
 )
 
 // Uploader handles file uploads

@@ -4,7 +4,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/miclle/niubility-cli/internal/output"
+	"github.com/miclle/niubility/cli/internal/output"
 	"github.com/spf13/cobra"
 )
 

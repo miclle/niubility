@@ -1,4 +1,4 @@
-module github.com/miclle/niubility-cli
+module github.com/miclle/niubility/cli
 
 go 1.23
 

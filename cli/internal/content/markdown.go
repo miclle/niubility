@@ -13,7 +13,7 @@ import (
 	"github.com/gomarkdown/markdown"
 	"github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
-	"github.com/miclle/niubility-cli/internal/api"
+	"github.com/miclle/niubility/cli/internal/api"
 	"gopkg.in/yaml.v3"
 )
 

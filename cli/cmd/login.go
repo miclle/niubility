@@ -10,10 +10,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/miclle/niubility-cli/internal/api"
-	"github.com/miclle/niubility-cli/internal/auth"
-	"github.com/miclle/niubility-cli/internal/config"
-	"github.com/miclle/niubility-cli/internal/output"
+	"github.com/miclle/niubility/cli/internal/api"
+	"github.com/miclle/niubility/cli/internal/auth"
+	"github.com/miclle/niubility/cli/internal/config"
+	"github.com/miclle/niubility/cli/internal/output"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -46,12 +46,12 @@ Examples:
 		if err != nil {
 			// Create default config
 			cfg = &config.Config{
-				Server:       config.DefaultServer,
-				Output:       config.DefaultOutput,
-				Editor:       config.DefaultEditor,
+				Server:        config.DefaultServer,
+				Output:        config.DefaultOutput,
+				Editor:        config.DefaultEditor,
 				DefaultStatus: config.DefaultStatus,
-				Timeout:      config.DefaultTimeout,
-				CookieJar:    config.DefaultCookieJar,
+				Timeout:       config.DefaultTimeout,
+				CookieJar:     config.DefaultCookieJar,
 			}
 		}
 

@@ -74,6 +74,12 @@ task clean          # 清理构建产物
 task update-tools   # 安装/更新开发工具（reflex, staticcheck）
 ```
 
+## CLI 子项目
+
+仓库内包含独立的 CLI 子模块 [`cli/`](/Users/miclle/github/miclle/Niubility/cli)，module path 为 `github.com/miclle/niubility/cli`。它用于在终端中登录 Niubility、浏览内容、发布文章等。
+
+CLI 相关设计文档统一放在根目录 [`docs/`](/Users/miclle/github/miclle/Niubility/docs) 下，可优先参考 [`docs/cli-design.md`](/Users/miclle/github/miclle/Niubility/docs/cli-design.md) 与 [`docs/cli-sso-login-design.md`](/Users/miclle/github/miclle/Niubility/docs/cli-sso-login-design.md)。
+
 ## 项目结构
 
 ```
@@ -139,10 +145,12 @@ pkg/
 ├── sso/                     # SSO 认证（Provider 接口 + OIDC + SAML 2.0）
 ├── textencrypt/             # 文本加密（AES-256-GCM）
 └── gormlog/                 # GORM 日志适配器
+cli/                         # 独立 CLI 子模块（module: github.com/miclle/niubility/cli）
 docs/
 ├── archive/                 # 历史文档
 │   └── requirement.md       # 产品需求文档（原始）
-└── cli-design.md            # CLI 工具设计方案
+├── cli-design.md            # CLI 工具设计方案
+└── cli-sso-login-design.md  # CLI SSO 登录设计方案
 ```
 
 ## 配置说明
