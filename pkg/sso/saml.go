@@ -302,13 +302,18 @@ func (p *SAMLProvider) Exchange(_ context.Context, params CallbackParams) (*User
 				}
 			}
 
-			// Default attribute mapping (backward compatible)
+			// Default attribute mapping (standard LDAP OID + friendly names)
+			// Reference: https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/plan/attributes
+			// Reference: https://wiki.internet2.edu/display/InCFederation/EduPerson+Object+Class+Spec
 			switch attr.Name {
+			// username: uid (RFC 4514), userID (deprecated)
 			case "username", "uid", "urn:oid:0.9.2342.19200300.100.1.1":
 				info.Username = val
-			case "email", "mail", "urn:oid:0.9.2342.19200300.100.1.3":
+			// email: mail (RFC 4524), eduPersonPrincipalName (Internet2 EduPerson)
+			case "email", "mail", "urn:oid:0.9.2342.19200300.100.1.3", "urn:oid:1.3.6.1.4.1.5923.1.1.1.6":
 				info.Email = val
-			case "name", "displayName", "urn:oid:2.16.840.1.113730.3.1.241":
+			// name: displayName (RFC 2798), cn (commonName)
+			case "name", "displayName", "urn:oid:2.16.840.1.113730.3.1.241", "urn:oid:2.5.4.3":
 				info.Name = val
 			}
 		}

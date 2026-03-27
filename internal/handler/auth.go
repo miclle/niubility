@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"net/http"
@@ -323,15 +324,24 @@ func (ctrl *Ctrl) getSAMLProvider(c *fox.Context) (*sso.SAMLProvider, error) {
 	}
 	baseURL := fmt.Sprintf("%s://%s", scheme, c.Request.Host)
 
+	// Parse attribute mapping JSON
+	var attrMapping map[string]string
+	if cfg.AttributeMapping != "" {
+		if err := json.Unmarshal([]byte(cfg.AttributeMapping), &attrMapping); err != nil {
+			return nil, fmt.Errorf("parse attribute mapping: %w", err)
+		}
+	}
+
 	return sso.NewSAMLProvider(sso.SAMLConfig{
-		IDPEntityID:    metadata.EntityID,
-		IDPSSOURL:      metadata.SSOURL,
-		IDPCertificate: metadata.Certificate,
-		SPEntityID:     baseURL + "/sso/metadata",
-		SPACSURL:       baseURL + "/sso/acs",
-		SPCertificate:  cfg.SPCertificate,
-		SPPrivateKey:   cfg.SPPrivateKey,
-		NameIDFormat:   cfg.NameIDFormat,
+		IDPEntityID:      metadata.EntityID,
+		IDPSSOURL:        metadata.SSOURL,
+		IDPCertificate:   metadata.Certificate,
+		SPEntityID:       baseURL + "/sso/metadata",
+		SPACSURL:         baseURL + "/sso/acs",
+		SPCertificate:    cfg.SPCertificate,
+		SPPrivateKey:     cfg.SPPrivateKey,
+		NameIDFormat:     cfg.NameIDFormat,
+		AttributeMapping: attrMapping,
 	})
 }
 
