@@ -21,7 +21,7 @@ dayjs.locale('zh-cn')
 function GalleryDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { currentUser } = useAppContext()
+  const { currentUser, categories } = useAppContext()
   const location = useLocation()
   const [content, setContent] = useState<Content | null>(null)
   const [loading, setLoading] = useState(true)
@@ -107,7 +107,7 @@ function GalleryDetail() {
 
   const isDraft = content.status === 'draft'
   const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin' || currentUser.id === content.author_id)
-  const categoryLabel = content.category === 'culture' ? '七牛文化' : '学习分享'
+  const categoryLabel = categories.find((c) => c.slug === content.category)?.name || content.category
   const galleryItems = content.attachments || []
 
   return (

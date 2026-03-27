@@ -66,7 +66,7 @@ func (s *Service) presignUpload(ctx context.Context, filename, contentType, pref
 		Key:         aws.String(s3Key),
 		ContentType: aws.String(contentType),
 		// Note: ChecksumAlgorithm is not set here for better compatibility with S3-compatible services
-		// (e.g., Qiniu, MinIO) which may not support this parameter
+		// (e.g., MinIO, Ceph) which may not support this parameter
 	}, s3.WithPresignExpires(15*time.Minute))
 	if err != nil {
 		log.Errorf("presignUpload: presign put object: %v", err)
@@ -182,7 +182,7 @@ func (s *Service) ConfigureS3CORS(ctx context.Context) error {
 }
 
 // withContentMD5 is an S3 option that adds Content-MD5 header computation middleware.
-// Some S3-compatible services (e.g., Qiniu) require Content-MD5 for certain operations,
+// Some S3-compatible services (e.g., MinIO, Ceph) require Content-MD5 for certain operations,
 // but aws-sdk-go-v2 no longer adds it by default.
 func withContentMD5(o *s3.Options) {
 	o.APIOptions = append(o.APIOptions, func(stack *middleware.Stack) error {

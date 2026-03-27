@@ -1,64 +1,18 @@
-# Niubility
+# AGENTS.md
 
-企业内部学习与文化平台，融合学习交流（类 Bilibili）和企业文化（类小红书）两大板块，支持视频和图文内容的发布、浏览与管理。
+AI 编码助手（如 Claude Code、Cursor、GitHub Copilot 等）在此项目工作的技术指南。
 
-## 功能特性
+## 项目概述
 
-### 内容管理
-- **视频内容** (video): 支持培训/会议录制视频，配套封面、标题、简介、主讲人信息
-- **图库内容** (gallery): 支持图文/短视频内容，适合活动报道、精彩瞬间
-- **文章内容** (article): 支持长图文内容，适合深度分享
-
-### 用户系统
-- **多种登录方式**: 密码登录 + SSO (OIDC / SAML 2.0) + 企业微信同步
-- **用户资料**: 个人简介、头像、社交账号、位置信息
-- **关注系统**: 关注/取消关注用户，查看关注列表和粉丝列表
-
-### 互动功能
-- **评论**: 支持嵌套回复，可评论内容和附件
-- **点赞**: 支持对内容、评论、附件点赞
-- **收藏**: 收藏感兴趣的内容
-
-### 管理后台
-- **内容管理**: 内容增删改查、状态管理（草稿/已发布）
-- **用户管理**: 用户角色（super_admin/admin/user）、状态管理
-- **分类管理**: 动态分类、拖拽排序
-- **系统设置**: SSO 配置、S3 存储、企业微信同步
+Niubility 是企业内部学习与文化平台，融合学习交流（类 Bilibili）和企业文化（类小红书）两大板块。支持视频 (video)、图库 (gallery)、文章 (article) 三种内容类型，提供评论、点赞、收藏、关注等社交功能。
 
 ## 技术栈
 
-| 层级 | 技术 |
-|------|------|
-| 后端 | Go 1.25 + [fox-gonic/fox](https://github.com/fox-gonic/fox) (Gin fork) + GORM + PostgreSQL |
-| 前端 | React 18 + TypeScript + Vite + Tailwind CSS 4 + [shadcn/ui](https://ui.shadcn.com/) (Base UI) |
-| 认证 | 密码登录 + 可选 SSO（OIDC / SAML 2.0）+ JWT (cookie-based) |
-| 存储 | S3 兼容对象存储（文件上传，后台可配置） |
-| 集成 | 企业微信（部门/用户同步，可选） |
-
-## 环境要求
-
-- Go >= 1.25
-- Node.js >= 22.14
-- PostgreSQL
-- [Task](https://taskfile.dev/) (任务运行器)
-- [reflex](https://github.com/cespare/reflex) (Go 热重载，仅开发环境)
-
-## 快速开始
-
-```bash
-# 1. 克隆仓库
-git clone https://github.com/miclle/Niubility.git
-cd Niubility
-
-# 2. 安装依赖（Go modules + 前端）
-task install
-
-# 3. 初始化配置文件（自动从 config.example.yaml 复制）
-# 编辑 cmd/niubility/config.local.yaml，填写数据库连接字符串
-task dev
-```
-
-首次启动后访问页面，系统会引导创建超级管理员账号。SSO、企业微信、S3 存储等均在管理后台设置页面配置。
+- **后端**: Go 1.25 + [fox-gonic/fox](https://github.com/fox-gonic/fox) (Gin fork) + GORM + PostgreSQL
+- **前端**: React 18 + TypeScript + Vite + Tailwind CSS 4 + [shadcn/ui](https://ui.shadcn.com/) (Base UI)
+- **认证**: 密码登录 + 可选 SSO（OIDC / SAML 2.0）+ JWT (cookie-based)
+- **存储**: S3 兼容对象存储（文件上传，后台可配置）
+- **集成**: 企业微信（部门/用户同步，可选）
 
 ## 开发命令
 
@@ -74,7 +28,7 @@ task clean          # 清理构建产物
 task update-tools   # 安装/更新开发工具（reflex, staticcheck）
 ```
 
-## 项目结构
+## 架构
 
 ```
 cmd/niubility/
@@ -122,62 +76,50 @@ internal/
         ├── layouts/         # 布局组件（MainLayout, AdminLayout, SettingsLayout）
         ├── types/           # TypeScript 类型定义
         └── views/           # 页面组件
-            ├── home/        # 首页（按分类展示内容列表）
-            ├── video/       # 视频详情与编辑
-            ├── gallery/     # 图库详情与编辑
-            ├── article/     # 文章详情与编辑
-            ├── profile/     # 用户主页（内容、关注、粉丝、收藏）
-            ├── following/   # 关注动态
-            ├── settings/    # 个人设置（账号、内容、收藏、安全、通知）
-            ├── admin/       # 管理后台
-            │   ├── contents/    # 内容管理
-            │   ├── users/       # 用户管理
-            │   ├── categories/  # 分类管理（支持拖拽排序）
-            │   └── settings/    # 系统设置（认证、存储、企业微信子页面）
-            └── errors/      # 错误页面（403, 404, 500）
 pkg/
 ├── sso/                     # SSO 认证（Provider 接口 + OIDC + SAML 2.0）
 ├── textencrypt/             # 文本加密（AES-256-GCM）
 └── gormlog/                 # GORM 日志适配器
-docs/
-├── archive/                 # 历史文档
-│   └── requirement.md       # 产品需求文档（原始）
-└── cli-design.md            # CLI 工具设计方案
 ```
 
-## 配置说明
+## 关键模式
 
-复制 `cmd/niubility/config.example.yaml` 为 `cmd/niubility/config.local.yaml` 并配置：
+### 后端
 
-| 配置项 | 说明 |
-|--------|------|
-| `server.address` | 监听地址，如 `0.0.0.0:9000` |
-| `database.dsn` | PostgreSQL 连接字符串 |
+- **分层架构**: Handler → Service → Entity
+- **GORM**: 自动迁移数据库 schema
+- **路由**: 在 `handler/handler.go` 中注册，使用 `AuthMiddleware` 和 `RequireAdmin` 中间件
+- **管理路由**: 在 `/api/v1/admin/` 下，需要 `RequireAdmin` 中间件
+- **极简配置**: YAML 仅需 `server.address` 和 `database.dsn`；其他配置（JWT、SSO、企业微信、S3 等）存储在数据库 `settings` 表
+- **密钥管理**: JWT 密钥和加密密钥首次启动时自动生成并持久化
+- **敏感数据加密**: OIDC client secret、SAML 证书、企业微信 secret、S3 secret key 使用 AES-256-GCM 加密存储
+- **SSO**: 支持 OIDC (Authorization Code Flow) 和 SAML 2.0 (SP-initiated)，通过 `pkg/sso` Provider 接口
+- **系统初始化**: 首次部署通过 `/api/v1/init` 创建超级管理员
 
-其他所有配置（JWT 密钥、加密密钥、SSO、企业微信、S3 存储、功能开关等）均通过管理后台设置页面管理，存储在数据库 `settings` 表中。JWT 密钥和加密密钥在首次启动时自动生成。
+### 前端
+
+- **路由**: React Router，使用 MainLayout（用户端）、AdminLayout（管理端）、SettingsLayout（个人设置）
+- **UI 组件**: shadcn/ui (Base UI) 在 `src/components/ui/`
+- **全局状态**: App context (`src/context/app.ts`) 管理当前用户、初始化状态、SSO/注册开关
+- **API 调用**: axios client 在 `src/api/client.ts`
+- **动态分类**: 从数据库加载，通过 `/:category` 路由访问
+- **管理设置**: 分为 auth（SSO + 注册）、storage（S3）、wechat 子页面
+- **启动流程**: `/api/v1/boot` → 未初始化 → `/init`；未登录 → `/login`
 
 ## 数据模型
 
 | 模型 | 数据表 | 说明 |
-|------|--------|------|
-| User | `users` | 用户账号，角色（super_admin/admin/user），密码（bcrypt），状态（activated/deactivated） |
-| Content | `contents` | 内容（图文/视频/图库），关联分类、主讲人、封面图 |
-| Attachment | `attachments` | 内容附件（视频、图片、文档），支持批量上传 |
-| Comment | `comments` | 评论（支持嵌套回复） |
+|-------|-------|-------------|
+| User | `users` | 用户账号，角色（super_admin/admin/user），密码（bcrypt），状态（activated/deactivated），关注数/粉丝数 |
+| Content | `contents` | 内容（video/gallery/article），关联分类、主讲人、封面图，点赞数/收藏数/评论数 |
+| Attachment | `attachments` | 内容附件（视频、图片、文档），支持批量上传，有点赞数 |
+| Comment | `comments` | 评论（支持嵌套回复，可评论内容和附件） |
 | Like | `likes` | 点赞（内容 + 评论 + 附件） |
 | Favorite | `favorites` | 收藏 |
 | Follow | `follows` | 关注关系 |
 | Category | `categories` | 内容分类（slug、排序、启用状态） |
 | Department | `departments` | 部门（从企业微信同步） |
 | Setting | `settings` | 系统配置键值对（JWT、加密密钥、SSO、企业微信、S3 等） |
-
-## 内容类型
-
-| 类型 | 说明 | 适用场景 |
-|------|------|----------|
-| `video` | 视频内容，支持主讲人信息 | 培训视频、会议录制 |
-| `gallery` | 图库内容，支持图片/短视频 | 活动报道、精彩瞬间 |
-| `article` | 文章内容，支持富文本 | 深度分享、学习笔记 |
 
 ## 用户角色
 
@@ -187,12 +129,20 @@ docs/
 | `admin` | 管理员，可管理内容、分类、用户 |
 | `user` | 普通用户，可浏览、评论、点赞、收藏、关注 |
 
-## API 概览
+## 内容类型
+
+| 类型 | 说明 |
+|------|------|
+| `video` | 视频内容，支持主讲人信息 |
+| `gallery` | 图库内容，支持图片/短视频 |
+| `article` | 文章内容，支持富文本 |
+
+## API 路由
 
 ### 公开接口
 
 | 路由 | 方法 | 说明 |
-|------|------|------|
+|-------|--------|------|
 | `/health` | GET | 健康检查 |
 | `/sso/callback` | GET | OIDC 回调 |
 | `/sso/acs` | POST | SAML ACS（断言消费服务） |
@@ -206,7 +156,7 @@ docs/
 ### 用户接口（需登录）
 
 | 路由 | 方法 | 说明 |
-|------|------|------|
+|-------|--------|------|
 | `/api/v1/profile` | GET/PATCH | 获取/更新个人资料 |
 | `/api/v1/profile/upload` | POST | 获取头像预签名 URL |
 | `/api/v1/profile/change-password` | POST | 修改密码 |
@@ -217,7 +167,7 @@ docs/
 | `/api/v1/users/:username/following` | GET | 获取关注列表 |
 | `/api/v1/users/:username/followers` | GET | 获取粉丝列表 |
 | `/api/v1/users/:username/favorites` | GET | 获取用户收藏 |
-| `/api/v1/contents` | GET | 内容列表（支持分类、关键词、标签筛选） |
+| `/api/v1/contents` | GET | 内容列表 |
 | `/api/v1/contents` | POST | 创建内容 |
 | `/api/v1/contents/:id` | GET/PUT/DELETE | 内容详情/更新/删除 |
 | `/api/v1/contents/:id/favorite` | POST | 收藏/取消收藏内容 |
@@ -232,7 +182,7 @@ docs/
 ### 管理接口（需管理员权限）
 
 | 路由 | 方法 | 说明 |
-|------|------|------|
+|-------|--------|------|
 | `/api/v1/admin/users` | GET | 用户列表 |
 | `/api/v1/admin/users/:id` | PATCH | 更新用户（角色/状态） |
 | `/api/v1/admin/departments` | GET | 部门列表 |
@@ -256,84 +206,38 @@ docs/
 
 ## 前端路由
 
-### 认证页面
+| 路径 | 布局 | 说明 |
+|------|------|------|
+| `/init` | 无 | 系统初始化（首次启动） |
+| `/login` | 无 | 用户登录 |
+| `/register` | 无 | 用户注册（启用时） |
+| `/` | MainLayout | 首页（全部内容） |
+| `/videos` | MainLayout | 视频列表 |
+| `/galleries` | MainLayout | 图库列表 |
+| `/articles` | MainLayout | 文章列表 |
+| `/following` | MainLayout | 关注动态 |
+| `/:slug` | MainLayout | 分类页面或用户主页（@username） |
+| `/video/:id` | MainLayout | 视频详情 |
+| `/video/new` | MainLayout | 创建视频 |
+| `/video/:id/edit` | MainLayout | 编辑视频 |
+| `/gallery/:id` | MainLayout | 图库详情 |
+| `/gallery/new` | MainLayout | 创建图库 |
+| `/gallery/:id/edit` | MainLayout | 编辑图库 |
+| `/article/:id` | MainLayout | 文章详情 |
+| `/article/new` | MainLayout | 创建文章 |
+| `/article/:id/edit` | MainLayout | 编辑文章 |
+| `/settings/*` | SettingsLayout | 个人设置 |
+| `/admin/contents` | AdminLayout | 内容管理 |
+| `/admin/users` | AdminLayout | 用户管理 |
+| `/admin/categories` | AdminLayout | 分类管理 |
+| `/admin/settings/auth` | AdminLayout | 认证设置 |
+| `/admin/settings/storage` | AdminLayout | 存储设置 |
+| `/admin/settings/wechat` | AdminLayout | 企业微信设置 |
 
-| 路径 | 说明 |
-|------|------|
-| `/init` | 系统初始化（首次启动） |
-| `/login` | 用户登录 |
-| `/register` | 用户注册（启用时） |
+## 配置
 
-### 主页面（MainLayout）
+复制 `cmd/niubility/config.example.yaml` 为 `cmd/niubility/config.local.yaml` 并配置：
+- `server.address`: 监听地址（如 `0.0.0.0:9000`）
+- `database.dsn`: PostgreSQL 连接字符串
 
-| 路径 | 说明 |
-|------|------|
-| `/` | 首页（全部内容） |
-| `/videos` | 视频列表 |
-| `/galleries` | 图库列表 |
-| `/articles` | 文章列表 |
-| `/following` | 关注动态 |
-| `/:slug` | 分类页面或用户主页（@username） |
-
-### 内容页面
-
-| 路径 | 说明 |
-|------|------|
-| `/video/:id` | 视频详情 |
-| `/video/new` | 创建视频 |
-| `/video/:id/edit` | 编辑视频 |
-| `/gallery/:id` | 图库详情 |
-| `/gallery/new` | 创建图库 |
-| `/gallery/:id/edit` | 编辑图库 |
-| `/article/:id` | 文章详情 |
-| `/article/new` | 创建文章 |
-| `/article/:id/edit` | 编辑文章 |
-
-### 用户主页（@username）
-
-| 路径 | 说明 |
-|------|------|
-| `/@:username` | 用户内容 |
-| `/@:username/videos` | 用户视频 |
-| `/@:username/articles` | 用户文章 |
-| `/@:username/speakers` | 主讲内容 |
-| `/@:username/following` | 关注列表 |
-| `/@:username/followers` | 粉丝列表 |
-| `/@:username/favorites` | 用户收藏 |
-
-### 个人设置（SettingsLayout）
-
-| 路径 | 说明 |
-|------|------|
-| `/settings/account` | 账号设置 |
-| `/settings/contents` | 我的内容 |
-| `/settings/favorites` | 我的收藏 |
-| `/settings/security` | 安全设置 |
-| `/settings/notifications` | 通知设置 |
-
-### 管理后台（AdminLayout）
-
-| 路径 | 说明 |
-|------|------|
-| `/admin/contents` | 内容管理 |
-| `/admin/users` | 用户管理 |
-| `/admin/categories` | 分类管理 |
-| `/admin/settings/auth` | 认证设置（SSO + 注册） |
-| `/admin/settings/storage` | 存储设置（S3） |
-| `/admin/settings/wechat` | 企业微信设置 |
-
-### 错误页面
-
-| 路径 | 说明 |
-|------|------|
-| `/forbidden` | 403 无权限 |
-| `/500` | 服务器错误 |
-| `*` | 404 未找到 |
-
-## 开发指南
-
-详细的技术架构、编码规范和开发模式请参考 [AGENTS.md](./AGENTS.md)。
-
-## License
-
-MIT
+其他配置（JWT 密钥、加密密钥、SSO、企业微信、S3、功能开关）通过管理后台设置页面管理，存储在数据库。JWT 密钥和加密密钥首次启动时自动生成。

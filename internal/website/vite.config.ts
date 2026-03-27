@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       strictPort: true,
       host: "0.0.0.0",
-      allowedHosts: ["niubility.dev.qiniu.io"]
+      allowedHosts: true
     }
   }
 })
