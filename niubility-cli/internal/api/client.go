@@ -1,0 +1,185 @@
+// Package api provides HTTP client for Niubility API
+package api
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+)
+
+// Client is the API client for Niubility
+type Client struct {
+	// baseURL is the server base URL (e.g., http://127.0.0.1:9000)
+	baseURL *url.URL
+
+	// httpClient is the HTTP client
+	httpClient *http.Client
+
+	// timeout for requests
+	timeout time.Duration
+}
+
+// Errors
+var (
+	ErrUnauthorized      = errors.New("unauthorized: please run 'niubility login'")
+	ErrForbidden         = errors.New("forbidden: you don't have permission")
+	ErrNotFound          = errors.New("resource not found")
+	ErrServer            = errors.New("server error")
+	ErrUploadFailed      = errors.New("upload failed")
+)
+
+// APIError represents an error response from the API
+type APIError struct {
+	StatusCode int    `json:"-"`
+	Message    string `json:"message"`
+}
+
+func (e *APIError) Error() string {
+	if e.Message != "" {
+		return e.Message
+	}
+	return fmt.Sprintf("API error: status %d", e.StatusCode)
+}
+
+// NewClient creates a new API client
+func NewClient(server string, timeout time.Duration, jar http.CookieJar) (*Client, error) {
+	baseURL, err := url.Parse(server)
+	if err != nil {
+		return nil, fmt.Errorf("invalid server URL: %w", err)
+	}
+
+	// Ensure base URL doesn't have trailing slash
+	baseURL.Path = strings.TrimSuffix(baseURL.Path, "/")
+
+	httpClient := &http.Client{
+		Timeout:   timeout,
+		Jar:       jar,
+		Transport: http.DefaultTransport,
+	}
+
+	return &Client{
+		baseURL:    baseURL,
+		httpClient: httpClient,
+		timeout:    timeout,
+	}, nil
+}
+
+// do performs an HTTP request and returns the response
+func (c *Client) do(ctx context.Context, method, path string, body, result interface{}) error {
+	// Build URL
+	u, err := c.baseURL.Parse(path)
+	if err != nil {
+		return fmt.Errorf("invalid URL path: %w", err)
+	}
+
+	// Encode body
+	var reqBody io.Reader
+	if body != nil {
+		data, err := json.Marshal(body)
+		if err != nil {
+			return fmt.Errorf("failed to encode request body: %w", err)
+		}
+		reqBody = bytes.NewReader(data)
+	}
+
+	// Create request
+	req, err := http.NewRequestWithContext(ctx, method, u.String(), reqBody)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	req.Header.Set("Accept", "application/json")
+
+	// Execute request
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Handle error status codes
+	if resp.StatusCode >= 400 {
+		var apiErr APIError
+		if err := json.Unmarshal(respBody, &apiErr); err != nil {
+			apiErr.Message = string(respBody)
+		}
+		apiErr.StatusCode = resp.StatusCode
+
+		switch resp.StatusCode {
+		case http.StatusUnauthorized:
+			return fmt.Errorf("%w: %s", ErrUnauthorized, apiErr.Message)
+		case http.StatusForbidden:
+			return fmt.Errorf("%w: %s", ErrForbidden, apiErr.Message)
+		case http.StatusNotFound:
+			return fmt.Errorf("%w: %s", ErrNotFound, apiErr.Message)
+		default:
+			return &apiErr
+		}
+	}
+
+	// Decode successful response
+	if result != nil && len(respBody) > 0 {
+		if err := json.Unmarshal(respBody, result); err != nil {
+			return fmt.Errorf("failed to decode response: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// Get performs a GET request
+func (c *Client) Get(ctx context.Context, path string, result interface{}) error {
+	return c.do(ctx, http.MethodGet, path, nil, result)
+}
+
+// Post performs a POST request
+func (c *Client) Post(ctx context.Context, path string, body, result interface{}) error {
+	return c.do(ctx, http.MethodPost, path, body, result)
+}
+
+// Delete performs a DELETE request
+func (c *Client) Delete(ctx context.Context, path string) error {
+	return c.do(ctx, http.MethodDelete, path, nil, nil)
+}
+
+// Put performs a PUT request (for S3 upload)
+func (c *Client) Put(ctx context.Context, url string, contentType string, body io.Reader) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, body)
+	if err != nil {
+		return fmt.Errorf("failed to create upload request: %w", err)
+	}
+	req.Header.Set("Content-Type", contentType)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("upload request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("%w: status %d", ErrUploadFailed, resp.StatusCode)
+	}
+
+	return nil
+}
+
+// GetBaseURL returns the base URL
+func (c *Client) GetBaseURL() string {
+	return c.baseURL.String()
+}
