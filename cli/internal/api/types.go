@@ -123,13 +123,13 @@ func (r *ContentListResponse) HasMore() bool {
 
 // BootResponse represents the response for boot endpoint
 type BootResponse struct {
-	Initialized       bool       `json:"initialized"`
-	Authentication    string     `json:"authentication"` // "authorized" or "unauthorized"
-	User              *User      `json:"user,omitempty"`
-	Categories        []Category `json:"categories"`
-	AllowRegister     bool       `json:"registration_enabled"`
-	EnableSSO         bool       `json:"sso_enabled"`
-	SSOLoginURL       string     `json:"sso_login_url,omitempty"`
+	Initialized    bool       `json:"initialized"`
+	Authentication string     `json:"authentication"` // "authorized" or "unauthorized"
+	User           *User      `json:"user,omitempty"`
+	Categories     []Category `json:"categories"`
+	AllowRegister  bool       `json:"registration_enabled"`
+	EnableSSO      bool       `json:"sso_enabled"`
+	SSOLoginURL    string     `json:"sso_login_url,omitempty"`
 }
 
 // IsAuthenticated returns true if the user is authenticated
@@ -146,6 +146,23 @@ type LoginRequest struct {
 // LoginResponse represents login response
 type LoginResponse struct {
 	User User `json:"user"`
+}
+
+// CLISSOStartRequest represents the request body for creating a CLI SSO login session.
+type CLISSOStartRequest struct {
+	CallbackURL string `json:"callback_url"`
+}
+
+// CLISSOStartResponse represents the response body for creating a CLI SSO login session.
+type CLISSOStartResponse struct {
+	LoginID    string `json:"login_id"`
+	BrowserURL string `json:"browser_url"`
+	ExpiresIn  int    `json:"expires_in"`
+}
+
+// CLISSOExchangeRequest represents the request body for exchanging a CLI SSO ticket.
+type CLISSOExchangeRequest struct {
+	Ticket string `json:"ticket"`
 }
 
 // PresignRequest represents presign URL request

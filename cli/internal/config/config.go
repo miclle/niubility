@@ -4,6 +4,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"time"
@@ -35,14 +36,14 @@ type Config struct {
 
 // Default configuration values
 const (
-	DefaultServer       = ""
-	DefaultOutput       = "table"
-	DefaultEditor       = "vim"
-	DefaultStatus       = "draft"
-	DefaultTimeout      = "30s"
-	DefaultCookieJar    = "~/.config/niubility/cookies.json"
-	DefaultConfigDir    = "~/.config/niubility"
-	DefaultConfigFile   = "config.yaml"
+	DefaultServer     = ""
+	DefaultOutput     = "table"
+	DefaultEditor     = "vim"
+	DefaultStatus     = "draft"
+	DefaultTimeout    = "30s"
+	DefaultCookieJar  = "~/.config/niubility/cookies.json"
+	DefaultConfigDir  = "~/.config/niubility"
+	DefaultConfigFile = "config.yaml"
 )
 
 // Errors
@@ -129,6 +130,7 @@ func validateConfig(cfg *Config) error {
 
 	// Expand home directory in paths
 	cfg.CookieJar = expandHome(cfg.CookieJar)
+	cfg.Server = normalizeServerURL(cfg.Server)
 
 	return nil
 }
@@ -164,12 +166,12 @@ func SaveTo(cfg *Config, configPath string) error {
 
 	// Create a map for YAML output
 	data := map[string]interface{}{
-		"server": cfg.Server,
-		"output": cfg.Output,
-		"editor": cfg.Editor,
+		"server":         cfg.Server,
+		"output":         cfg.Output,
+		"editor":         cfg.Editor,
 		"default_status": cfg.DefaultStatus,
-		"timeout": cfg.Timeout,
-		"cookie_jar": cfg.CookieJar,
+		"timeout":        cfg.Timeout,
+		"cookie_jar":     cfg.CookieJar,
 	}
 
 	// Marshal to YAML
@@ -196,4 +198,21 @@ func expandHome(path string) string {
 		return filepath.Join(homeDir, path[2:])
 	}
 	return path
+}
+
+func normalizeServerURL(raw string) string {
+	if raw == "" {
+		return raw
+	}
+
+	u, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+
+	if u.Path == "/" {
+		u.Path = ""
+	}
+
+	return u.String()
 }

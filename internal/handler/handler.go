@@ -47,6 +47,9 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	api.POST("/init", ctrl.InitSystem)
 	api.POST("/login", ctrl.Login)
 	api.POST("/register", ctrl.Register)
+	api.POST("/sso/cli/start", ctrl.CLISSOStart)
+	api.GET("/sso/cli/login", ctrl.CLISSOLogin)
+	api.POST("/sso/cli/exchange", ctrl.CLISSOExchange)
 
 	// user search (authenticated users)
 	api.GET("/users/search", ctrl.SearchUsers)

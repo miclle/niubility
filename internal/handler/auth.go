@@ -9,6 +9,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -32,6 +33,28 @@ type LoginRequest struct {
 // LoginResponse represents the response for login.
 type LoginResponse struct {
 	User *entity.User `json:"user"`
+}
+
+// CLISSOStartRequest represents the request body for creating a CLI SSO login request.
+type CLISSOStartRequest struct {
+	CallbackURL string `json:"callback_url" binding:"required"`
+}
+
+// CLISSOStartResponse represents the response body for creating a CLI SSO login request.
+type CLISSOStartResponse struct {
+	LoginID    string `json:"login_id"`
+	BrowserURL string `json:"browser_url"`
+	ExpiresIn  int    `json:"expires_in"`
+}
+
+// CLISSOLoginArgs represents the query parameters for starting browser-based CLI SSO.
+type CLISSOLoginArgs struct {
+	Request string `query:"request"`
+}
+
+// CLISSOExchangeRequest represents the request body for exchanging a CLI SSO ticket.
+type CLISSOExchangeRequest struct {
+	Ticket string `json:"ticket" binding:"required"`
 }
 
 // Login handles username+password authentication.
@@ -191,13 +214,6 @@ func (ctrl *Ctrl) SSOCallback(c *fox.Context, args *SSOCallbackArgs) any {
 		return render.Redirect{Code: 302, Location: "/login"}
 	}
 
-	// Validate state (CSRF protection)
-	redirect, err := ctrl.validateSSOState(c, args.State)
-	if err != nil {
-		c.Logger.Errorf("invalid SSO state: %v", err)
-		return render.Redirect{Code: 302, Location: "/login"}
-	}
-
 	provider, err := ctrl.getOIDCProvider(ctx)
 	if err != nil {
 		c.Logger.Errorf("get OIDC provider: %v", err)
@@ -210,7 +226,18 @@ func (ctrl *Ctrl) SSOCallback(c *fox.Context, args *SSOCallbackArgs) any {
 		return render.Redirect{Code: 302, Location: "/500"}
 	}
 
-	return ctrl.completeSSOLogin(c, userinfo, redirect)
+	redirect, err := ctrl.validateSSOState(c, args.State)
+	if err == nil {
+		return ctrl.completeSSOLogin(c, userinfo, redirect)
+	}
+
+	requestID, cliErr := ctrl.validateCLISSOState(args.State)
+	if cliErr == nil {
+		return ctrl.completeCLISSOLogin(c, requestID, userinfo)
+	}
+
+	c.Logger.Errorf("invalid SSO state: web=%v cli=%v", err, cliErr)
+	return render.Redirect{Code: 302, Location: "/login"}
 }
 
 // SSOAcsArgs represents the SAML ACS POST form parameters.
@@ -237,6 +264,11 @@ func (ctrl *Ctrl) SSOAcs(c *fox.Context, args *SSOAcsArgs) any {
 	if err != nil {
 		c.Logger.Errorf("SAML exchange failed: %v", err)
 		return render.Redirect{Code: 302, Location: "/500"}
+	}
+
+	requestID, cliErr := ctrl.validateCLISSOState(args.RelayState)
+	if cliErr == nil {
+		return ctrl.completeCLISSOLogin(c, requestID, userinfo)
 	}
 
 	redirect := args.RelayState
@@ -266,32 +298,101 @@ func (ctrl *Ctrl) SSOMetadata(c *fox.Context) any {
 
 // completeSSOLogin upserts the user, issues a JWT token, and redirects.
 func (ctrl *Ctrl) completeSSOLogin(c *fox.Context, userinfo *sso.UserInfo, redirect string) render.Redirect {
-	ctx := c.Logger.WithContext(c.Request.Context())
-
-	if userinfo.Username == "" {
-		c.Logger.Error("SSO user username is empty")
-		return render.Redirect{Code: 302, Location: "/500"}
-	}
-
-	user, err := ctrl.service.UpsertUser(ctx, userinfo.Username, userinfo.Email)
+	user, err := ctrl.resolveSSOUser(c, userinfo)
 	if err != nil {
-		c.Logger.Errorf("upsert user failed: %v", err)
+		c.Logger.Errorf("resolve SSO user failed: %v", err)
 		return render.Redirect{Code: 302, Location: "/500"}
 	}
-
-	tokenString, err := ctrl.issueToken(user.Username)
-	if err != nil {
-		c.Logger.Errorf("create jwt token failed: %v", err)
+	if err := ctrl.setAuthCookieForUser(c, user); err != nil {
+		c.Logger.Errorf("set auth cookie failed: %v", err)
 		return render.Redirect{Code: 302, Location: "/500"}
 	}
-
-	ctrl.setAuthCookie(c, tokenString)
 
 	if redirect == "" {
 		redirect = "/"
 	}
 
 	return render.Redirect{Code: 302, Location: redirect}
+}
+
+// CLISSOStart registers a pending CLI SSO login and returns the browser URL.
+func (ctrl *Ctrl) CLISSOStart(c *fox.Context, req *CLISSOStartRequest) (any, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	if ctrl.service.GetSSOType(ctx) == "disabled" {
+		return nil, httperrors.New(http.StatusBadRequest, "SSO 未启用")
+	}
+
+	loginReq, err := ctrl.service.CreateCLISSOLoginRequest(ctx, req.CallbackURL)
+	if err != nil {
+		return nil, httperrors.New(http.StatusBadRequest, err.Error())
+	}
+
+	baseURL := ctrl.baseURL(c)
+	browserURL := fmt.Sprintf("%s/api/v1/sso/cli/login?request=%s", baseURL, url.QueryEscape(loginReq.ID))
+
+	return &CLISSOStartResponse{
+		LoginID:    loginReq.ID,
+		BrowserURL: browserURL,
+		ExpiresIn:  300,
+	}, nil
+}
+
+// CLISSOLogin redirects the browser to the configured IdP for CLI SSO.
+func (ctrl *Ctrl) CLISSOLogin(c *fox.Context, args *CLISSOLoginArgs) any {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	if ctrl.service.GetSSOType(ctx) == "disabled" {
+		return render.Redirect{Code: 302, Location: "/login"}
+	}
+
+	if _, ok := ctrl.service.GetCLISSOLoginRequest(ctx, args.Request); !ok {
+		return httperrors.ErrNotFound
+	}
+
+	switch ctrl.service.GetSSOType(ctx) {
+	case "oidc":
+		provider, err := ctrl.getOIDCProvider(ctx)
+		if err != nil {
+			c.Logger.Errorf("get OIDC provider: %v", err)
+			return ctrl.redirectCLISSOFailure(c, args.Request, "sso_provider_error")
+		}
+		state := ctrl.generateCLISSOState(args.Request)
+		return render.Redirect{Code: 302, Location: provider.AuthURL(state, ctrl.baseURL(c)+"/sso/callback")}
+
+	case "saml":
+		provider, err := ctrl.getSAMLProvider(c)
+		if err != nil {
+			c.Logger.Errorf("get SAML provider: %v", err)
+			return ctrl.redirectCLISSOFailure(c, args.Request, "sso_provider_error")
+		}
+		return render.Redirect{Code: 302, Location: provider.AuthURL(ctrl.generateCLISSOState(args.Request), "")}
+
+	default:
+		return render.Redirect{Code: 302, Location: "/login"}
+	}
+}
+
+// CLISSOExchange consumes a CLI SSO ticket and creates an authenticated session.
+func (ctrl *Ctrl) CLISSOExchange(c *fox.Context, req *CLISSOExchangeRequest) (any, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	userinfo, err := ctrl.service.ConsumeCLISSOTicket(ctx, req.Ticket)
+	if err != nil {
+		return nil, httperrors.New(http.StatusUnauthorized, "ticket 无效或已过期")
+	}
+
+	user, err := ctrl.resolveSSOUser(c, userinfo)
+	if err != nil {
+		c.Logger.Errorf("resolve SSO user failed: %v", err)
+		return nil, httperrors.ErrInternalServerError
+	}
+
+	if err := ctrl.setAuthCookieForUser(c, user); err != nil {
+		c.Logger.Errorf("set auth cookie failed: %v", err)
+		return nil, httperrors.ErrInternalServerError
+	}
+	return &LoginResponse{User: user}, nil
 }
 
 // getOIDCProvider creates an OIDC provider from database settings.
@@ -318,15 +419,6 @@ func (ctrl *Ctrl) getSAMLProvider(c *fox.Context) (*sso.SAMLProvider, error) {
 		return nil, fmt.Errorf("parse IdP metadata: %w", err)
 	}
 
-	// Determine scheme: prefer X-Forwarded-Proto header (reverse proxy), fallback to TLS
-	scheme := "https"
-	if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
-		scheme = proto
-	} else if c.Request.TLS == nil {
-		scheme = "http"
-	}
-	baseURL := fmt.Sprintf("%s://%s", scheme, c.Request.Host)
-
 	// Parse attribute mapping JSON
 	var attrMapping map[string]string
 	if cfg.AttributeMapping != "" {
@@ -339,8 +431,8 @@ func (ctrl *Ctrl) getSAMLProvider(c *fox.Context) (*sso.SAMLProvider, error) {
 		IDPEntityID:      metadata.EntityID,
 		IDPSSOURL:        metadata.SSOURL,
 		IDPCertificate:   metadata.Certificate,
-		SPEntityID:       baseURL + "/sso/metadata",
-		SPACSURL:         baseURL + "/sso/acs",
+		SPEntityID:       ctrl.baseURL(c) + "/sso/metadata",
+		SPACSURL:         ctrl.baseURL(c) + "/sso/acs",
 		SPCertificate:    cfg.SPCertificate,
 		SPPrivateKey:     cfg.SPPrivateKey,
 		NameIDFormat:     cfg.NameIDFormat,
@@ -353,14 +445,7 @@ func (ctrl *Ctrl) buildSSOLoginURL(c *fox.Context) string {
 	ctx := c.Logger.WithContext(c.Request.Context())
 
 	ssoType := ctrl.service.GetSSOType(ctx)
-	// Determine scheme: prefer X-Forwarded-Proto header (reverse proxy), fallback to TLS
-	scheme := "https"
-	if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
-		scheme = proto
-	} else if c.Request.TLS == nil {
-		scheme = "http"
-	}
-	baseURL := fmt.Sprintf("%s://%s", scheme, c.Request.Host)
+	baseURL := ctrl.baseURL(c)
 
 	switch ssoType {
 	case "oidc":
@@ -385,6 +470,16 @@ func (ctrl *Ctrl) buildSSOLoginURL(c *fox.Context) string {
 	default:
 		return ""
 	}
+}
+
+func (ctrl *Ctrl) baseURL(c *fox.Context) string {
+	scheme := "https"
+	if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
+		scheme = proto
+	} else if c.Request.TLS == nil {
+		scheme = "http"
+	}
+	return fmt.Sprintf("%s://%s", scheme, c.Request.Host)
 }
 
 // generateSSOState creates an HMAC-signed state parameter for OIDC CSRF protection.
@@ -457,6 +552,98 @@ func (ctrl *Ctrl) validateSSOState(c *fox.Context, state string) (string, error)
 	})
 
 	return redirect, nil
+}
+
+// generateCLISSOState creates an HMAC-signed state parameter for CLI SSO.
+// Format: base64(request_id|expiry|hmac)
+func (ctrl *Ctrl) generateCLISSOState(requestID string) string {
+	expiry := strconv.FormatInt(time.Now().Add(10*time.Minute).Unix(), 10)
+	payload := requestID + "|" + expiry
+	mac := hmac.New(sha256.New, []byte(ctrl.service.GetJWTSecret()))
+	mac.Write([]byte(payload))
+	sig := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+	return base64.RawURLEncoding.EncodeToString([]byte(payload + "|" + sig))
+}
+
+// validateCLISSOState validates the CLI SSO state parameter and returns the request ID.
+func (ctrl *Ctrl) validateCLISSOState(state string) (string, error) {
+	decoded, err := base64.RawURLEncoding.DecodeString(state)
+	if err != nil {
+		return "", fmt.Errorf("decode state: %w", err)
+	}
+
+	parts := strings.SplitN(string(decoded), "|", 3)
+	if len(parts) != 3 {
+		return "", fmt.Errorf("invalid state format")
+	}
+
+	requestID, expiryStr, sig := parts[0], parts[1], parts[2]
+	expiry, err := strconv.ParseInt(expiryStr, 10, 64)
+	if err != nil || time.Now().Unix() > expiry {
+		return "", fmt.Errorf("state expired")
+	}
+
+	payload := requestID + "|" + expiryStr
+	mac := hmac.New(sha256.New, []byte(ctrl.service.GetJWTSecret()))
+	mac.Write([]byte(payload))
+	expectedSig := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+	if !hmac.Equal([]byte(sig), []byte(expectedSig)) {
+		return "", fmt.Errorf("invalid state signature")
+	}
+
+	return requestID, nil
+}
+
+func (ctrl *Ctrl) resolveSSOUser(c *fox.Context, userinfo *sso.UserInfo) (*entity.User, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	if userinfo == nil || userinfo.Username == "" {
+		return nil, fmt.Errorf("SSO user username is empty")
+	}
+
+	user, err := ctrl.service.UpsertUser(ctx, userinfo.Username, userinfo.Email)
+	if err != nil {
+		return nil, fmt.Errorf("upsert user: %w", err)
+	}
+
+	return user, nil
+}
+
+func (ctrl *Ctrl) setAuthCookieForUser(c *fox.Context, user *entity.User) error {
+	tokenString, err := ctrl.issueToken(user.Username)
+	if err != nil {
+		return fmt.Errorf("create jwt token: %w", err)
+	}
+	ctrl.setAuthCookie(c, tokenString)
+	return nil
+}
+
+func (ctrl *Ctrl) completeCLISSOLogin(c *fox.Context, requestID string, userinfo *sso.UserInfo) any {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	if _, err := ctrl.resolveSSOUser(c, userinfo); err != nil {
+		c.Logger.Errorf("resolve SSO user failed: %v", err)
+		return ctrl.redirectCLISSOFailure(c, requestID, "user_sync_failed")
+	}
+
+	ticket, callbackURL, err := ctrl.service.CompleteCLISSOLoginRequest(ctx, requestID, userinfo)
+	if err != nil {
+		c.Logger.Errorf("complete CLI SSO login failed: %v", err)
+		return render.Redirect{Code: 302, Location: "/500"}
+	}
+
+	return render.Redirect{Code: 302, Location: callbackURL + "?ticket=" + url.QueryEscape(ticket)}
+}
+
+func (ctrl *Ctrl) redirectCLISSOFailure(c *fox.Context, requestID, reason string) any {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	callbackURL, ok := ctrl.service.FailCLISSOLoginRequest(ctx, requestID)
+	if !ok {
+		return render.Redirect{Code: 302, Location: "/login"}
+	}
+
+	return render.Redirect{Code: 302, Location: callbackURL + "?error=" + url.QueryEscape(reason)}
 }
 
 // BootResponse represents the boot response.

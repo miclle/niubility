@@ -71,3 +71,29 @@ func TestSaveTo_CustomPath(t *testing.T) {
 		t.Fatalf("Output = %q, want %q", loaded.Output, cfg.Output)
 	}
 }
+
+func TestLoadFrom_NormalizesServerURL(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "config.yaml")
+
+	content := []byte(`server: "http://example.com:9000/"
+output: "table"
+editor: "vim"
+default_status: "draft"
+timeout: "30s"
+cookie_jar: "~/.config/niubility/cookies.json"
+`)
+
+	if err := os.WriteFile(configPath, content, 0644); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	cfg, err := LoadFrom(configPath)
+	if err != nil {
+		t.Fatalf("LoadFrom() error = %v", err)
+	}
+
+	if cfg.Server != "http://example.com:9000" {
+		t.Fatalf("Server = %q, want %q", cfg.Server, "http://example.com:9000")
+	}
+}

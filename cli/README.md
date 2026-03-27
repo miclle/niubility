@@ -20,6 +20,9 @@ go install .
 # 交互式登录
 niubility login --server http://your-server:9000
 
+# 使用浏览器 SSO 登录
+niubility login --server http://your-server:9000 --sso
+
 # 指定用户名
 niubility login --server http://your-server:9000 --username admin
 
@@ -101,7 +104,7 @@ niubility content delete 123 --yes
 
 | 命令 | 说明 |
 |------|------|
-| `niubility login` | 登录到服务器 |
+| `niubility login` | 使用用户名密码或 `--sso` 登录到服务器 |
 | `niubility logout` | 登出 |
 | `niubility whoami` | 显示当前登录用户 |
 

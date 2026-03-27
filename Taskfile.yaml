@@ -2,6 +2,9 @@ version: "3"
 
 vars:
   WEBSITE_DIR: internal/website
+  CLI_DIR: cli
+  BIN_DIR: bin
+  BUILD_PLATFORMS: linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64
   GIT_COMMIT:
     sh: git rev-parse --short HEAD
   BUILD_TIME:
@@ -28,6 +31,7 @@ tasks:
     desc: Install all dependencies (Go modules + frontend)
     cmds:
       - go mod download
+      - cd {{.CLI_DIR}} && go mod download
       - cd {{.WEBSITE_DIR}} && npm install
 
   # ---------- Development ----------
@@ -54,10 +58,73 @@ tasks:
   # ---------- Build ----------
 
   build:
-    desc: Build the server binary with embedded website
+    desc: Build the server binary for a specific platform (use env GOOS/GOARCH)
     cmds:
       - cd {{.WEBSITE_DIR}} && npm install && npm run build
-      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "{{.LDFLAGS}}" -o bin/niubility ./cmd/niubility/
+      - mkdir -p {{.BIN_DIR}}
+      - |
+        GOOS_VALUE="${GOOS:-linux}"
+        GOARCH_VALUE="${GOARCH:-amd64}"
+        output="{{.BIN_DIR}}/niubility_${GOOS_VALUE}_${GOARCH_VALUE}"
+        if [ "$GOOS_VALUE" = "windows" ]; then
+          output="${output}.exe"
+        fi
+        echo "Building ${output}"
+        CGO_ENABLED=0 GOOS="$GOOS_VALUE" GOARCH="$GOARCH_VALUE" \
+          go build -trimpath -ldflags "{{.LDFLAGS}}" -o "$output" ./cmd/niubility/
+
+  build-all:
+    desc: Build server binaries for all supported platforms
+    cmds:
+      - cd {{.WEBSITE_DIR}} && npm install && npm run build
+      - mkdir -p {{.BIN_DIR}}
+      - |
+        for platform in {{.BUILD_PLATFORMS}}; do
+          GOOS_VALUE="${platform%/*}"
+          GOARCH_VALUE="${platform#*/}"
+          output="{{.BIN_DIR}}/niubility_${GOOS_VALUE}_${GOARCH_VALUE}"
+          if [ "$GOOS_VALUE" = "windows" ]; then
+            output="${output}.exe"
+          fi
+          echo "Building ${output}"
+          CGO_ENABLED=0 GOOS="$GOOS_VALUE" GOARCH="$GOARCH_VALUE" \
+            go build -trimpath -ldflags "{{.LDFLAGS}}" -o "$output" ./cmd/niubility/
+        done
+
+  build-cli:
+    desc: Build the CLI binary for a specific platform (use env GOOS/GOARCH)
+    cmds:
+      - mkdir -p {{.BIN_DIR}}
+      - |
+        GOOS_VALUE="${GOOS:-linux}"
+        GOARCH_VALUE="${GOARCH:-amd64}"
+        output="../{{.BIN_DIR}}/niubility-cli_${GOOS_VALUE}_${GOARCH_VALUE}"
+        if [ "$GOOS_VALUE" = "windows" ]; then
+          output="${output}.exe"
+        fi
+        echo "Building ${output#../}"
+        cd {{.CLI_DIR}}
+        CGO_ENABLED=0 GOOS="$GOOS_VALUE" GOARCH="$GOARCH_VALUE" \
+          go build -trimpath -o "$output" .
+
+  build-cli-all:
+    desc: Build CLI binaries for all supported platforms
+    cmds:
+      - mkdir -p {{.BIN_DIR}}
+      - |
+        for platform in {{.BUILD_PLATFORMS}}; do
+          GOOS_VALUE="${platform%/*}"
+          GOARCH_VALUE="${platform#*/}"
+          output="../{{.BIN_DIR}}/niubility-cli_${GOOS_VALUE}_${GOARCH_VALUE}"
+          if [ "$GOOS_VALUE" = "windows" ]; then
+            output="${output}.exe"
+          fi
+          echo "Building ${output#../}"
+          cd {{.CLI_DIR}}
+          CGO_ENABLED=0 GOOS="$GOOS_VALUE" GOARCH="$GOARCH_VALUE" \
+            go build -trimpath -o "$output" .
+          cd - >/dev/null
+        done
 
   clean:
     desc: Clean build artifacts

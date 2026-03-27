@@ -28,6 +28,26 @@ func (c *Client) Login(ctx context.Context, username, password string) (*LoginRe
 	return &resp, nil
 }
 
+// StartCLISSO creates a pending CLI SSO login session.
+func (c *Client) StartCLISSO(ctx context.Context, callbackURL string) (*CLISSOStartResponse, error) {
+	req := CLISSOStartRequest{CallbackURL: callbackURL}
+	var resp CLISSOStartResponse
+	if err := c.Post(ctx, "/api/v1/sso/cli/start", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// ExchangeCLISSOTicket exchanges a one-time CLI SSO ticket for an authenticated session.
+func (c *Client) ExchangeCLISSOTicket(ctx context.Context, ticket string) (*LoginResponse, error) {
+	req := CLISSOExchangeRequest{Ticket: ticket}
+	var resp LoginResponse
+	if err := c.Post(ctx, "/api/v1/sso/cli/exchange", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
 // Logout logs out the current user
 func (c *Client) Logout(ctx context.Context) error {
 	return c.Get(ctx, "/logout", nil)

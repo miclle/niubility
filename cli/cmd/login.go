@@ -23,6 +23,7 @@ var (
 	loginUsername string
 	loginPassword string
 	passwordStdin bool
+	loginSSO      bool
 )
 
 // loginCmd represents the login command
@@ -35,8 +36,11 @@ Examples:
   # Interactive login
   niubility login
 
-  # Specify server
+ # Specify server
   niubility login --server http://localhost:9000
+
+  # Login with SSO
+  niubility login --server http://localhost:9000 --sso
 
   # Non-interactive login
   niubility login --server http://localhost:9000 --username admin --password-stdin < password.txt`,
@@ -65,41 +69,8 @@ Examples:
 			return fmt.Errorf("server address is required. Use --server flag or set it in config")
 		}
 
-		// Get username
-		username := loginUsername
-		if username == "" {
-			fmt.Print("Username: ")
-			reader := bufio.NewReader(os.Stdin)
-			username, err = reader.ReadString('\n')
-			if err != nil {
-				return fmt.Errorf("failed to read username: %w", err)
-			}
-			username = strings.TrimSpace(username)
-		}
-
-		// Get password
-		password := loginPassword
-		if password == "" {
-			if passwordStdin {
-				reader := bufio.NewReader(os.Stdin)
-				password, err = reader.ReadString('\n')
-				if err != nil {
-					return fmt.Errorf("failed to read password: %w", err)
-				}
-				password = strings.TrimSpace(password)
-			} else {
-				fmt.Print("Password: ")
-				passwordBytes, err := term.ReadPassword(int(syscall.Stdin))
-				fmt.Println() // newline after password
-				if err != nil {
-					return fmt.Errorf("failed to read password: %w", err)
-				}
-				password = string(passwordBytes)
-			}
-		}
-
-		if username == "" || password == "" {
-			return fmt.Errorf("username and password are required")
+		if loginSSO && (loginUsername != "" || loginPassword != "" || passwordStdin) {
+			return fmt.Errorf("--sso cannot be used with username/password flags")
 		}
 
 		// Create auth manager
@@ -124,9 +95,20 @@ Examples:
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
-		_, err = apiClient.Login(ctx, username, password)
-		if err != nil {
-			return fmt.Errorf("login failed: %w", err)
+		if loginSSO {
+			if err := auth.SSOLogin(ctx, apiClient); err != nil {
+				return fmt.Errorf("SSO login failed: %w", err)
+			}
+		} else {
+			username, password, err := readPasswordLoginInput()
+			if err != nil {
+				return err
+			}
+
+			_, err = apiClient.Login(ctx, username, password)
+			if err != nil {
+				return fmt.Errorf("login failed: %w", err)
+			}
 		}
 
 		// Save session
@@ -172,4 +154,47 @@ func init() {
 	loginCmd.Flags().StringVarP(&loginUsername, "username", "u", "", "Username")
 	loginCmd.Flags().StringVarP(&loginPassword, "password", "p", "", "Password (use --password-stdin for non-interactive)")
 	loginCmd.Flags().BoolVar(&passwordStdin, "password-stdin", false, "Read password from stdin")
+	loginCmd.Flags().BoolVar(&loginSSO, "sso", false, "Login with browser-based SSO")
+}
+
+func readPasswordLoginInput() (string, string, error) {
+	// Get username
+	username := loginUsername
+	var err error
+	if username == "" {
+		fmt.Print("Username: ")
+		reader := bufio.NewReader(os.Stdin)
+		username, err = reader.ReadString('\n')
+		if err != nil {
+			return "", "", fmt.Errorf("failed to read username: %w", err)
+		}
+		username = strings.TrimSpace(username)
+	}
+
+	// Get password
+	password := loginPassword
+	if password == "" {
+		if passwordStdin {
+			reader := bufio.NewReader(os.Stdin)
+			password, err = reader.ReadString('\n')
+			if err != nil {
+				return "", "", fmt.Errorf("failed to read password: %w", err)
+			}
+			password = strings.TrimSpace(password)
+		} else {
+			fmt.Print("Password: ")
+			passwordBytes, err := term.ReadPassword(int(syscall.Stdin))
+			fmt.Println()
+			if err != nil {
+				return "", "", fmt.Errorf("failed to read password: %w", err)
+			}
+			password = string(passwordBytes)
+		}
+	}
+
+	if username == "" || password == "" {
+		return "", "", fmt.Errorf("username and password are required")
+	}
+
+	return username, password, nil
 }

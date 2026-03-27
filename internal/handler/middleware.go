@@ -28,6 +28,9 @@ var skipPaths = []string{
 	"/api/v1/init",
 	"/api/v1/login",
 	"/api/v1/register",
+	"/api/v1/sso/cli/start",
+	"/api/v1/sso/cli/login",
+	"/api/v1/sso/cli/exchange",
 
 	// website routes
 	"/forbidden",

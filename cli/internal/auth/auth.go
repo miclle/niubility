@@ -44,6 +44,8 @@ var (
 
 // NewManager creates a new auth manager
 func NewManager(cookieJarPath, server string) (*Manager, error) {
+	server = normalizeServerURL(server)
+
 	// Validate server URL
 	if _, err := url.Parse(server); err != nil {
 		return nil, fmt.Errorf("invalid server URL: %w", err)
@@ -83,7 +85,7 @@ func (m *Manager) load() error {
 	}
 
 	// Only load cookies if they're for the same server
-	if session.Server != "" && session.Server != m.server {
+	if normalizeServerURL(session.Server) != "" && normalizeServerURL(session.Server) != m.server {
 		return nil
 	}
 
@@ -94,10 +96,15 @@ func (m *Manager) load() error {
 			return err
 		}
 
-		// Fix cookie domain if empty
+		// Restore host-only cookies from persisted session data.
+		// The standard library cookie jar may omit Domain/Path when exporting
+		// cookies, but it still needs canonical values when loading them back.
 		for _, cookie := range session.Cookies {
 			if cookie.Domain == "" {
-				cookie.Domain = serverURL.Host
+				cookie.Domain = serverURL.Hostname()
+			}
+			if cookie.Path == "" {
+				cookie.Path = "/"
 			}
 		}
 
@@ -127,7 +134,7 @@ func (m *Manager) Save() error {
 
 	session := Session{
 		Cookies: cookies,
-		Server:  m.server,
+		Server:  normalizeServerURL(m.server),
 	}
 
 	data, err := json.MarshalIndent(session, "", "  ")
@@ -183,4 +190,21 @@ func (m *Manager) HasSession() bool {
 // GetCookieJarPath returns the path to the cookie jar file
 func (m *Manager) GetCookieJarPath() string {
 	return m.cookieJarPath
+}
+
+func normalizeServerURL(raw string) string {
+	if raw == "" {
+		return raw
+	}
+
+	u, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+
+	if u.Path == "/" {
+		u.Path = ""
+	}
+
+	return u.String()
 }
