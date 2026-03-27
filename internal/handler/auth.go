@@ -318,8 +318,11 @@ func (ctrl *Ctrl) getSAMLProvider(c *fox.Context) (*sso.SAMLProvider, error) {
 		return nil, fmt.Errorf("parse IdP metadata: %w", err)
 	}
 
+	// Determine scheme: prefer X-Forwarded-Proto header (reverse proxy), fallback to TLS
 	scheme := "https"
-	if c.Request.TLS == nil {
+	if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
+		scheme = proto
+	} else if c.Request.TLS == nil {
 		scheme = "http"
 	}
 	baseURL := fmt.Sprintf("%s://%s", scheme, c.Request.Host)
@@ -350,8 +353,11 @@ func (ctrl *Ctrl) buildSSOLoginURL(c *fox.Context) string {
 	ctx := c.Logger.WithContext(c.Request.Context())
 
 	ssoType := ctrl.service.GetSSOType(ctx)
+	// Determine scheme: prefer X-Forwarded-Proto header (reverse proxy), fallback to TLS
 	scheme := "https"
-	if c.Request.TLS == nil {
+	if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
+		scheme = proto
+	} else if c.Request.TLS == nil {
 		scheme = "http"
 	}
 	baseURL := fmt.Sprintf("%s://%s", scheme, c.Request.Host)
