@@ -55,33 +55,33 @@ func TestUser_IsSuperAdmin(t *testing.T) {
 
 func TestUser_ResolveAssetURLs(t *testing.T) {
 	tests := []struct {
-		name     string
-		user     *User
+		name       string
+		user       *User
 		wantAvatar string
 	}{
 		{
-			name:     "nil user",
-			user:     nil,
+			name:       "nil user",
+			user:       nil,
 			wantAvatar: "",
 		},
 		{
-			name:     "empty avatar",
-			user:     &User{Avatar: ""},
+			name:       "empty avatar",
+			user:       &User{Avatar: ""},
 			wantAvatar: "",
 		},
 		{
-			name:     "full URL unchanged",
-			user:     &User{Avatar: "https://example.com/avatar.png"},
+			name:       "full URL unchanged",
+			user:       &User{Avatar: "https://example.com/avatar.png"},
 			wantAvatar: "https://example.com/avatar.png",
 		},
 		{
-			name:     "absolute path unchanged",
-			user:     &User{Avatar: "/static/avatar.png"},
+			name:       "absolute path unchanged",
+			user:       &User{Avatar: "/static/avatar.png"},
 			wantAvatar: "/static/avatar.png",
 		},
 		{
-			name:     "S3 key converted",
-			user:     &User{Avatar: "users/123/avatar.png"},
+			name:       "S3 key converted",
+			user:       &User{Avatar: "users/123/avatar.png"},
 			wantAvatar: "/avatars/users/123/avatar.png",
 		},
 	}

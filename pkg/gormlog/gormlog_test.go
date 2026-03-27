@@ -16,9 +16,9 @@ func TestDefaultSlowThreshold(t *testing.T) {
 
 func TestNew(t *testing.T) {
 	tests := []struct {
-		name         string
-		slow         time.Duration
-		wantSlow     time.Duration
+		name     string
+		slow     time.Duration
+		wantSlow time.Duration
 	}{
 		{"zero uses default", 0, DefaultSlowThreshold},
 		{"negative uses default", -100 * time.Millisecond, DefaultSlowThreshold},
@@ -41,10 +41,10 @@ func TestNew(t *testing.T) {
 
 func TestTruncateSQL(t *testing.T) {
 	tests := []struct {
-		name    string
-		sql     string
-		maxLen  int
-		want    string
+		name   string
+		sql    string
+		maxLen int
+		want   string
 	}{
 		{"empty", "", 10, ""},
 		{"short", "SELECT 1", 10, "SELECT 1"},
