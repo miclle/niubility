@@ -2,6 +2,7 @@ package textencrypt
 
 import (
 	"encoding/base64"
+	"encoding/hex"
 	"flag"
 	"os"
 	"strings"
@@ -12,6 +13,281 @@ import (
 
 // Command line flag for specifying plaintext to encrypt
 var plaintextFlag = flag.String("plaintext", "", "plaintext string to encrypt")
+
+func TestNewEncryptor(t *testing.T) {
+	tests := []struct {
+		name      string
+		hexKey    string
+		wantError bool
+	}{
+		{
+			name:   "valid 32-byte key",
+			hexKey: strings.Repeat("0", 64), // 64 hex chars = 32 bytes
+		},
+		{
+			name:      "invalid hex",
+			hexKey:    "not-valid-hex!!",
+			wantError: true,
+		},
+		{
+			name:      "key too short",
+			hexKey:    strings.Repeat("0", 32), // 32 hex chars = 16 bytes
+			wantError: true,
+		},
+		{
+			name:      "key too long",
+			hexKey:    strings.Repeat("0", 128), // 128 hex chars = 64 bytes
+			wantError: true,
+		},
+		{
+			name:      "empty key",
+			hexKey:    "",
+			wantError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			enc, err := NewEncryptor(tt.hexKey)
+			if tt.wantError {
+				if err == nil {
+					t.Error("NewEncryptor() expected error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("NewEncryptor() error = %v", err)
+			}
+			if enc == nil {
+				t.Error("NewEncryptor() returned nil")
+			}
+		})
+	}
+}
+
+func TestGenerateKey(t *testing.T) {
+	key1, err := GenerateKey()
+	if err != nil {
+		t.Fatalf("GenerateKey() error = %v", err)
+	}
+
+	// Key should be 64 hex characters (32 bytes)
+	if len(key1) != 64 {
+		t.Errorf("GenerateKey() length = %d, want 64", len(key1))
+	}
+
+	// Verify it's valid hex
+	_, err = hex.DecodeString(key1)
+	if err != nil {
+		t.Errorf("GenerateKey() returned invalid hex: %v", err)
+	}
+
+	// Generate another key and verify they're different
+	key2, err := GenerateKey()
+	if err != nil {
+		t.Fatalf("GenerateKey() error = %v", err)
+	}
+
+	if key1 == key2 {
+		t.Error("GenerateKey() returned duplicate keys")
+	}
+}
+
+func TestEncryptor_EncryptDecrypt(t *testing.T) {
+	// Generate a valid key
+	key, err := GenerateKey()
+	if err != nil {
+		t.Fatalf("GenerateKey() error = %v", err)
+	}
+
+	enc, err := NewEncryptor(key)
+	if err != nil {
+		t.Fatalf("NewEncryptor() error = %v", err)
+	}
+
+	tests := []struct {
+		name      string
+		plaintext string
+	}{
+		{"empty string", ""},
+		{"single char", "a"},
+		{"short text", "hello world"},
+		{"long text", "This is a longer piece of text that should be encrypted and decrypted correctly"},
+		{"unicode", "你好世界 🌍"},
+		{"special chars", "!@#$%^&*()_+-=[]{}|;':\",./<>?"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ciphertext, err := enc.Encrypt(tt.plaintext)
+			if err != nil {
+				t.Fatalf("Encrypt() error = %v", err)
+			}
+
+			// Empty string should return empty
+			if tt.plaintext == "" {
+				if ciphertext != "" {
+					t.Errorf("Encrypt('') = %q, want empty string", ciphertext)
+				}
+				return
+			}
+
+			// Ciphertext should have prefix and suffix
+			if !strings.HasPrefix(ciphertext, Prefix) {
+				t.Errorf("Encrypt() missing prefix, got %q", ciphertext)
+			}
+			if !strings.HasSuffix(ciphertext, Suffix) {
+				t.Errorf("Encrypt() missing suffix, got %q", ciphertext)
+			}
+
+			// Decrypt should return original plaintext
+			decrypted, err := enc.Decrypt(ciphertext)
+			if err != nil {
+				t.Fatalf("Decrypt() error = %v", err)
+			}
+			if decrypted != tt.plaintext {
+				t.Errorf("Decrypt() = %q, want %q", decrypted, tt.plaintext)
+			}
+		})
+	}
+}
+
+func TestEncryptor_Decrypt_NonEncrypted(t *testing.T) {
+	key, _ := GenerateKey()
+	enc, _ := NewEncryptor(key)
+
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"empty string", "", ""},
+		{"plain text", "hello world", "hello world"},
+		{"short string", "ab", "ab"},
+		{"no prefix", "test]", "test]"},
+		{"no suffix", "[test", "[test"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := enc.Decrypt(tt.input)
+			if err != nil {
+				t.Fatalf("Decrypt() error = %v", err)
+			}
+			if got != tt.want {
+				t.Errorf("Decrypt() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEncryptor_Decrypt_Errors(t *testing.T) {
+	key, _ := GenerateKey()
+	enc, _ := NewEncryptor(key)
+
+	tests := []struct {
+		name      string
+		input     string
+		wantError bool
+	}{
+		{
+			name:      "invalid base64",
+			input:     Prefix + "not-valid-base64!!!" + Suffix,
+			wantError: true,
+		},
+		{
+			name:      "empty encrypted content",
+			input:     Prefix + base64.StdEncoding.EncodeToString([]byte{}) + Suffix,
+			wantError: true,
+		},
+		{
+			name:      "wrong version",
+			input:     Prefix + base64.StdEncoding.EncodeToString([]byte{2, 1, 2, 3}) + Suffix, // version 2
+			wantError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := enc.Decrypt(tt.input)
+			if tt.wantError {
+				if err == nil {
+					t.Error("Decrypt() expected error, got nil")
+				}
+			} else if err != nil {
+				t.Errorf("Decrypt() error = %v", err)
+			}
+		})
+	}
+}
+
+func TestEncryptor_Encrypt_DifferentCiphertexts(t *testing.T) {
+	key, _ := GenerateKey()
+	enc, _ := NewEncryptor(key)
+
+	plaintext := "same message"
+
+	ciphertext1, err := enc.Encrypt(plaintext)
+	if err != nil {
+		t.Fatalf("Encrypt() error = %v", err)
+	}
+
+	ciphertext2, err := enc.Encrypt(plaintext)
+	if err != nil {
+		t.Fatalf("Encrypt() error = %v", err)
+	}
+
+	// Same plaintext should produce different ciphertexts (due to random nonce)
+	if ciphertext1 == ciphertext2 {
+		t.Error("Same plaintext should produce different ciphertexts")
+	}
+
+	// But both should decrypt to the same plaintext
+	decrypted1, _ := enc.Decrypt(ciphertext1)
+	decrypted2, _ := enc.Decrypt(ciphertext2)
+
+	if decrypted1 != plaintext || decrypted2 != plaintext {
+		t.Error("Both ciphertexts should decrypt to original plaintext")
+	}
+}
+
+func TestIsEncrypted(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  bool
+	}{
+		{"empty string", "", false},
+		{"short string", "ab", false},
+		{"plain text", "hello world", false},
+		{"only prefix", Prefix, false},
+		{"only suffix", Suffix, false},
+		{"prefix without suffix", Prefix + "content", false},
+		{"suffix without prefix", "content" + Suffix, false},
+		{"valid encrypted format", Prefix + "content" + Suffix, true},
+		{"valid with base64", Prefix + "YWJjMTIz" + Suffix, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsEncrypted(tt.input); got != tt.want {
+				t.Errorf("IsEncrypted() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestConstants(t *testing.T) {
+	if Prefix != "ENC[" {
+		t.Errorf("Prefix = %q, want %q", Prefix, "ENC[")
+	}
+	if Suffix != "]" {
+		t.Errorf("Suffix = %q, want %q", Suffix, "]")
+	}
+	if versionV1 != 1 {
+		t.Errorf("versionV1 = %d, want 1", versionV1)
+	}
+}
 
 // getPlaintext returns the plaintext from flag, environment variable, or default value.
 // Priority: -plaintext flag > PLAINTEXT env var > default value
