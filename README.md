@@ -336,4 +336,4 @@ docs/
 
 ## License
 
-MIT
+Apache-2.0
