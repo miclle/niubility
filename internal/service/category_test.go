@@ -284,3 +284,95 @@ func TestService_DeleteCategory_WithContents(t *testing.T) {
 		t.Error("DeleteCategory() should fail when category has contents")
 	}
 }
+
+func TestService_GetCategoryContentCounts(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	// Create user
+	user := &entity.User{ID: entity.ID(), Username: "countuser", Role: entity.RoleUser, Status: entity.UserStatusActivated}
+	if err := s.db.Create(user).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	// Create categories
+	cat1 := &entity.Category{ID: entity.ID(), Name: "Cat 1", Slug: "cat1"}
+	cat2 := &entity.Category{ID: entity.ID(), Name: "Cat 2", Slug: "cat2"}
+	if err := s.db.Create(cat1).Error; err != nil {
+		t.Fatalf("Failed to create category: %v", err)
+	}
+	if err := s.db.Create(cat2).Error; err != nil {
+		t.Fatalf("Failed to create category: %v", err)
+	}
+
+	// Create contents
+	contents := []*entity.Content{
+		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 1", Category: "cat1", Type: entity.ContentTypeArticle, Status: entity.ContentStatusPublished},
+		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 2", Category: "cat1", Type: entity.ContentTypeArticle, Status: entity.ContentStatusPublished},
+		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 3", Category: "cat1", Type: entity.ContentTypeArticle, Status: entity.ContentStatusPublished},
+		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 4", Category: "cat2", Type: entity.ContentTypeArticle, Status: entity.ContentStatusPublished},
+		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 5", Category: "cat2", Type: entity.ContentTypeArticle, Status: entity.ContentStatusPublished},
+	}
+	for _, c := range contents {
+		if err := s.db.Create(c).Error; err != nil {
+			t.Fatalf("Failed to create content: %v", err)
+		}
+	}
+
+	counts, err := s.GetCategoryContentCounts(ctx)
+	if err != nil {
+		t.Fatalf("GetCategoryContentCounts() error = %v", err)
+	}
+
+	if counts["cat1"] != 3 {
+		t.Errorf("counts[cat1] = %d, want 3", counts["cat1"])
+	}
+	if counts["cat2"] != 2 {
+		t.Errorf("counts[cat2] = %d, want 2", counts["cat2"])
+	}
+}
+
+func TestService_ReorderCategories(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	// Create categories
+	cat1 := &entity.Category{ID: entity.ID(), Name: "Cat 1", Slug: "cat1", SortOrder: 1}
+	cat2 := &entity.Category{ID: entity.ID(), Name: "Cat 2", Slug: "cat2", SortOrder: 2}
+	cat3 := &entity.Category{ID: entity.ID(), Name: "Cat 3", Slug: "cat3", SortOrder: 3}
+	if err := s.db.Create(cat1).Error; err != nil {
+		t.Fatalf("Failed to create category: %v", err)
+	}
+	if err := s.db.Create(cat2).Error; err != nil {
+		t.Fatalf("Failed to create category: %v", err)
+	}
+	if err := s.db.Create(cat3).Error; err != nil {
+		t.Fatalf("Failed to create category: %v", err)
+	}
+
+	// Reorder
+	items := []entity.ReorderCategoryItem{
+		{ID: cat1.ID, SortOrder: 3},
+		{ID: cat2.ID, SortOrder: 1},
+		{ID: cat3.ID, SortOrder: 2},
+	}
+
+	if err := s.ReorderCategories(ctx, items); err != nil {
+		t.Fatalf("ReorderCategories() error = %v", err)
+	}
+
+	// Verify new order
+	got1, _ := s.GetCategoryByID(ctx, cat1.ID)
+	got2, _ := s.GetCategoryByID(ctx, cat2.ID)
+	got3, _ := s.GetCategoryByID(ctx, cat3.ID)
+
+	if got1.SortOrder != 3 {
+		t.Errorf("cat1.SortOrder = %d, want 3", got1.SortOrder)
+	}
+	if got2.SortOrder != 1 {
+		t.Errorf("cat2.SortOrder = %d, want 1", got2.SortOrder)
+	}
+	if got3.SortOrder != 2 {
+		t.Errorf("cat3.SortOrder = %d, want 2", got3.SortOrder)
+	}
+}

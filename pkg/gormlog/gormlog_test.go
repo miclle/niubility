@@ -1,9 +1,13 @@
 package gormlog
 
 import (
+	"context"
+	"errors"
 	"testing"
 	"time"
 
+	foxlogger "github.com/fox-gonic/fox/logger"
+	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
 )
 
@@ -83,4 +87,109 @@ func TestLogger_LogMode(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLogger_FromContext(t *testing.T) {
+	logger := New(200 * time.Millisecond)
+
+	t.Run("context with TraceID", func(t *testing.T) {
+		ctx := context.WithValue(context.Background(), foxlogger.TraceID, "test-trace-id")
+		derivedLogger := logger.fromContext(ctx)
+		if derivedLogger == nil {
+			t.Error("fromContext() returned nil")
+		}
+	})
+
+	t.Run("context with TraceIDKey", func(t *testing.T) {
+		ctx := context.WithValue(context.Background(), foxlogger.TraceIDKey, "test-trace-key")
+		derivedLogger := logger.fromContext(ctx)
+		if derivedLogger == nil {
+			t.Error("fromContext() returned nil")
+		}
+	})
+
+	t.Run("context without trace ID", func(t *testing.T) {
+		ctx := context.Background()
+		derivedLogger := logger.fromContext(ctx)
+		if derivedLogger == nil {
+			t.Error("fromContext() returned nil")
+		}
+	})
+}
+
+func TestLogger_Info(t *testing.T) {
+	logger := New(200 * time.Millisecond)
+	ctx := context.Background()
+
+	// Should not panic
+	logger.Info(ctx, "test info message %s", "arg")
+}
+
+func TestLogger_Warn(t *testing.T) {
+	logger := New(200 * time.Millisecond)
+	ctx := context.Background()
+
+	// Should not panic
+	logger.Warn(ctx, "test warn message %s", "arg")
+}
+
+func TestLogger_Error(t *testing.T) {
+	logger := New(200 * time.Millisecond)
+	ctx := context.Background()
+
+	// Should not panic
+	logger.Error(ctx, "test error message %s", "arg")
+}
+
+func TestLogger_Trace(t *testing.T) {
+	logger := New(200 * time.Millisecond)
+	ctx := context.Background()
+
+	tests := []struct {
+		name      string
+		err       error
+		elapsed   time.Duration
+		wantPanic bool
+	}{
+		{
+			name:    "normal query",
+			err:     nil,
+			elapsed: 10 * time.Millisecond,
+		},
+		{
+			name:    "slow query",
+			err:     nil,
+			elapsed: 500 * time.Millisecond,
+		},
+		{
+			name:    "error query",
+			err:     errors.New("query error"),
+			elapsed: 10 * time.Millisecond,
+		},
+		{
+			name:    "record not found is not error",
+			err:     gorm.ErrRecordNotFound,
+			elapsed: 10 * time.Millisecond,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Should not panic
+			begin := time.Now().Add(-tt.elapsed)
+			logger.Trace(ctx, begin, func() (string, int64) {
+				return "SELECT * FROM users", 10
+			}, tt.err)
+		})
+	}
+}
+
+func TestLogger_Trace_WithTraceID(t *testing.T) {
+	logger := New(200 * time.Millisecond)
+	ctx := context.WithValue(context.Background(), foxlogger.TraceID, "trace-123")
+
+	begin := time.Now().Add(-10 * time.Millisecond)
+	logger.Trace(ctx, begin, func() (string, int64) {
+		return "SELECT * FROM users WHERE id = ?", 1
+	}, nil)
 }

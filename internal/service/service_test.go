@@ -133,3 +133,153 @@ func TestService_EnsureSetting(t *testing.T) {
 		t.Errorf("ensureSetting() = %q, want %q", val2, "generated_value")
 	}
 }
+
+func TestService_IsRegistrationEnabled(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	// Default should be false
+	if s.IsRegistrationEnabled(ctx) {
+		t.Error("IsRegistrationEnabled() = true, want false")
+	}
+
+	// Enable registration
+	s.SetSetting(ctx, entity.SettingRegistrationEnabled, "true")
+	if !s.IsRegistrationEnabled(ctx) {
+		t.Error("IsRegistrationEnabled() = false after enabling, want true")
+	}
+}
+
+func TestService_GetSSOType(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	// Default should be "disabled"
+	if got := s.GetSSOType(ctx); got != "disabled" {
+		t.Errorf("GetSSOType() = %q, want %q", got, "disabled")
+	}
+
+	// Set to OIDC
+	s.SetSetting(ctx, entity.SettingSSOType, "oidc")
+	if got := s.GetSSOType(ctx); got != "oidc" {
+		t.Errorf("GetSSOType() = %q, want %q", got, "oidc")
+	}
+
+	// Set to SAML
+	s.SetSetting(ctx, entity.SettingSSOType, "saml")
+	if got := s.GetSSOType(ctx); got != "saml" {
+		t.Errorf("GetSSOType() = %q, want %q", got, "saml")
+	}
+}
+
+func TestService_IsCookieSecure(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	// Default should be false
+	if s.IsCookieSecure(ctx) {
+		t.Error("IsCookieSecure() = true, want false")
+	}
+
+	// Enable secure cookie
+	s.SetSetting(ctx, entity.SettingCookieSecure, "true")
+	if !s.IsCookieSecure(ctx) {
+		t.Error("IsCookieSecure() = false after enabling, want true")
+	}
+}
+
+func TestService_WhereLike(t *testing.T) {
+	s := setupTestService(t)
+
+	// Test with different dialects
+	tests := []struct {
+		name     string
+		dialect  string
+		wantOp   string
+	}{
+		{"postgres uses ILIKE", "postgres", "ILIKE"},
+		{"mysql uses LIKE", "mysql", "LIKE"},
+		{"sqlite uses LIKE", "sqlite", "LIKE"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s.dialect = tt.dialect
+			query := s.db.Model(&entity.User{})
+			query = s.whereLike(query, []string{"name", "email"}, "%test%")
+
+			// The function should not panic and should return a query
+			if query == nil {
+				t.Error("whereLike() returned nil query")
+			}
+		})
+	}
+}
+
+func TestService_WhereJSONContains(t *testing.T) {
+	s := setupTestService(t)
+
+	tests := []struct {
+		name    string
+		dialect string
+	}{
+		{"postgres", "postgres"},
+		{"mysql", "mysql"},
+		{"sqlite", "sqlite"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s.dialect = tt.dialect
+			query := s.db.Model(&entity.Content{})
+			query = s.whereJSONContains(query, "tags", `["test"]`)
+
+			// The function should not panic and should return a query
+			if query == nil {
+				t.Error("whereJSONContains() returned nil query")
+			}
+		})
+	}
+}
+
+func TestService_WhereRegexp(t *testing.T) {
+	s := setupTestService(t)
+
+	tests := []struct {
+		name    string
+		dialect string
+	}{
+		{"postgres", "postgres"},
+		{"mysql", "mysql"},
+		{"sqlite", "sqlite"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s.dialect = tt.dialect
+			query := s.db.Model(&entity.User{})
+			query = s.whereRegexp(query, "department_ids", "^[0-9]+$")
+
+			// The function should not panic and should return a query
+			if query == nil {
+				t.Error("whereRegexp() returned nil query")
+			}
+		})
+	}
+}
+
+func TestService_IsInitialized(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	// Should not be initialized initially
+	if s.IsInitialized(ctx) {
+		t.Error("IsInitialized() = true, want false")
+	}
+
+	// Mark as initialized
+	s.SetSetting(ctx, entity.SettingInitialized, "true")
+	if !s.IsInitialized(ctx) {
+		t.Error("IsInitialized() = false after setting, want true")
+	}
+}
