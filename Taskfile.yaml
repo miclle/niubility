@@ -88,19 +88,14 @@ tasks:
         done
 
   build-cli:
-    desc: Build the CLI binary for a specific platform (use env GOOS/GOARCH)
+    desc: Build the CLI binary for the current platform
     cmds:
       - mkdir -p {{.BIN_DIR}}
       - |
-        GOOS_VALUE="${GOOS:-linux}"
-        GOARCH_VALUE="${GOARCH:-amd64}"
-        output="../{{.BIN_DIR}}/niubility-cli_${GOOS_VALUE}_${GOARCH_VALUE}"
-        if [ "$GOOS_VALUE" = "windows" ]; then
-          output="${output}.exe"
-        fi
+        output="../{{.BIN_DIR}}/niubility-cli$(go env GOEXE)"
         echo "Building ${output#../}"
         cd {{.CLI_DIR}}
-        CGO_ENABLED=0 GOOS="$GOOS_VALUE" GOARCH="$GOARCH_VALUE" \
+        CGO_ENABLED=0 \
           go build -trimpath -o "$output" .
 
   build-cli-all:
