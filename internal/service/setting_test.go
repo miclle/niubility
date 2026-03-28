@@ -117,3 +117,37 @@ func TestSensitiveKeys(t *testing.T) {
 		}
 	}
 }
+
+func TestService_GetSiteConfig(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	if err := s.UpdateSettingsBatch(ctx, map[string]string{
+		entity.SettingSiteTitle:       "Acme Learning",
+		entity.SettingSiteDescription: "内部学习平台",
+		entity.SettingSiteKeywords:    "学习,知识库",
+		entity.SettingSiteVersion:     "v2.3.1",
+		entity.SettingSiteFaviconURL:  "favicon.png",
+		entity.SettingSiteLogoURL:     "logo.svg",
+		entity.SettingSiteCopyright:   "Acme",
+		entity.SettingSiteForceHTTPS:  "true",
+		entity.SettingSiteFooter:      "<span>footer</span>",
+	}); err != nil {
+		t.Fatalf("UpdateSettingsBatch() error = %v", err)
+	}
+
+	cfg, err := s.GetSiteConfig(ctx)
+	if err != nil {
+		t.Fatalf("GetSiteConfig() error = %v", err)
+	}
+
+	if cfg.Title != "Acme Learning" {
+		t.Errorf("Title = %q, want %q", cfg.Title, "Acme Learning")
+	}
+	if cfg.Version != "v2.3.1" {
+		t.Errorf("Version = %q, want %q", cfg.Version, "v2.3.1")
+	}
+	if !cfg.ForceHTTPS {
+		t.Errorf("ForceHTTPS = false, want true")
+	}
+}

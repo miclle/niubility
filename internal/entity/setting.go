@@ -76,6 +76,41 @@ const (
 	SettingS3CORSOrigin = "s3.cors_origin"
 )
 
+// Setting key constants for site configuration.
+const (
+	// SettingSiteTitle is the site title displayed in browser tabs and headers.
+	SettingSiteTitle = "site.title"
+	// SettingSiteDescription is the site description for SEO (meta description).
+	SettingSiteDescription = "site.description"
+	// SettingSiteKeywords is the site keywords for SEO (meta keywords).
+	SettingSiteKeywords = "site.keywords"
+	// SettingSiteVersion is the site version label displayed in the UI.
+	SettingSiteVersion = "site.version"
+	// SettingSiteFaviconURL is the URL to the site favicon (S3 key or external URL).
+	SettingSiteFaviconURL = "site.favicon_url"
+	// SettingSiteLogoURL is the URL to the site logo (S3 key or external URL).
+	SettingSiteLogoURL = "site.logo_url"
+	// SettingSiteCopyright is the copyright text displayed in the footer.
+	SettingSiteCopyright = "site.copyright"
+	// SettingSiteForceHTTPS controls whether to force HTTPS redirect.
+	SettingSiteForceHTTPS = "site.force_https"
+	// SettingSiteFooter is the custom footer HTML/text content.
+	SettingSiteFooter = "site.footer"
+)
+
+// SiteConfig represents the site-level configuration extracted from settings.
+type SiteConfig struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Keywords    string `json:"keywords"`
+	Version     string `json:"version"`
+	FaviconURL  string `json:"favicon_url"`
+	LogoURL     string `json:"logo_url"`
+	Copyright   string `json:"copyright"`
+	ForceHTTPS  bool   `json:"force_https"`
+	Footer      string `json:"footer"`
+}
+
 // WechatConfig represents the WeChat Work configuration extracted from settings.
 type WechatConfig struct {
 	CorpID     string

@@ -5,11 +5,20 @@ import { Input } from '@/components/ui/input'
 import { Loader2, CheckCircle } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
+import { useSiteHead } from 'src/hooks/useSiteHead'
+import { siteResourceURL } from 'src/api/upload'
 import { register } from 'src/api/user'
 
 // Register provides the user self-registration page.
 function Register() {
-  const { initialized, currentUser, registrationEnabled } = useAppContext()
+  const { initialized, currentUser, registrationEnabled, siteConfig } = useAppContext()
+
+  // Apply site config to document head
+  useSiteHead(siteConfig)
+
+  // Derived values from site config
+  const siteTitle = siteConfig?.title || 'Niubility'
+  const siteLogoUrl = siteConfig?.logo_url ? siteResourceURL(siteConfig.logo_url) : null
 
   const [form, setForm] = useState({ username: '', email: '', password: '', confirmPassword: '' })
   const [loading, setLoading] = useState(false)
@@ -85,7 +94,11 @@ function Register() {
     <div className="min-h-screen flex items-center justify-center bg-white px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-semibold mb-2" style={{ color: '#0f0f0f' }}>Niubility</h1>
+          {siteLogoUrl ? (
+            <img src={siteLogoUrl} alt={siteTitle} className="h-10 mx-auto mb-3 object-contain" />
+          ) : (
+            <h1 className="text-2xl font-semibold mb-2" style={{ color: '#0f0f0f' }}>{siteTitle}</h1>
+          )}
           <p className="text-sm" style={{ color: '#606060' }}>创建你的账户</p>
         </div>
 

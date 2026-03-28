@@ -3,9 +3,11 @@ import { Outlet, NavLink, Link, Navigate, useLocation } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { FileText, Users, ArrowLeft, LogOut, Settings, Menu, FolderOpen, ChevronDown, UserPlus, HardDrive, MessageSquare, CircleUserRound, User, Plus, Play, ImageIcon, type LucideIcon } from 'lucide-react'
+import { FileText, Users, ArrowLeft, LogOut, Settings, Menu, FolderOpen, ChevronDown, UserPlus, HardDrive, MessageSquare, CircleUserRound, User, Plus, Play, ImageIcon, Globe2, type LucideIcon } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
+import { useSiteHead } from 'src/hooks/useSiteHead'
+import { siteResourceURL } from 'src/api/upload'
 import { contentNewPath } from 'src/lib/content-url'
 
 // NavChild represents a sub-menu item under a parent nav item.
@@ -25,10 +27,17 @@ interface NavItem {
 
 // AdminLayout provides the admin panel layout with collapsible sidebar navigation.
 function AdminLayout() {
-  const { currentUser } = useAppContext()
+  const { currentUser, siteConfig } = useAppContext()
   const location = useLocation()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [settingsExpanded, setSettingsExpanded] = useState(() => location.pathname.startsWith('/admin/settings'))
+
+  // Apply site config to document head
+  useSiteHead(siteConfig)
+
+  // Derived values from site config
+  const siteTitle = siteConfig?.title || 'Niubility'
+  const siteLogoUrl = siteConfig?.logo_url ? siteResourceURL(siteConfig.logo_url) : null
 
   // Require admin or super_admin role
   if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'super_admin')) {
@@ -45,6 +54,7 @@ function AdminLayout() {
       icon: Settings,
       label: '系统配置',
       children: [
+        { to: '/admin/settings/site', icon: Globe2, label: '站点配置' },
         { to: '/admin/settings/auth', icon: UserPlus, label: '认证配置' },
         { to: '/admin/settings/storage', icon: HardDrive, label: '存储配置' },
         { to: '/admin/settings/wechat', icon: MessageSquare, label: '企业微信' },
@@ -67,7 +77,11 @@ function AdminLayout() {
         {/* Logo */}
         <div className="h-14 px-4 flex items-center gap-3" style={{ borderBottom: '1px solid #e5e5e5' }}>
           <NavLink to="/" className="text-lg font-semibold no-underline flex-shrink-0" style={{ color: '#0f0f0f' }}>
-            {sidebarCollapsed ? 'N' : 'Niubility'}
+            {siteLogoUrl ? (
+              <img src={siteLogoUrl} alt={siteTitle} className="h-6 object-contain" />
+            ) : (
+              sidebarCollapsed ? siteTitle.charAt(0) : siteTitle
+            )}
           </NavLink>
           {!sidebarCollapsed && (
             <span className="text-xs" style={{ color: '#909090' }}>管理后台</span>

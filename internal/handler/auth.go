@@ -655,6 +655,7 @@ type BootResponse struct {
 	RegistrationEnabled bool                `json:"registration_enabled"`
 	SSOEnabled          bool                `json:"sso_enabled"`
 	SSOLoginURL         string              `json:"sso_login_url,omitempty"`
+	Site                *entity.SiteConfig  `json:"site,omitempty"`
 }
 
 // Boot returns the current system and authentication state.
@@ -686,6 +687,11 @@ func (ctrl *Ctrl) Boot(c *fox.Context) *BootResponse {
 		resp.Authentication = AuthenticationStateAuthorized
 		user.ResolveAssetURLs()
 		resp.User = user
+	}
+
+	// Load site configuration
+	if siteConfig, err := ctrl.service.GetSiteConfig(ctx); err == nil {
+		resp.Site = siteConfig
 	}
 
 	return resp

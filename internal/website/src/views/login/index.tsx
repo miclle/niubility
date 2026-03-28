@@ -5,12 +5,21 @@ import { Input } from '@/components/ui/input'
 import { Loader2, ServerOff } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
+import { useSiteHead } from 'src/hooks/useSiteHead'
+import { siteResourceURL } from 'src/api/upload'
 import { login } from 'src/api/user'
 
 // Login provides the username+password login page.
 function Login() {
-  const { initialized, currentUser, registrationEnabled, ssoEnabled, ssoLoginUrl, setCurrentUser } = useAppContext()
+  const { initialized, currentUser, registrationEnabled, ssoEnabled, ssoLoginUrl, siteConfig, setCurrentUser } = useAppContext()
   const navigate = useNavigate()
+
+  // Apply site config to document head
+  useSiteHead(siteConfig)
+
+  // Derived values from site config
+  const siteTitle = siteConfig?.title || 'Niubility'
+  const siteLogoUrl = siteConfig?.logo_url ? siteResourceURL(siteConfig.logo_url) : null
 
   const [form, setForm] = useState({ username: '', password: '' })
   const [loading, setLoading] = useState(false)
@@ -24,7 +33,7 @@ function Login() {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-5" style={{ background: '#f2f2f2' }}>
             <ServerOff size={28} style={{ color: '#909090' }} />
           </div>
-          <h1 className="text-2xl font-semibold mb-2" style={{ color: '#0f0f0f' }}>Niubility</h1>
+          <h1 className="text-2xl font-semibold mb-2" style={{ color: '#0f0f0f' }}>{siteTitle}</h1>
           <p className="text-sm mb-1" style={{ color: '#606060' }}>系统尚未初始化</p>
           <p className="text-xs" style={{ color: '#909090' }}>请联系管理员完成初始设置</p>
         </div>
@@ -57,7 +66,11 @@ function Login() {
     <div className="min-h-screen flex items-center justify-center bg-white px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-semibold mb-2" style={{ color: '#0f0f0f' }}>Niubility</h1>
+          {siteLogoUrl ? (
+            <img src={siteLogoUrl} alt={siteTitle} className="h-10 mx-auto mb-3 object-contain" />
+          ) : (
+            <h1 className="text-2xl font-semibold mb-2" style={{ color: '#0f0f0f' }}>{siteTitle}</h1>
+          )}
           <p className="text-sm" style={{ color: '#606060' }}>登录你的账户</p>
         </div>
 

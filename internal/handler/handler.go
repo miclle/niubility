@@ -40,6 +40,7 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	// attachment access route (presigned redirect for S3 objects)
 	r.GET("/attachments/*path", ctrl.GetAttachmentFile)
 	r.GET("/avatars/*path", ctrl.GetAvatarFile)
+	r.GET("/site-resources/*path", ctrl.GetSiteResourceFile)
 
 	// API routes
 	api := r.Group("/api/v1")
@@ -103,6 +104,7 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	admin.PATCH("/users/:id", ctrl.UpdateUser)
 	admin.GET("/settings", ctrl.ListSettings)
 	admin.PATCH("/settings", ctrl.UpdateSettings)
+	admin.POST("/upload/site-resource", ctrl.GetSiteResourcePresignedURL)
 	admin.POST("/sync-wechat", ctrl.SyncFromWechat)
 	admin.GET("/departments", ctrl.ListDepartments)
 	admin.GET("/categories", ctrl.ListAllCategories)

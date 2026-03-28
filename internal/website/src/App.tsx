@@ -4,7 +4,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 
 import { AppContext } from 'src/context/app'
 import routes from './router'
-import type { User } from 'src/types/user'
+import type { User, SiteConfig } from 'src/types/user'
 import type { Category } from 'src/types/content'
 
 const router = createBrowserRouter(routes)
@@ -17,11 +17,13 @@ interface AppProps {
   registrationEnabled: boolean
   ssoEnabled: boolean
   ssoLoginUrl: string
+  siteConfig: SiteConfig | null
 }
 
 // App is the root component wrapping providers and the router.
-function App({ initialUser, initialized, categories, registrationEnabled, ssoEnabled, ssoLoginUrl }: AppProps) {
+function App({ initialUser, initialized, categories, registrationEnabled, ssoEnabled, ssoLoginUrl, siteConfig }: AppProps) {
   const [currentUser, setCurrentUser] = useState<User | null>(initialUser)
+  const [currentSiteConfig, setCurrentSiteConfig] = useState<SiteConfig | null>(siteConfig)
 
   return (
     <AppContext.Provider value={{
@@ -31,7 +33,9 @@ function App({ initialUser, initialized, categories, registrationEnabled, ssoEna
       registrationEnabled,
       ssoEnabled,
       ssoLoginUrl,
+      siteConfig: currentSiteConfig,
       setCurrentUser,
+      setSiteConfig: setCurrentSiteConfig,
     }}>
       <TooltipProvider>
         <RouterProvider router={router} />

@@ -57,9 +57,11 @@ export function useSaveSettings(reload: () => Promise<void>) {
       await updateSettings({ settings })
       setSuccess(true)
       await reload()
+      return true
     } catch (err) {
       setError('保存失败，请稍后重试')
       console.error('Save settings error:', err)
+      return false
     } finally {
       setSaving(false)
     }

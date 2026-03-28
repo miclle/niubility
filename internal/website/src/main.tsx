@@ -37,6 +37,7 @@ function renderApp(bootData: BootResponse) {
           registrationEnabled={bootData.registration_enabled}
           ssoEnabled={bootData.sso_enabled}
           ssoLoginUrl={bootData.sso_login_url || ''}
+          siteConfig={bootData.site || null}
         />
       </QueryClientProvider>
     </StrictMode>,

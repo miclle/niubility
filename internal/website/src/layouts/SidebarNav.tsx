@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { Home, Play, FileText, BookOpen, GraduationCap, Heart, Star, Lightbulb, Trophy, Coffee, Briefcase, Globe, Flame, UserCheck, ImageIcon, type LucideIcon } from 'lucide-react'
 
 import type { Category } from 'src/types/content'
+import { useAppContext } from 'src/context/app'
 
 // iconMap maps icon name strings to Lucide icon components.
 const iconMap: Record<string, LucideIcon> = {
@@ -32,6 +33,10 @@ interface SidebarNavProps {
 
 // SidebarNav renders the sidebar navigation content.
 export default function SidebarNav({ category, typeFilter, isHome, currentUser, categories, locationPathname }: SidebarNavProps) {
+  const { siteConfig } = useAppContext()
+  const copyright = siteConfig?.copyright?.trim() || 'Niubility'
+  const siteVersion = siteConfig?.version?.trim() || ''
+
   // Render main nav items (Home + Following)
   const renderMainNav = () => (
     <div className="px-3">
@@ -129,8 +134,9 @@ export default function SidebarNav({ category, typeFilter, isHome, currentUser, 
       {renderTypeFilterNav()}
       <div className="my-3 mx-3 h-px" style={{ background: '#e5e5e5' }} />
       {renderCategoryNav()}
-      <div className="mt-auto px-6 py-4 text-xs" style={{ color: '#909090' }}>
-        &copy; {new Date().getFullYear()} Niubility
+      <div className="mt-auto px-6 py-4 space-y-1 text-xs" style={{ color: '#909090' }}>
+        <div>&copy; {new Date().getFullYear()} {copyright}</div>
+        {siteVersion && <div>{siteVersion}</div>}
       </div>
     </nav>
   )

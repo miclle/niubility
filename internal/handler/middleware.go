@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"context"
+	"net"
+	"net/http"
 	"strings"
 
 	"github.com/fox-gonic/fox"
@@ -65,6 +68,10 @@ func (ctrl *Ctrl) AuthMiddleware(c *fox.Context) (res any) {
 
 	ctx := c.Logger.WithContext(c.Request.Context())
 
+	if redirectURL, ok := ctrl.httpsRedirectURL(ctx, c.Request); ok {
+		return render.Redirect{Code: http.StatusPermanentRedirect, Location: redirectURL}
+	}
+
 	// If system is not initialized, let frontend handle navigation
 	if !ctrl.service.IsInitialized(ctx) {
 		if strings.HasPrefix(path, "/api") && !isSoftPath(path) {
@@ -111,6 +118,56 @@ unauthorized:
 
 	// Let the frontend handle login redirect
 	return nil
+}
+
+func (ctrl *Ctrl) httpsRedirectURL(ctx context.Context, req *http.Request) (string, bool) {
+	siteConfig, err := ctrl.service.GetSiteConfig(ctx)
+	if err != nil || siteConfig == nil || !siteConfig.ForceHTTPS {
+		return "", false
+	}
+	if requestIsHTTPS(req) {
+		return "", false
+	}
+
+	host := req.Host
+	if host == "" || isLocalhostHost(host) {
+		return "", false
+	}
+
+	redirectURL := "https://" + host + req.URL.RequestURI()
+	return redirectURL, true
+}
+
+func requestIsHTTPS(req *http.Request) bool {
+	if req.TLS != nil {
+		return true
+	}
+	if strings.EqualFold(req.Header.Get("X-Forwarded-Proto"), "https") {
+		return true
+	}
+	if strings.EqualFold(req.Header.Get("X-Forwarded-Ssl"), "on") {
+		return true
+	}
+
+	for _, part := range strings.Split(req.Header.Get("Forwarded"), ";") {
+		if strings.EqualFold(strings.TrimSpace(part), "proto=https") {
+			return true
+		}
+	}
+
+	return false
+}
+
+func isLocalhostHost(host string) bool {
+	hostname := host
+	if strings.HasPrefix(hostname, "[") && strings.Contains(hostname, "]") {
+		hostname = strings.TrimPrefix(strings.SplitN(hostname, "]", 2)[0], "[")
+	} else if h, _, err := net.SplitHostPort(host); err == nil {
+		hostname = h
+	}
+
+	hostname = strings.TrimSpace(hostname)
+	return hostname == "localhost" || hostname == "127.0.0.1" || hostname == "::1"
 }
 
 // isSoftPath checks if the path allows unauthenticated access.

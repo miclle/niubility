@@ -45,6 +45,25 @@ export interface PaginatedList<T> {
 
 import type { Category } from './content'
 
+// FooterLink represents a custom footer link.
+export interface FooterLink {
+  label: string
+  url: string
+}
+
+// SiteConfig represents the site-level configuration.
+export interface SiteConfig {
+  title: string
+  description: string
+  keywords: string
+  version: string
+  favicon_url: string
+  logo_url: string
+  copyright: string
+  force_https: boolean
+  footer: string
+}
+
 // BootResponse represents the boot response.
 export interface BootResponse {
   initialized: boolean
@@ -54,6 +73,7 @@ export interface BootResponse {
   registration_enabled: boolean
   sso_enabled: boolean
   sso_login_url?: string
+  site?: SiteConfig
 }
 
 // ListUsersResponse represents the response for listing users.

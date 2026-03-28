@@ -211,3 +211,36 @@ func (s *Service) GetS3Config(ctx context.Context) (*entity.S3Config, error) {
 		CORSOrigin: corsOrigin,
 	}, nil
 }
+
+// GetSiteConfig retrieves the site-level configuration from settings.
+// Returns a config with default values.
+func (s *Service) GetSiteConfig(ctx context.Context) (*entity.SiteConfig, error) {
+	title, _ := s.GetSetting(ctx, entity.SettingSiteTitle)
+	if title == "" {
+		title = "Niubility"
+	}
+	description, _ := s.GetSetting(ctx, entity.SettingSiteDescription)
+	keywords, _ := s.GetSetting(ctx, entity.SettingSiteKeywords)
+	version, _ := s.GetSetting(ctx, entity.SettingSiteVersion)
+	faviconURL, _ := s.GetSetting(ctx, entity.SettingSiteFaviconURL)
+	logoURL, _ := s.GetSetting(ctx, entity.SettingSiteLogoURL)
+	copyright, _ := s.GetSetting(ctx, entity.SettingSiteCopyright)
+	if copyright == "" {
+		copyright = "Niubility"
+	}
+	forceHTTPS, _ := s.GetSetting(ctx, entity.SettingSiteForceHTTPS)
+	forceHTTPSBool, _ := strconv.ParseBool(forceHTTPS)
+	footer, _ := s.GetSetting(ctx, entity.SettingSiteFooter)
+
+	return &entity.SiteConfig{
+		Title:       title,
+		Description: description,
+		Keywords:    keywords,
+		Version:     version,
+		FaviconURL:  faviconURL,
+		LogoURL:     logoURL,
+		Copyright:   copyright,
+		ForceHTTPS:  forceHTTPSBool,
+		Footer:      footer,
+	}, nil
+}

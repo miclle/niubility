@@ -99,3 +99,44 @@ func (ctrl *Ctrl) GetAvatarFile(c *fox.Context) {
 
 	c.Redirect(http.StatusTemporaryRedirect, url)
 }
+
+// GetSiteResourceFile resolves a site resource S3 key and redirects to the access URL.
+// Route: /site-resources/*path -> S3 key: site-resources/{path}
+func (ctrl *Ctrl) GetSiteResourceFile(c *fox.Context) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	path := strings.TrimPrefix(c.Param("path"), "/")
+	if path == "" {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	url, err := ctrl.service.GetFileURL(ctx, "site-resources/"+path)
+	if err != nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	c.Redirect(http.StatusTemporaryRedirect, url)
+}
+
+// GetSiteResourcePresignedURL generates a S3 presigned PUT URL for site resources (logo, favicon).
+// Route: POST /api/v1/admin/upload/site-resource
+func (ctrl *Ctrl) GetSiteResourcePresignedURL(c *fox.Context, req *PresignRequest) (*PresignResponse, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	user := CurrentUser(c)
+	if user == nil {
+		return nil, httperrors.ErrUnauthorized
+	}
+
+	result, err := ctrl.service.GetSiteResourcePresignedURL(ctx, req.Filename, req.ContentType)
+	if err != nil {
+		return nil, httperrors.New(http.StatusInternalServerError, err.Error())
+	}
+
+	return &PresignResponse{
+		PresignedURL: result.PresignedURL,
+		Key:          result.Key,
+	}, nil
+}

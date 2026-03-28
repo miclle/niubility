@@ -47,6 +47,7 @@ tasks:
           -d none -s \
           -r '\.go$' \
           -R 'internal/website/' \
+          -R 'tmp' \
           -- go run -trimpath -tags development ./cmd/niubility/ -c cmd/niubility/config.local.yaml
 
   run:

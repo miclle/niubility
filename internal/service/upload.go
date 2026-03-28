@@ -41,6 +41,12 @@ func (s *Service) GetAvatarPresignedURL(ctx context.Context, filename, contentTy
 	return s.presignUpload(ctx, filename, contentType, "avatars")
 }
 
+// GetSiteResourcePresignedURL generates an S3 presigned PUT URL for site resources (logo, favicon).
+// S3 key: site-resources/{uuid}.{ext}, returned key: {uuid}.{ext}
+func (s *Service) GetSiteResourcePresignedURL(ctx context.Context, filename, contentType string) (*PresignResult, error) {
+	return s.presignUpload(ctx, filename, contentType, "site-resources")
+}
+
 // presignUpload generates an S3 presigned PUT URL under the given prefix.
 func (s *Service) presignUpload(ctx context.Context, filename, contentType, prefix string) (*PresignResult, error) {
 	log := logger.NewWithContext(ctx)
