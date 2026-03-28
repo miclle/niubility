@@ -59,19 +59,14 @@ tasks:
   # ---------- Build ----------
 
   build:
-    desc: Build the server binary for a specific platform (use env GOOS/GOARCH)
+    desc: Build the server binary for the current platform
     cmds:
       - cd {{.WEBSITE_DIR}} && npm install && npm run build
       - mkdir -p {{.BIN_DIR}}
       - |
-        GOOS_VALUE="${GOOS:-linux}"
-        GOARCH_VALUE="${GOARCH:-amd64}"
-        output="{{.BIN_DIR}}/niubility_${GOOS_VALUE}_${GOARCH_VALUE}"
-        if [ "$GOOS_VALUE" = "windows" ]; then
-          output="${output}.exe"
-        fi
+        output="{{.BIN_DIR}}/niubility$(go env GOEXE)"
         echo "Building ${output}"
-        CGO_ENABLED=0 GOOS="$GOOS_VALUE" GOARCH="$GOARCH_VALUE" \
+        CGO_ENABLED=0 \
           go build -trimpath -ldflags "{{.LDFLAGS}}" -o "$output" ./cmd/niubility/
 
   build-all:
