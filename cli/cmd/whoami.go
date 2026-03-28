@@ -47,6 +47,9 @@ and display user information.`,
 		fmt.Printf("Username: %s\n", boot.User.Username)
 		fmt.Printf("Email: %s\n", boot.User.Email)
 		fmt.Printf("Role: %s\n", boot.User.Role)
+		if profileName != "" {
+			fmt.Printf("Profile: %s\n", profileName)
+		}
 		if boot.User.Location != "" {
 			fmt.Printf("Location: %s\n", boot.User.Location)
 		}

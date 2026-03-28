@@ -20,6 +20,10 @@ go install .
 # 交互式登录
 niubility login --server http://your-server:9000
 
+# 使用独立 profile 登录不同环境
+niubility --profile prod login --server http://prod-server:9000 --sso
+niubility --profile dev login --server http://dev-server:9000 --sso
+
 # 使用浏览器 SSO 登录
 niubility login --server http://your-server:9000 --sso
 
@@ -149,6 +153,13 @@ timeout: "30s"
 | `editor` | string | 否 | 编辑器命令 |
 | `default_status` | string | 否 | 默认内容状态 (draft/published) |
 | `timeout` | string | 否 | HTTP 请求超时时间 |
+
+使用 `--profile <name>` 时，CLI 会改用独立的配置文件和会话文件：
+
+- 配置文件：`~/.config/niubility/profiles/<name>.yaml`
+- 会话文件：`~/.config/niubility/profiles/<name>.cookies.json`
+
+这样可以同时保持多个不同 Niubility 平台的登录态。
 
 ## Front-matter 格式
 

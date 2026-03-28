@@ -18,6 +18,8 @@ import (
 var (
 	// cfgFile is the config file path
 	cfgFile string
+	// profileName selects an isolated CLI profile
+	profileName string
 
 	// global config
 	cfg *config.Config
@@ -43,6 +45,10 @@ You can browse content, publish articles, manage categories, and more.
 Start by logging in:
   niubility login --server http://your-server:9000`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if err := config.ValidateProfile(profileName); err != nil {
+			return err
+		}
+
 		// Skip initialization for login command if server not configured
 		if cmd.Name() == "login" {
 			return nil
@@ -50,7 +56,7 @@ Start by logging in:
 
 		// Load config from specified path or default
 		var err error
-		cfg, err = config.LoadFrom(cfgFile)
+		cfg, err = config.LoadProfile(profileName, cfgFile)
 		if err != nil {
 			return fmt.Errorf("failed to load config: %w", err)
 		}
@@ -98,6 +104,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ~/.config/niubility/config.yaml)")
+	rootCmd.PersistentFlags().StringVar(&profileName, "profile", "", "isolated profile name for multi-server login")
 	rootCmd.PersistentFlags().StringVarP(&outputFormat, "output", "o", "", "output format (table or json)")
 }
 

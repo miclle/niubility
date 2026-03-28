@@ -97,3 +97,35 @@ cookie_jar: "~/.config/niubility/cookies.json"
 		t.Fatalf("Server = %q, want %q", cfg.Server, "http://example.com:9000")
 	}
 }
+
+func TestResolveConfigPath_Profile(t *testing.T) {
+	got := ResolveConfigPath("prod", "")
+	want := filepath.Join(expandHome(DefaultProfilesDir), "prod.yaml")
+	if got != want {
+		t.Fatalf("ResolveConfigPath() = %q, want %q", got, want)
+	}
+}
+
+func TestDefaultCookieJarForProfile(t *testing.T) {
+	got := DefaultCookieJarForProfile("prod")
+	want := filepath.Join(expandHome(DefaultProfilesDir), "prod.cookies.json")
+	if got != want {
+		t.Fatalf("DefaultCookieJarForProfile() = %q, want %q", got, want)
+	}
+}
+
+func TestValidateProfile(t *testing.T) {
+	valid := []string{"", "default", "dev", "prod_1", "qa-east"}
+	for _, profile := range valid {
+		if err := ValidateProfile(profile); err != nil {
+			t.Fatalf("ValidateProfile(%q) error = %v", profile, err)
+		}
+	}
+
+	invalid := []string{"../prod", "qa east", "prod/test", "prod.toml"}
+	for _, profile := range invalid {
+		if err := ValidateProfile(profile); err == nil {
+			t.Fatalf("ValidateProfile(%q) expected error, got nil", profile)
+		}
+	}
+}

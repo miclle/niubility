@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"time"
 
 	"github.com/spf13/viper"
@@ -36,14 +37,15 @@ type Config struct {
 
 // Default configuration values
 const (
-	DefaultServer     = ""
-	DefaultOutput     = "table"
-	DefaultEditor     = "vim"
-	DefaultStatus     = "draft"
-	DefaultTimeout    = "30s"
-	DefaultCookieJar  = "~/.config/niubility/cookies.json"
-	DefaultConfigDir  = "~/.config/niubility"
-	DefaultConfigFile = "config.yaml"
+	DefaultServer      = ""
+	DefaultOutput      = "table"
+	DefaultEditor      = "vim"
+	DefaultStatus      = "draft"
+	DefaultTimeout     = "30s"
+	DefaultCookieJar   = "~/.config/niubility/cookies.json"
+	DefaultConfigDir   = "~/.config/niubility"
+	DefaultConfigFile  = "config.yaml"
+	DefaultProfilesDir = "~/.config/niubility/profiles"
 )
 
 // Errors
@@ -54,27 +56,27 @@ var (
 
 // Load loads configuration from file and environment variables
 func Load() (*Config, error) {
-	return LoadFrom("")
+	return LoadProfile("", "")
 }
 
 // LoadFrom loads configuration from a specific file path
 func LoadFrom(configPath string) (*Config, error) {
+	return LoadProfile("", configPath)
+}
+
+// LoadProfile loads configuration for a profile or a specific config path.
+func LoadProfile(profile, configPath string) (*Config, error) {
 	v := viper.New()
 
 	// Set default values
-	setDefaults(v)
+	setDefaults(v, profile)
 
 	// Bind environment variables
 	v.SetEnvPrefix("NIUBILITY")
 	v.AutomaticEnv()
 
 	// Determine config file path
-	if configPath == "" {
-		configDir := expandHome(DefaultConfigDir)
-		configPath = filepath.Join(configDir, DefaultConfigFile)
-	} else {
-		configPath = expandHome(configPath)
-	}
+	configPath = ResolveConfigPath(profile, configPath)
 
 	v.SetConfigFile(configPath)
 
@@ -102,13 +104,13 @@ func LoadFrom(configPath string) (*Config, error) {
 }
 
 // setDefaults sets default configuration values
-func setDefaults(v *viper.Viper) {
+func setDefaults(v *viper.Viper, profile string) {
 	v.SetDefault("server", DefaultServer)
 	v.SetDefault("output", DefaultOutput)
 	v.SetDefault("editor", DefaultEditor)
 	v.SetDefault("default_status", DefaultStatus)
 	v.SetDefault("timeout", DefaultTimeout)
-	v.SetDefault("cookie_jar", DefaultCookieJar)
+	v.SetDefault("cookie_jar", DefaultCookieJarForProfile(profile))
 }
 
 // validateConfig validates and normalizes configuration
@@ -148,17 +150,17 @@ func EnsureConfigDir() error {
 
 // Save saves the current configuration to file
 func Save(cfg *Config) error {
-	return SaveTo(cfg, "")
+	return SaveProfile("", cfg, "")
 }
 
 // SaveTo saves the current configuration to a specific file path.
 func SaveTo(cfg *Config, configPath string) error {
-	if configPath == "" {
-		configDir := GetConfigDir()
-		configPath = filepath.Join(configDir, DefaultConfigFile)
-	} else {
-		configPath = expandHome(configPath)
-	}
+	return SaveProfile("", cfg, configPath)
+}
+
+// SaveProfile saves the current configuration for a profile or specific config path.
+func SaveProfile(profile string, cfg *Config, configPath string) error {
+	configPath = ResolveConfigPath(profile, configPath)
 
 	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
@@ -215,4 +217,44 @@ func normalizeServerURL(raw string) string {
 	}
 
 	return u.String()
+}
+
+// ResolveConfigPath resolves the config path for a profile or explicit path.
+func ResolveConfigPath(profile, configPath string) string {
+	if configPath != "" {
+		return expandHome(configPath)
+	}
+
+	if isDefaultProfile(profile) {
+		return filepath.Join(GetConfigDir(), DefaultConfigFile)
+	}
+
+	return filepath.Join(expandHome(DefaultProfilesDir), profile+".yaml")
+}
+
+// DefaultCookieJarForProfile returns the default cookie jar path for a profile.
+func DefaultCookieJarForProfile(profile string) string {
+	if isDefaultProfile(profile) {
+		return expandHome(DefaultCookieJar)
+	}
+
+	return filepath.Join(expandHome(DefaultProfilesDir), profile+".cookies.json")
+}
+
+// ValidateProfile validates a profile name.
+func ValidateProfile(profile string) error {
+	if profile == "" {
+		return nil
+	}
+
+	validProfile := regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+	if !validProfile.MatchString(profile) {
+		return fmt.Errorf("%w: invalid profile name '%s'", ErrConfigInvalid, profile)
+	}
+
+	return nil
+}
+
+func isDefaultProfile(profile string) bool {
+	return profile == "" || profile == "default"
 }

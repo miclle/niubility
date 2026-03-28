@@ -45,8 +45,12 @@ Examples:
   # Non-interactive login
   niubility login --server http://localhost:9000 --username admin --password-stdin < password.txt`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := config.ValidateProfile(profileName); err != nil {
+			return err
+		}
+
 		// Load existing config if available
-		cfg, err := config.LoadFrom(cfgFile)
+		cfg, err := config.LoadProfile(profileName, cfgFile)
 		if err != nil {
 			// Create default config
 			cfg = &config.Config{
@@ -55,7 +59,7 @@ Examples:
 				Editor:        config.DefaultEditor,
 				DefaultStatus: config.DefaultStatus,
 				Timeout:       config.DefaultTimeout,
-				CookieJar:     config.DefaultCookieJar,
+				CookieJar:     config.DefaultCookieJarForProfile(profileName),
 			}
 		}
 
@@ -118,7 +122,7 @@ Examples:
 
 		// Save config if server was provided via flag
 		if loginServer != "" {
-			if err := config.SaveTo(cfg, cfgFile); err != nil {
+			if err := config.SaveProfile(profileName, cfg, cfgFile); err != nil {
 				output.PrintError("failed to save config: %v", err)
 			}
 		}
@@ -140,6 +144,9 @@ Examples:
 
 		output.PrintSuccess("Logged in as %s", boot.User.Name)
 		fmt.Printf("Server: %s\n", cfg.Server)
+		if profileName != "" {
+			fmt.Printf("Profile: %s\n", profileName)
+		}
 		fmt.Printf("Username: %s\n", boot.User.Username)
 		fmt.Printf("Role: %s\n", boot.User.Role)
 
