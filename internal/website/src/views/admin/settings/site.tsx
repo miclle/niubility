@@ -23,6 +23,8 @@ function SettingsSite() {
     const [copyright, setCopyright] = useState('')
     const [forceHTTPS, setForceHTTPS] = useState(false)
     const [footer, setFooter] = useState('')
+    const [videoDefaultCoverURL, setVideoDefaultCoverURL] = useState('')
+    const [videoSpeakerDefaultAvatarURL, setVideoSpeakerDefaultAvatarURL] = useState('')
     const [uploading, setUploading] = useState(false)
 
     // Load settings from API
@@ -37,6 +39,8 @@ function SettingsSite() {
             setCopyright(settingsMap['site.copyright'] || '')
             setForceHTTPS(settingsMap['site.force_https'] === 'true')
             setFooter(settingsMap['site.footer'] || '')
+            setVideoDefaultCoverURL(settingsMap['site.video_default_cover_url'] || '')
+            setVideoSpeakerDefaultAvatarURL(settingsMap['site.video_speaker_default_avatar_url'] || '')
         }
     }, [settingsMap])
 
@@ -70,6 +74,23 @@ function SettingsSite() {
         }
     }
 
+    const handleUploadContentAsset = async (
+        e: React.ChangeEvent<HTMLInputElement>,
+        setter: (value: string) => void,
+    ) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        setUploading(true)
+        try {
+            const key = await uploadSiteResource(file)
+            setter(key)
+        } catch (err) {
+            console.error('Upload content asset failed:', err)
+        } finally {
+            setUploading(false)
+        }
+    }
+
     const buildSiteConfig = (): SiteConfig => ({
         title: title.trim() || 'Niubility',
         description: description.trim(),
@@ -80,6 +101,8 @@ function SettingsSite() {
         copyright: copyright.trim() || 'Niubility',
         force_https: forceHTTPS,
         footer: footer,
+        video_default_cover_url: videoDefaultCoverURL.trim(),
+        video_speaker_default_avatar_url: videoSpeakerDefaultAvatarURL.trim(),
     })
 
     // Handle save settings
@@ -95,6 +118,8 @@ function SettingsSite() {
             'site.copyright': copyright,
             'site.force_https': forceHTTPS ? 'true' : 'false',
             'site.footer': footer,
+            'site.video_default_cover_url': videoDefaultCoverURL,
+            'site.video_speaker_default_avatar_url': videoSpeakerDefaultAvatarURL,
         })
         if (saved) {
             setSiteConfig(nextConfig)
@@ -209,6 +234,69 @@ function SettingsSite() {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
+                <div className="flex items-center gap-2 mb-6">
+                    <h3 className="font-medium" style={{ color: '#0f0f0f' }}>内容默认图</h3>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                        <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                            视频默认封面
+                        </label>
+                        <div className="flex items-center gap-3">
+                            {videoDefaultCoverURL && (
+                                <img src={siteResourceURL(videoDefaultCoverURL)} alt="视频默认封面" className="h-10 w-16 rounded object-cover" />
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => document.getElementById('video-default-cover-upload')?.click()}
+                                className="px-2 rounded-lg hover:bg-black/5 transition-colors"
+                                style={{ border: '1px solid #e5e5e5', color: '#0f0f0f' }}
+                                disabled={uploading}
+                            >
+                                <Upload size={16} />
+                            </button>
+                            <input
+                                id="video-default-cover-upload"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => handleUploadContentAsset(e, setVideoDefaultCoverURL)}
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                            视频 speaker 默认头像
+                        </label>
+                        <div className="flex items-center gap-3">
+                            {videoSpeakerDefaultAvatarURL && (
+                                <img src={siteResourceURL(videoSpeakerDefaultAvatarURL)} alt="视频 speaker 默认头像" className="h-10 w-10 rounded-full object-cover" />
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => document.getElementById('video-speaker-default-avatar-upload')?.click()}
+                                className="px-2 rounded-lg hover:bg-black/5 transition-colors"
+                                style={{ border: '1px solid #e5e5e5', color: '#0f0f0f' }}
+                                disabled={uploading}
+                            >
+                                <Upload size={16} />
+                            </button>
+                            <input
+                                id="video-speaker-default-avatar-upload"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => handleUploadContentAsset(e, setVideoSpeakerDefaultAvatarURL)}
+                            />
+                        </div>
+                    </div>
+                </div>
+                <p className="mt-3 text-xs" style={{ color: '#606060' }}>
+                    当视频未设置封面、speaker 未设置头像时，会自动回退到这里配置的默认资源。图集会优先使用已上传图片中的封面图或首张图片。
+                </p>
             </div>
 
             {/* Copyright & Security */}

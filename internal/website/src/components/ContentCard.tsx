@@ -6,25 +6,17 @@ import 'dayjs/locale/zh-cn'
 
 import { Avatar, AvatarImage, AvatarFallback } from 'src/components/ui/avatar'
 import { contentDetailPath } from 'src/lib/content-url'
+import { getContentCover } from 'src/lib/content-assets'
+import { useAppContext } from 'src/context/app'
 import type { Content } from 'src/types/content'
 
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
 
-// getContentCover returns the best cover URL for a content item.
-function getContentCover(content: Content): string {
-  if (content.cover_url) return content.cover_url
-  const items = content.attachments || []
-  const coverItem = items.find((m) => m.is_cover)
-  if (coverItem) return coverItem.url
-  const first = items[0]
-  if (first) return first.url
-  return '/default-cover.svg'
-}
-
 // ContentCard displays a content item as a card with type-specific visual indicators.
 function ContentCard({ content, hideAuthor = false }: { content: Content; hideAuthor?: boolean }) {
   const navigate = useNavigate()
+  const { siteConfig } = useAppContext()
   const profilePath = content.author?.username ? `/@${content.author.username}` : ''
   const mediaItems = content.attachments || []
 
@@ -37,7 +29,7 @@ function ContentCard({ content, hideAuthor = false }: { content: Content; hideAu
     if (profilePath) navigate(profilePath)
   }
 
-  const coverUrl = getContentCover(content)
+  const coverUrl = getContentCover(content, siteConfig)
 
   return (
     <div

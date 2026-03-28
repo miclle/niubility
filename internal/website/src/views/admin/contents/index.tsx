@@ -9,9 +9,9 @@ import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 
 import { listContents, deleteContent } from 'src/api/content'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
+import { getContentCover, getSpeakerAvatar, getSpeakerDisplayName } from 'src/lib/content-assets'
 import { useAppContext } from 'src/context/app'
 import { useIntersection } from 'src/hooks/use-intersection'
-import type { Content } from 'src/types/content'
 
 const typeLabels: Record<string, string> = { video: '视频', gallery: '图集', article: '文章' }
 const typeIcons: Record<string, React.ReactNode> = {
@@ -24,11 +24,11 @@ const limit = 20
 // Table cell styles
 const thStyle: React.CSSProperties = { padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500, whiteSpace: 'nowrap' }
 const tdStyle: React.CSSProperties = { padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap' }
-const columnCount = 10
+const columnCount = 11
 
 // AdminContents displays the admin content management page.
 function AdminContents() {
-  const { categories } = useAppContext()
+  const { categories, siteConfig } = useAppContext()
   const queryClient = useQueryClient()
   const categoryLabels = Object.fromEntries(categories.map((c) => [c.slug, c.name]))
 
@@ -57,17 +57,6 @@ function AdminContents() {
     }
   }
 
-  // getContentCover returns the best cover URL for a content item.
-  const getContentCover = (content: Content): string => {
-    if (content.cover_url) return content.cover_url
-    const items = content.attachments || []
-    const coverItem = items.find((m) => m.is_cover)
-    if (coverItem) return coverItem.url
-    const first = items[0]
-    if (first) return first.url
-    return ''
-  }
-
   return (
     <div>
       <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>内容管理</h1>
@@ -81,6 +70,7 @@ function AdminContents() {
               <th style={thStyle}>状态</th>
               <th style={thStyle}>分类</th>
               <th style={thStyle}>作者</th>
+              <th style={thStyle}>Speaker</th>
               <th style={thStyle}>点赞</th>
               <th style={thStyle}>评论</th>
               <th style={thStyle}>收藏</th>
@@ -97,7 +87,8 @@ function AdminContents() {
               </tr>
             ) : (
               contents.map((content) => {
-                const coverUrl = getContentCover(content)
+                const coverUrl = getContentCover(content, siteConfig)
+                const hasSpeakerInfo = Boolean(content.speaker || content.speaker_name)
                 return (
                   <tr key={content.id} style={{ borderTop: '1px solid #e5e5e5' }}>
                     <td style={{ padding: '12px 16px' }}>
@@ -139,6 +130,26 @@ function AdminContents() {
                         </Avatar>
                         {content.author?.name || '-'}
                       </div>
+                    </td>
+                    <td style={tdStyle}>
+                      {hasSpeakerInfo ? (
+                        <div className="flex items-center gap-2 min-w-[160px]">
+                          <Avatar className="w-6 h-6">
+                            <AvatarImage src={getSpeakerAvatar(content, siteConfig)} alt={getSpeakerDisplayName(content)} />
+                            <AvatarFallback className="text-xs">{getSpeakerDisplayName(content).charAt(0) || '-'}</AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <div className="truncate">{getSpeakerDisplayName(content)}</div>
+                            {content.speaker_bio && (
+                              <div className="text-xs truncate" style={{ color: '#909090' }}>
+                                {content.speaker_bio}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        '-'
+                      )}
                     </td>
                     <td style={tdStyle}>
                       <span className="flex items-center gap-1 text-xs"><Heart size={12} />{content.like_count}</span>

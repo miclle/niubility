@@ -231,16 +231,20 @@ func (s *Service) GetSiteConfig(ctx context.Context) (*entity.SiteConfig, error)
 	forceHTTPS, _ := s.GetSetting(ctx, entity.SettingSiteForceHTTPS)
 	forceHTTPSBool, _ := strconv.ParseBool(forceHTTPS)
 	footer, _ := s.GetSetting(ctx, entity.SettingSiteFooter)
+	videoDefaultCoverURL, _ := s.GetSetting(ctx, entity.SettingSiteVideoDefaultCoverURL)
+	videoSpeakerDefaultAvatarURL, _ := s.GetSetting(ctx, entity.SettingSiteVideoSpeakerDefaultAvatarURL)
 
 	return &entity.SiteConfig{
-		Title:       title,
-		Description: description,
-		Keywords:    keywords,
-		Version:     version,
-		FaviconURL:  faviconURL,
-		LogoURL:     logoURL,
-		Copyright:   copyright,
-		ForceHTTPS:  forceHTTPSBool,
-		Footer:      footer,
+		Title:                        title,
+		Description:                  description,
+		Keywords:                     keywords,
+		Version:                      version,
+		FaviconURL:                   faviconURL,
+		LogoURL:                      logoURL,
+		Copyright:                    copyright,
+		ForceHTTPS:                   forceHTTPSBool,
+		Footer:                       footer,
+		VideoDefaultCoverURL:         videoDefaultCoverURL,
+		VideoSpeakerDefaultAvatarURL: videoSpeakerDefaultAvatarURL,
 	}, nil
 }

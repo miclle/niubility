@@ -96,19 +96,25 @@ const (
 	SettingSiteForceHTTPS = "site.force_https"
 	// SettingSiteFooter is the custom footer HTML/text content.
 	SettingSiteFooter = "site.footer"
+	// SettingSiteVideoDefaultCoverURL is the fallback cover for video content.
+	SettingSiteVideoDefaultCoverURL = "site.video_default_cover_url"
+	// SettingSiteVideoSpeakerDefaultAvatarURL is the fallback avatar for video/gallery speakers.
+	SettingSiteVideoSpeakerDefaultAvatarURL = "site.video_speaker_default_avatar_url"
 )
 
 // SiteConfig represents the site-level configuration extracted from settings.
 type SiteConfig struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Keywords    string `json:"keywords"`
-	Version     string `json:"version"`
-	FaviconURL  string `json:"favicon_url"`
-	LogoURL     string `json:"logo_url"`
-	Copyright   string `json:"copyright"`
-	ForceHTTPS  bool   `json:"force_https"`
-	Footer      string `json:"footer"`
+	Title                        string `json:"title"`
+	Description                  string `json:"description"`
+	Keywords                     string `json:"keywords"`
+	Version                      string `json:"version"`
+	FaviconURL                   string `json:"favicon_url"`
+	LogoURL                      string `json:"logo_url"`
+	Copyright                    string `json:"copyright"`
+	ForceHTTPS                   bool   `json:"force_https"`
+	Footer                       string `json:"footer"`
+	VideoDefaultCoverURL         string `json:"video_default_cover_url"`
+	VideoSpeakerDefaultAvatarURL string `json:"video_speaker_default_avatar_url"`
 }
 
 // WechatConfig represents the WeChat Work configuration extracted from settings.

@@ -7,6 +7,7 @@ import 'dayjs/locale/zh-cn'
 
 import { getContent, likeContent, favoriteContent } from 'src/api/content'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
+import { getSpeakerAvatar, getSpeakerDisplayName } from 'src/lib/content-assets'
 import { useAppContext } from 'src/context/app'
 import JustifiedGrid from 'src/components/JustifiedGrid'
 import Lightbox from 'src/components/Lightbox'
@@ -21,7 +22,7 @@ dayjs.locale('zh-cn')
 function GalleryDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { currentUser, categories } = useAppContext()
+  const { currentUser, categories, siteConfig } = useAppContext()
   const location = useLocation()
   const [content, setContent] = useState<Content | null>(null)
   const [loading, setLoading] = useState(true)
@@ -126,12 +127,12 @@ function GalleryDetail() {
       <div className="flex items-center justify-between pb-4 mb-4" style={{ borderBottom: '1px solid #e5e5e5' }}>
         <div className="flex items-center gap-3">
           <Avatar size="lg">
-            <AvatarImage src={content.speaker?.avatar || content.author?.avatar || ''} alt={content.speaker?.name || content.author?.name || content.speaker_name || '匿名'} />
-            <AvatarFallback>{content.speaker?.name?.charAt(0) || content.author?.name?.charAt(0) || content.speaker_name?.charAt(0) || '匿'}</AvatarFallback>
+            <AvatarImage src={getSpeakerAvatar(content, siteConfig)} alt={getSpeakerDisplayName(content)} />
+            <AvatarFallback>{getSpeakerDisplayName(content).charAt(0) || '匿'}</AvatarFallback>
           </Avatar>
           <div>
             <div className="text-sm font-medium" style={{ color: '#0f0f0f' }}>
-              {content.speaker?.name || content.author?.name || content.speaker_name || '未知作者'}
+              {getSpeakerDisplayName(content)}
             </div>
             <div className="text-xs" style={{ color: '#606060' }}>
               {dayjs(content.created_at).fromNow()}

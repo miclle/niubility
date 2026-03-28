@@ -123,15 +123,17 @@ func TestService_GetSiteConfig(t *testing.T) {
 	ctx := context.Background()
 
 	if err := s.UpdateSettingsBatch(ctx, map[string]string{
-		entity.SettingSiteTitle:       "Acme Learning",
-		entity.SettingSiteDescription: "内部学习平台",
-		entity.SettingSiteKeywords:    "学习,知识库",
-		entity.SettingSiteVersion:     "v2.3.1",
-		entity.SettingSiteFaviconURL:  "favicon.png",
-		entity.SettingSiteLogoURL:     "logo.svg",
-		entity.SettingSiteCopyright:   "Acme",
-		entity.SettingSiteForceHTTPS:  "true",
-		entity.SettingSiteFooter:      "<span>footer</span>",
+		entity.SettingSiteTitle:                        "Acme Learning",
+		entity.SettingSiteDescription:                  "内部学习平台",
+		entity.SettingSiteKeywords:                     "学习,知识库",
+		entity.SettingSiteVersion:                      "v2.3.1",
+		entity.SettingSiteFaviconURL:                   "favicon.png",
+		entity.SettingSiteLogoURL:                      "logo.svg",
+		entity.SettingSiteCopyright:                    "Acme",
+		entity.SettingSiteForceHTTPS:                   "true",
+		entity.SettingSiteFooter:                       "<span>footer</span>",
+		entity.SettingSiteVideoDefaultCoverURL:         "video-default.png",
+		entity.SettingSiteVideoSpeakerDefaultAvatarURL: "speaker-default.png",
 	}); err != nil {
 		t.Fatalf("UpdateSettingsBatch() error = %v", err)
 	}
@@ -149,5 +151,11 @@ func TestService_GetSiteConfig(t *testing.T) {
 	}
 	if !cfg.ForceHTTPS {
 		t.Errorf("ForceHTTPS = false, want true")
+	}
+	if cfg.VideoDefaultCoverURL != "video-default.png" {
+		t.Errorf("VideoDefaultCoverURL = %q, want %q", cfg.VideoDefaultCoverURL, "video-default.png")
+	}
+	if cfg.VideoSpeakerDefaultAvatarURL != "speaker-default.png" {
+		t.Errorf("VideoSpeakerDefaultAvatarURL = %q, want %q", cfg.VideoSpeakerDefaultAvatarURL, "speaker-default.png")
 	}
 }

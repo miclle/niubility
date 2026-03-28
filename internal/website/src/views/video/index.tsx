@@ -8,6 +8,7 @@ import 'dayjs/locale/zh-cn'
 import { getContent, listContents, likeContent, favoriteContent } from 'src/api/content'
 import { fileURL } from 'src/api/upload'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
+import { getContentCover, getDefaultContentCover, getSpeakerAvatar, getSpeakerDisplayName } from 'src/lib/content-assets'
 import { formatFileSize } from 'src/lib/utils'
 import { useAppContext } from 'src/context/app'
 import VideoPlayer from 'src/components/VideoPlayer'
@@ -18,22 +19,12 @@ import type { Content } from 'src/types/content'
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
 
-// getContentCover returns the best cover URL for a content item.
-function getContentCover(content: Content): string {
-  if (content.cover_url) return content.cover_url
-  const coverItem = (content.attachments || []).find((m) => m.is_cover)
-  if (coverItem) return coverItem.url
-  const firstImage = (content.attachments || []).find((m) => m.type === 'image')
-  if (firstImage) return firstImage.url
-  return '/default-cover.svg'
-}
-
 // VideoDetail displays a single video content item.
 function VideoDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { currentUser, categories } = useAppContext()
+  const { currentUser, categories, siteConfig } = useAppContext()
   const [content, setContent] = useState<Content | null>(null)
   const [relatedContents, setRelatedContents] = useState<Content[]>([])
   const [loading, setLoading] = useState(true)
@@ -103,12 +94,12 @@ function VideoDetail() {
     <div className="flex items-center justify-between pb-4" style={{ borderBottom: '1px solid #e5e5e5' }}>
       <div className="flex items-center gap-3">
         <Avatar size="lg">
-          <AvatarImage src={content.speaker?.avatar || content.author?.avatar || ''} alt={content.speaker?.name || content.author?.name || content.speaker_name || '匿名'} />
-          <AvatarFallback>{content.speaker?.name?.charAt(0) || content.author?.name?.charAt(0) || content.speaker_name?.charAt(0) || '匿'}</AvatarFallback>
+          <AvatarImage src={getSpeakerAvatar(content, siteConfig)} alt={getSpeakerDisplayName(content)} />
+          <AvatarFallback>{getSpeakerDisplayName(content).charAt(0) || '匿'}</AvatarFallback>
         </Avatar>
         <div>
           <div className="text-sm font-medium" style={{ color: '#0f0f0f' }}>
-            {content.speaker?.name || content.author?.name || content.speaker_name || '未知作者'}
+            {getSpeakerDisplayName(content)}
           </div>
           <div className="text-xs" style={{ color: '#606060' }}>
             {dayjs(content.created_at).fromNow()}
@@ -205,7 +196,7 @@ function VideoDetail() {
               </span>
               <div className="relative flex-shrink-0 rounded overflow-hidden" style={{ width: 80, aspectRatio: '16/9' }}>
                 <img
-                  src={fileURL(v.cover_url || content.cover_url) || '/default-cover.svg'}
+                  src={fileURL(v.cover_url || content.cover_url) || getDefaultContentCover(content.type, siteConfig)}
                   alt={v.title || `视频 ${i + 1}`}
                   className="w-full h-full object-cover"
                 />
@@ -233,7 +224,7 @@ function VideoDetail() {
         {relatedContents.map((item) => (
           <Link key={item.id} to={contentDetailPath(item)} className="flex gap-2 no-underline group" style={{ color: 'inherit' }}>
             <div className="relative flex-shrink-0 rounded-lg overflow-hidden bg-zinc-100" style={{ width: 168, aspectRatio: '16/9' }}>
-              <img src={getContentCover(item)} alt={item.title} className="w-full h-full object-cover" />
+              <img src={getContentCover(item, siteConfig)} alt={item.title} className="w-full h-full object-cover" />
               {item.type === 'video' && (
                 <div className="absolute bottom-1 right-1 px-1 rounded text-xs" style={{ background: 'rgba(0,0,0,0.7)', color: 'white' }}>视频</div>
               )}
@@ -306,7 +297,7 @@ function VideoDetail() {
             <VideoPlayer
               key={currentVideo.id}
               src={currentVideo.url}
-              poster={content.cover_url || '/default-cover.svg'}
+              poster={getContentCover(content, siteConfig)}
               autoplay={autoplay}
               theaterMode={theaterMode}
               onToggleTheater={() => setTheaterMode(!theaterMode)}
@@ -320,7 +311,7 @@ function VideoDetail() {
           </div>
         ) : (
           <div className={`relative overflow-hidden bg-zinc-100 ${theaterMode ? 'rounded-none' : 'rounded-xl'}`} style={{ width: '100%', aspectRatio: '16/9' }}>
-            <img src={content.cover_url || '/default-cover.svg'} alt={content.title} className="w-full h-full object-cover" />
+            <img src={getContentCover(content, siteConfig)} alt={content.title} className="w-full h-full object-cover" />
           </div>
         )}
 

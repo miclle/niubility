@@ -62,6 +62,8 @@ export interface SiteConfig {
   copyright: string
   force_https: boolean
   footer: string
+  video_default_cover_url: string
+  video_speaker_default_avatar_url: string
 }
 
 // BootResponse represents the boot response.
