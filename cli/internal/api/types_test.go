@@ -103,8 +103,8 @@ func TestBootResponseIsAuthenticated(t *testing.T) {
 	for _, tt := range tests {
 		boot := &BootResponse{Authentication: tt.auth}
 		if boot.IsAuthenticated() != tt.expectAuthed {
-		t.Errorf("IsAuthenticated() for auth=%q: expected %v, got %v",
-			tt.auth, tt.expectAuthed, boot.IsAuthenticated())
+			t.Errorf("IsAuthenticated() for auth=%q: expected %v, got %v",
+				tt.auth, tt.expectAuthed, boot.IsAuthenticated())
 		}
 	}
 }

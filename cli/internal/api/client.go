@@ -28,11 +28,11 @@ type Client struct {
 
 // Errors
 var (
-	ErrUnauthorized      = errors.New("unauthorized: please run 'niubility login'")
-	ErrForbidden         = errors.New("forbidden: you don't have permission")
-	ErrNotFound          = errors.New("resource not found")
-	ErrServer            = errors.New("server error")
-	ErrUploadFailed      = errors.New("upload failed")
+	ErrUnauthorized = errors.New("unauthorized: please run 'niubility login'")
+	ErrForbidden    = errors.New("forbidden: you don't have permission")
+	ErrNotFound     = errors.New("resource not found")
+	ErrServer       = errors.New("server error")
+	ErrUploadFailed = errors.New("upload failed")
 )
 
 // APIError represents an error response from the API
