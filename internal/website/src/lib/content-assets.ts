@@ -38,10 +38,24 @@ export function getSpeakerDisplayName(content: Content): string {
   return content.speaker?.name || content.speaker_name || content.author?.name || '未知作者'
 }
 
+// getVideoSpeakerDisplayName returns the primary speaker label for video contexts.
+export function getVideoSpeakerDisplayName(content: Content): string {
+  return content.speaker?.name || content.speaker_name || '未知主讲人'
+}
+
 // getSpeakerAvatar returns the best available avatar for speaker display.
 export function getSpeakerAvatar(content: Content, siteConfig: SiteConfig | null): string {
   if (content.speaker?.avatar) return content.speaker.avatar
   if (content.author?.avatar) return content.author.avatar
+  if (siteConfig?.video_speaker_default_avatar_url) {
+    return siteResourceURL(siteConfig.video_speaker_default_avatar_url)
+  }
+  return ''
+}
+
+// getVideoSpeakerAvatar returns the primary speaker avatar for video contexts.
+export function getVideoSpeakerAvatar(content: Content, siteConfig: SiteConfig | null): string {
+  if (content.speaker?.avatar) return content.speaker.avatar
   if (siteConfig?.video_speaker_default_avatar_url) {
     return siteResourceURL(siteConfig.video_speaker_default_avatar_url)
   }

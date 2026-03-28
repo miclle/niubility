@@ -6,7 +6,7 @@ import 'dayjs/locale/zh-cn'
 
 import { Avatar, AvatarImage, AvatarFallback } from 'src/components/ui/avatar'
 import { contentDetailPath } from 'src/lib/content-url'
-import { getContentCover } from 'src/lib/content-assets'
+import { getContentCover, getVideoSpeakerAvatar, getVideoSpeakerDisplayName } from 'src/lib/content-assets'
 import { useAppContext } from 'src/context/app'
 import type { Content } from 'src/types/content'
 
@@ -17,7 +17,10 @@ dayjs.locale('zh-cn')
 function ContentCard({ content, hideAuthor = false }: { content: Content; hideAuthor?: boolean }) {
   const navigate = useNavigate()
   const { siteConfig } = useAppContext()
-  const profilePath = content.author?.username ? `/@${content.author.username}` : ''
+  const displayUser = content.type === 'video' ? content.speaker : content.author
+  const displayName = content.type === 'video' ? getVideoSpeakerDisplayName(content) : (content.author?.name || '未知作者')
+  const displayAvatar = content.type === 'video' ? getVideoSpeakerAvatar(content, siteConfig) : (content.author?.avatar || '')
+  const profilePath = displayUser?.username ? `/@${displayUser.username}` : ''
   const mediaItems = content.attachments || []
 
   const handleCardClick = () => {
@@ -89,8 +92,8 @@ function ContentCard({ content, hideAuthor = false }: { content: Content; hideAu
         {!hideAuthor && (
           <div className="flex-shrink-0" onClick={handleProfileClick}>
             <Avatar className={profilePath ? 'cursor-pointer' : ''}>
-              <AvatarImage src={content.author?.avatar || ''} alt={content.author?.name || '匿名'} />
-              <AvatarFallback>{content.author?.name?.charAt(0) || '匿'}</AvatarFallback>
+              <AvatarImage src={displayAvatar} alt={displayName || '匿名'} />
+              <AvatarFallback>{displayName?.charAt(0) || '匿'}</AvatarFallback>
             </Avatar>
           </div>
         )}
@@ -106,7 +109,7 @@ function ContentCard({ content, hideAuthor = false }: { content: Content; hideAu
               style={{ color: '#606060' }}
               onClick={handleProfileClick}
             >
-              {content.author?.name || '未知作者'}
+              {displayName}
             </span>
           )}
           <div className="text-xs" style={{ color: '#606060' }}>

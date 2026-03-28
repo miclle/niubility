@@ -8,7 +8,7 @@ import 'dayjs/locale/zh-cn'
 import { getContent, listContents, likeContent, favoriteContent } from 'src/api/content'
 import { fileURL } from 'src/api/upload'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
-import { getContentCover, getDefaultContentCover, getSpeakerAvatar, getSpeakerDisplayName } from 'src/lib/content-assets'
+import { getContentCover, getDefaultContentCover, getVideoSpeakerAvatar, getVideoSpeakerDisplayName } from 'src/lib/content-assets'
 import { formatFileSize } from 'src/lib/utils'
 import { useAppContext } from 'src/context/app'
 import VideoPlayer from 'src/components/VideoPlayer'
@@ -89,17 +89,18 @@ function VideoDetail() {
   const categoryLabel = categories.find((c) => c.slug === content.category)?.name || content.category
   const videoItems = (content.attachments || []).filter((m) => m.type === 'video')
   const currentVideo = videoItems[currentVideoIndex]
+  const speakerDisplayName = getVideoSpeakerDisplayName(content)
 
   const renderActions = () => (
     <div className="flex items-center justify-between pb-4" style={{ borderBottom: '1px solid #e5e5e5' }}>
       <div className="flex items-center gap-3">
         <Avatar size="lg">
-          <AvatarImage src={getSpeakerAvatar(content, siteConfig)} alt={getSpeakerDisplayName(content)} />
-          <AvatarFallback>{getSpeakerDisplayName(content).charAt(0) || '匿'}</AvatarFallback>
+          <AvatarImage src={getVideoSpeakerAvatar(content, siteConfig)} alt={speakerDisplayName} />
+          <AvatarFallback>{speakerDisplayName.charAt(0) || '匿'}</AvatarFallback>
         </Avatar>
         <div>
           <div className="text-sm font-medium" style={{ color: '#0f0f0f' }}>
-            {getSpeakerDisplayName(content)}
+            {speakerDisplayName}
           </div>
           <div className="text-xs" style={{ color: '#606060' }}>
             {dayjs(content.created_at).fromNow()}
@@ -161,14 +162,12 @@ function VideoDetail() {
           {content.summary}
         </div>
       )}
-      {(content.speaker_name || content.speaker) && (
-        <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-          <span className="font-medium">主讲人：</span>
-          {content.speaker?.name || content.speaker_name}
-          {content.speaker_bio && <span className="ml-2" style={{ color: '#606060' }}>- {content.speaker_bio}</span>}
-        </div>
-      )}
-      {(content.summary || content.speaker_name || content.speaker) && (
+      <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+        <span className="font-medium">主讲人：</span>
+        {speakerDisplayName}
+        {content.speaker_bio && <span className="ml-2" style={{ color: '#606060' }}>- {content.speaker_bio}</span>}
+      </div>
+      {(content.summary || content.speaker_name || content.speaker || content.speaker_bio) && (
         <button className="mt-2 text-sm font-medium" style={{ color: '#065fd4' }} onClick={() => setDescExpanded(!descExpanded)}>
           {descExpanded ? '收起' : '展开'}
         </button>
@@ -236,7 +235,7 @@ function VideoDetail() {
             </div>
             <div className="flex-1 min-w-0">
               <h4 className="text-sm font-medium line-clamp-2 mb-1" style={{ color: '#0f0f0f' }}>{item.title}</h4>
-              <div className="text-xs" style={{ color: '#606060' }}>{item.author?.name || '未知作者'}</div>
+              <div className="text-xs" style={{ color: '#606060' }}>{getVideoSpeakerDisplayName(item)}</div>
               <div className="text-xs" style={{ color: '#606060' }}>{dayjs(item.created_at).fromNow()}</div>
             </div>
           </Link>
