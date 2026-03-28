@@ -246,6 +246,9 @@ func (s *Service) UpdateContent(ctx context.Context, id string, args entity.Upda
 		tagsJSON, _ := json.Marshal(args.Tags)
 		updates["tags"] = string(tagsJSON)
 	}
+	if args.AuthorID != nil {
+		updates["author_id"] = *args.AuthorID
+	}
 	if args.SpeakerID != nil {
 		updates["speaker_id"] = *args.SpeakerID
 		if *args.SpeakerID != "" {

@@ -125,6 +125,7 @@ export interface CreateContentArgs {
   status?: ContentStatus
   category: ContentCategory
   tags?: string[]
+  author_id?: string
   speaker_id?: string
   speaker_name?: string
   speaker_bio?: string
@@ -141,6 +142,7 @@ export interface UpdateContentArgs {
   status?: ContentStatus
   category?: ContentCategory
   tags?: string[]
+  author_id?: string
   speaker_id?: string
   speaker_name?: string
   speaker_bio?: string

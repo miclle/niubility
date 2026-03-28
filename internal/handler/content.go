@@ -153,6 +153,11 @@ func (ctrl *Ctrl) CreateContent(c *fox.Context, args entity.CreateContentArgs) (
 		SpeakerBio:  args.SpeakerBio,
 	}
 
+	// Admin can override author for importing or content maintenance flows.
+	if args.AuthorID != "" && user.IsAdmin() {
+		content.AuthorID = args.AuthorID
+	}
+
 	// Admin can override creation time (e.g. for importing legacy content)
 	if args.CreatedAt != nil && user.IsAdmin() {
 		content.CreatedAt = *args.CreatedAt
@@ -198,6 +203,7 @@ func (ctrl *Ctrl) UpdateContent(c *fox.Context, args entity.UpdateContentArgs) (
 
 	// Only admin can override timestamps
 	if !user.IsAdmin() {
+		args.AuthorID = nil
 		args.CreatedAt = nil
 		args.UpdatedAt = nil
 	}

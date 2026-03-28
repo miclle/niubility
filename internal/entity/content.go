@@ -96,6 +96,7 @@ type CreateContentArgs struct {
 	Status      ContentStatus          `json:"status"`
 	Category    string                 `json:"category"     binding:"required"`
 	Tags        []string               `json:"tags"`
+	AuthorID    string                 `json:"author_id"`
 	SpeakerID   string                 `json:"speaker_id"`
 	SpeakerName string                 `json:"speaker_name"`
 	SpeakerBio  string                 `json:"speaker_bio"`
@@ -115,6 +116,7 @@ type UpdateContentArgs struct {
 	Status      *ContentStatus         `json:"status"`
 	Category    *string                `json:"category"`
 	Tags        []string               `json:"tags"`
+	AuthorID    *string                `json:"author_id"`
 	SpeakerID   *string                `json:"speaker_id"`
 	SpeakerName *string                `json:"speaker_name"`
 	SpeakerBio  *string                `json:"speaker_bio"`
