@@ -44,6 +44,41 @@ func TestService_CreateContent(t *testing.T) {
 	}
 }
 
+func TestService_CreateContent_SetsGalleryCoverFromAttachments(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	user := &entity.User{
+		ID:       entity.ID(),
+		Username: "creategalleryauthor",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	if err := s.db.Create(user).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	content := &entity.Content{
+		AuthorID: user.ID,
+		Title:    "Gallery",
+		Type:     entity.ContentTypeGallery,
+		Category: "test",
+	}
+
+	attachments := []entity.CreateAttachmentArgs{
+		{URL: "gallery/1.jpg", Type: entity.AttachmentTypeImage, SortOrder: 0},
+		{URL: "gallery/cover.jpg", Type: entity.AttachmentTypeImage, SortOrder: 1, IsCover: true},
+	}
+
+	if err := s.CreateContent(ctx, content, attachments); err != nil {
+		t.Fatalf("CreateContent() error = %v", err)
+	}
+
+	if content.CoverURL != "gallery/cover.jpg" {
+		t.Errorf("CoverURL = %q, want %q", content.CoverURL, "gallery/cover.jpg")
+	}
+}
+
 func TestService_GetContentByID(t *testing.T) {
 	s := setupTestService(t)
 	ctx := context.Background()
@@ -149,6 +184,70 @@ func TestService_UpdateContent(t *testing.T) {
 	}
 	if updated != nil {
 		t.Errorf("UpdateContent() = %v, want nil", updated)
+	}
+}
+
+func TestService_UpdateContent_RefreshesGalleryCoverFromAttachments(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	user := &entity.User{
+		ID:       entity.ID(),
+		Username: "updategalleryauthor",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	if err := s.db.Create(user).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	content := &entity.Content{
+		ID:       entity.ID(),
+		AuthorID: user.ID,
+		Title:    "Gallery",
+		Type:     entity.ContentTypeGallery,
+		Category: "test",
+		Status:   entity.ContentStatusPublished,
+		CoverURL: "gallery/old-cover.jpg",
+	}
+	if err := s.db.Create(content).Error; err != nil {
+		t.Fatalf("Failed to create test content: %v", err)
+	}
+
+	oldAttachment := &entity.Attachment{
+		ID:        entity.ID(),
+		ContentID: content.ID,
+		URL:       "gallery/old-cover.jpg",
+		Type:      entity.AttachmentTypeImage,
+		IsCover:   true,
+	}
+	if err := s.db.Create(oldAttachment).Error; err != nil {
+		t.Fatalf("Failed to create old attachment: %v", err)
+	}
+
+	updated, err := s.UpdateContent(ctx, content.ID, entity.UpdateContentArgs{
+		Attachments: []entity.CreateAttachmentArgs{
+			{URL: "gallery/1.jpg", Type: entity.AttachmentTypeImage, SortOrder: 0},
+			{URL: "gallery/new-cover.jpg", Type: entity.AttachmentTypeImage, SortOrder: 1, IsCover: true},
+		},
+	})
+	if err != nil {
+		t.Fatalf("UpdateContent() error = %v", err)
+	}
+
+	if updated.CoverURL != "gallery/new-cover.jpg" {
+		t.Errorf("CoverURL = %q, want %q", updated.CoverURL, "gallery/new-cover.jpg")
+	}
+
+	listed, _, err := s.ListContents(ctx, entity.ListContentsArgs{Pagination: entity.Pagination{Limit: 10}})
+	if err != nil {
+		t.Fatalf("ListContents() error = %v", err)
+	}
+	if len(listed) != 1 {
+		t.Fatalf("len(listed) = %d, want 1", len(listed))
+	}
+	if listed[0].CoverURL != "gallery/new-cover.jpg" {
+		t.Errorf("listed CoverURL = %q, want %q", listed[0].CoverURL, "gallery/new-cover.jpg")
 	}
 }
 

@@ -17,8 +17,8 @@ import (
 // GalleryVideoMaxFileSize is the maximum file size for videos in gallery content (200 MB).
 const GalleryVideoMaxFileSize int64 = 200 * 1024 * 1024
 
-const listContentSelect = `contents.*, COALESCE(NULLIF(contents.cover_url, ''), CASE
-	WHEN contents.type = 'gallery' THEN (
+const listContentSelect = `contents.*, CASE
+	WHEN contents.type = 'gallery' THEN COALESCE((
 		SELECT COALESCE(NULLIF(attachments.cover_url, ''), attachments.url)
 		FROM attachments
 		WHERE attachments.content_id = contents.id
@@ -28,12 +28,33 @@ const listContentSelect = `contents.*, COALESCE(NULLIF(contents.cover_url, ''), 
 			attachments.created_at ASC,
 			attachments.id ASC
 		LIMIT 1
-	)
+	), contents.cover_url)
 	ELSE contents.cover_url
-END) AS cover_url`
+END AS cover_url`
 
 func applyContentListSelects(query *gorm.DB) *gorm.DB {
 	return query.Select(listContentSelect)
+}
+
+func galleryCoverURL(items []entity.CreateAttachmentArgs) string {
+	if len(items) == 0 {
+		return ""
+	}
+
+	for _, item := range items {
+		if item.IsCover {
+			if item.CoverURL != "" {
+				return item.CoverURL
+			}
+			return item.URL
+		}
+	}
+
+	first := items[0]
+	if first.CoverURL != "" {
+		return first.CoverURL
+	}
+	return first.URL
 }
 
 // ListContents retrieves a paginated list of contents with optional filters using cursor-based pagination.
@@ -216,6 +237,9 @@ func (s *Service) CreateContent(ctx context.Context, content *entity.Content, at
 	if content.Status == "" {
 		content.Status = entity.ContentStatusDraft
 	}
+	if content.Type == entity.ContentTypeGallery {
+		content.CoverURL = galleryCoverURL(attachments)
+	}
 
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(content).Error; err != nil {
@@ -299,6 +323,9 @@ func (s *Service) UpdateContent(ctx context.Context, id string, args entity.Upda
 	contentType := content.Type
 	if args.Type != nil {
 		contentType = *args.Type
+	}
+	if args.Attachments != nil && contentType == entity.ContentTypeGallery {
+		updates["cover_url"] = galleryCoverURL(args.Attachments)
 	}
 
 	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
