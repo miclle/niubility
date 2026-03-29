@@ -1,6 +1,6 @@
 # Niubility
 
-[English](/Users/miclle/github/miclle/Niubility/README.md) | [中文](/Users/miclle/github/miclle/Niubility/README.zh-CN.md)
+[English](./README.md) | [中文](./README.zh-CN.md)
 
 Niubility is an internal learning and culture platform for enterprises. It helps teams manage training videos, editorial content, knowledge sharing, and culture-focused communication in one place, with enterprise-ready authentication, storage, and organization sync capabilities.
 
