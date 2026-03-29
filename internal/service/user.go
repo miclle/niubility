@@ -8,10 +8,21 @@ import (
 	"time"
 
 	"github.com/fox-gonic/fox/logger"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
 	"github.com/miclle/niubility/internal/entity"
+)
+
+var (
+	ErrUserUsernameExists   = errors.New("username already exists")
+	ErrUserInvalidUsername  = errors.New("username is required")
+	ErrUserInvalidEmail     = errors.New("email is required")
+	ErrUserPasswordTooShort = errors.New("password length must be at least 6 characters")
+	ErrUserInvalidRole      = errors.New("invalid user role")
+	ErrUserInvalidStatus    = errors.New("invalid user status")
+	ErrUserLastActiveAdmin  = errors.New("at least one active admin must remain")
 )
 
 // GetUserByUsername retrieves a user by username.
@@ -101,6 +112,91 @@ func (s *Service) ListUsers(ctx context.Context, args entity.ListUsersArgs) ([]e
 	return users, total, nextCursor, nil
 }
 
+// CreateManagedUser creates a new user for admin-side CRUD.
+func (s *Service) CreateManagedUser(ctx context.Context, args entity.CreateUserArgs) (*entity.User, error) {
+	log := logger.NewWithContext(ctx)
+
+	username := strings.TrimSpace(args.Username)
+	email := strings.TrimSpace(args.Email)
+	if username == "" {
+		return nil, ErrUserInvalidUsername
+	}
+	if email == "" {
+		return nil, ErrUserInvalidEmail
+	}
+
+	if err := validateUserRole(args.Role); err != nil {
+		return nil, err
+	}
+	if err := validateUserStatus(args.Status); err != nil {
+		return nil, err
+	}
+
+	existing, err := s.GetUserByUsername(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+	if existing != nil {
+		return nil, ErrUserUsernameExists
+	}
+
+	user := &entity.User{
+		ID:       entity.ID(),
+		Username: username,
+		Name:     defaultUserName(username, email),
+		Email:    email,
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+
+	if args.Name != nil {
+		user.Name = strings.TrimSpace(*args.Name)
+	}
+	if args.Mobile != nil {
+		user.Mobile = *args.Mobile
+	}
+	if args.Avatar != nil {
+		user.Avatar = *args.Avatar
+	}
+	if args.Bio != nil {
+		user.Bio = *args.Bio
+	}
+	if args.Location != nil {
+		user.Location = *args.Location
+	}
+	if args.DepartmentIDs != nil {
+		user.DepartmentIDs = *args.DepartmentIDs
+	}
+	if args.SocialAccounts != nil {
+		user.SocialAccounts = args.SocialAccounts
+	}
+	if args.Role != nil {
+		user.Role = *args.Role
+	}
+	if args.Status != nil {
+		user.Status = *args.Status
+	}
+	if args.CreatedAt != nil {
+		user.CreatedAt = *args.CreatedAt
+	}
+	if args.UpdatedAt != nil {
+		user.UpdatedAt = *args.UpdatedAt
+	}
+
+	hashedPassword, err := hashOptionalPassword(args.Password)
+	if err != nil {
+		return nil, err
+	}
+	user.Password = hashedPassword
+
+	if err := s.db.WithContext(ctx).Create(user).Error; err != nil {
+		log.Errorf("create managed user: %v", err)
+		return nil, fmt.Errorf("create managed user: %w", err)
+	}
+
+	return s.GetUserByID(ctx, user.ID)
+}
+
 // UpsertUser creates a new user or updates the existing one by username.
 // The first user is automatically set as admin. New users default to activated status.
 // It also syncs user info from WeChat if available.
@@ -178,20 +274,225 @@ func (s *Service) UpdateUser(ctx context.Context, id string, args entity.UpdateU
 		return nil, nil
 	}
 
+	if err := validateUserRole(args.Role); err != nil {
+		return nil, err
+	}
+	if err := validateUserStatus(args.Status); err != nil {
+		return nil, err
+	}
+
+	if args.Username != nil {
+		username := strings.TrimSpace(*args.Username)
+		if username == "" {
+			return nil, ErrUserInvalidUsername
+		}
+		existing, err := s.GetUserByUsername(ctx, username)
+		if err != nil {
+			return nil, err
+		}
+		if existing != nil && existing.ID != user.ID {
+			return nil, ErrUserUsernameExists
+		}
+	}
+
+	nextRole := user.Role
+	if args.Role != nil {
+		nextRole = *args.Role
+	}
+	nextStatus := user.Status
+	if args.Status != nil {
+		nextStatus = *args.Status
+	}
+	if user.IsAdmin() && (nextRole != user.Role || nextStatus != user.Status) && !roleCanAccessAdmin(nextRole, nextStatus) {
+		ok, err := s.hasAnotherActiveAdmin(ctx, user.ID)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, ErrUserLastActiveAdmin
+		}
+	}
+
 	updates := map[string]any{}
+	if args.Username != nil {
+		updates["username"] = strings.TrimSpace(*args.Username)
+	}
+	if args.Email != nil {
+		email := strings.TrimSpace(*args.Email)
+		if email == "" {
+			return nil, ErrUserInvalidEmail
+		}
+		updates["email"] = email
+	}
+	if args.Name != nil {
+		updates["name"] = strings.TrimSpace(*args.Name)
+	}
+	if args.Mobile != nil {
+		updates["mobile"] = *args.Mobile
+	}
+	if args.Avatar != nil {
+		updates["avatar"] = *args.Avatar
+	}
+	if args.Bio != nil {
+		updates["bio"] = *args.Bio
+	}
+	if args.Location != nil {
+		updates["location"] = *args.Location
+	}
+	if args.DepartmentIDs != nil {
+		updates["department_ids"] = *args.DepartmentIDs
+	}
 	if args.Role != nil {
 		updates["role"] = *args.Role
 	}
 	if args.Status != nil {
 		updates["status"] = *args.Status
 	}
+	if args.CreatedAt != nil {
+		updates["created_at"] = *args.CreatedAt
+	}
+	if args.UpdatedAt != nil {
+		updates["updated_at"] = *args.UpdatedAt
+	}
 
-	if len(updates) > 0 {
-		if err := s.db.WithContext(ctx).Model(user).Updates(updates).Error; err != nil {
-			log.Errorf("update user: %v", err)
-			return nil, fmt.Errorf("update user: %w", err)
+	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if len(updates) > 0 {
+			if err := tx.Model(user).Updates(updates).Error; err != nil {
+				log.Errorf("update user: %v", err)
+				return fmt.Errorf("update user: %w", err)
+			}
+		}
+
+		if args.SocialAccounts != nil {
+			user.SocialAccounts = args.SocialAccounts
+			if err := tx.Model(user).Select("social_accounts").Updates(user).Error; err != nil {
+				log.Errorf("update user social_accounts: %v", err)
+				return fmt.Errorf("update user social_accounts: %w", err)
+			}
+		}
+
+		if args.Password != nil {
+			hashed, err := hashOptionalPassword(args.Password)
+			if err != nil {
+				return err
+			}
+			if err := tx.Model(user).Update("password", hashed).Error; err != nil {
+				log.Errorf("update user password: %v", err)
+				return fmt.Errorf("update user password: %w", err)
+			}
+		}
+
+		if args.CreatedAt != nil {
+			if err := tx.Model(user).UpdateColumn("created_at", *args.CreatedAt).Error; err != nil {
+				log.Errorf("update user created_at: %v", err)
+				return fmt.Errorf("update user created_at: %w", err)
+			}
+		}
+
+		if args.UpdatedAt != nil {
+			if err := tx.Model(user).UpdateColumn("updated_at", *args.UpdatedAt).Error; err != nil {
+				log.Errorf("update user updated_at: %v", err)
+				return fmt.Errorf("update user updated_at: %w", err)
+			}
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return s.GetUserByID(ctx, id)
+}
+
+// DeleteUser deletes a user by ID.
+func (s *Service) DeleteUser(ctx context.Context, id string) error {
+	log := logger.NewWithContext(ctx)
+
+	user, err := s.GetUserByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if user == nil {
+		return nil
+	}
+
+	if roleCanAccessAdmin(user.Role, user.Status) {
+		ok, err := s.hasAnotherActiveAdmin(ctx, user.ID)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return ErrUserLastActiveAdmin
 		}
 	}
 
-	return user, nil
+	if err := s.db.WithContext(ctx).Where("id = ?", id).Delete(&entity.User{}).Error; err != nil {
+		log.Errorf("delete user: %v", err)
+		return fmt.Errorf("delete user: %w", err)
+	}
+	return nil
+}
+
+func hashOptionalPassword(password *string) (string, error) {
+	if password == nil || *password == "" {
+		return "", nil
+	}
+	if len(*password) < 6 {
+		return "", ErrUserPasswordTooShort
+	}
+	hashed, err := bcrypt.GenerateFromPassword([]byte(*password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", fmt.Errorf("hash password: %w", err)
+	}
+	return string(hashed), nil
+}
+
+func defaultUserName(username, email string) string {
+	name, _, ok := strings.Cut(email, "@")
+	if !ok || name == "" {
+		return username
+	}
+	return name
+}
+
+func validateUserRole(role *entity.Role) error {
+	if role == nil {
+		return nil
+	}
+	switch *role {
+	case entity.RoleSuperAdmin, entity.RoleAdmin, entity.RoleUser:
+		return nil
+	default:
+		return ErrUserInvalidRole
+	}
+}
+
+func validateUserStatus(status *entity.UserStatus) error {
+	if status == nil {
+		return nil
+	}
+	switch *status {
+	case entity.UserStatusActivated, entity.UserStatusDeactivated:
+		return nil
+	default:
+		return ErrUserInvalidStatus
+	}
+}
+
+func roleCanAccessAdmin(role entity.Role, status entity.UserStatus) bool {
+	return (role == entity.RoleAdmin || role == entity.RoleSuperAdmin) && status == entity.UserStatusActivated
+}
+
+func (s *Service) hasAnotherActiveAdmin(ctx context.Context, excludeID string) (bool, error) {
+	log := logger.NewWithContext(ctx)
+
+	var count int64
+	if err := s.db.WithContext(ctx).
+		Model(&entity.User{}).
+		Where("id <> ? AND status = ? AND role IN ?", excludeID, entity.UserStatusActivated, []entity.Role{entity.RoleAdmin, entity.RoleSuperAdmin}).
+		Count(&count).Error; err != nil {
+		log.Errorf("count active admins: %v", err)
+		return false, fmt.Errorf("count active admins: %w", err)
+	}
+	return count > 0, nil
 }

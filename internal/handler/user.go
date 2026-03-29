@@ -2,10 +2,14 @@
 package handler
 
 import (
+	"errors"
+	"net/http"
+
 	"github.com/fox-gonic/fox"
 	"github.com/fox-gonic/fox/httperrors"
 
 	"github.com/miclle/niubility/internal/entity"
+	"github.com/miclle/niubility/internal/service"
 )
 
 // SearchUsersArgs represents the query parameters for searching users.
@@ -85,12 +89,25 @@ func (ctrl *Ctrl) ListUsers(c *fox.Context, args entity.ListUsersArgs) (*ListUse
 	}, nil
 }
 
-// UpdateUser updates a user's role or status (admin only).
-func (ctrl *Ctrl) UpdateUser(c *fox.Context, args entity.UpdateUserArgs) (*entity.User, error) {
+// CreateUser creates a user (admin only).
+func (ctrl *Ctrl) CreateUser(c *fox.Context, args entity.CreateUserArgs) (*entity.User, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	user, err := ctrl.service.CreateManagedUser(ctx, args)
+	if err != nil {
+		return nil, mapUserAdminError(err)
+	}
+
+	user.ResolveAssetURLs()
+	return user, nil
+}
+
+// GetUser returns a user by ID (admin only).
+func (ctrl *Ctrl) GetUser(c *fox.Context) (*entity.User, error) {
 	ctx := c.Logger.WithContext(c.Request.Context())
 	id := c.Param("id")
 
-	user, err := ctrl.service.UpdateUser(ctx, id, args)
+	user, err := ctrl.service.GetUserByID(ctx, id)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
@@ -100,6 +117,36 @@ func (ctrl *Ctrl) UpdateUser(c *fox.Context, args entity.UpdateUserArgs) (*entit
 
 	user.ResolveAssetURLs()
 	return user, nil
+}
+
+// UpdateUser updates a user's role or status (admin only).
+func (ctrl *Ctrl) UpdateUser(c *fox.Context, args entity.UpdateUserArgs) (*entity.User, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+	id := c.Param("id")
+
+	user, err := ctrl.service.UpdateUser(ctx, id, args)
+	if err != nil {
+		return nil, mapUserAdminError(err)
+	}
+	if user == nil {
+		return nil, httperrors.ErrNotFound
+	}
+
+	user.ResolveAssetURLs()
+	return user, nil
+}
+
+// DeleteUser deletes a user by ID (admin only).
+func (ctrl *Ctrl) DeleteUser(c *fox.Context) error {
+	ctx := c.Logger.WithContext(c.Request.Context())
+	id := c.Param("id")
+
+	if err := ctrl.service.DeleteUser(ctx, id); err != nil {
+		return mapUserAdminError(err)
+	}
+
+	c.Status(http.StatusNoContent)
+	return nil
 }
 
 // SyncUserFromWechat syncs the current user's info from WeChat.
@@ -189,4 +236,21 @@ func (ctrl *Ctrl) ListDepartments(c *fox.Context) (*ListDepartmentsResponse, err
 	}
 
 	return &ListDepartmentsResponse{Departments: result}, nil
+}
+
+func mapUserAdminError(err error) error {
+	switch {
+	case errors.Is(err, service.ErrUserUsernameExists):
+		return httperrors.New(http.StatusConflict, err.Error())
+	case errors.Is(err, service.ErrUserPasswordTooShort),
+		errors.Is(err, service.ErrUserInvalidUsername),
+		errors.Is(err, service.ErrUserInvalidEmail),
+		errors.Is(err, service.ErrUserInvalidRole),
+		errors.Is(err, service.ErrUserInvalidStatus):
+		return httperrors.New(http.StatusBadRequest, err.Error())
+	case errors.Is(err, service.ErrUserLastActiveAdmin):
+		return httperrors.New(http.StatusConflict, err.Error())
+	default:
+		return httperrors.ErrInternalServerError
+	}
 }

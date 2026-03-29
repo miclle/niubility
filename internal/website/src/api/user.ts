@@ -1,5 +1,5 @@
 import client from './client'
-import type { BootResponse, ListUsersResponse, UpdateUserArgs, UpdateProfileArgs, User, SyncWechatResponse, ListDepartmentsResponse, SearchUsersResponse, UserProfileResponse, ChangePasswordArgs, HasPasswordResponse, FollowResponse } from 'src/types/user'
+import type { BootResponse, ListUsersResponse, CreateUserArgs, UpdateUserArgs, UpdateProfileArgs, User, SyncWechatResponse, ListDepartmentsResponse, SearchUsersResponse, UserProfileResponse, ChangePasswordArgs, HasPasswordResponse, FollowResponse } from 'src/types/user'
 import type { ListContentsResponse } from 'src/types/content'
 
 // boot fetches the current system and authentication state.
@@ -27,9 +27,24 @@ export function listUsers(params?: { limit?: number; cursor?: string; search?: s
   return client.get<ListUsersResponse>('/admin/users', { params })
 }
 
-// updateUser updates a user's role or status (admin only).
+// createUser creates a user (admin only).
+export function createUser(data: CreateUserArgs) {
+  return client.post<User>('/admin/users', data)
+}
+
+// getUser fetches a user by ID (admin only).
+export function getUser(id: string) {
+  return client.get<User>(`/admin/users/${id}`)
+}
+
+// updateUser updates a user (admin only).
 export function updateUser(id: string, data: UpdateUserArgs) {
   return client.patch<User>(`/admin/users/${id}`, data)
+}
+
+// deleteUser deletes a user by ID (admin only).
+export function deleteUser(id: string) {
+  return client.delete<void>(`/admin/users/${id}`)
 }
 
 // syncWechat syncs departments and all users from WeChat Work (admin only).

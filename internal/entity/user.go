@@ -67,10 +67,40 @@ type ListUsersArgs struct {
 	DepartmentID int64  `form:"department_id"` // filter by department ID
 }
 
+// CreateUserArgs represents the fields for admin-side user creation.
+type CreateUserArgs struct {
+	Username       string            `json:"username" binding:"required"`
+	Email          string            `json:"email" binding:"required"`
+	Password       *string           `json:"password"`
+	Name           *string           `json:"name"`
+	Mobile         *string           `json:"mobile"`
+	Avatar         *string           `json:"avatar"`
+	Bio            *string           `json:"bio"`
+	Location       *string           `json:"location"`
+	SocialAccounts map[string]string `json:"social_accounts"`
+	DepartmentIDs  *string           `json:"department_ids"`
+	Role           *Role             `json:"role"`
+	Status         *UserStatus       `json:"status"`
+	CreatedAt      *time.Time        `json:"created_at"`
+	UpdatedAt      *time.Time        `json:"updated_at"`
+}
+
 // UpdateUserArgs represents the fields that can be updated for a user.
 type UpdateUserArgs struct {
-	Role   *Role       `json:"role"`
-	Status *UserStatus `json:"status"`
+	Username       *string           `json:"username"`
+	Email          *string           `json:"email"`
+	Password       *string           `json:"password"`
+	Name           *string           `json:"name"`
+	Mobile         *string           `json:"mobile"`
+	Avatar         *string           `json:"avatar"`
+	Bio            *string           `json:"bio"`
+	Location       *string           `json:"location"`
+	SocialAccounts map[string]string `json:"social_accounts"`
+	DepartmentIDs  *string           `json:"department_ids"`
+	Role           *Role             `json:"role"`
+	Status         *UserStatus       `json:"status"`
+	CreatedAt      *time.Time        `json:"created_at"`
+	UpdatedAt      *time.Time        `json:"updated_at"`
 }
 
 // UpdateProfileArgs represents the fields that a user can update on their own profile.

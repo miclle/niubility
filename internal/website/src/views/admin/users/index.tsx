@@ -1,15 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Search, Loader2, X, Building2, ChevronRight, ChevronDown } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import { Search, Loader2, X, Building2, ChevronRight, ChevronDown, Pencil } from 'lucide-react'
 import dayjs from 'dayjs'
 import { useInfiniteQuery } from '@tanstack/react-query'
 
 import { listUsers, updateUser, listDepartments } from 'src/api/user'
 import { useIntersection } from 'src/hooks/use-intersection'
-import type { User, Role, UserStatus, Department } from 'src/types/user'
+import type { User, Role, UserStatus, Department, UpdateUserArgs } from 'src/types/user'
 
 // roleLabels maps role values to Chinese display labels with styles
 const roleLabels: Record<Role, { label: string; bg: string; color: string }> = {
@@ -30,7 +33,22 @@ const thStyle: React.CSSProperties = { background: '#f9f9f9', padding: '12px 16p
 const tdStyle: React.CSSProperties = { padding: '12px 16px', color: '#606060', whiteSpace: 'nowrap', borderTop: tableBorder }
 const stickyTh: React.CSSProperties = { ...thStyle, position: 'sticky', left: 0, zIndex: 20, minWidth: 200, borderRight: tableBorder }
 const stickyTd: React.CSSProperties = { ...tdStyle, position: 'sticky', left: 0, zIndex: 10, background: '#ffffff', borderRight: tableBorder }
-const columnCount = 9
+const columnCount = 10
+
+type UserEditForm = {
+  username: string
+  email: string
+  name: string
+  mobile: string
+  avatar: string
+  bio: string
+  location: string
+  department_ids: string
+  role: Role
+  status: UserStatus
+  password: string
+  social_accounts: string
+}
 
 // LabeledSelect renders a select dropdown with colored label badges.
 function LabeledSelect<T extends string>({ value, labels, onChange }: {
@@ -234,6 +252,11 @@ function AdminUsers() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [departments, setDepartments] = useState<Department[]>([])
   const [deptMap, setDeptMap] = useState<Map<number, string>>(new Map())
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [form, setForm] = useState<UserEditForm | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   // Get filters from URL
   const search = searchParams.get('search') || ''
@@ -251,7 +274,7 @@ function AdminUsers() {
     }).catch(() => {})
   }, [])
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, refetch } =
     useInfiniteQuery({
       queryKey: ['admin-users', { search, departmentId }],
       queryFn: ({ pageParam }) =>
@@ -287,10 +310,80 @@ function AdminUsers() {
   const handleFieldChange = async <K extends 'role' | 'status'>(userId: string, field: K, value: User[K]) => {
     try {
       await updateUser(userId, { [field]: value })
-      // Note: useInfiniteQuery cache will be stale, but since we're not invalidating
-      // it stays visually consistent until the next refetch
+      await refetch()
     } catch {
       // Silently fail
+    }
+  }
+
+  const openEditDialog = (user: User) => {
+    setEditingUser(user)
+    setForm({
+      username: user.username || '',
+      email: user.email || '',
+      name: user.name || '',
+      mobile: user.mobile || '',
+      avatar: user.avatar || '',
+      bio: user.bio || '',
+      location: user.location || '',
+      department_ids: user.department_ids || '',
+      role: user.role,
+      status: user.status,
+      password: '',
+      social_accounts: formatSocialAccounts(user.social_accounts),
+    })
+    setSaveError('')
+    setDialogOpen(true)
+  }
+
+  const handleFormChange = <K extends keyof UserEditForm>(key: K, value: UserEditForm[K]) => {
+    setForm((prev) => prev ? { ...prev, [key]: value } : prev)
+  }
+
+  const handleSaveUser = async () => {
+    if (!editingUser || !form) return
+
+    if (!form.username.trim() || !form.email.trim()) {
+      setSaveError('用户名和邮箱不能为空')
+      return
+    }
+
+    const socialAccounts = parseSocialAccounts(form.social_accounts)
+    if (!socialAccounts.ok) {
+      setSaveError(socialAccounts.message)
+      return
+    }
+
+    const payload: UpdateUserArgs = {
+      username: form.username.trim(),
+      email: form.email.trim(),
+      name: form.name.trim(),
+      mobile: form.mobile.trim(),
+      avatar: form.avatar.trim(),
+      bio: form.bio.trim(),
+      location: form.location.trim(),
+      department_ids: form.department_ids.trim(),
+      role: form.role,
+      status: form.status,
+      social_accounts: socialAccounts.value,
+    }
+    if (form.password) {
+      payload.password = form.password
+    }
+
+    setSaving(true)
+    setSaveError('')
+    try {
+      await updateUser(editingUser.id, payload)
+      await refetch()
+      setDialogOpen(false)
+      setEditingUser(null)
+      setForm(null)
+    } catch (error: any) {
+      const message = error?.response?.data?.message || '保存失败，请稍后重试'
+      setSaveError(typeof message === 'string' ? message : '保存失败，请稍后重试')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -367,6 +460,7 @@ function AdminUsers() {
                 <th style={thStyle}>状态</th>
                 <th style={thStyle}>注册时间</th>
                 <th style={thStyle}>更新时间</th>
+                <th style={thStyle}>操作</th>
               </tr>
             </thead>
             <tbody>
@@ -411,6 +505,12 @@ function AdminUsers() {
                     </td>
                     <td style={tdStyle}>{dayjs(user.created_at).format('YYYY-MM-DD HH:mm')}</td>
                     <td style={tdStyle}>{dayjs(user.updated_at).format('YYYY-MM-DD HH:mm')}</td>
+                    <td style={tdStyle}>
+                      <Button variant="ghost" size="sm" onClick={() => openEditDialog(user)} style={{ color: '#606060' }}>
+                        <Pencil size={14} />
+                        编辑
+                      </Button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -430,8 +530,152 @@ function AdminUsers() {
             )}
           </div>
         </div>
+
+      <Dialog open={dialogOpen} onOpenChange={(open) => {
+        setDialogOpen(open)
+        if (!open) {
+          setEditingUser(null)
+          setForm(null)
+          setSaveError('')
+        }
+      }}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>编辑用户信息</DialogTitle>
+          </DialogHeader>
+
+          {form && (
+            <div className="grid gap-4 py-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>用户名</label>
+                  <Input value={form.username} onChange={(e) => handleFormChange('username', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>姓名</label>
+                  <Input value={form.name} onChange={(e) => handleFormChange('name', e.target.value)} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>邮箱</label>
+                  <Input type="email" value={form.email} onChange={(e) => handleFormChange('email', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>手机</label>
+                  <Input value={form.mobile} onChange={(e) => handleFormChange('mobile', e.target.value)} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>角色</label>
+                  <Select value={form.role} onValueChange={(value) => handleFormChange('role', value as Role)}>
+                    <SelectTrigger>
+                      <SelectValue>
+                        <span>{roleLabels[form.role].label}</span>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="super_admin">超级管理员</SelectItem>
+                      <SelectItem value="admin">管理员</SelectItem>
+                      <SelectItem value="user">普通用户</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>状态</label>
+                  <Select value={form.status} onValueChange={(value) => handleFormChange('status', value as UserStatus)}>
+                    <SelectTrigger>
+                      <SelectValue>
+                        <span>{statusLabels[form.status].label}</span>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="activated">已激活</SelectItem>
+                      <SelectItem value="deactivated">已禁用</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>部门</label>
+                  <Input value={form.department_ids} onChange={(e) => handleFormChange('department_ids', e.target.value)} placeholder="如 1,2,3" />
+                  <div className="text-xs" style={{ color: '#909090' }}>
+                    {getDepartmentNames(form.department_ids)}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>重置密码</label>
+                  <Input type="password" value={form.password} onChange={(e) => handleFormChange('password', e.target.value)} placeholder="留空则不修改" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>头像地址</label>
+                <Input value={form.avatar} onChange={(e) => handleFormChange('avatar', e.target.value)} />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>所在地</label>
+                <Input value={form.location} onChange={(e) => handleFormChange('location', e.target.value)} />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>简介</label>
+                <Textarea rows={3} value={form.bio} onChange={(e) => handleFormChange('bio', e.target.value)} />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>社交账号</label>
+                <Textarea
+                  rows={4}
+                  value={form.social_accounts}
+                  onChange={(e) => handleFormChange('social_accounts', e.target.value)}
+                  placeholder={'每行一个，格式为 key=value\n例如 github=alice'}
+                />
+              </div>
+
+              {saveError && (
+                <div className="text-sm" style={{ color: '#cc0000' }}>{saveError}</div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
+            <Button onClick={handleSaveUser} disabled={saving}>
+              {saving ? <Loader2 size={14} className="animate-spin" /> : null}
+              保存
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
+}
+
+function formatSocialAccounts(socialAccounts?: Record<string, string>) {
+  if (!socialAccounts || Object.keys(socialAccounts).length === 0) return ''
+  return Object.entries(socialAccounts).map(([key, value]) => `${key}=${value}`).join('\n')
+}
+
+function parseSocialAccounts(value: string): { ok: true; value: Record<string, string> } | { ok: false; message: string } {
+  const lines = value.split('\n').map(line => line.trim()).filter(Boolean)
+  const result: Record<string, string> = {}
+
+  for (const line of lines) {
+    const [key, ...rest] = line.split('=')
+    if (!key || rest.length === 0) {
+      return { ok: false, message: '社交账号格式不正确，请使用每行 key=value' }
+    }
+    result[key.trim()] = rest.join('=').trim()
+  }
+
+  return { ok: true, value: result }
 }
 
 export default AdminUsers

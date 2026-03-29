@@ -81,10 +81,40 @@ export interface BootResponse {
 // ListUsersResponse represents the response for listing users.
 export type ListUsersResponse = PaginatedList<User>
 
-// UpdateUserArgs represents the fields that can be updated for a user.
-export interface UpdateUserArgs {
+// CreateUserArgs represents the fields for admin-side user creation.
+export interface CreateUserArgs {
+  username: string
+  email: string
+  password?: string
+  name?: string
+  mobile?: string
+  avatar?: string
+  bio?: string
+  location?: string
+  social_accounts?: Record<string, string>
+  department_ids?: string
   role?: Role
   status?: UserStatus
+  created_at?: string
+  updated_at?: string
+}
+
+// UpdateUserArgs represents the fields that can be updated for a user.
+export interface UpdateUserArgs {
+  username?: string
+  email?: string
+  password?: string
+  name?: string
+  mobile?: string
+  avatar?: string
+  bio?: string
+  location?: string
+  social_accounts?: Record<string, string>
+  department_ids?: string
+  role?: Role
+  status?: UserStatus
+  created_at?: string
+  updated_at?: string
 }
 
 // UpdateProfileArgs represents the fields that a user can update on their own profile.
