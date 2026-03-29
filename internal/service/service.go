@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/fox-gonic/fox/logger"
 	"gorm.io/driver/mysql"
@@ -27,12 +26,9 @@ type Service struct {
 	Wechat    *workwx.WorkwxApp
 	Encryptor *textencrypt.Encryptor
 
-	dialect       string // "postgres" or "mysql"
-	jwtSecret     string
-	wechatMutex   sync.RWMutex
-	cliSSOMutex   sync.Mutex
-	cliSSOLogins  map[string]*CLISSOLoginRequest
-	cliSSOTickets map[string]*CLISSOTicket
+	dialect     string // "postgres" or "mysql"
+	jwtSecret   string
+	wechatMutex sync.RWMutex
 }
 
 // New creates a new Service instance with the given driver and DSN.
@@ -100,21 +96,6 @@ func New(ctx context.Context, driver, dsn string) (*Service, error) {
 	svc.Wechat = wechatApp
 
 	return svc, nil
-}
-
-// CLISSOLoginRequest represents a pending CLI SSO login request.
-type CLISSOLoginRequest struct {
-	ID          string
-	CallbackURL string
-	ExpiresAt   time.Time
-}
-
-// CLISSOTicket represents a one-time ticket issued after SSO succeeds.
-type CLISSOTicket struct {
-	Token     string
-	Username  string
-	Email     string
-	ExpiresAt time.Time
 }
 
 // GetJWTSecret returns the JWT signing secret.

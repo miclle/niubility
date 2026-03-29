@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -55,6 +56,17 @@ type CLISSOLoginArgs struct {
 // CLISSOExchangeRequest represents the request body for exchanging a CLI SSO ticket.
 type CLISSOExchangeRequest struct {
 	Ticket string `json:"ticket" binding:"required"`
+}
+
+type cliSSOStatePayload struct {
+	CallbackURL string `json:"callback_url"`
+	Expiry      int64  `json:"exp"`
+}
+
+type cliSSOTicketPayload struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Expiry   int64  `json:"exp"`
 }
 
 // Login handles username+password authentication.
@@ -231,9 +243,9 @@ func (ctrl *Ctrl) SSOCallback(c *fox.Context, args *SSOCallbackArgs) any {
 		return ctrl.completeSSOLogin(c, userinfo, redirect)
 	}
 
-	requestID, cliErr := ctrl.validateCLISSOState(args.State)
+	callbackURL, cliErr := ctrl.validateCLISSOState(args.State)
 	if cliErr == nil {
-		return ctrl.completeCLISSOLogin(c, requestID, userinfo)
+		return ctrl.completeCLISSOLogin(c, callbackURL, userinfo)
 	}
 
 	c.Logger.Errorf("invalid SSO state: web=%v cli=%v", err, cliErr)
@@ -266,9 +278,9 @@ func (ctrl *Ctrl) SSOAcs(c *fox.Context, args *SSOAcsArgs) any {
 		return render.Redirect{Code: 302, Location: "/500"}
 	}
 
-	requestID, cliErr := ctrl.validateCLISSOState(args.RelayState)
+	callbackURL, cliErr := ctrl.validateCLISSOState(args.RelayState)
 	if cliErr == nil {
-		return ctrl.completeCLISSOLogin(c, requestID, userinfo)
+		return ctrl.completeCLISSOLogin(c, callbackURL, userinfo)
 	}
 
 	redirect := args.RelayState
@@ -323,16 +335,20 @@ func (ctrl *Ctrl) CLISSOStart(c *fox.Context, req *CLISSOStartRequest) (any, err
 		return nil, httperrors.New(http.StatusBadRequest, "SSO 未启用")
 	}
 
-	loginReq, err := ctrl.service.CreateCLISSOLoginRequest(ctx, req.CallbackURL)
-	if err != nil {
+	if err := validateCLICallbackURL(req.CallbackURL); err != nil {
 		return nil, httperrors.New(http.StatusBadRequest, err.Error())
 	}
 
+	requestToken, err := ctrl.generateCLISSOState(req.CallbackURL)
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+
 	baseURL := ctrl.baseURL(c)
-	browserURL := fmt.Sprintf("%s/api/v1/sso/cli/login?request=%s", baseURL, url.QueryEscape(loginReq.ID))
+	browserURL := fmt.Sprintf("%s/api/v1/sso/cli/login?request=%s", baseURL, url.QueryEscape(requestToken))
 
 	return &CLISSOStartResponse{
-		LoginID:    loginReq.ID,
+		LoginID:    requestToken,
 		BrowserURL: browserURL,
 		ExpiresIn:  300,
 	}, nil
@@ -346,7 +362,7 @@ func (ctrl *Ctrl) CLISSOLogin(c *fox.Context, args *CLISSOLoginArgs) any {
 		return render.Redirect{Code: 302, Location: "/login"}
 	}
 
-	if _, ok := ctrl.service.GetCLISSOLoginRequest(ctx, args.Request); !ok {
+	if _, err := ctrl.validateCLISSOState(args.Request); err != nil {
 		return httperrors.ErrNotFound
 	}
 
@@ -357,8 +373,7 @@ func (ctrl *Ctrl) CLISSOLogin(c *fox.Context, args *CLISSOLoginArgs) any {
 			c.Logger.Errorf("get OIDC provider: %v", err)
 			return ctrl.redirectCLISSOFailure(c, args.Request, "sso_provider_error")
 		}
-		state := ctrl.generateCLISSOState(args.Request)
-		return render.Redirect{Code: 302, Location: provider.AuthURL(state, ctrl.baseURL(c)+"/sso/callback")}
+		return render.Redirect{Code: 302, Location: provider.AuthURL(args.Request, ctrl.baseURL(c)+"/sso/callback")}
 
 	case "saml":
 		provider, err := ctrl.getSAMLProvider(c)
@@ -366,7 +381,7 @@ func (ctrl *Ctrl) CLISSOLogin(c *fox.Context, args *CLISSOLoginArgs) any {
 			c.Logger.Errorf("get SAML provider: %v", err)
 			return ctrl.redirectCLISSOFailure(c, args.Request, "sso_provider_error")
 		}
-		return render.Redirect{Code: 302, Location: provider.AuthURL(ctrl.generateCLISSOState(args.Request), "")}
+		return render.Redirect{Code: 302, Location: provider.AuthURL(args.Request, "")}
 
 	default:
 		return render.Redirect{Code: 302, Location: "/login"}
@@ -375,9 +390,7 @@ func (ctrl *Ctrl) CLISSOLogin(c *fox.Context, args *CLISSOLoginArgs) any {
 
 // CLISSOExchange consumes a CLI SSO ticket and creates an authenticated session.
 func (ctrl *Ctrl) CLISSOExchange(c *fox.Context, req *CLISSOExchangeRequest) (any, error) {
-	ctx := c.Logger.WithContext(c.Request.Context())
-
-	userinfo, err := ctrl.service.ConsumeCLISSOTicket(ctx, req.Ticket)
+	userinfo, err := ctrl.validateCLISSOTicket(req.Ticket)
 	if err != nil {
 		return nil, httperrors.New(http.StatusUnauthorized, "ticket 无效或已过期")
 	}
@@ -554,44 +567,27 @@ func (ctrl *Ctrl) validateSSOState(c *fox.Context, state string) (string, error)
 	return redirect, nil
 }
 
-// generateCLISSOState creates an HMAC-signed state parameter for CLI SSO.
-// Format: base64(request_id|expiry|hmac)
-func (ctrl *Ctrl) generateCLISSOState(requestID string) string {
-	expiry := strconv.FormatInt(time.Now().Add(10*time.Minute).Unix(), 10)
-	payload := requestID + "|" + expiry
-	mac := hmac.New(sha256.New, []byte(ctrl.service.GetJWTSecret()))
-	mac.Write([]byte(payload))
-	sig := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
-	return base64.RawURLEncoding.EncodeToString([]byte(payload + "|" + sig))
+// generateCLISSOState creates a signed CLI SSO request token.
+func (ctrl *Ctrl) generateCLISSOState(callbackURL string) (string, error) {
+	return ctrl.signCLIToken(cliSSOStatePayload{
+		CallbackURL: callbackURL,
+		Expiry:      time.Now().Add(10 * time.Minute).Unix(),
+	})
 }
 
-// validateCLISSOState validates the CLI SSO state parameter and returns the request ID.
+// validateCLISSOState validates the CLI SSO request token and returns the callback URL.
 func (ctrl *Ctrl) validateCLISSOState(state string) (string, error) {
-	decoded, err := base64.RawURLEncoding.DecodeString(state)
-	if err != nil {
-		return "", fmt.Errorf("decode state: %w", err)
+	var payload cliSSOStatePayload
+	if err := ctrl.verifyCLIToken(state, &payload); err != nil {
+		return "", err
 	}
-
-	parts := strings.SplitN(string(decoded), "|", 3)
-	if len(parts) != 3 {
-		return "", fmt.Errorf("invalid state format")
-	}
-
-	requestID, expiryStr, sig := parts[0], parts[1], parts[2]
-	expiry, err := strconv.ParseInt(expiryStr, 10, 64)
-	if err != nil || time.Now().Unix() > expiry {
+	if payload.Expiry < time.Now().Unix() {
 		return "", fmt.Errorf("state expired")
 	}
-
-	payload := requestID + "|" + expiryStr
-	mac := hmac.New(sha256.New, []byte(ctrl.service.GetJWTSecret()))
-	mac.Write([]byte(payload))
-	expectedSig := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
-	if !hmac.Equal([]byte(sig), []byte(expectedSig)) {
-		return "", fmt.Errorf("invalid state signature")
+	if err := validateCLICallbackURL(payload.CallbackURL); err != nil {
+		return "", err
 	}
-
-	return requestID, nil
+	return payload.CallbackURL, nil
 }
 
 func (ctrl *Ctrl) resolveSSOUser(c *fox.Context, userinfo *sso.UserInfo) (*entity.User, error) {
@@ -618,15 +614,8 @@ func (ctrl *Ctrl) setAuthCookieForUser(c *fox.Context, user *entity.User) error 
 	return nil
 }
 
-func (ctrl *Ctrl) completeCLISSOLogin(c *fox.Context, requestID string, userinfo *sso.UserInfo) any {
-	ctx := c.Logger.WithContext(c.Request.Context())
-
-	if _, err := ctrl.resolveSSOUser(c, userinfo); err != nil {
-		c.Logger.Errorf("resolve SSO user failed: %v", err)
-		return ctrl.redirectCLISSOFailure(c, requestID, "user_sync_failed")
-	}
-
-	ticket, callbackURL, err := ctrl.service.CompleteCLISSOLoginRequest(ctx, requestID, userinfo)
+func (ctrl *Ctrl) completeCLISSOLogin(c *fox.Context, callbackURL string, userinfo *sso.UserInfo) any {
+	ticket, err := ctrl.generateCLISSOTicket(userinfo)
 	if err != nil {
 		c.Logger.Errorf("complete CLI SSO login failed: %v", err)
 		return render.Redirect{Code: 302, Location: "/500"}
@@ -635,15 +624,114 @@ func (ctrl *Ctrl) completeCLISSOLogin(c *fox.Context, requestID string, userinfo
 	return render.Redirect{Code: 302, Location: callbackURL + "?ticket=" + url.QueryEscape(ticket)}
 }
 
-func (ctrl *Ctrl) redirectCLISSOFailure(c *fox.Context, requestID, reason string) any {
-	ctx := c.Logger.WithContext(c.Request.Context())
-
-	callbackURL, ok := ctrl.service.FailCLISSOLoginRequest(ctx, requestID)
-	if !ok {
+func (ctrl *Ctrl) redirectCLISSOFailure(c *fox.Context, requestToken, reason string) any {
+	callbackURL, err := ctrl.validateCLISSOState(requestToken)
+	if err != nil {
 		return render.Redirect{Code: 302, Location: "/login"}
 	}
 
 	return render.Redirect{Code: 302, Location: callbackURL + "?error=" + url.QueryEscape(reason)}
+}
+
+func (ctrl *Ctrl) generateCLISSOTicket(userinfo *sso.UserInfo) (string, error) {
+	if userinfo == nil || userinfo.Username == "" {
+		return "", fmt.Errorf("SSO user username is empty")
+	}
+
+	return ctrl.signCLIToken(cliSSOTicketPayload{
+		Username: userinfo.Username,
+		Email:    userinfo.Email,
+		Expiry:   time.Now().Add(2 * time.Minute).Unix(),
+	})
+}
+
+func (ctrl *Ctrl) validateCLISSOTicket(ticket string) (*sso.UserInfo, error) {
+	var payload cliSSOTicketPayload
+	if err := ctrl.verifyCLIToken(ticket, &payload); err != nil {
+		return nil, err
+	}
+	if payload.Expiry < time.Now().Unix() {
+		return nil, fmt.Errorf("ticket expired")
+	}
+	if payload.Username == "" {
+		return nil, fmt.Errorf("ticket username is empty")
+	}
+
+	return &sso.UserInfo{
+		Username: payload.Username,
+		Email:    payload.Email,
+	}, nil
+}
+
+func (ctrl *Ctrl) signCLIToken(payload any) (string, error) {
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return "", fmt.Errorf("marshal payload: %w", err)
+	}
+
+	encodedPayload := base64.RawURLEncoding.EncodeToString(payloadBytes)
+	mac := hmac.New(sha256.New, []byte(ctrl.service.GetJWTSecret()))
+	mac.Write([]byte(encodedPayload))
+	signature := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+
+	return encodedPayload + "." + signature, nil
+}
+
+func (ctrl *Ctrl) verifyCLIToken(token string, payload any) error {
+	parts := strings.SplitN(token, ".", 2)
+	if len(parts) != 2 {
+		return fmt.Errorf("invalid token format")
+	}
+
+	encodedPayload, signature := parts[0], parts[1]
+	mac := hmac.New(sha256.New, []byte(ctrl.service.GetJWTSecret()))
+	mac.Write([]byte(encodedPayload))
+	expectedSignature := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+	if !hmac.Equal([]byte(signature), []byte(expectedSignature)) {
+		return fmt.Errorf("invalid token signature")
+	}
+
+	payloadBytes, err := base64.RawURLEncoding.DecodeString(encodedPayload)
+	if err != nil {
+		return fmt.Errorf("decode token payload: %w", err)
+	}
+
+	if err := json.Unmarshal(payloadBytes, payload); err != nil {
+		return fmt.Errorf("unmarshal token payload: %w", err)
+	}
+
+	return nil
+}
+
+func validateCLICallbackURL(raw string) error {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return fmt.Errorf("invalid callback URL: %w", err)
+	}
+	if u.Scheme != "http" {
+		return fmt.Errorf("callback URL must use http")
+	}
+	if u.Path != "/callback" {
+		return fmt.Errorf("callback URL path must be /callback")
+	}
+
+	host := u.Hostname()
+	if host != "127.0.0.1" && host != "localhost" {
+		return fmt.Errorf("callback URL host must be 127.0.0.1 or localhost")
+	}
+
+	port := u.Port()
+	if port == "" {
+		return fmt.Errorf("callback URL port is required")
+	}
+	if _, err := net.LookupPort("tcp", port); err != nil {
+		return fmt.Errorf("invalid callback URL port: %w", err)
+	}
+	if strings.Contains(u.RawQuery, "=") {
+		return fmt.Errorf("callback URL query is not allowed")
+	}
+
+	return nil
 }
 
 // BootResponse represents the boot response.
