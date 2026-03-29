@@ -39,7 +39,7 @@ The project uses a Go + React stack and supports integrated full-stack builds, m
 ## Installation and Local Setup
 
 ```bash
-git clone https://github.com/miclle/Niubility.git
+git clone https://github.com/miclle/niubility.git
 cd Niubility
 task install
 ```
