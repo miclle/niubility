@@ -108,3 +108,72 @@ func TestBootResponseIsAuthenticated(t *testing.T) {
 		}
 	}
 }
+
+func TestUserListOptionsToQuery(t *testing.T) {
+	opts := &UserListOptions{
+		Limit:        25,
+		Cursor:       "cursor-123",
+		Search:       "alice",
+		DepartmentID: 42,
+	}
+
+	query := opts.ToQuery()
+
+	if got := query.Get("limit"); got != "25" {
+		t.Errorf("limit = %q, want %q", got, "25")
+	}
+	if got := query.Get("cursor"); got != "cursor-123" {
+		t.Errorf("cursor = %q, want %q", got, "cursor-123")
+	}
+	if got := query.Get("search"); got != "alice" {
+		t.Errorf("search = %q, want %q", got, "alice")
+	}
+	if got := query.Get("department_id"); got != "42" {
+		t.Errorf("department_id = %q, want %q", got, "42")
+	}
+}
+
+func TestCreateUserRequestJSON(t *testing.T) {
+	password := "secret123"
+	role := "admin"
+	req := CreateUserRequest{
+		Username: "alice",
+		Email:    "alice@example.com",
+		Password: &password,
+		Role:     &role,
+		SocialAccounts: map[string]string{
+			"github": "alice",
+		},
+	}
+
+	data, err := json.Marshal(req)
+	if err != nil {
+		t.Fatalf("failed to marshal: %v", err)
+	}
+
+	var unmarshaled map[string]interface{}
+	if err := json.Unmarshal(data, &unmarshaled); err != nil {
+		t.Fatalf("failed to unmarshal: %v", err)
+	}
+
+	if got := unmarshaled["username"]; got != "alice" {
+		t.Errorf("username = %v, want alice", got)
+	}
+	if got := unmarshaled["email"]; got != "alice@example.com" {
+		t.Errorf("email = %v, want alice@example.com", got)
+	}
+	if got := unmarshaled["password"]; got != "secret123" {
+		t.Errorf("password = %v, want secret123", got)
+	}
+	if got := unmarshaled["role"]; got != "admin" {
+		t.Errorf("role = %v, want admin", got)
+	}
+
+	socials, ok := unmarshaled["social_accounts"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("social_accounts missing or invalid: %#v", unmarshaled["social_accounts"])
+	}
+	if got := socials["github"]; got != "alice" {
+		t.Errorf("social_accounts.github = %v, want alice", got)
+	}
+}

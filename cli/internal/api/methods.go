@@ -132,3 +132,51 @@ func (c *Client) GetCurrentUser(ctx context.Context) (*User, error) {
 	}
 	return boot.User, nil
 }
+
+// ListUsers lists users with admin-only filters
+func (c *Client) ListUsers(ctx context.Context, opts *UserListOptions) (*UserListResponse, error) {
+	path := "/api/v1/admin/users"
+	if opts != nil {
+		query := opts.ToQuery()
+		if encoded := query.Encode(); encoded != "" {
+			path = path + "?" + encoded
+		}
+	}
+	var resp UserListResponse
+	if err := c.Get(ctx, path, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// GetUser gets a user by ID
+func (c *Client) GetUser(ctx context.Context, id string) (*User, error) {
+	var resp User
+	if err := c.Get(ctx, fmt.Sprintf("/api/v1/admin/users/%s", id), &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// CreateUser creates a user
+func (c *Client) CreateUser(ctx context.Context, req *CreateUserRequest) (*User, error) {
+	var resp User
+	if err := c.Post(ctx, "/api/v1/admin/users", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// UpdateUser updates a user
+func (c *Client) UpdateUser(ctx context.Context, id string, req *UpdateUserRequest) (*User, error) {
+	var resp User
+	if err := c.Patch(ctx, fmt.Sprintf("/api/v1/admin/users/%s", id), req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// DeleteUser deletes a user by ID
+func (c *Client) DeleteUser(ctx context.Context, id string) error {
+	return c.Delete(ctx, fmt.Sprintf("/api/v1/admin/users/%s", id))
+}

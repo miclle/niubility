@@ -102,6 +102,39 @@ niubility content delete 123
 niubility content delete 123 --yes
 ```
 
+### 7. 管理用户
+
+```bash
+# 列出用户
+niubility user list
+
+# 搜索用户
+niubility user list --search alice
+
+# 查看用户详情
+niubility user view <user-id>
+
+# 创建管理员
+niubility user create \
+  --username alice \
+  --email alice@example.com \
+  --password secret123 \
+  --role admin \
+  --status activated
+
+# 更新用户状态
+niubility user update <user-id> --status deactivated
+
+# 更新社交账号
+niubility user update <user-id> --social github=alice --social x=@alice
+
+# 清空社交账号
+niubility user update <user-id> --clear-socials
+
+# 删除用户
+niubility user delete <user-id> --yes
+```
+
 ## 命令列表
 
 ### 认证
@@ -118,6 +151,19 @@ niubility content delete 123 --yes
 |------|------|
 | `niubility category list` | 列出所有分类 |
 | `niubility category ls` | 别名 |
+
+### 用户
+
+| 命令 | 说明 |
+|------|------|
+| `niubility user list` | 列出用户 |
+| `niubility user ls` | 别名 |
+| `niubility user view <id>` | 查看用户详情 |
+| `niubility user get <id>` | 别名 |
+| `niubility user create` | 创建用户 |
+| `niubility user update <id>` | 更新用户 |
+| `niubility user delete <id>` | 删除用户 |
+| `niubility user rm <id>` | 别名 |
 
 ### 内容
 

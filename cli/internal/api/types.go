@@ -26,6 +26,80 @@ type User struct {
 	UpdatedAt      string            `json:"updated_at"`
 }
 
+// UserListResponse represents the response for user list
+type UserListResponse struct {
+	Items      []User `json:"items"`
+	NextCursor string `json:"next_cursor,omitempty"`
+	Total      *int64 `json:"total,omitempty"`
+}
+
+// HasMore returns true if there are more results
+func (r *UserListResponse) HasMore() bool {
+	return r.NextCursor != ""
+}
+
+// UserListOptions represents options for listing users
+type UserListOptions struct {
+	Limit        int    `json:"limit"`
+	Cursor       string `json:"cursor"`
+	Search       string `json:"search"`
+	DepartmentID int64  `json:"department_id"`
+}
+
+// ToQuery converts options to URL query parameters
+func (o *UserListOptions) ToQuery() url.Values {
+	q := url.Values{}
+	if o.Limit > 0 {
+		q.Set("limit", fmt.Sprintf("%d", o.Limit))
+	}
+	if o.Cursor != "" {
+		q.Set("cursor", o.Cursor)
+	}
+	if o.Search != "" {
+		q.Set("search", o.Search)
+	}
+	if o.DepartmentID > 0 {
+		q.Set("department_id", fmt.Sprintf("%d", o.DepartmentID))
+	}
+	return q
+}
+
+// CreateUserRequest represents create user request
+type CreateUserRequest struct {
+	Username       string            `json:"username"`
+	Email          string            `json:"email"`
+	Password       *string           `json:"password,omitempty"`
+	Name           *string           `json:"name,omitempty"`
+	Mobile         *string           `json:"mobile,omitempty"`
+	Avatar         *string           `json:"avatar,omitempty"`
+	Bio            *string           `json:"bio,omitempty"`
+	Location       *string           `json:"location,omitempty"`
+	SocialAccounts map[string]string `json:"social_accounts,omitempty"`
+	DepartmentIDs  *string           `json:"department_ids,omitempty"`
+	Role           *string           `json:"role,omitempty"`
+	Status         *string           `json:"status,omitempty"`
+	CreatedAt      *string           `json:"created_at,omitempty"`
+	UpdatedAt      *string           `json:"updated_at,omitempty"`
+}
+
+// UpdateUserRequest represents update user request
+type UpdateUserRequest struct {
+	Username       *string           `json:"username,omitempty"`
+	Email          *string           `json:"email,omitempty"`
+	Password       *string           `json:"password,omitempty"`
+	Name           *string           `json:"name,omitempty"`
+	Mobile         *string           `json:"mobile,omitempty"`
+	Avatar         *string           `json:"avatar,omitempty"`
+	Bio            *string           `json:"bio,omitempty"`
+	Location       *string           `json:"location,omitempty"`
+	SocialAccounts map[string]string `json:"social_accounts,omitempty"`
+	DepartmentIDs  *string           `json:"department_ids,omitempty"`
+	Role           *string           `json:"role,omitempty"`
+	Status         *string           `json:"status,omitempty"`
+	CreatedAt      *string           `json:"created_at,omitempty"`
+	UpdatedAt      *string           `json:"updated_at,omitempty"`
+}
+
 // Category represents a content category
 type Category struct {
 	ID           string `json:"id"`

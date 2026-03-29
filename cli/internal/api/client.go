@@ -153,6 +153,11 @@ func (c *Client) Post(ctx context.Context, path string, body, result interface{}
 	return c.do(ctx, http.MethodPost, path, body, result)
 }
 
+// Patch performs a PATCH request
+func (c *Client) Patch(ctx context.Context, path string, body, result interface{}) error {
+	return c.do(ctx, http.MethodPatch, path, body, result)
+}
+
 // Delete performs a DELETE request
 func (c *Client) Delete(ctx context.Context, path string) error {
 	return c.do(ctx, http.MethodDelete, path, nil, nil)
