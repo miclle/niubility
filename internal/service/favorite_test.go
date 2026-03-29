@@ -146,3 +146,58 @@ func TestService_ListFavorites(t *testing.T) {
 		t.Errorf("len(contents) = %d, want 2", len(contents))
 	}
 }
+
+func TestService_ListFavorites_OmitsAttachmentsButKeepsGalleryCover(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	user := &entity.User{ID: entity.ID(), Username: "listfavoritesgallery", Role: entity.RoleUser, Status: entity.UserStatusActivated}
+	if err := s.db.Create(user).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	content := &entity.Content{
+		ID:       entity.ID(),
+		AuthorID: user.ID,
+		Title:    "Favorite gallery",
+		Type:     entity.ContentTypeGallery,
+		Category: "test",
+		Status:   entity.ContentStatusPublished,
+	}
+	if err := s.db.Create(content).Error; err != nil {
+		t.Fatalf("Failed to create test content: %v", err)
+	}
+
+	attachment := &entity.Attachment{
+		ID:        entity.ID(),
+		ContentID: content.ID,
+		Type:      entity.AttachmentTypeImage,
+		URL:       "favorites/cover.jpg",
+		IsCover:   true,
+	}
+	if err := s.db.Create(attachment).Error; err != nil {
+		t.Fatalf("Failed to create test attachment: %v", err)
+	}
+
+	favorite := &entity.Favorite{ID: entity.ID(), UserID: user.ID, ContentID: content.ID}
+	if err := s.db.Create(favorite).Error; err != nil {
+		t.Fatalf("Failed to create favorite: %v", err)
+	}
+
+	contents, _, err := s.ListFavorites(ctx, user.ID, entity.Pagination{Limit: 10})
+	if err != nil {
+		t.Fatalf("ListFavorites() error = %v", err)
+	}
+	if len(contents) != 1 {
+		t.Fatalf("len(contents) = %d, want 1", len(contents))
+	}
+	if contents[0].ID != content.ID {
+		t.Errorf("ID = %q, want %q", contents[0].ID, content.ID)
+	}
+	if contents[0].CoverURL != "favorites/cover.jpg" {
+		t.Errorf("CoverURL = %q, want %q", contents[0].CoverURL, "favorites/cover.jpg")
+	}
+	if len(contents[0].Attachments) != 0 {
+		t.Errorf("len(Attachments) = %d, want 0", len(contents[0].Attachments))
+	}
+}

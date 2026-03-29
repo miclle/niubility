@@ -259,6 +259,73 @@ func TestService_ListContents(t *testing.T) {
 	}
 }
 
+func TestService_ListContents_OmitsAttachmentsButKeepsGalleryCover(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	user := &entity.User{
+		ID:       entity.ID(),
+		Username: "listcontentgallerycover",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	if err := s.db.Create(user).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	content := &entity.Content{
+		ID:       entity.ID(),
+		AuthorID: user.ID,
+		Title:    "Gallery content",
+		Type:     entity.ContentTypeGallery,
+		Category: "gallery",
+		Status:   entity.ContentStatusPublished,
+	}
+	if err := s.db.Create(content).Error; err != nil {
+		t.Fatalf("Failed to create test content: %v", err)
+	}
+
+	attachments := []*entity.Attachment{
+		{
+			ID:        entity.ID(),
+			ContentID: content.ID,
+			Type:      entity.AttachmentTypeImage,
+			URL:       "gallery/1.jpg",
+			SortOrder: 1,
+		},
+		{
+			ID:        entity.ID(),
+			ContentID: content.ID,
+			Type:      entity.AttachmentTypeImage,
+			URL:       "gallery/cover.jpg",
+			IsCover:   true,
+			SortOrder: 2,
+		},
+	}
+	for _, attachment := range attachments {
+		if err := s.db.Create(attachment).Error; err != nil {
+			t.Fatalf("Failed to create test attachment: %v", err)
+		}
+	}
+
+	got, _, err := s.ListContents(ctx, entity.ListContentsArgs{Pagination: entity.Pagination{Limit: 10}})
+	if err != nil {
+		t.Fatalf("ListContents() error = %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("len(got) = %d, want 1", len(got))
+	}
+	if got[0].ID != content.ID {
+		t.Errorf("ID = %q, want %q", got[0].ID, content.ID)
+	}
+	if got[0].CoverURL != "gallery/cover.jpg" {
+		t.Errorf("CoverURL = %q, want %q", got[0].CoverURL, "gallery/cover.jpg")
+	}
+	if len(got[0].Attachments) != 0 {
+		t.Errorf("len(Attachments) = %d, want 0", len(got[0].Attachments))
+	}
+}
+
 func TestGalleryVideoMaxFileSize(t *testing.T) {
 	expected := int64(200 * 1024 * 1024) // 200 MB
 	if GalleryVideoMaxFileSize != expected {

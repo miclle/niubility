@@ -105,11 +105,11 @@ func (s *Service) ListFavorites(ctx context.Context, userID string, pagination e
 	log := logger.NewWithContext(ctx)
 
 	var contents []entity.Content
-	query := s.db.WithContext(ctx).
+	query := applyContentListSelects(s.db.WithContext(ctx)).
 		Joins("JOIN favorites ON favorites.content_id = contents.id").
 		Where("favorites.user_id = ?", userID).
 		Where("contents.status = ?", entity.ContentStatusPublished).
-		Preload("Author").Preload("Speaker").Preload("Attachments").
+		Preload("Author").Preload("Speaker").
 		Order("favorites.created_at DESC, favorites.id DESC")
 
 	if pagination.Cursor != "" {

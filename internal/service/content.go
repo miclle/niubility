@@ -17,13 +17,32 @@ import (
 // GalleryVideoMaxFileSize is the maximum file size for videos in gallery content (200 MB).
 const GalleryVideoMaxFileSize int64 = 200 * 1024 * 1024
 
+const listContentSelect = `contents.*, COALESCE(NULLIF(contents.cover_url, ''), CASE
+	WHEN contents.type = 'gallery' THEN (
+		SELECT COALESCE(NULLIF(attachments.cover_url, ''), attachments.url)
+		FROM attachments
+		WHERE attachments.content_id = contents.id
+		ORDER BY
+			CASE WHEN attachments.is_cover THEN 0 ELSE 1 END,
+			attachments.sort_order ASC,
+			attachments.created_at ASC,
+			attachments.id ASC
+		LIMIT 1
+	)
+	ELSE contents.cover_url
+END) AS cover_url`
+
+func applyContentListSelects(query *gorm.DB) *gorm.DB {
+	return query.Select(listContentSelect)
+}
+
 // ListContents retrieves a paginated list of contents with optional filters using cursor-based pagination.
 func (s *Service) ListContents(ctx context.Context, args entity.ListContentsArgs) ([]entity.Content, string, error) {
 	log := logger.NewWithContext(ctx)
 
 	var contents []entity.Content
 
-	query := s.db.WithContext(ctx).Model(&entity.Content{})
+	query := applyContentListSelects(s.db.WithContext(ctx).Model(&entity.Content{}))
 
 	if args.Category != "" {
 		query = query.Where("category = ?", args.Category)
@@ -103,9 +122,10 @@ func (s *Service) ListContents(ctx context.Context, args entity.ListContentsArgs
 		orderClause = "like_count DESC, created_at DESC, id DESC"
 	}
 
-	if err := query.Preload("Author").Preload("Speaker").Preload("Attachments", func(db *gorm.DB) *gorm.DB {
-		return db.Order("sort_order ASC")
-	}).Limit(args.GetLimit()).Order(orderClause).Find(&contents).Error; err != nil {
+	if err := query.Preload("Author").Preload("Speaker").
+		Limit(args.GetLimit()).
+		Order(orderClause).
+		Find(&contents).Error; err != nil {
 		log.Errorf("ListContents: %v", err)
 		return nil, "", fmt.Errorf("list contents: %w", err)
 	}
