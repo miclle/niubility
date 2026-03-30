@@ -22,15 +22,18 @@ export function getSiteResourcePresignedURL(filename: string, contentType: strin
   return client.post<PresignResponse>('/admin/upload/site-resource', { filename, content_type: contentType })
 }
 
-// appendImageStyle appends a raw query-string style fragment to a URL.
+// appendImageStyle appends a normalized style parameter to a URL.
 export function appendImageStyle(url: string, styleFragment?: string): string {
   if (!url) return ''
   const normalized = styleFragment?.trim().replace(/^[?&]+/, '') || ''
   if (!normalized) return url
 
   const [base, hash = ''] = url.split('#', 2)
-  const separator = base.includes('?') ? '&' : '?'
-  return `${base}${separator}${normalized}${hash ? `#${hash}` : ''}`
+  const [pathname, queryString = ''] = base.split('?', 2)
+  const params = new URLSearchParams(queryString)
+  params.set('style', normalized)
+  const query = params.toString()
+  return `${pathname}${query ? `?${query}` : ''}${hash ? `#${hash}` : ''}`
 }
 
 // fileURL constructs the access URL for an attachment S3 object key.
@@ -38,6 +41,23 @@ export function fileURL(key: string, styleFragment?: string): string {
   if (!key) return ''
   if (key.startsWith('http://') || key.startsWith('https://') || key.startsWith('/')) return appendImageStyle(key, styleFragment)
   return appendImageStyle('/attachments/' + key, styleFragment)
+}
+
+// fileDownloadURL constructs a same-origin download URL for an attachment.
+export function fileDownloadURL(key: string, filename?: string): string {
+  if (!key) return ''
+  const normalizedName = filename?.trim() || ''
+  const params = new URLSearchParams()
+  if (normalizedName) {
+    params.set('download', normalizedName)
+  } else {
+    params.set('download', '1')
+  }
+
+  if (key.startsWith('http://') || key.startsWith('https://') || key.startsWith('/')) {
+    return `${key}${key.includes('?') ? '&' : '?'}${params.toString()}`
+  }
+  return `/attachments/${key}?${params.toString()}`
 }
 
 // avatarURL constructs the access URL for an avatar S3 object key.

@@ -32,6 +32,13 @@ type PresignResult struct {
 	Key          string `json:"key"`
 }
 
+// FileDownloadResult contains the streamed file body and response metadata for direct downloads.
+type FileDownloadResult struct {
+	Body          io.ReadCloser
+	ContentType   string
+	ContentLength int64
+}
+
 // GetPresignedURL generates an S3 presigned PUT URL for attachment upload.
 // S3 key: attachments/{uuid}.{ext}, returned key: {uuid}.{ext}
 func (s *Service) GetPresignedURL(ctx context.Context, filename, contentType string) (*PresignResult, error) {
@@ -114,7 +121,7 @@ func (s *Service) GetFileURL(ctx context.Context, key, rawQuery string) (string,
 	}
 
 	if cfg.PublicURL != "" {
-		return appendRawQuery(strings.TrimRight(cfg.PublicURL, "/")+"/"+key, rawQuery), nil
+		return buildGenericAssetURL(strings.TrimRight(cfg.PublicURL, "/")+"/"+key, rawQuery), nil
 	}
 
 	client := s.newS3Client(cfg)
@@ -130,6 +137,36 @@ func (s *Service) GetFileURL(ctx context.Context, key, rawQuery string) (string,
 	}
 
 	return req.URL, nil
+}
+
+// GetFileDownload streams the original object from S3-compatible storage for direct downloads.
+func (s *Service) GetFileDownload(ctx context.Context, key string) (*FileDownloadResult, error) {
+	log := logger.NewWithContext(ctx)
+
+	cfg, err := s.GetS3Config(ctx)
+	if err != nil {
+		log.Errorf("GetFileDownload: get s3 config: %v", err)
+		return nil, fmt.Errorf("get s3 config: %w", err)
+	}
+	if cfg == nil {
+		return nil, fmt.Errorf("s3 storage not configured")
+	}
+
+	client := s.newS3Client(cfg)
+	resp, err := client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(cfg.Bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		log.Errorf("GetFileDownload: get object: %v", err)
+		return nil, fmt.Errorf("get object: %w", err)
+	}
+
+	return &FileDownloadResult{
+		Body:          resp.Body,
+		ContentType:   aws.ToString(resp.ContentType),
+		ContentLength: aws.ToInt64(resp.ContentLength),
+	}, nil
 }
 
 func (s *Service) getDeliveryURL(ctx context.Context, cfg *entity.DeliveryConfig, key, rawQuery string) (string, bool, error) {
@@ -161,13 +198,82 @@ func appendRawQuery(rawURL, rawQuery string) string {
 	return rawURL + "?" + rawQuery
 }
 
+func extractStyleRequest(rawQuery string) (style string, passthrough string) {
+	normalized := strings.TrimLeft(strings.TrimSpace(rawQuery), "?&")
+	if normalized == "" {
+		return "", ""
+	}
+	if !strings.Contains(normalized, "=") {
+		return normalized, ""
+	}
+
+	values, err := url.ParseQuery(normalized)
+	if err != nil {
+		return normalized, ""
+	}
+
+	style = strings.TrimSpace(values.Get("style"))
+	values.Del("style")
+	passthrough = values.Encode()
+	return style, passthrough
+}
+
+func normalizeDownloadQuery(rawQuery string) string {
+	normalized := strings.TrimLeft(strings.TrimSpace(rawQuery), "?&")
+	if normalized == "" {
+		return ""
+	}
+	values, err := url.ParseQuery(normalized)
+	if err != nil {
+		return normalized
+	}
+
+	download := strings.TrimSpace(values.Get("download"))
+	if download != "" {
+		values.Del("download")
+		if download == "1" {
+			values.Set("attname", "download")
+		} else {
+			values.Set("attname", download)
+		}
+	}
+	return values.Encode()
+}
+
+func isNamedStyle(style string) bool {
+	style = strings.TrimSpace(style)
+	if style == "" {
+		return false
+	}
+	return !strings.ContainsAny(style, "/|&=?")
+}
+
+func buildGenericAssetURL(baseURL, rawQuery string) string {
+	style, passthrough := extractStyleRequest(rawQuery)
+	finalURL := appendRawQuery(baseURL, normalizeDownloadQuery(passthrough))
+	if style == "" {
+		return finalURL
+	}
+	if isNamedStyle(style) {
+		return appendRawQuery(finalURL, "style="+url.QueryEscape(style))
+	}
+	return appendRawQuery(finalURL, style)
+}
+
 func buildQiniuDeliveryURL(cfg *entity.DeliveryConfig, s3Cfg *entity.S3Config, key, rawQuery string) (string, error) {
 	if cfg == nil || strings.TrimSpace(cfg.Domain) == "" {
 		return "", fmt.Errorf("delivery domain is empty")
 	}
 
+	style, passthrough := extractStyleRequest(rawQuery)
 	baseURL := strings.TrimRight(cfg.Domain, "/") + "/" + strings.TrimLeft(key, "/")
-	finalURL := appendRawQuery(baseURL, rawQuery)
+	if isNamedStyle(style) {
+		baseURL += "-" + style
+		style = ""
+	}
+
+	finalURL := buildGenericAssetURL(baseURL, passthrough)
+	finalURL = appendRawQuery(finalURL, style)
 	if !cfg.PrivateEnabled {
 		return finalURL, nil
 	}

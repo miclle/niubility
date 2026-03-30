@@ -1,12 +1,68 @@
 package handler
 
 import (
+	"fmt"
+	"io"
 	"net/http"
+	"net/url"
+	"path"
 	"strings"
 
 	"github.com/fox-gonic/fox"
 	"github.com/fox-gonic/fox/httperrors"
 )
+
+func sanitizeDownloadFilename(filename string) string {
+	filename = strings.TrimSpace(filename)
+	filename = strings.ReplaceAll(filename, "\r", "")
+	filename = strings.ReplaceAll(filename, "\n", "")
+	filename = strings.ReplaceAll(filename, "\"", "")
+	if filename == "" {
+		filename = "download"
+	}
+	return filename
+}
+
+func contentDisposition(filename string) string {
+	filename = sanitizeDownloadFilename(filename)
+	return fmt.Sprintf("attachment; filename=\"%s\"; filename*=UTF-8''%s", filename, url.PathEscape(filename))
+}
+
+func (ctrl *Ctrl) serveFileDownload(c *fox.Context, key, fallbackName string) bool {
+	download := strings.TrimSpace(c.Query("download"))
+	if download == "" {
+		return false
+	}
+	if download == "1" {
+		download = fallbackName
+	}
+	if download == "" {
+		download = "download"
+	}
+
+	ctx := c.Logger.WithContext(c.Request.Context())
+	result, err := ctrl.service.GetFileDownload(ctx, key)
+	if err != nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return true
+	}
+	defer result.Body.Close()
+
+	if result.ContentType != "" {
+		c.Header("Content-Type", result.ContentType)
+	} else {
+		c.Header("Content-Type", "application/octet-stream")
+	}
+	if result.ContentLength > 0 {
+		c.Header("Content-Length", fmt.Sprintf("%d", result.ContentLength))
+	}
+	c.Header("Content-Disposition", contentDisposition(download))
+	c.Status(http.StatusOK)
+	if _, err := io.Copy(c.Writer, result.Body); err != nil {
+		c.Error(err)
+	}
+	return true
+}
 
 // PresignRequest represents the request body for generating a presigned upload URL.
 type PresignRequest struct {
@@ -65,13 +121,16 @@ func (ctrl *Ctrl) GetAvatarPresignedURL(c *fox.Context, req *PresignRequest) (*P
 func (ctrl *Ctrl) GetAttachmentFile(c *fox.Context) {
 	ctx := c.Logger.WithContext(c.Request.Context())
 
-	path := strings.TrimPrefix(c.Param("path"), "/")
-	if path == "" {
+	filePath := strings.TrimPrefix(c.Param("path"), "/")
+	if filePath == "" {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
+	if ctrl.serveFileDownload(c, "attachments/"+filePath, path.Base(filePath)) {
+		return
+	}
 
-	url, err := ctrl.service.GetFileURL(ctx, "attachments/"+path, c.Request.URL.RawQuery)
+	url, err := ctrl.service.GetFileURL(ctx, "attachments/"+filePath, c.Request.URL.RawQuery)
 	if err != nil {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
@@ -85,13 +144,16 @@ func (ctrl *Ctrl) GetAttachmentFile(c *fox.Context) {
 func (ctrl *Ctrl) GetAvatarFile(c *fox.Context) {
 	ctx := c.Logger.WithContext(c.Request.Context())
 
-	path := strings.TrimPrefix(c.Param("path"), "/")
-	if path == "" {
+	filePath := strings.TrimPrefix(c.Param("path"), "/")
+	if filePath == "" {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
+	if ctrl.serveFileDownload(c, "avatars/"+filePath, path.Base(filePath)) {
+		return
+	}
 
-	url, err := ctrl.service.GetFileURL(ctx, "avatars/"+path, c.Request.URL.RawQuery)
+	url, err := ctrl.service.GetFileURL(ctx, "avatars/"+filePath, c.Request.URL.RawQuery)
 	if err != nil {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
@@ -105,13 +167,16 @@ func (ctrl *Ctrl) GetAvatarFile(c *fox.Context) {
 func (ctrl *Ctrl) GetSiteResourceFile(c *fox.Context) {
 	ctx := c.Logger.WithContext(c.Request.Context())
 
-	path := strings.TrimPrefix(c.Param("path"), "/")
-	if path == "" {
+	filePath := strings.TrimPrefix(c.Param("path"), "/")
+	if filePath == "" {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
+	if ctrl.serveFileDownload(c, "site-resources/"+filePath, path.Base(filePath)) {
+		return
+	}
 
-	url, err := ctrl.service.GetFileURL(ctx, "site-resources/"+path, c.Request.URL.RawQuery)
+	url, err := ctrl.service.GetFileURL(ctx, "site-resources/"+filePath, c.Request.URL.RawQuery)
 	if err != nil {
 		c.AbortWithStatus(http.StatusNotFound)
 		return

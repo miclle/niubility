@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { ArrowLeft, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Share2, Info, Heart, X } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut, Share2, Info, Heart, X } from 'lucide-react'
 import dayjs from 'dayjs'
 
-import { fileURL } from 'src/api/upload'
+import { fileDownloadURL, fileURL } from 'src/api/upload'
 import { likeAttachment } from 'src/api/content'
 import CommentSection from 'src/components/CommentSection'
 import { useAppContext } from 'src/context/app'
@@ -163,10 +163,26 @@ function Lightbox({
     })
   }, [current, items, onAttachmentLikeChange])
 
+  const handleDownload = useCallback(() => {
+    const attachment = items[current]
+    if (!attachment) return
+    const downloadURL = fileDownloadURL(attachment.url, attachment.filename || attachment.title || '')
+    const name = attachment.filename || attachment.title || attachment.url.split('/').pop() || 'download'
+    if (!downloadURL) return
+    const link = document.createElement('a')
+    link.href = downloadURL
+    link.download = name
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }, [current, items])
+
   if (!open || items.length === 0) return null
 
   const attachment = items[current]
   const src = fileURL(attachment.url)
+  const originalDownloadURL = fileDownloadURL(attachment.url, attachment.filename || attachment.title || '')
+  const filename = attachment.filename || attachment.title || attachment.url.split('/').pop() || 'download'
   const isVideo = attachment.type === 'video'
   const isFavorited = likedAttachmentIds?.has(attachment.id) || false
 
@@ -200,6 +216,7 @@ function Lightbox({
               {iconBtn(handleZoomIn, <ZoomIn size={20} className="text-white" />, '放大')}
             </>
           )}
+          {iconBtn(handleDownload, <Download size={20} className="text-white" />, isVideo ? '下载原文件' : '下载原图')}
           {iconBtn(handleShare, <Share2 size={20} className="text-white" />, '分享')}
           {iconBtn(() => setInfoPanelOpen((v) => !v),
             <Info size={20} className={infoPanelOpen ? 'text-white' : 'text-white/70'} />, '详情'
@@ -308,6 +325,16 @@ function Lightbox({
                 <span className="text-gray-900">{formatFileSize(attachment.file_size)}</span>
               </div>
             )}
+            <div className="flex justify-between gap-4">
+              <span>文件名</span>
+              <a
+                href={originalDownloadURL}
+                download={filename}
+                className="text-right text-gray-900 break-all underline underline-offset-4 transition-opacity hover:opacity-80"
+              >
+                {filename}
+              </a>
+            </div>
             {isVideo && attachment.duration > 0 && (
               <div className="flex justify-between">
                 <span>时长</span>
