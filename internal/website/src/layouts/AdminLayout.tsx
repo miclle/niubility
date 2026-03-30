@@ -30,7 +30,10 @@ function AdminLayout() {
   const { currentUser, siteConfig } = useAppContext()
   const location = useLocation()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [settingsExpanded, setSettingsExpanded] = useState(() => location.pathname.startsWith('/admin/settings'))
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => ({
+    '/admin/contents': location.pathname.startsWith('/admin/contents'),
+    '/admin/settings': location.pathname.startsWith('/admin/settings'),
+  }))
 
   // Apply site config to document head
   useSiteHead(siteConfig)
@@ -46,7 +49,16 @@ function AdminLayout() {
 
   // Nav items configuration
   const navItems: NavItem[] = [
-    { to: '/admin/contents', icon: FileText, label: '内容管理' },
+    {
+      to: '/admin/contents',
+      icon: FileText,
+      label: '内容管理',
+      children: [
+        { to: '/admin/contents/videos', icon: Play, label: '视频' },
+        { to: '/admin/contents/galleries', icon: ImageIcon, label: '图集' },
+        { to: '/admin/contents/articles', icon: FileText, label: '文章' },
+      ],
+    },
     { to: '/admin/categories', icon: FolderOpen, label: '分类管理' },
     { to: '/admin/users', icon: Users, label: '用户管理' },
     {
@@ -61,8 +73,6 @@ function AdminLayout() {
       ],
     },
   ]
-
-  const isSettingsActive = location.pathname.startsWith('/admin/settings')
 
   return (
     <div className="flex min-h-screen bg-white">
@@ -92,6 +102,9 @@ function AdminLayout() {
         <nav className="flex-1 py-3 px-3 overflow-y-auto">
           {navItems.map((item) => {
             if (item.children) {
+              const isSectionActive = location.pathname.startsWith(item.to)
+              const isExpanded = expandedSections[item.to] ?? isSectionActive
+
               // Parent item with expandable children
               return (
                 <div key={item.to}>
@@ -101,7 +114,7 @@ function AdminLayout() {
                       to={item.children[0].to}
                       className={() =>
                         `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                          isSettingsActive ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+                          isSectionActive ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
                         }`
                       }
                       style={{ color: '#0f0f0f', justifyContent: 'center' }}
@@ -117,23 +130,23 @@ function AdminLayout() {
                     <>
                       {/* Expandable parent button */}
                       <button
-                        onClick={() => setSettingsExpanded(!settingsExpanded)}
+                        onClick={() => setExpandedSections((prev) => ({ ...prev, [item.to]: !isExpanded }))}
                         className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                          isSettingsActive && !settingsExpanded ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+                          isSectionActive && !isExpanded ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
                         }`}
-                        style={{ color: '#0f0f0f', border: 'none', background: isSettingsActive && !settingsExpanded ? 'rgba(0,0,0,0.1)' : 'transparent', cursor: 'pointer' }}
+                        style={{ color: '#0f0f0f', border: 'none', background: isSectionActive && !isExpanded ? 'rgba(0,0,0,0.1)' : 'transparent', cursor: 'pointer' }}
                       >
                         <item.icon size={24} />
                         <span className="text-sm flex-1 text-left">{item.label}</span>
                         <ChevronDown
                           size={16}
                           className="transition-transform duration-200"
-                          style={{ transform: settingsExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                          style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
                         />
                       </button>
 
                       {/* Children sub-menu */}
-                      {settingsExpanded && (
+                      {isExpanded && (
                         <div className="ml-6 mt-1 space-y-0.5">
                           {item.children.map((child) => (
                             <NavLink

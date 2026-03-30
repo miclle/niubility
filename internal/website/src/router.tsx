@@ -21,7 +21,9 @@ import MyContents from 'src/views/settings/contents'
 import Favorites from 'src/views/settings/favorites'
 import SecuritySettings from 'src/views/settings/security'
 import NotificationSettings from 'src/views/settings/notifications'
-import AdminContents from 'src/views/admin/contents'
+import AdminVideoContents from 'src/views/admin/contents/videos'
+import AdminGalleryContents from 'src/views/admin/contents/galleries'
+import AdminArticleContents from 'src/views/admin/contents/articles'
 import AdminUsers from 'src/views/admin/users'
 import SettingsAuth from 'src/views/admin/settings/auth'
 import SettingsStorage from 'src/views/admin/settings/storage'
@@ -104,8 +106,11 @@ const routes: RouteObject[] = [
     path: '/admin',
     element: <AdminLayout />,
     children: [
-      { index: true, element: <Navigate to="/admin/contents" replace /> },
-      { path: 'contents', element: <AdminContents /> },
+      { index: true, element: <Navigate to="/admin/contents/videos" replace /> },
+      { path: 'contents', element: <Navigate to="/admin/contents/videos" replace /> },
+      { path: 'contents/videos', element: <AdminVideoContents /> },
+      { path: 'contents/galleries', element: <AdminGalleryContents /> },
+      { path: 'contents/articles', element: <AdminArticleContents /> },
       { path: 'users', element: <AdminUsers /> },
       { path: 'categories', element: <AdminCategories /> },
       { path: 'sync', element: <Navigate to="/admin/settings/wechat" replace /> },
