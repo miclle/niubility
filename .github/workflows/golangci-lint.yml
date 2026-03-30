@@ -1,0 +1,47 @@
+name: GolangCI-Lint
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: golangci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  golangci:
+    name: GolangCI-Lint
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: backend
+            working-directory: .
+            go-version-file: go.mod
+          - name: cli
+            working-directory: cli
+            go-version-file: cli/go.mod
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ matrix.go-version-file }}
+          cache-dependency-path: ${{ matrix.working-directory }}/go.sum
+
+      - name: Run golangci-lint (${{ matrix.name }})
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.11
+          working-directory: ${{ matrix.working-directory }}
+          args: --timeout=5m
