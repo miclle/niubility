@@ -305,10 +305,10 @@ function RichTextEditor({ value, onChange }: RichTextEditorProps) {
 
         <div className="w-px h-5 mx-1" style={{ background: '#e5e5e5' }} />
 
-        <ToolbarButton title="标题 1" active={editor.isActive('heading', { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
+        <ToolbarButton title="标题 1" active={editor.isActive('heading', { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
           <Heading1 size={16} />
         </ToolbarButton>
-        <ToolbarButton title="标题 2" active={editor.isActive('heading', { level: 3 })} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>
+        <ToolbarButton title="标题 2" active={editor.isActive('heading', { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
           <Heading2 size={16} />
         </ToolbarButton>
 
@@ -349,7 +349,7 @@ function RichTextEditor({ value, onChange }: RichTextEditorProps) {
       {/* Editor content */}
       <EditorContent
         editor={editor}
-        className="prose prose-sm max-w-none px-4 py-3 min-h-[240px] focus-within:outline-none [&_.tiptap]:outline-none [&_.tiptap]:min-h-[220px] [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-2"
+        className="rich-content rich-editor-content max-w-none px-4 py-3 min-h-[240px] focus-within:outline-none [&_.tiptap]:outline-none [&_.tiptap]:min-h-[220px] [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-2"
       />
 
       {/* Hidden file input for image upload */}

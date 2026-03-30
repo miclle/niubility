@@ -135,7 +135,7 @@ function ArticleDetail() {
         {/* Body */}
         {content.body && (
           <div
-            className="prose prose-lg max-w-none mb-8"
+            className="rich-content mb-8"
             style={{ color: '#292929', lineHeight: 1.8, fontSize: '18px' }}
             dangerouslySetInnerHTML={{ __html: content.body }}
           />

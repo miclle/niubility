@@ -252,6 +252,109 @@ body {
   background: rgba(204, 0, 0, 0.08);
 }
 
+/* Shared rich text styles for editor and article rendering */
+.rich-content {
+  color: #292929;
+}
+
+.rich-content h1,
+.rich-content h2,
+.rich-content h3,
+.rich-content h4 {
+  color: #0f0f0f;
+  font-weight: 700;
+  line-height: 1.35;
+  margin-top: 1.5em;
+  margin-bottom: 0.6em;
+}
+
+.rich-content h1 {
+  font-size: 2em;
+}
+
+.rich-content h2 {
+  font-size: 1.5em;
+}
+
+.rich-content h3 {
+  font-size: 1.25em;
+}
+
+.rich-content p {
+  margin: 0 0 1em;
+}
+
+.rich-content ul,
+.rich-content ol {
+  margin: 0 0 1em;
+  padding-left: 1.5em;
+}
+
+.rich-content ul {
+  list-style: disc;
+}
+
+.rich-content ol {
+  list-style: decimal;
+}
+
+.rich-content li {
+  margin-bottom: 0.35em;
+}
+
+.rich-content code {
+  font-family: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-size: 0.875em;
+  color: #27272a;
+}
+
+.rich-content pre {
+  margin: 0 0 1em;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+.rich-content pre code {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+.rich-content blockquote {
+  margin: 0 0 1em;
+  border-left: 3px solid #d3d3d3;
+  padding-left: 1rem;
+  color: #606060;
+  font-style: italic;
+}
+
+.rich-content hr {
+  border: none;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.06);
+  margin: 2em 0;
+}
+
+.rich-content a {
+  color: #065fd4;
+  text-decoration: none;
+}
+
+.rich-content a:hover {
+  text-decoration: underline;
+}
+
+.rich-content img {
+  border-radius: 8px;
+  max-width: 100%;
+}
+
 /* Dark prose for article body */
 .prose-dark {
   color: #606060;
