@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ThumbsUp, Share2, MessageCircle, Pencil, Bookmark, Download, FileText } from 'lucide-react'
+import { ThumbsUp, MessageCircle, Pencil, Bookmark, Download, FileText } from 'lucide-react'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
@@ -13,6 +13,7 @@ import { formatFileSize } from 'src/lib/utils'
 import { useAppContext } from 'src/context/app'
 import VideoPlayer from 'src/components/VideoPlayer'
 import CommentSection from 'src/components/CommentSection'
+import ShareButton from 'src/components/ShareButton'
 import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import type { Content } from 'src/types/content'
@@ -133,10 +134,12 @@ function VideoDetail() {
           <MessageCircle size={18} />
           <span>{commentCount || 0}</span>
         </a>
-        <button className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors" style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}>
-          <Share2 size={18} />
-          <span>分享</span>
-        </button>
+        <ShareButton
+          title={content.title}
+          text={content.summary || content.speaker_bio || undefined}
+          className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
+          style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}
+        />
         {canEdit && (
           <Link to={contentEditPath(content)} className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors no-underline" style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}>
             <Pencil size={16} />
