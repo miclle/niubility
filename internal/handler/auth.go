@@ -454,11 +454,14 @@ func (ctrl *Ctrl) getSAMLProvider(c *fox.Context) (*sso.SAMLProvider, error) {
 }
 
 // buildSSOLoginURL constructs the SSO login URL based on sso_type.
-func (ctrl *Ctrl) buildSSOLoginURL(c *fox.Context) string {
+func (ctrl *Ctrl) buildSSOLoginURL(c *fox.Context, redirect string) string {
 	ctx := c.Logger.WithContext(c.Request.Context())
 
 	ssoType := ctrl.service.GetSSOType(ctx)
 	baseURL := ctrl.baseURL(c)
+	if redirect == "" {
+		redirect = "/"
+	}
 
 	switch ssoType {
 	case "oidc":
@@ -470,7 +473,7 @@ func (ctrl *Ctrl) buildSSOLoginURL(c *fox.Context) string {
 		if err != nil {
 			return ""
 		}
-		state := ctrl.generateSSOState(c, "/")
+		state := ctrl.generateSSOState(c, redirect)
 		return provider.AuthURL(state, baseURL+"/sso/callback")
 
 	case "saml":
@@ -478,7 +481,7 @@ func (ctrl *Ctrl) buildSSOLoginURL(c *fox.Context) string {
 		if err != nil {
 			return ""
 		}
-		return provider.AuthURL("/", "")
+		return provider.AuthURL(redirect, "")
 
 	default:
 		return ""
@@ -767,7 +770,7 @@ func (ctrl *Ctrl) Boot(c *fox.Context) *BootResponse {
 
 	// Build SSO login URL if SSO is enabled
 	if resp.SSOEnabled {
-		resp.SSOLoginURL = ctrl.buildSSOLoginURL(c)
+		resp.SSOLoginURL = ctrl.buildSSOLoginURL(c, "/")
 	}
 
 	user := CurrentUser(c)

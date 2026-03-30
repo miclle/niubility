@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"mime"
 	"net"
 	"net/http"
 	"strings"
@@ -57,7 +58,7 @@ var softPaths = []string{
 }
 
 // AuthMiddleware validates the JWT cookie.
-// Unauthenticated API requests receive 401; browser requests are let through for the frontend to handle.
+// Unauthenticated API requests receive 401; browser page requests may be redirected to SSO.
 func (ctrl *Ctrl) AuthMiddleware(c *fox.Context) (res any) {
 	path := c.Request.URL.Path
 	for _, prefix := range skipPaths {
@@ -116,8 +117,37 @@ unauthorized:
 		return httperrors.ErrUnauthorized
 	}
 
-	// Let the frontend handle login redirect
+	if shouldRedirectPageRequestToSSO(c.Request, ctrl.service.GetSSOType(ctx) != "disabled") {
+		if loginURL := ctrl.buildSSOLoginURL(c, currentRequestRedirectPath(c.Request)); loginURL != "" {
+			return render.Redirect{Code: http.StatusFound, Location: loginURL}
+		}
+	}
+
 	return nil
+}
+
+func shouldRedirectPageRequestToSSO(req *http.Request, ssoEnabled bool) bool {
+	if req == nil {
+		return false
+	}
+
+	if !ssoEnabled {
+		return false
+	}
+
+	if req.Method != http.MethodGet && req.Method != http.MethodHead {
+		return false
+	}
+
+	if req.URL == nil || req.URL.Path == "/login" {
+		return false
+	}
+
+	if !requestAcceptsHTML(req) {
+		return false
+	}
+
+	return true
 }
 
 func (ctrl *Ctrl) httpsRedirectURL(ctx context.Context, req *http.Request) (string, bool) {
@@ -156,6 +186,41 @@ func requestIsHTTPS(req *http.Request) bool {
 	}
 
 	return false
+}
+
+func requestAcceptsHTML(req *http.Request) bool {
+	accept := req.Header.Get("Accept")
+	if accept == "" {
+		return false
+	}
+
+	for _, part := range strings.Split(accept, ",") {
+		mediaType, _, err := mime.ParseMediaType(strings.TrimSpace(part))
+		if err != nil {
+			continue
+		}
+		if mediaType == "text/html" || mediaType == "application/xhtml+xml" {
+			return true
+		}
+	}
+
+	return false
+}
+
+func currentRequestRedirectPath(req *http.Request) string {
+	if req == nil || req.URL == nil {
+		return "/"
+	}
+
+	redirect := req.URL.EscapedPath()
+	if redirect == "" {
+		redirect = "/"
+	}
+	if rawQuery := req.URL.RawQuery; rawQuery != "" {
+		redirect += "?" + rawQuery
+	}
+
+	return redirect
 }
 
 func isLocalhostHost(host string) bool {
