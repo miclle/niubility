@@ -25,9 +25,11 @@ jobs:
           - name: backend
             working-directory: .
             go-version-file: go.mod
+            args: --timeout=5m --build-tags=development
           - name: cli
             working-directory: cli
             go-version-file: cli/go.mod
+            args: --timeout=5m
 
     steps:
       - name: Checkout
@@ -44,4 +46,4 @@ jobs:
         with:
           version: v2.11
           working-directory: ${{ matrix.working-directory }}
-          args: --timeout=5m
+          args: ${{ matrix.args }}
