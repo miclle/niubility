@@ -22,25 +22,36 @@ export function getSiteResourcePresignedURL(filename: string, contentType: strin
   return client.post<PresignResponse>('/admin/upload/site-resource', { filename, content_type: contentType })
 }
 
+// appendImageStyle appends a raw query-string style fragment to a URL.
+export function appendImageStyle(url: string, styleFragment?: string): string {
+  if (!url) return ''
+  const normalized = styleFragment?.trim().replace(/^[?&]+/, '') || ''
+  if (!normalized) return url
+
+  const [base, hash = ''] = url.split('#', 2)
+  const separator = base.includes('?') ? '&' : '?'
+  return `${base}${separator}${normalized}${hash ? `#${hash}` : ''}`
+}
+
 // fileURL constructs the access URL for an attachment S3 object key.
-export function fileURL(key: string): string {
+export function fileURL(key: string, styleFragment?: string): string {
   if (!key) return ''
-  if (key.startsWith('http://') || key.startsWith('https://') || key.startsWith('/')) return key
-  return '/attachments/' + key
+  if (key.startsWith('http://') || key.startsWith('https://') || key.startsWith('/')) return appendImageStyle(key, styleFragment)
+  return appendImageStyle('/attachments/' + key, styleFragment)
 }
 
 // avatarURL constructs the access URL for an avatar S3 object key.
-export function avatarURL(key: string): string {
+export function avatarURL(key: string, styleFragment?: string): string {
   if (!key) return ''
-  if (key.startsWith('http://') || key.startsWith('https://') || key.startsWith('/')) return key
-  return '/avatars/' + key
+  if (key.startsWith('http://') || key.startsWith('https://') || key.startsWith('/')) return appendImageStyle(key, styleFragment)
+  return appendImageStyle('/avatars/' + key, styleFragment)
 }
 
 // siteResourceURL constructs the access URL for a site resource S3 object key.
-export function siteResourceURL(key: string): string {
+export function siteResourceURL(key: string, styleFragment?: string): string {
   if (!key) return ''
-  if (key.startsWith('http://') || key.startsWith('https://') || key.startsWith('/')) return key
-  return '/site-resources/' + key
+  if (key.startsWith('http://') || key.startsWith('https://') || key.startsWith('/')) return appendImageStyle(key, styleFragment)
+  return appendImageStyle('/site-resources/' + key, styleFragment)
 }
 
 // uploadFile handles the complete upload flow: get presigned URL, PUT to S3, return S3 object key.

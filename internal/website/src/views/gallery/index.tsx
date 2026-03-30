@@ -12,7 +12,8 @@ import { useAppContext } from 'src/context/app'
 import JustifiedGrid from 'src/components/JustifiedGrid'
 import Lightbox from 'src/components/Lightbox'
 import CommentSection from 'src/components/CommentSection'
-import { Avatar, AvatarImage, AvatarFallback } from 'src/components/ui/avatar'
+import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
+import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import type { Content } from 'src/types/content'
 
 dayjs.extend(relativeTime)
@@ -127,7 +128,7 @@ function GalleryDetail() {
       <div className="flex items-center justify-between pb-4 mb-4" style={{ borderBottom: '1px solid #e5e5e5' }}>
         <div className="flex items-center gap-3">
           <Avatar size="lg">
-            <AvatarImage src={getSpeakerAvatar(content, siteConfig)} alt={getSpeakerDisplayName(content)} />
+            <SiteAvatarImage src={getSpeakerAvatar(content, siteConfig)} alt={getSpeakerDisplayName(content)} />
             <AvatarFallback>{getSpeakerDisplayName(content).charAt(0) || '匿'}</AvatarFallback>
           </Avatar>
           <div>

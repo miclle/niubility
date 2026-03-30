@@ -64,6 +64,9 @@ export interface SiteConfig {
   footer: string
   video_default_cover_url: string
   video_speaker_default_avatar_url: string
+  gallery_card_image_style: string
+  gallery_detail_image_style: string
+  avatar_image_style: string
 }
 
 // BootResponse represents the boot response.

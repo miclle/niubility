@@ -109,12 +109,50 @@ func TestSensitiveKeys(t *testing.T) {
 		entity.SettingWechatAppSecret,
 		entity.SettingSSOOIDCClientSecret,
 		entity.SettingS3SecretKey,
+		entity.SettingDeliverySignSecret,
 	}
 
 	for _, key := range expectedKeys {
 		if !sensitiveKeys[key] {
 			t.Errorf("sensitiveKeys[%q] = false, want true", key)
 		}
+	}
+}
+
+func TestService_GetDeliveryConfig(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	if err := s.UpdateSettingsBatch(ctx, map[string]string{
+		entity.SettingDeliveryProvider:       "qiniu",
+		entity.SettingDeliveryDomain:         "https://img.example.com",
+		entity.SettingDeliveryPrivateEnabled: "true",
+		entity.SettingDeliveryURLTTLSeconds:  "7200",
+		entity.SettingDeliverySignKey:        "test-ak",
+		entity.SettingDeliverySignSecret:     "test-sk",
+	}); err != nil {
+		t.Fatalf("UpdateSettingsBatch() error = %v", err)
+	}
+
+	cfg, err := s.GetDeliveryConfig(ctx)
+	if err != nil {
+		t.Fatalf("GetDeliveryConfig() error = %v", err)
+	}
+
+	if cfg.Provider != "qiniu" {
+		t.Fatalf("Provider = %q, want %q", cfg.Provider, "qiniu")
+	}
+	if cfg.Domain != "https://img.example.com" {
+		t.Fatalf("Domain = %q, want %q", cfg.Domain, "https://img.example.com")
+	}
+	if !cfg.PrivateEnabled {
+		t.Fatalf("PrivateEnabled = false, want true")
+	}
+	if cfg.URLTTLSeconds != 7200 {
+		t.Fatalf("URLTTLSeconds = %d, want %d", cfg.URLTTLSeconds, 7200)
+	}
+	if cfg.SignSecret != "test-sk" {
+		t.Fatalf("SignSecret = %q, want %q", cfg.SignSecret, "test-sk")
 	}
 }
 
@@ -134,6 +172,9 @@ func TestService_GetSiteConfig(t *testing.T) {
 		entity.SettingSiteFooter:                       "<span>footer</span>",
 		entity.SettingSiteVideoDefaultCoverURL:         "video-default.png",
 		entity.SettingSiteVideoSpeakerDefaultAvatarURL: "speaker-default.png",
+		entity.SettingSiteGalleryCardImageStyle:        "imageView2/1/w/480/h/270",
+		entity.SettingSiteGalleryDetailImageStyle:      "imageView2/2/w/720",
+		entity.SettingSiteAvatarImageStyle:             "imageView2/1/w/96/h/96",
 	}); err != nil {
 		t.Fatalf("UpdateSettingsBatch() error = %v", err)
 	}
@@ -157,5 +198,14 @@ func TestService_GetSiteConfig(t *testing.T) {
 	}
 	if cfg.VideoSpeakerDefaultAvatarURL != "speaker-default.png" {
 		t.Errorf("VideoSpeakerDefaultAvatarURL = %q, want %q", cfg.VideoSpeakerDefaultAvatarURL, "speaker-default.png")
+	}
+	if cfg.GalleryCardImageStyle != "imageView2/1/w/480/h/270" {
+		t.Errorf("GalleryCardImageStyle = %q, want %q", cfg.GalleryCardImageStyle, "imageView2/1/w/480/h/270")
+	}
+	if cfg.GalleryDetailImageStyle != "imageView2/2/w/720" {
+		t.Errorf("GalleryDetailImageStyle = %q, want %q", cfg.GalleryDetailImageStyle, "imageView2/2/w/720")
+	}
+	if cfg.AvatarImageStyle != "imageView2/1/w/96/h/96" {
+		t.Errorf("AvatarImageStyle = %q, want %q", cfg.AvatarImageStyle, "imageView2/1/w/96/h/96")
 	}
 }

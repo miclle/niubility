@@ -4,15 +4,17 @@ import dayjs from 'dayjs'
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Trash2, Heart, MessageSquare, Play, Image, FileText, Bookmark } from 'lucide-react'
 
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 
 import { listContents, deleteContent } from 'src/api/content'
+import { appendImageStyle } from 'src/api/upload'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
 import { getContentCover, getSpeakerAvatar, getSpeakerDisplayName } from 'src/lib/content-assets'
 import { useAppContext } from 'src/context/app'
 import { useIntersection } from 'src/hooks/use-intersection'
+import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import type { ContentType } from 'src/types/content'
 
 const typeLabels: Record<ContentType, string> = { video: '视频', gallery: '图集', article: '文章' }
@@ -120,7 +122,9 @@ function ContentTable({ type, title }: ContentTableProps) {
                 </tr>
               ) : (
                 contents.map((content) => {
-                  const coverUrl = getContentCover(content, siteConfig)
+                  const coverUrl = content.type === 'gallery'
+                    ? appendImageStyle(getContentCover(content, siteConfig), siteConfig?.gallery_card_image_style)
+                    : getContentCover(content, siteConfig)
                   const hasSpeakerInfo = Boolean(content.speaker || content.speaker_name)
                   return (
                     <tr key={content.id} style={{ borderTop: '1px solid #e5e5e5' }}>
@@ -158,7 +162,7 @@ function ContentTable({ type, title }: ContentTableProps) {
                       <td style={tdStyle}>
                         <div className="flex items-center gap-2 min-w-0">
                           <Avatar className="w-6 h-6 flex-shrink-0">
-                            <AvatarImage src={content.author?.avatar || ''} alt={content.author?.name || ''} />
+                            <SiteAvatarImage src={content.author?.avatar || ''} alt={content.author?.name || ''} />
                             <AvatarFallback className="text-xs">{content.author?.name?.charAt(0) || '-'}</AvatarFallback>
                           </Avatar>
                           <span className="truncate">{content.author?.name || '-'}</span>
@@ -168,7 +172,7 @@ function ContentTable({ type, title }: ContentTableProps) {
                         {hasSpeakerInfo ? (
                           <div className="flex items-start gap-2 min-w-0 max-w-[208px]">
                             <Avatar className="w-6 h-6 flex-shrink-0">
-                              <AvatarImage src={getSpeakerAvatar(content, siteConfig)} alt={getSpeakerDisplayName(content)} />
+                              <SiteAvatarImage src={getSpeakerAvatar(content, siteConfig)} alt={getSpeakerDisplayName(content)} />
                               <AvatarFallback className="text-xs">{getSpeakerDisplayName(content).charAt(0) || '-'}</AvatarFallback>
                             </Avatar>
                             <div className="min-w-0 overflow-hidden">

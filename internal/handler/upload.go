@@ -71,7 +71,7 @@ func (ctrl *Ctrl) GetAttachmentFile(c *fox.Context) {
 		return
 	}
 
-	url, err := ctrl.service.GetFileURL(ctx, "attachments/"+path)
+	url, err := ctrl.service.GetFileURL(ctx, "attachments/"+path, c.Request.URL.RawQuery)
 	if err != nil {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
@@ -91,7 +91,7 @@ func (ctrl *Ctrl) GetAvatarFile(c *fox.Context) {
 		return
 	}
 
-	url, err := ctrl.service.GetFileURL(ctx, "avatars/"+path)
+	url, err := ctrl.service.GetFileURL(ctx, "avatars/"+path, c.Request.URL.RawQuery)
 	if err != nil {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
@@ -111,7 +111,7 @@ func (ctrl *Ctrl) GetSiteResourceFile(c *fox.Context) {
 		return
 	}
 
-	url, err := ctrl.service.GetFileURL(ctx, "site-resources/"+path)
+	url, err := ctrl.service.GetFileURL(ctx, "site-resources/"+path, c.Request.URL.RawQuery)
 	if err != nil {
 		c.AbortWithStatus(http.StatusNotFound)
 		return

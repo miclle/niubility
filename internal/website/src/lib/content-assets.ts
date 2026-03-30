@@ -1,4 +1,4 @@
-import { siteResourceURL } from 'src/api/upload'
+import { appendImageStyle, siteResourceURL } from 'src/api/upload'
 import type { Content } from 'src/types/content'
 import type { SiteConfig } from 'src/types/user'
 
@@ -60,4 +60,9 @@ export function getVideoSpeakerAvatar(content: Content, siteConfig: SiteConfig |
     return siteResourceURL(siteConfig.video_speaker_default_avatar_url)
   }
   return ''
+}
+
+// getStyledAvatar applies the configured avatar style fragment to a resolved avatar URL.
+export function getStyledAvatar(url: string, siteConfig: SiteConfig | null): string {
+  return appendImageStyle(url, siteConfig?.avatar_image_style)
 }

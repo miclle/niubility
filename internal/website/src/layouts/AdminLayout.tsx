@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Outlet, NavLink, Link, Navigate, useLocation } from 'react-router-dom'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { FileText, Users, ArrowLeft, LogOut, Settings, Menu, FolderOpen, ChevronDown, UserPlus, HardDrive, MessageSquare, CircleUserRound, User, Plus, Play, ImageIcon, Globe2, type LucideIcon } from 'lucide-react'
@@ -9,6 +9,7 @@ import { useAppContext } from 'src/context/app'
 import { useSiteHead } from 'src/hooks/useSiteHead'
 import { siteResourceURL } from 'src/api/upload'
 import { contentNewPath } from 'src/lib/content-url'
+import SiteAvatarImage from 'src/components/SiteAvatarImage'
 
 // NavChild represents a sub-menu item under a parent nav item.
 interface NavChild {
@@ -276,7 +277,7 @@ function AdminLayout() {
               render={
                 <button className="flex items-center gap-2 cursor-pointer bg-transparent border-0 p-1 rounded-full hover:bg-black/5 transition-colors">
                   <Avatar className="size-8">
-                    <AvatarImage src={currentUser.avatar} alt={currentUser.name || currentUser.username} />
+                    <SiteAvatarImage src={currentUser.avatar} alt={currentUser.name || currentUser.username} />
                     <AvatarFallback>{currentUser.name?.charAt(0) || currentUser.username.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <span className="text-sm" style={{ color: '#0f0f0f' }}>

@@ -17,6 +17,7 @@ var sensitiveKeys = map[string]bool{
 	entity.SettingSSOOIDCClientSecret: true,
 	entity.SettingS3SecretKey:         true,
 	entity.SettingSSOSAMLSPPrivateKey: true,
+	entity.SettingDeliverySignSecret:  true,
 }
 
 // GetSetting retrieves a setting value by key.
@@ -212,6 +213,35 @@ func (s *Service) GetS3Config(ctx context.Context) (*entity.S3Config, error) {
 	}, nil
 }
 
+// GetDeliveryConfig retrieves the asset delivery configuration from settings.
+// Returns nil when delivery is not configured.
+func (s *Service) GetDeliveryConfig(ctx context.Context) (*entity.DeliveryConfig, error) {
+	provider, err := s.GetSetting(ctx, entity.SettingDeliveryProvider)
+	if err != nil || provider == "" || provider == "disabled" {
+		return nil, err
+	}
+
+	domain, _ := s.GetSetting(ctx, entity.SettingDeliveryDomain)
+	privateEnabled, _ := s.GetSetting(ctx, entity.SettingDeliveryPrivateEnabled)
+	privateEnabledBool, _ := strconv.ParseBool(privateEnabled)
+	urlTTLSeconds, _ := s.GetSetting(ctx, entity.SettingDeliveryURLTTLSeconds)
+	urlTTLSecondsInt, _ := strconv.Atoi(urlTTLSeconds)
+	if urlTTLSecondsInt <= 0 {
+		urlTTLSecondsInt = 3600
+	}
+	signKey, _ := s.GetSetting(ctx, entity.SettingDeliverySignKey)
+	signSecret, _ := s.GetSetting(ctx, entity.SettingDeliverySignSecret)
+
+	return &entity.DeliveryConfig{
+		Provider:       provider,
+		Domain:         domain,
+		PrivateEnabled: privateEnabledBool,
+		URLTTLSeconds:  urlTTLSecondsInt,
+		SignKey:        signKey,
+		SignSecret:     signSecret,
+	}, nil
+}
+
 // GetSiteConfig retrieves the site-level configuration from settings.
 // Returns a config with default values.
 func (s *Service) GetSiteConfig(ctx context.Context) (*entity.SiteConfig, error) {
@@ -233,6 +263,9 @@ func (s *Service) GetSiteConfig(ctx context.Context) (*entity.SiteConfig, error)
 	footer, _ := s.GetSetting(ctx, entity.SettingSiteFooter)
 	videoDefaultCoverURL, _ := s.GetSetting(ctx, entity.SettingSiteVideoDefaultCoverURL)
 	videoSpeakerDefaultAvatarURL, _ := s.GetSetting(ctx, entity.SettingSiteVideoSpeakerDefaultAvatarURL)
+	galleryCardImageStyle, _ := s.GetSetting(ctx, entity.SettingSiteGalleryCardImageStyle)
+	galleryDetailImageStyle, _ := s.GetSetting(ctx, entity.SettingSiteGalleryDetailImageStyle)
+	avatarImageStyle, _ := s.GetSetting(ctx, entity.SettingSiteAvatarImageStyle)
 
 	return &entity.SiteConfig{
 		Title:                        title,
@@ -246,5 +279,8 @@ func (s *Service) GetSiteConfig(ctx context.Context) (*entity.SiteConfig, error)
 		Footer:                       footer,
 		VideoDefaultCoverURL:         videoDefaultCoverURL,
 		VideoSpeakerDefaultAvatarURL: videoSpeakerDefaultAvatarURL,
+		GalleryCardImageStyle:        galleryCardImageStyle,
+		GalleryDetailImageStyle:      galleryDetailImageStyle,
+		AvatarImageStyle:             avatarImageStyle,
 	}, nil
 }

@@ -3,10 +3,13 @@ package service
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
 	"crypto/md5"
+	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
 	"io"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"time"
@@ -87,8 +90,19 @@ func (s *Service) presignUpload(ctx context.Context, filename, contentType, pref
 
 // GetFileURL returns an access URL for the given S3 object key.
 // If PublicURL is configured, returns a direct public URL; otherwise returns a presigned GET URL.
-func (s *Service) GetFileURL(ctx context.Context, key string) (string, error) {
+func (s *Service) GetFileURL(ctx context.Context, key, rawQuery string) (string, error) {
 	log := logger.NewWithContext(ctx)
+
+	deliveryCfg, err := s.GetDeliveryConfig(ctx)
+	if err != nil {
+		log.Errorf("GetFileURL: get delivery config: %v", err)
+		return "", fmt.Errorf("get delivery config: %w", err)
+	}
+	if deliveryCfg != nil {
+		if deliveryURL, handled, err := s.getDeliveryURL(ctx, deliveryCfg, key, rawQuery); handled {
+			return deliveryURL, err
+		}
+	}
 
 	cfg, err := s.GetS3Config(ctx)
 	if err != nil {
@@ -100,7 +114,7 @@ func (s *Service) GetFileURL(ctx context.Context, key string) (string, error) {
 	}
 
 	if cfg.PublicURL != "" {
-		return strings.TrimRight(cfg.PublicURL, "/") + "/" + key, nil
+		return appendRawQuery(strings.TrimRight(cfg.PublicURL, "/")+"/"+key, rawQuery), nil
 	}
 
 	client := s.newS3Client(cfg)
@@ -116,6 +130,56 @@ func (s *Service) GetFileURL(ctx context.Context, key string) (string, error) {
 	}
 
 	return req.URL, nil
+}
+
+func (s *Service) getDeliveryURL(ctx context.Context, cfg *entity.DeliveryConfig, key, rawQuery string) (string, bool, error) {
+	if cfg == nil {
+		return "", false, nil
+	}
+
+	switch strings.ToLower(strings.TrimSpace(cfg.Provider)) {
+	case "qiniu":
+		url, err := buildQiniuDeliveryURL(cfg, key, rawQuery)
+		return url, true, err
+	default:
+		return "", false, nil
+	}
+}
+
+func appendRawQuery(rawURL, rawQuery string) string {
+	rawQuery = strings.TrimLeft(strings.TrimSpace(rawQuery), "?&")
+	if rawQuery == "" {
+		return rawURL
+	}
+	if strings.Contains(rawURL, "?") {
+		return rawURL + "&" + rawQuery
+	}
+	return rawURL + "?" + rawQuery
+}
+
+func buildQiniuDeliveryURL(cfg *entity.DeliveryConfig, key, rawQuery string) (string, error) {
+	if cfg == nil || strings.TrimSpace(cfg.Domain) == "" {
+		return "", fmt.Errorf("delivery domain is empty")
+	}
+
+	baseURL := strings.TrimRight(cfg.Domain, "/") + "/" + strings.TrimLeft(key, "/")
+	finalURL := appendRawQuery(baseURL, rawQuery)
+	if !cfg.PrivateEnabled {
+		return finalURL, nil
+	}
+	if cfg.SignKey == "" || cfg.SignSecret == "" {
+		return "", fmt.Errorf("delivery signing key or secret is empty")
+	}
+
+	deadline := time.Now().Add(time.Duration(cfg.URLTTLSeconds) * time.Second).Unix()
+	finalURL = appendRawQuery(finalURL, "e="+fmt.Sprintf("%d", deadline))
+
+	mac := hmac.New(sha1.New, []byte(cfg.SignSecret))
+	mac.Write([]byte(finalURL))
+	sign := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(mac.Sum(nil))
+	token := cfg.SignKey + ":" + sign
+
+	return appendRawQuery(finalURL, "token="+url.QueryEscape(token)), nil
 }
 
 // newS3Client creates an S3 client from the given config.

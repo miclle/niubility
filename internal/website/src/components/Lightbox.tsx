@@ -6,6 +6,7 @@ import dayjs from 'dayjs'
 import { fileURL } from 'src/api/upload'
 import { likeAttachment } from 'src/api/content'
 import CommentSection from 'src/components/CommentSection'
+import { useAppContext } from 'src/context/app'
 import { formatFileSize } from 'src/lib/utils'
 import type { Attachment } from 'src/types/content'
 
@@ -36,6 +37,7 @@ function Lightbox({
   contentId, commentCount, onCommentCountChange,
   likedAttachmentIds, onAttachmentLikeChange,
 }: LightboxProps) {
+  const { siteConfig } = useAppContext()
   const [current, setCurrent] = useState(initialIndex)
   const [zoom, setZoom] = useState(1)
   const [infoPanelOpen, setInfoPanelOpen] = useState(false)
@@ -343,7 +345,9 @@ function Lightbox({
         <div className="fixed bottom-0 left-0 py-3 px-4 overflow-hidden transition-[right] duration-300 ease-in-out" style={{ zIndex: 101, height: THUMB_STRIP_H, right: infoPanelOpen ? INFO_PANEL_W : 0 }}>
           <div ref={thumbStripRef} className="flex gap-1 overflow-x-auto select-none" style={{ scrollbarWidth: 'none', cursor: 'grab' }} onMouseDown={handleThumbMouseDown}>
             {items.map((item, i) => {
-              const thumbSrc = fileURL(item.url)
+              const thumbSrc = item.type === 'video'
+                ? fileURL(item.url)
+                : fileURL(item.url, siteConfig?.gallery_detail_image_style)
               const isActive = i === current
               return (
                 <button

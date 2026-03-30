@@ -25,6 +25,9 @@ function SettingsSite() {
     const [footer, setFooter] = useState('')
     const [videoDefaultCoverURL, setVideoDefaultCoverURL] = useState('')
     const [videoSpeakerDefaultAvatarURL, setVideoSpeakerDefaultAvatarURL] = useState('')
+    const [galleryCardImageStyle, setGalleryCardImageStyle] = useState('')
+    const [galleryDetailImageStyle, setGalleryDetailImageStyle] = useState('')
+    const [avatarImageStyle, setAvatarImageStyle] = useState('')
     const [uploading, setUploading] = useState(false)
 
     // Load settings from API
@@ -41,6 +44,9 @@ function SettingsSite() {
             setFooter(settingsMap['site.footer'] || '')
             setVideoDefaultCoverURL(settingsMap['site.video_default_cover_url'] || '')
             setVideoSpeakerDefaultAvatarURL(settingsMap['site.video_speaker_default_avatar_url'] || '')
+            setGalleryCardImageStyle(settingsMap['site.gallery_card_image_style'] || '')
+            setGalleryDetailImageStyle(settingsMap['site.gallery_detail_image_style'] || '')
+            setAvatarImageStyle(settingsMap['site.avatar_image_style'] || '')
         }
     }, [settingsMap])
 
@@ -103,6 +109,9 @@ function SettingsSite() {
         footer: footer,
         video_default_cover_url: videoDefaultCoverURL.trim(),
         video_speaker_default_avatar_url: videoSpeakerDefaultAvatarURL.trim(),
+        gallery_card_image_style: galleryCardImageStyle.trim(),
+        gallery_detail_image_style: galleryDetailImageStyle.trim(),
+        avatar_image_style: avatarImageStyle.trim(),
     })
 
     // Handle save settings
@@ -120,6 +129,9 @@ function SettingsSite() {
             'site.footer': footer,
             'site.video_default_cover_url': videoDefaultCoverURL,
             'site.video_speaker_default_avatar_url': videoSpeakerDefaultAvatarURL,
+            'site.gallery_card_image_style': galleryCardImageStyle,
+            'site.gallery_detail_image_style': galleryDetailImageStyle,
+            'site.avatar_image_style': avatarImageStyle,
         })
         if (saved) {
             setSiteConfig(nextConfig)
@@ -296,6 +308,47 @@ function SettingsSite() {
                 </div>
                 <p className="mt-3 text-xs" style={{ color: '#606060' }}>
                     当视频未设置封面、speaker 未设置头像时，会自动回退到这里配置的默认资源。图集会优先使用已上传图片中的封面图或首张图片。
+                </p>
+            </div>
+
+            <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
+                <div className="flex items-center gap-2 mb-6">
+                    <h3 className="font-medium" style={{ color: '#0f0f0f' }}>图片样式</h3>
+                </div>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                            图集封面卡片图片样式
+                        </label>
+                        <Input
+                            placeholder="例如 imageView2/1/w/720/h/405"
+                            value={galleryCardImageStyle}
+                            onChange={(e) => setGalleryCardImageStyle(e.target.value)}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                            图集详情页面（照片列表）图片样式
+                        </label>
+                        <Input
+                            placeholder="例如 imageView2/2/w/960"
+                            value={galleryDetailImageStyle}
+                            onChange={(e) => setGalleryDetailImageStyle(e.target.value)}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                            头像图片样式
+                        </label>
+                        <Input
+                            placeholder="例如 imageView2/1/w/160/h/160"
+                            value={avatarImageStyle}
+                            onChange={(e) => setAvatarImageStyle(e.target.value)}
+                        />
+                    </div>
+                </div>
+                <p className="mt-3 text-xs" style={{ color: '#606060' }}>
+                    这里填写的是原样附加到图片 URL 后的查询片段，不需要包含 ?。当前第一阶段会优先配合“存储配置”中的 qiniu 私有分发域名使用；若未启用分发配置，则仍可能回退为原图访问。
                 </p>
             </div>
 

@@ -5,7 +5,8 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 
 import { listComments, createComment, likeComment as likeCommentAPI, pinComment } from 'src/api/content'
 import { useAppContext } from 'src/context/app'
-import { Avatar, AvatarImage, AvatarFallback } from 'src/components/ui/avatar'
+import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
+import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import type { Comment, CreateCommentArgs } from 'src/types/content'
 
 interface CommentSectionProps {
@@ -219,7 +220,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
       <div key={comment.id} className={`flex gap-3 ${isReply ? 'ml-12' : ''}`}>
         {/* Avatar */}
         <Avatar className="size-9">
-          <AvatarImage src={comment.user?.avatar || ''} alt={comment.user?.name || '匿名'} />
+          <SiteAvatarImage src={comment.user?.avatar || ''} alt={comment.user?.name || '匿名'} />
           <AvatarFallback>{comment.user?.name?.charAt(0) || '匿'}</AvatarFallback>
         </Avatar>
 
@@ -361,7 +362,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
       {currentUser && (
         <div className="flex gap-3 mb-6">
           <Avatar className="size-9">
-            <AvatarImage src={currentUser.avatar} alt={currentUser.name || currentUser.username} />
+            <SiteAvatarImage src={currentUser.avatar} alt={currentUser.name || currentUser.username} />
             <AvatarFallback>{currentUser.name?.charAt(0) || '我'}</AvatarFallback>
           </Avatar>
           <div className="flex-1">

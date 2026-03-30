@@ -76,6 +76,22 @@ const (
 	SettingS3CORSOrigin = "s3.cors_origin"
 )
 
+// Setting key constants for asset delivery configuration.
+const (
+	// SettingDeliveryProvider controls which delivery provider is used for file access URLs.
+	SettingDeliveryProvider = "delivery.provider"
+	// SettingDeliveryDomain is the external asset delivery domain, e.g. https://img.example.com.
+	SettingDeliveryDomain = "delivery.domain"
+	// SettingDeliveryPrivateEnabled controls whether generated delivery URLs require signatures.
+	SettingDeliveryPrivateEnabled = "delivery.private_enabled"
+	// SettingDeliveryURLTTLSeconds controls generated delivery URL validity in seconds.
+	SettingDeliveryURLTTLSeconds = "delivery.url_ttl_seconds"
+	// SettingDeliverySignKey is the delivery signing key or access key.
+	SettingDeliverySignKey = "delivery.sign_key"
+	// SettingDeliverySignSecret is the delivery signing secret (encrypted in storage).
+	SettingDeliverySignSecret = "delivery.sign_secret"
+)
+
 // Setting key constants for site configuration.
 const (
 	// SettingSiteTitle is the site title displayed in browser tabs and headers.
@@ -100,6 +116,12 @@ const (
 	SettingSiteVideoDefaultCoverURL = "site.video_default_cover_url"
 	// SettingSiteVideoSpeakerDefaultAvatarURL is the fallback avatar for video/gallery speakers.
 	SettingSiteVideoSpeakerDefaultAvatarURL = "site.video_speaker_default_avatar_url"
+	// SettingSiteGalleryCardImageStyle is the image style fragment for gallery cover cards.
+	SettingSiteGalleryCardImageStyle = "site.gallery_card_image_style"
+	// SettingSiteGalleryDetailImageStyle is the image style fragment for gallery detail image lists.
+	SettingSiteGalleryDetailImageStyle = "site.gallery_detail_image_style"
+	// SettingSiteAvatarImageStyle is the image style fragment for avatar rendering.
+	SettingSiteAvatarImageStyle = "site.avatar_image_style"
 )
 
 // SiteConfig represents the site-level configuration extracted from settings.
@@ -115,6 +137,9 @@ type SiteConfig struct {
 	Footer                       string `json:"footer"`
 	VideoDefaultCoverURL         string `json:"video_default_cover_url"`
 	VideoSpeakerDefaultAvatarURL string `json:"video_speaker_default_avatar_url"`
+	GalleryCardImageStyle        string `json:"gallery_card_image_style"`
+	GalleryDetailImageStyle      string `json:"gallery_detail_image_style"`
+	AvatarImageStyle             string `json:"avatar_image_style"`
 }
 
 // WechatConfig represents the WeChat Work configuration extracted from settings.
@@ -155,4 +180,14 @@ type S3Config struct {
 	SecretKey  string
 	PublicURL  string
 	CORSOrigin string
+}
+
+// DeliveryConfig represents the asset delivery configuration extracted from settings.
+type DeliveryConfig struct {
+	Provider       string
+	Domain         string
+	PrivateEnabled bool
+	URLTTLSeconds  int
+	SignKey        string
+	SignSecret     string
 }

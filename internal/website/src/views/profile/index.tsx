@@ -5,7 +5,8 @@ import dayjs from 'dayjs'
 
 import { useAppContext } from 'src/context/app'
 import { getUserProfile, toggleFollow } from 'src/api/user'
-import { Avatar, AvatarImage, AvatarFallback } from 'src/components/ui/avatar'
+import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
+import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import type { UserProfileResponse, User } from 'src/types/user'
 
 // ProfileContext is the outlet context shared with profile child routes.
@@ -86,7 +87,7 @@ export function UserListItem({ user, currentUserID, isFollowingTab }: { user: Us
   return (
     <div className="flex items-center gap-4 py-3 px-4 rounded-xl hover:bg-black/5 transition-colors cursor-pointer" onClick={() => navigate(`/@${user.username}`)}>
       <Avatar style={{ width: 48, height: 48 }}>
-        <AvatarImage src={user.avatar} alt={user.name} />
+        <SiteAvatarImage src={user.avatar} alt={user.name} />
         <AvatarFallback>{user.name?.charAt(0) || '?'}</AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">
@@ -167,7 +168,7 @@ export default function ProfileLayout() {
         <div className="flex items-start gap-6">
           {/* Large avatar */}
           <Avatar style={{ width: 160, height: 160 }}>
-            <AvatarImage src={user.avatar} alt={user.name} />
+            <SiteAvatarImage src={user.avatar} alt={user.name} />
             <AvatarFallback style={{ fontSize: 48 }}>{user.name?.charAt(0) || '?'}</AvatarFallback>
           </Avatar>
 

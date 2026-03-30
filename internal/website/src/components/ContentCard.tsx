@@ -4,8 +4,10 @@ import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
 
-import { Avatar, AvatarImage, AvatarFallback } from 'src/components/ui/avatar'
+import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
+import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import { contentDetailPath } from 'src/lib/content-url'
+import { appendImageStyle } from 'src/api/upload'
 import { getContentCover, getVideoSpeakerAvatar, getVideoSpeakerDisplayName } from 'src/lib/content-assets'
 import { useAppContext } from 'src/context/app'
 import type { Content } from 'src/types/content'
@@ -32,7 +34,9 @@ function ContentCard({ content, hideAuthor = false }: { content: Content; hideAu
     if (profilePath) navigate(profilePath)
   }
 
-  const coverUrl = getContentCover(content, siteConfig)
+  const coverUrl = content.type === 'gallery'
+    ? appendImageStyle(getContentCover(content, siteConfig), siteConfig?.gallery_card_image_style)
+    : getContentCover(content, siteConfig)
 
   return (
     <div
@@ -92,7 +96,7 @@ function ContentCard({ content, hideAuthor = false }: { content: Content; hideAu
         {!hideAuthor && (
           <div className="flex-shrink-0" onClick={handleProfileClick}>
             <Avatar className={profilePath ? 'cursor-pointer' : ''}>
-              <AvatarImage src={displayAvatar} alt={displayName || '匿名'} />
+              <SiteAvatarImage src={displayAvatar} alt={displayName || '匿名'} />
               <AvatarFallback>{displayName?.charAt(0) || '匿'}</AvatarFallback>
             </Avatar>
           </div>

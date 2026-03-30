@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { Input } from '@/components/ui/input'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { X } from 'lucide-react'
 
 import { searchUsers } from 'src/api/user'
+import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import type { SearchUserItem } from 'src/types/user'
 
 // SpeakerSelectorProps defines the props for the SpeakerSelector component.
@@ -93,7 +94,7 @@ export default function SpeakerSelector({ defaultSpeaker, onChange, label = '作
         {selectedSpeaker ? (
           <div className="flex items-center gap-3 p-3 rounded-lg" style={{ background: '#f8f8f8', border: '1px solid #e5e5e5' }}>
             <Avatar className="h-8 w-8">
-              <AvatarImage src={selectedSpeaker.avatar} alt={selectedSpeaker.name} />
+              <SiteAvatarImage src={selectedSpeaker.avatar} alt={selectedSpeaker.name} />
               <AvatarFallback>{selectedSpeaker.name?.charAt(0) || '?'}</AvatarFallback>
             </Avatar>
             <span className="text-sm font-medium flex-1" style={{ color: '#0f0f0f' }}>{selectedSpeaker.name}</span>
@@ -119,7 +120,7 @@ export default function SpeakerSelector({ defaultSpeaker, onChange, label = '作
                     onClick={() => handleSelectSpeaker(user)}
                   >
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.avatar} alt={user.name} />
+                      <SiteAvatarImage src={user.avatar} alt={user.name} />
                       <AvatarFallback>{user.name?.charAt(0) || '?'}</AvatarFallback>
                     </Avatar>
                     <span className="text-sm" style={{ color: '#0f0f0f' }}>{user.name}</span>

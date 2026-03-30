@@ -10,7 +10,8 @@ import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
 import { formatFileSize } from 'src/lib/utils'
 import { useAppContext } from 'src/context/app'
 import CommentSection from 'src/components/CommentSection'
-import { Avatar, AvatarImage, AvatarFallback } from 'src/components/ui/avatar'
+import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
+import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import type { Content } from 'src/types/content'
 
 dayjs.extend(relativeTime)
@@ -110,7 +111,7 @@ function ArticleDetail() {
         {/* Author info */}
         <div className="flex items-center gap-3 mb-6">
           <Avatar size="lg">
-            <AvatarImage src={content.speaker?.avatar || content.author?.avatar || ''} alt={content.speaker?.name || content.author?.name || '匿名'} />
+            <SiteAvatarImage src={content.speaker?.avatar || content.author?.avatar || ''} alt={content.speaker?.name || content.author?.name || '匿名'} />
             <AvatarFallback>{content.speaker?.name?.charAt(0) || content.author?.name?.charAt(0) || '匿'}</AvatarFallback>
           </Avatar>
           <div>

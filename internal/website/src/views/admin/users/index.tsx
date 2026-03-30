@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -12,6 +12,7 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 
 import { listUsers, updateUser, listDepartments } from 'src/api/user'
 import { useIntersection } from 'src/hooks/use-intersection'
+import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import type { User, Role, UserStatus, Department, UpdateUserArgs } from 'src/types/user'
 
 // roleLabels maps role values to Chinese display labels with styles
@@ -476,7 +477,7 @@ function AdminUsers() {
                     <td style={stickyTd}>
                       <div className="flex items-center gap-3">
                         <Avatar className="size-8">
-                          <AvatarImage src={user.avatar} alt={user.name || user.username} />
+                          <SiteAvatarImage src={user.avatar} alt={user.name || user.username} />
                           <AvatarFallback>{user.name?.charAt(0) || user.username.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div className="flex flex-col">

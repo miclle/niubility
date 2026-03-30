@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
 import { useAppContext } from 'src/context/app'
 import { getProfile, updateProfile } from 'src/api/user'
 import { uploadAvatar, avatarURL as resolveAvatarURL } from 'src/api/upload'
+import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import type { User } from 'src/types/user'
 
 // socialFields defines the social account fields with domain prefixes and placeholders.
@@ -231,7 +232,7 @@ function AccountSettings() {
           <Label className="text-sm font-medium mb-3 block" style={{ color: '#606060' }}>头像</Label>
           <div className="relative group cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
             <Avatar style={{ width: 200, height: 200 }}>
-              <AvatarImage src={avatarDisplayURL} alt={name} />
+              <SiteAvatarImage src={avatarDisplayURL} alt={name} />
               <AvatarFallback style={{ fontSize: 64 }}>{name?.charAt(0) || currentUser?.username?.charAt(0) || '?'}</AvatarFallback>
             </Avatar>
             <div

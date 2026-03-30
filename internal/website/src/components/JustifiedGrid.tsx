@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 
 import { fileURL } from 'src/api/upload'
+import { useAppContext } from 'src/context/app'
 import type { Attachment } from 'src/types/content'
 
 // JustifiedGridProps defines the props for the JustifiedGrid component.
@@ -90,6 +91,7 @@ function computeLayout(
 
 // JustifiedGrid renders images in a justified (equal-height rows, variable-width) grid layout.
 function JustifiedGrid({ items, targetRowHeight = 220, gap = 4, onImageClick }: JustifiedGridProps) {
+  const { siteConfig } = useAppContext()
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(0)
 
@@ -112,7 +114,9 @@ function JustifiedGrid({ items, targetRowHeight = 220, gap = 4, onImageClick }: 
     <div ref={containerRef} className="relative w-full" style={{ height: layout.totalHeight || 'auto' }}>
       {layout.items.map((item) => {
         const attachment = items[item.index]
-        const src = fileURL(attachment.url)
+        const src = attachment.type === 'video'
+          ? fileURL(attachment.url)
+          : fileURL(attachment.url, siteConfig?.gallery_detail_image_style)
         return (
           <div
             key={attachment.id || item.index}

@@ -13,7 +13,8 @@ import { formatFileSize } from 'src/lib/utils'
 import { useAppContext } from 'src/context/app'
 import VideoPlayer from 'src/components/VideoPlayer'
 import CommentSection from 'src/components/CommentSection'
-import { Avatar, AvatarImage, AvatarFallback } from 'src/components/ui/avatar'
+import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
+import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import type { Content } from 'src/types/content'
 
 dayjs.extend(relativeTime)
@@ -95,7 +96,7 @@ function VideoDetail() {
     <div className="flex items-center justify-between pb-4" style={{ borderBottom: '1px solid #e5e5e5' }}>
       <div className="flex items-center gap-3">
         <Avatar size="lg">
-          <AvatarImage src={getVideoSpeakerAvatar(content, siteConfig)} alt={speakerDisplayName} />
+          <SiteAvatarImage src={getVideoSpeakerAvatar(content, siteConfig)} alt={speakerDisplayName} />
           <AvatarFallback>{speakerDisplayName.charAt(0) || '匿'}</AvatarFallback>
         </Avatar>
         <div>
