@@ -60,7 +60,7 @@ func (l *Logger) LogMode(lvl gormlogger.LogLevel) gormlogger.Interface {
 		level = foxlogger.TraceLevel
 	}
 	return &Logger{
-		Logger:        l.Logger.SetLevel(level),
+		Logger:        l.SetLevel(level),
 		slowThreshold: l.slowThreshold,
 	}
 }

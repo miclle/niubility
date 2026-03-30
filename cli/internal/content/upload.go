@@ -4,8 +4,6 @@ package content
 import (
 	"context"
 	"fmt"
-	"io"
-	"mime"
 	"os"
 	"path/filepath"
 	"strings"
@@ -32,7 +30,9 @@ func (u *Uploader) UploadFile(ctx context.Context, localPath string) (key string
 	if err != nil {
 		return "", "", fmt.Errorf("failed to open file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	// Detect MIME type
 	mtype, err := mimetype.DetectReader(file)
@@ -128,25 +128,6 @@ func UploadAttachments(ctx context.Context, client *api.Client, article *Article
 		CoverURL:    coverURL,
 		BodyHTML:    bodyHTML,
 	}, nil
-}
-
-// getMimeType returns the MIME type for a file
-func getMimeType(path string) string {
-	ext := filepath.Ext(path)
-	mt := mime.TypeByExtension(ext)
-	if mt == "" {
-		return "application/octet-stream"
-	}
-	return mt
-}
-
-// readFile reads a file and returns its content
-func readFile(path string) (io.Reader, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	return file, nil
 }
 
 // replaceImageURLs replaces local image paths with URLs in the body HTML

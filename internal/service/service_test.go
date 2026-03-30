@@ -144,7 +144,9 @@ func TestService_IsRegistrationEnabled(t *testing.T) {
 	}
 
 	// Enable registration
-	s.SetSetting(ctx, entity.SettingRegistrationEnabled, "true")
+	if err := s.SetSetting(ctx, entity.SettingRegistrationEnabled, "true"); err != nil {
+		t.Fatalf("SetSetting() error = %v", err)
+	}
 	if !s.IsRegistrationEnabled(ctx) {
 		t.Error("IsRegistrationEnabled() = false after enabling, want true")
 	}
@@ -160,13 +162,17 @@ func TestService_GetSSOType(t *testing.T) {
 	}
 
 	// Set to OIDC
-	s.SetSetting(ctx, entity.SettingSSOType, "oidc")
+	if err := s.SetSetting(ctx, entity.SettingSSOType, "oidc"); err != nil {
+		t.Fatalf("SetSetting() error = %v", err)
+	}
 	if got := s.GetSSOType(ctx); got != "oidc" {
 		t.Errorf("GetSSOType() = %q, want %q", got, "oidc")
 	}
 
 	// Set to SAML
-	s.SetSetting(ctx, entity.SettingSSOType, "saml")
+	if err := s.SetSetting(ctx, entity.SettingSSOType, "saml"); err != nil {
+		t.Fatalf("SetSetting() error = %v", err)
+	}
 	if got := s.GetSSOType(ctx); got != "saml" {
 		t.Errorf("GetSSOType() = %q, want %q", got, "saml")
 	}
@@ -182,7 +188,9 @@ func TestService_IsCookieSecure(t *testing.T) {
 	}
 
 	// Enable secure cookie
-	s.SetSetting(ctx, entity.SettingCookieSecure, "true")
+	if err := s.SetSetting(ctx, entity.SettingCookieSecure, "true"); err != nil {
+		t.Fatalf("SetSetting() error = %v", err)
+	}
 	if !s.IsCookieSecure(ctx) {
 		t.Error("IsCookieSecure() = false after enabling, want true")
 	}
@@ -278,7 +286,9 @@ func TestService_IsInitialized(t *testing.T) {
 	}
 
 	// Mark as initialized
-	s.SetSetting(ctx, entity.SettingInitialized, "true")
+	if err := s.SetSetting(ctx, entity.SettingInitialized, "true"); err != nil {
+		t.Fatalf("SetSetting() error = %v", err)
+	}
 	if !s.IsInitialized(ctx) {
 		t.Error("IsInitialized() = false after setting, want true")
 	}

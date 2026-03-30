@@ -105,7 +105,9 @@ func (c *Client) do(ctx context.Context, method, path string, body, result inter
 	if err != nil {
 		return fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	// Read response body
 	respBody, err := io.ReadAll(resp.Body)
@@ -175,7 +177,9 @@ func (c *Client) Put(ctx context.Context, url string, contentType string, body i
 	if err != nil {
 		return fmt.Errorf("upload request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode >= 400 {
 		return fmt.Errorf("%w: status %d", ErrUploadFailed, resp.StatusCode)

@@ -40,7 +40,9 @@ func ParseIDPMetadata(ctx context.Context, metadataURL string) (*IDPMetadata, er
 	if err != nil {
 		return nil, fmt.Errorf("fetch metadata: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("fetch metadata: status %d", resp.StatusCode)
@@ -361,7 +363,7 @@ func (p *SAMLProvider) Metadata() *saml.EntityDescriptor {
 	// If SP certificate is configured, add it to KeyDescriptor
 	if p.spCertificate != nil {
 		certData := base64.StdEncoding.EncodeToString(p.spCertificate.Raw)
-		descriptor.SPSSODescriptors[0].SSODescriptor.KeyDescriptors = []saml.KeyDescriptor{
+		descriptor.SPSSODescriptors[0].KeyDescriptors = []saml.KeyDescriptor{
 			{
 				Use: "signing",
 				KeyInfo: saml.KeyInfo{

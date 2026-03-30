@@ -10,7 +10,6 @@ import (
 	"github.com/miclle/niubility/cli/internal/api"
 	"github.com/miclle/niubility/cli/internal/auth"
 	"github.com/miclle/niubility/cli/internal/config"
-	"github.com/miclle/niubility/cli/internal/output"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -114,29 +113,9 @@ func initConfig() {
 	}
 }
 
-// getPrinter returns a printer with the configured format
-func getPrinter() *output.Printer {
-	format := output.FormatTable
-	if cfg != nil && cfg.Output == "json" {
-		format = output.FormatJSON
-	}
-	if outputFormat == "json" {
-		format = output.FormatJSON
-	}
-	return output.NewPrinter(format)
-}
-
 // isJSONOutput returns true if JSON output is requested
 func isJSONOutput() bool {
 	return outputFormat == "json" || (cfg != nil && cfg.Output == "json")
-}
-
-// requireAuth checks if user is authenticated
-func requireAuth() error {
-	if authMgr == nil || !authMgr.HasSession() {
-		return fmt.Errorf("not logged in. Run 'niubility login' first")
-	}
-	return nil
 }
 
 // getContext returns a context with timeout

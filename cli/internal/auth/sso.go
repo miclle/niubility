@@ -42,12 +42,23 @@ func SSOLogin(ctx context.Context, client *api.Client) error {
 	if err != nil {
 		return fmt.Errorf("start local callback server: %w", err)
 	}
-	defer listener.Close()
+	defer func() {
+		_ = listener.Close()
+	}()
 
 	results := make(chan ssoCallbackResult, 1)
 	server := &http.Server{Handler: buildLocalCallbackMux(results)}
-	go server.Serve(listener)
-	defer server.Shutdown(context.Background())
+	go func() {
+		if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
+			select {
+			case results <- ssoCallbackResult{Error: fmt.Sprintf("local callback server error: %v", err)}:
+			default:
+			}
+		}
+	}()
+	defer func() {
+		_ = server.Shutdown(context.Background())
+	}()
 
 	startResp, err := client.StartCLISSO(ctx, callbackURL)
 	if err != nil {

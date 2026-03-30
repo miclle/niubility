@@ -46,7 +46,9 @@ func (ctrl *Ctrl) serveFileDownload(c *fox.Context, key, fallbackName string) bo
 		c.AbortWithStatus(http.StatusNotFound)
 		return true
 	}
-	defer result.Body.Close()
+	defer func() {
+		_ = result.Body.Close()
+	}()
 
 	if result.ContentType != "" {
 		c.Header("Content-Type", result.ContentType)
@@ -59,7 +61,7 @@ func (ctrl *Ctrl) serveFileDownload(c *fox.Context, key, fallbackName string) bo
 	c.Header("Content-Disposition", contentDisposition(download))
 	c.Status(http.StatusOK)
 	if _, err := io.Copy(c.Writer, result.Body); err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 	}
 	return true
 }

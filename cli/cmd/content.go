@@ -324,7 +324,9 @@ var contentDeleteCmd = &cobra.Command{
 
 			fmt.Printf("Are you sure you want to delete '%s'? [y/N]: ", c.Title)
 			var response string
-			fmt.Scanln(&response)
+			if _, err := fmt.Scanln(&response); err != nil {
+				response = ""
+			}
 			if strings.ToLower(response) != "y" && strings.ToLower(response) != "yes" {
 				fmt.Println("Cancelled")
 				return nil
