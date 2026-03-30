@@ -86,10 +86,6 @@ const (
 	SettingDeliveryPrivateEnabled = "delivery.private_enabled"
 	// SettingDeliveryURLTTLSeconds controls generated delivery URL validity in seconds.
 	SettingDeliveryURLTTLSeconds = "delivery.url_ttl_seconds"
-	// SettingDeliverySignKey is the delivery signing key or access key.
-	SettingDeliverySignKey = "delivery.sign_key"
-	// SettingDeliverySignSecret is the delivery signing secret (encrypted in storage).
-	SettingDeliverySignSecret = "delivery.sign_secret"
 )
 
 // Setting key constants for site configuration.
@@ -116,12 +112,23 @@ const (
 	SettingSiteVideoDefaultCoverURL = "site.video_default_cover_url"
 	// SettingSiteVideoSpeakerDefaultAvatarURL is the fallback avatar for video/gallery speakers.
 	SettingSiteVideoSpeakerDefaultAvatarURL = "site.video_speaker_default_avatar_url"
-	// SettingSiteGalleryCardImageStyle is the image style fragment for gallery cover cards.
-	SettingSiteGalleryCardImageStyle = "site.gallery_card_image_style"
-	// SettingSiteGalleryDetailImageStyle is the image style fragment for gallery detail image lists.
+)
+
+// Deprecated site-level image style keys kept only for backward-compatible reads.
+const (
+	SettingSiteGalleryCardImageStyle   = "site.gallery_card_image_style"
 	SettingSiteGalleryDetailImageStyle = "site.gallery_detail_image_style"
-	// SettingSiteAvatarImageStyle is the image style fragment for avatar rendering.
-	SettingSiteAvatarImageStyle = "site.avatar_image_style"
+	SettingSiteAvatarImageStyle        = "site.avatar_image_style"
+)
+
+// Setting key constants for asset style configuration.
+const (
+	// SettingDeliveryGalleryCardImageStyle is the image style fragment for gallery cover cards.
+	SettingDeliveryGalleryCardImageStyle = "delivery.gallery_card_image_style"
+	// SettingDeliveryGalleryDetailImageStyle is the image style fragment for gallery detail image lists.
+	SettingDeliveryGalleryDetailImageStyle = "delivery.gallery_detail_image_style"
+	// SettingDeliveryAvatarImageStyle is the image style fragment for avatar rendering.
+	SettingDeliveryAvatarImageStyle = "delivery.avatar_image_style"
 )
 
 // SiteConfig represents the site-level configuration extracted from settings.
@@ -188,6 +195,4 @@ type DeliveryConfig struct {
 	Domain         string
 	PrivateEnabled bool
 	URLTTLSeconds  int
-	SignKey        string
-	SignSecret     string
 }

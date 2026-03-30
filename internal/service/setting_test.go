@@ -109,7 +109,6 @@ func TestSensitiveKeys(t *testing.T) {
 		entity.SettingWechatAppSecret,
 		entity.SettingSSOOIDCClientSecret,
 		entity.SettingS3SecretKey,
-		entity.SettingDeliverySignSecret,
 	}
 
 	for _, key := range expectedKeys {
@@ -128,8 +127,6 @@ func TestService_GetDeliveryConfig(t *testing.T) {
 		entity.SettingDeliveryDomain:         "https://img.example.com",
 		entity.SettingDeliveryPrivateEnabled: "true",
 		entity.SettingDeliveryURLTTLSeconds:  "7200",
-		entity.SettingDeliverySignKey:        "test-ak",
-		entity.SettingDeliverySignSecret:     "test-sk",
 	}); err != nil {
 		t.Fatalf("UpdateSettingsBatch() error = %v", err)
 	}
@@ -151,9 +148,6 @@ func TestService_GetDeliveryConfig(t *testing.T) {
 	if cfg.URLTTLSeconds != 7200 {
 		t.Fatalf("URLTTLSeconds = %d, want %d", cfg.URLTTLSeconds, 7200)
 	}
-	if cfg.SignSecret != "test-sk" {
-		t.Fatalf("SignSecret = %q, want %q", cfg.SignSecret, "test-sk")
-	}
 }
 
 func TestService_GetSiteConfig(t *testing.T) {
@@ -172,9 +166,9 @@ func TestService_GetSiteConfig(t *testing.T) {
 		entity.SettingSiteFooter:                       "<span>footer</span>",
 		entity.SettingSiteVideoDefaultCoverURL:         "video-default.png",
 		entity.SettingSiteVideoSpeakerDefaultAvatarURL: "speaker-default.png",
-		entity.SettingSiteGalleryCardImageStyle:        "imageView2/1/w/480/h/270",
-		entity.SettingSiteGalleryDetailImageStyle:      "imageView2/2/w/720",
-		entity.SettingSiteAvatarImageStyle:             "imageView2/1/w/96/h/96",
+		entity.SettingDeliveryGalleryCardImageStyle:    "imageView2/1/w/480/h/270",
+		entity.SettingDeliveryGalleryDetailImageStyle:  "imageView2/2/w/720",
+		entity.SettingDeliveryAvatarImageStyle:         "imageView2/1/w/96/h/96",
 	}); err != nil {
 		t.Fatalf("UpdateSettingsBatch() error = %v", err)
 	}
@@ -207,5 +201,33 @@ func TestService_GetSiteConfig(t *testing.T) {
 	}
 	if cfg.AvatarImageStyle != "imageView2/1/w/96/h/96" {
 		t.Errorf("AvatarImageStyle = %q, want %q", cfg.AvatarImageStyle, "imageView2/1/w/96/h/96")
+	}
+}
+
+func TestService_GetSiteConfig_FallsBackToLegacyImageStyleKeys(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	if err := s.UpdateSettingsBatch(ctx, map[string]string{
+		entity.SettingSiteGalleryCardImageStyle:   "legacy-card-style",
+		entity.SettingSiteGalleryDetailImageStyle: "legacy-detail-style",
+		entity.SettingSiteAvatarImageStyle:        "legacy-avatar-style",
+	}); err != nil {
+		t.Fatalf("UpdateSettingsBatch() error = %v", err)
+	}
+
+	cfg, err := s.GetSiteConfig(ctx)
+	if err != nil {
+		t.Fatalf("GetSiteConfig() error = %v", err)
+	}
+
+	if cfg.GalleryCardImageStyle != "legacy-card-style" {
+		t.Errorf("GalleryCardImageStyle = %q, want %q", cfg.GalleryCardImageStyle, "legacy-card-style")
+	}
+	if cfg.GalleryDetailImageStyle != "legacy-detail-style" {
+		t.Errorf("GalleryDetailImageStyle = %q, want %q", cfg.GalleryDetailImageStyle, "legacy-detail-style")
+	}
+	if cfg.AvatarImageStyle != "legacy-avatar-style" {
+		t.Errorf("AvatarImageStyle = %q, want %q", cfg.AvatarImageStyle, "legacy-avatar-style")
 	}
 }

@@ -45,16 +45,18 @@ func TestAppendRawQuery(t *testing.T) {
 }
 
 func TestBuildQiniuDeliveryURL(t *testing.T) {
-	cfg := &entity.DeliveryConfig{
+	deliveryCfg := &entity.DeliveryConfig{
 		Provider:       "qiniu",
 		Domain:         "https://img.example.com",
 		PrivateEnabled: true,
 		URLTTLSeconds:  3600,
-		SignKey:        "test-ak",
-		SignSecret:     "test-sk",
+	}
+	s3Cfg := &entity.S3Config{
+		AccessKey: "test-ak",
+		SecretKey: "test-sk",
 	}
 
-	got, err := buildQiniuDeliveryURL(cfg, "avatars/demo.png", "imageView2/1/w/100/h/100")
+	got, err := buildQiniuDeliveryURL(deliveryCfg, s3Cfg, "avatars/demo.png", "imageView2/1/w/100/h/100")
 	if err != nil {
 		t.Fatalf("buildQiniuDeliveryURL() error = %v", err)
 	}

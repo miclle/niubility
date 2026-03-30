@@ -139,7 +139,11 @@ func (s *Service) getDeliveryURL(ctx context.Context, cfg *entity.DeliveryConfig
 
 	switch strings.ToLower(strings.TrimSpace(cfg.Provider)) {
 	case "qiniu":
-		url, err := buildQiniuDeliveryURL(cfg, key, rawQuery)
+		s3Cfg, err := s.GetS3Config(ctx)
+		if err != nil {
+			return "", true, fmt.Errorf("get s3 config for qiniu delivery: %w", err)
+		}
+		url, err := buildQiniuDeliveryURL(cfg, s3Cfg, key, rawQuery)
 		return url, true, err
 	default:
 		return "", false, nil
@@ -157,7 +161,7 @@ func appendRawQuery(rawURL, rawQuery string) string {
 	return rawURL + "?" + rawQuery
 }
 
-func buildQiniuDeliveryURL(cfg *entity.DeliveryConfig, key, rawQuery string) (string, error) {
+func buildQiniuDeliveryURL(cfg *entity.DeliveryConfig, s3Cfg *entity.S3Config, key, rawQuery string) (string, error) {
 	if cfg == nil || strings.TrimSpace(cfg.Domain) == "" {
 		return "", fmt.Errorf("delivery domain is empty")
 	}
@@ -167,17 +171,17 @@ func buildQiniuDeliveryURL(cfg *entity.DeliveryConfig, key, rawQuery string) (st
 	if !cfg.PrivateEnabled {
 		return finalURL, nil
 	}
-	if cfg.SignKey == "" || cfg.SignSecret == "" {
-		return "", fmt.Errorf("delivery signing key or secret is empty")
+	if s3Cfg == nil || strings.TrimSpace(s3Cfg.AccessKey) == "" || strings.TrimSpace(s3Cfg.SecretKey) == "" {
+		return "", fmt.Errorf("qiniu private delivery requires s3 access key and secret key")
 	}
 
 	deadline := time.Now().Add(time.Duration(cfg.URLTTLSeconds) * time.Second).Unix()
 	finalURL = appendRawQuery(finalURL, "e="+fmt.Sprintf("%d", deadline))
 
-	mac := hmac.New(sha1.New, []byte(cfg.SignSecret))
+	mac := hmac.New(sha1.New, []byte(s3Cfg.SecretKey))
 	mac.Write([]byte(finalURL))
 	sign := base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(mac.Sum(nil))
-	token := cfg.SignKey + ":" + sign
+	token := s3Cfg.AccessKey + ":" + sign
 
 	return appendRawQuery(finalURL, "token="+url.QueryEscape(token)), nil
 }

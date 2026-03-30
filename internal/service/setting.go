@@ -17,7 +17,6 @@ var sensitiveKeys = map[string]bool{
 	entity.SettingSSOOIDCClientSecret: true,
 	entity.SettingS3SecretKey:         true,
 	entity.SettingSSOSAMLSPPrivateKey: true,
-	entity.SettingDeliverySignSecret:  true,
 }
 
 // GetSetting retrieves a setting value by key.
@@ -229,17 +228,27 @@ func (s *Service) GetDeliveryConfig(ctx context.Context) (*entity.DeliveryConfig
 	if urlTTLSecondsInt <= 0 {
 		urlTTLSecondsInt = 3600
 	}
-	signKey, _ := s.GetSetting(ctx, entity.SettingDeliverySignKey)
-	signSecret, _ := s.GetSetting(ctx, entity.SettingDeliverySignSecret)
 
 	return &entity.DeliveryConfig{
 		Provider:       provider,
 		Domain:         domain,
 		PrivateEnabled: privateEnabledBool,
 		URLTTLSeconds:  urlTTLSecondsInt,
-		SignKey:        signKey,
-		SignSecret:     signSecret,
 	}, nil
+}
+
+func (s *Service) getSettingWithFallback(ctx context.Context, key string, fallbackKeys ...string) string {
+	value, _ := s.GetSetting(ctx, key)
+	if value != "" {
+		return value
+	}
+	for _, fallbackKey := range fallbackKeys {
+		value, _ = s.GetSetting(ctx, fallbackKey)
+		if value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 // GetSiteConfig retrieves the site-level configuration from settings.
@@ -263,9 +272,9 @@ func (s *Service) GetSiteConfig(ctx context.Context) (*entity.SiteConfig, error)
 	footer, _ := s.GetSetting(ctx, entity.SettingSiteFooter)
 	videoDefaultCoverURL, _ := s.GetSetting(ctx, entity.SettingSiteVideoDefaultCoverURL)
 	videoSpeakerDefaultAvatarURL, _ := s.GetSetting(ctx, entity.SettingSiteVideoSpeakerDefaultAvatarURL)
-	galleryCardImageStyle, _ := s.GetSetting(ctx, entity.SettingSiteGalleryCardImageStyle)
-	galleryDetailImageStyle, _ := s.GetSetting(ctx, entity.SettingSiteGalleryDetailImageStyle)
-	avatarImageStyle, _ := s.GetSetting(ctx, entity.SettingSiteAvatarImageStyle)
+	galleryCardImageStyle := s.getSettingWithFallback(ctx, entity.SettingDeliveryGalleryCardImageStyle, entity.SettingSiteGalleryCardImageStyle)
+	galleryDetailImageStyle := s.getSettingWithFallback(ctx, entity.SettingDeliveryGalleryDetailImageStyle, entity.SettingSiteGalleryDetailImageStyle)
+	avatarImageStyle := s.getSettingWithFallback(ctx, entity.SettingDeliveryAvatarImageStyle, entity.SettingSiteAvatarImageStyle)
 
 	return &entity.SiteConfig{
 		Title:                        title,
