@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, NavLink, Outlet } from 'react-router-dom'
-import { CalendarDays, FileText, Heart, Video, BookOpen, Mic, MapPin, Github, Globe, ExternalLink, UserCheck, Users, Bookmark } from 'lucide-react'
+import { CalendarDays, FileText, Heart, Video, BookOpen, Mic, MapPin, Github, Globe, ExternalLink, UserCheck, Users, Bookmark, Images } from 'lucide-react'
 import dayjs from 'dayjs'
 
 import { useAppContext } from 'src/context/app'
@@ -37,6 +37,7 @@ function socialLinkEntries(accounts: Record<string, string>) {
 const profileTabs: { label: string; path: string; icon: React.ReactNode }[] = [
   { label: '全部', path: '', icon: <FileText size={16} /> },
   { label: '视频', path: 'videos', icon: <Video size={16} /> },
+  { label: '图集', path: 'galleries', icon: <Images size={16} /> },
   { label: '文章', path: 'articles', icon: <BookOpen size={16} /> },
   { label: '主讲', path: 'speakers', icon: <Mic size={16} /> },
   { label: '关注', path: 'following', icon: <UserCheck size={16} /> },

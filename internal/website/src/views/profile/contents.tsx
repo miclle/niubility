@@ -14,6 +14,7 @@ type ContentTab = 'all' | 'video' | 'gallery' | 'article' | 'speaker'
 function tabFromPath(pathname: string): ContentTab {
   const segment = pathname.split('/').pop()
   if (segment === 'videos') return 'video'
+  if (segment === 'galleries') return 'gallery'
   if (segment === 'articles') return 'article'
   if (segment === 'speakers') return 'speaker'
   return 'all'
@@ -36,6 +37,7 @@ export default function ProfileContents() {
         } else {
           params.author_id = userID
           if (tab === 'video') params.type = 'video' as ContentType
+          if (tab === 'gallery') params.type = 'gallery' as ContentType
           if (tab === 'article') params.type = 'article' as ContentType
         }
         return listContents(params)

@@ -68,6 +68,7 @@ const routes: RouteObject[] = [
         children: [
           { index: true, element: <ProfileContents /> },
           { path: 'videos', element: <ProfileContents /> },
+          { path: 'galleries', element: <ProfileContents /> },
           { path: 'articles', element: <ProfileContents /> },
           { path: 'speakers', element: <ProfileContents /> },
           { path: 'following', element: <ProfileFollowing /> },
