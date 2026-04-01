@@ -138,7 +138,13 @@ tasks:
     desc: Run all checks without modifying files (CI-friendly)
     cmds:
       - task: lint
+      - task: check-frontend-types
       - task: check-mod-tidy
+
+  check-frontend-types:
+    internal: true
+    cmds:
+      - cd {{.WEBSITE_DIR}} && npx tsc -b
 
   check-mod-tidy:
     internal: true
