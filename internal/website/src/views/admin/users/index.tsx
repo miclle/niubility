@@ -261,7 +261,7 @@ function AdminUsers() {
           if (!open) setEditingUser(null)
         }}
         getDepartmentNames={getDepartmentNames}
-        onSaved={refetch}
+        onSaved={async () => { await refetch() }}
       />
     </div>
   )

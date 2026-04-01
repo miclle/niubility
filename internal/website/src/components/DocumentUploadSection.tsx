@@ -6,7 +6,7 @@ import type { RefObject } from 'react'
 
 interface DocumentUploadSectionProps {
   documents: DocumentItem[]
-  docInputRef: RefObject<HTMLInputElement | null>
+  docInputRef: RefObject<HTMLInputElement>
   onUpload: (files: File[]) => void
   onChange: (localId: string, field: keyof DocumentItem, value: string | number) => void
   onRemove: (localId: string) => void

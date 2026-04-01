@@ -21,7 +21,7 @@ interface EmojiPickerProps {
   active: boolean
   onToggle: () => void
   onSelect: (emoji: string) => void
-  pickerRef?: React.RefObject<HTMLDivElement | null>
+  pickerRef?: React.RefObject<HTMLDivElement>
   iconSize?: number
 }
 

@@ -141,7 +141,7 @@ interface ThumbnailStripProps {
   siteImageStyle: string | undefined
   onThumbClick: (index: number) => void
   onMouseDown: (e: React.MouseEvent) => void
-  stripRef: React.RefObject<HTMLDivElement | null>
+  stripRef: React.RefObject<HTMLDivElement>
   infoPanelOpen: boolean
   infoPanelWidth: number
 }
