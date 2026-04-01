@@ -4,7 +4,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut, Share2
 import dayjs from 'dayjs'
 
 import { fileDownloadURL, fileURL } from 'src/api/upload'
-import { likeAttachment } from 'src/api/content'
+import { toggleLike } from 'src/api/content'
 import CommentSection from 'src/components/CommentSection'
 import { useAppContext } from 'src/context/app'
 import { formatFileSize } from 'src/lib/utils'
@@ -30,6 +30,162 @@ const THUMB_SIZE = 56
 const THUMB_GAP = 4
 // ZOOM_LEVELS defines available zoom levels.
 const ZOOM_LEVELS = [1, 1.5, 2, 3]
+
+// InfoPanelProps defines the props for the InfoPanel sub-component.
+interface InfoPanelProps {
+  attachment: Attachment
+  isVideo: boolean
+  downloadURL: string
+  filename: string
+  contentId?: string
+  commentCount: number
+  onCommentCountChange?: (count: number) => void
+  onClose: () => void
+  open: boolean
+  width: number
+}
+
+// InfoPanel renders the slide-in details panel for the lightbox.
+function InfoPanel({ attachment, isVideo, downloadURL, filename, contentId, commentCount, onCommentCountChange, onClose, open, width }: InfoPanelProps) {
+  return (
+    <div
+      className="fixed top-0 bottom-0 overflow-y-auto overflow-x-hidden transition-[right] duration-300 ease-in-out"
+      style={{
+        width,
+        right: open ? 0 : -width,
+        zIndex: 103,
+        background: '#fff',
+        borderLeft: '1px solid #e5e5e5',
+      }}
+    >
+      {/* Panel header */}
+      <div className="sticky top-0 flex items-center justify-between px-4 h-12 border-b border-gray-200 bg-white">
+        <h3 className="text-sm font-medium text-gray-900">信息</h3>
+        <button onClick={onClose} className="p-1.5 rounded-full cursor-pointer transition-colors hover:bg-gray-100 focus:outline-none" title="关闭">
+          <X size={18} className="text-gray-500" />
+        </button>
+      </div>
+      <div className="p-4">
+        {/* Media details */}
+        <div className="space-y-2 text-sm mb-6" style={{ color: '#606060' }}>
+          {attachment.title && (
+            <div className="text-gray-900 text-sm font-medium mb-2">{attachment.title}</div>
+          )}
+          {attachment.description && (
+            <div className="mb-3 text-xs text-gray-500">{attachment.description}</div>
+          )}
+          <div className="flex justify-between">
+            <span>类型</span>
+            <span className="text-gray-900">{isVideo ? '视频' : '图片'}</span>
+          </div>
+          {attachment.width > 0 && attachment.height > 0 && (
+            <div className="flex justify-between">
+              <span>尺寸</span>
+              <span className="text-gray-900">{attachment.width} × {attachment.height}</span>
+            </div>
+          )}
+          {attachment.file_size > 0 && (
+            <div className="flex justify-between">
+              <span>大小</span>
+              <span className="text-gray-900">{formatFileSize(attachment.file_size)}</span>
+            </div>
+          )}
+          <div className="flex justify-between gap-4">
+            <span>文件名</span>
+            <a
+              href={downloadURL}
+              download={filename}
+              className="text-right text-gray-900 break-all underline underline-offset-4 transition-opacity hover:opacity-80"
+            >
+              {filename}
+            </a>
+          </div>
+          {isVideo && attachment.duration > 0 && (
+            <div className="flex justify-between">
+              <span>时长</span>
+              <span className="text-gray-900">{Math.round(attachment.duration)}s</span>
+            </div>
+          )}
+          <div className="flex justify-between">
+            <span>上传时间</span>
+            <span className="text-gray-900">{dayjs(attachment.created_at).format('YYYY-MM-DD HH:mm')}</span>
+          </div>
+          {attachment.like_count > 0 && (
+            <div className="flex justify-between">
+              <span>收藏数</span>
+              <span className="text-gray-900">{attachment.like_count}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Comments */}
+        {contentId && (
+          <div className="pt-4 border-t border-gray-200">
+            <CommentSection
+              contentID={contentId}
+              attachmentID={attachment.id}
+              commentCount={commentCount}
+              onCommentCountChange={onCommentCountChange}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ThumbnailStripProps defines the props for the ThumbnailStrip sub-component.
+interface ThumbnailStripProps {
+  items: Attachment[]
+  current: number
+  siteImageStyle: string | undefined
+  onThumbClick: (index: number) => void
+  onMouseDown: (e: React.MouseEvent) => void
+  stripRef: React.RefObject<HTMLDivElement | null>
+  infoPanelOpen: boolean
+  infoPanelWidth: number
+}
+
+// ThumbnailStrip renders the bottom scrollable thumbnail navigation.
+function ThumbnailStrip({ items, current, siteImageStyle, onThumbClick, onMouseDown, stripRef, infoPanelOpen, infoPanelWidth }: ThumbnailStripProps) {
+  return (
+    <div className="fixed bottom-0 left-0 py-3 px-4 overflow-hidden transition-[right] duration-300 ease-in-out" style={{ zIndex: 101, height: 80, right: infoPanelOpen ? infoPanelWidth : 0 }}>
+      <div ref={stripRef} className="flex gap-1 overflow-x-auto select-none" style={{ scrollbarWidth: 'none', cursor: 'grab' }} onMouseDown={onMouseDown}>
+        {items.map((item, i) => {
+          const thumbSrc = item.type === 'video'
+            ? fileURL(item.url)
+            : fileURL(item.url, siteImageStyle)
+          const isActive = i === current
+          return (
+            <button
+              key={item.id || i}
+              className="relative flex-shrink-0 rounded overflow-hidden cursor-pointer transition-opacity focus:outline-none"
+              style={{
+                width: THUMB_SIZE,
+                height: THUMB_SIZE,
+                opacity: isActive ? 1 : 0.5,
+                outline: isActive ? '2px solid white' : '2px solid transparent',
+                outlineOffset: -2,
+              }}
+              onClick={() => onThumbClick(i)}
+            >
+              {item.type === 'video' ? (
+                <video src={thumbSrc} className="w-full h-full object-cover" muted preload="metadata" />
+              ) : (
+                <img src={thumbSrc} alt="" className="w-full h-full object-cover" loading="lazy" draggable={false} />
+              )}
+              {item.type === 'video' && (
+                <div className="absolute bottom-0.5 right-0.5 px-1 rounded text-[9px]" style={{ background: 'rgba(0,0,0,0.7)', color: 'white' }}>
+                  视频
+                </div>
+              )}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
 
 // Lightbox displays a fullscreen image/video viewer with toolbar and info panel.
 function Lightbox({
@@ -158,7 +314,7 @@ function Lightbox({
   const handleFavorite = useCallback(() => {
     const att = items[current]
     if (!att?.id) return
-    likeAttachment(att.id).then((res) => {
+    toggleLike('attachment', att.id).then((res) => {
       onAttachmentLikeChange?.(att.id, res.data.liked, res.data.like_count)
     })
   }, [current, items, onAttachmentLikeChange])
@@ -198,16 +354,14 @@ function Lightbox({
 
   return createPortal(
     <div className="fixed inset-0" style={{ zIndex: 100, background: 'rgba(0,0,0,0.95)' }}>
-      {/* Top bar — fixed layer, always on top */}
+      {/* Top bar */}
       <div className="fixed top-0 left-0 flex items-center justify-between px-3 h-12 transition-[right] duration-300 ease-in-out" style={{ zIndex: 102, right: infoPanelOpen ? INFO_PANEL_W : 0, background: 'linear-gradient(rgba(0,0,0,0.6), transparent)' }}>
-        {/* Left: back + counter */}
         <div className="flex items-center gap-2">
           {iconBtn(onClose, <ArrowLeft size={20} className="text-white" />, '返回')}
           <span className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.8)' }}>
             {current + 1} / {items.length}
           </span>
         </div>
-        {/* Right: toolbar */}
         <div className="flex items-center gap-1">
           {!isVideo && (
             <>
@@ -227,7 +381,7 @@ function Lightbox({
         </div>
       </div>
 
-      {/* Media area — fills viewport minus thumbnail strip, shifts left when info panel open */}
+      {/* Media area */}
       <div
         className="absolute left-0 flex items-center justify-center overflow-hidden transition-[right] duration-300 ease-in-out"
         style={{ top: 48, bottom: THUMB_STRIP_H, right: infoPanelOpen ? INFO_PANEL_W : 0 }}
@@ -254,7 +408,7 @@ function Lightbox({
           />
         )}
 
-        {/* Navigation zones for images */}
+        {/* Navigation arrows for images */}
         {items.length > 1 && !isVideo && (
           <>
             <button onClick={() => goTo(current - 1)} className="absolute left-0 top-0 h-full flex items-center justify-start pl-4 cursor-pointer focus:outline-none" style={{ width: '33%' }}>
@@ -269,7 +423,7 @@ function Lightbox({
             </button>
           </>
         )}
-        {/* Small arrows for video */}
+        {/* Navigation arrows for videos */}
         {items.length > 1 && isVideo && (
           <>
             <button onClick={() => goTo(current - 1)} className="absolute left-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full flex items-center justify-center cursor-pointer transition-colors hover:bg-white/10 focus:outline-none">
@@ -282,128 +436,32 @@ function Lightbox({
         )}
       </div>
 
-      {/* Info panel — fixed, independent overlay on the right */}
-      <div
-        className="fixed top-0 bottom-0 overflow-y-auto overflow-x-hidden transition-[right] duration-300 ease-in-out"
-        style={{
-          width: INFO_PANEL_W,
-          right: infoPanelOpen ? 0 : -INFO_PANEL_W,
-          zIndex: 103,
-          background: '#fff',
-          borderLeft: '1px solid #e5e5e5',
-        }}
-      >
-        {/* Panel header */}
-        <div className="sticky top-0 flex items-center justify-between px-4 h-12 border-b border-gray-200 bg-white">
-          <h3 className="text-sm font-medium text-gray-900">信息</h3>
-          <button onClick={() => setInfoPanelOpen(false)} className="p-1.5 rounded-full cursor-pointer transition-colors hover:bg-gray-100 focus:outline-none" title="关闭">
-            <X size={18} className="text-gray-500" />
-          </button>
-        </div>
-        <div className="p-4">
-          {/* Media details */}
-          <div className="space-y-2 text-sm mb-6" style={{ color: '#606060' }}>
-            {attachment.title && (
-              <div className="text-gray-900 text-sm font-medium mb-2">{attachment.title}</div>
-            )}
-            {attachment.description && (
-              <div className="mb-3 text-xs text-gray-500">{attachment.description}</div>
-            )}
-            <div className="flex justify-between">
-              <span>类型</span>
-              <span className="text-gray-900">{isVideo ? '视频' : '图片'}</span>
-            </div>
-            {attachment.width > 0 && attachment.height > 0 && (
-              <div className="flex justify-between">
-                <span>尺寸</span>
-                <span className="text-gray-900">{attachment.width} × {attachment.height}</span>
-              </div>
-            )}
-            {attachment.file_size > 0 && (
-              <div className="flex justify-between">
-                <span>大小</span>
-                <span className="text-gray-900">{formatFileSize(attachment.file_size)}</span>
-              </div>
-            )}
-            <div className="flex justify-between gap-4">
-              <span>文件名</span>
-              <a
-                href={originalDownloadURL}
-                download={filename}
-                className="text-right text-gray-900 break-all underline underline-offset-4 transition-opacity hover:opacity-80"
-              >
-                {filename}
-              </a>
-            </div>
-            {isVideo && attachment.duration > 0 && (
-              <div className="flex justify-between">
-                <span>时长</span>
-                <span className="text-gray-900">{Math.round(attachment.duration)}s</span>
-              </div>
-            )}
-            <div className="flex justify-between">
-              <span>上传时间</span>
-              <span className="text-gray-900">{dayjs(attachment.created_at).format('YYYY-MM-DD HH:mm')}</span>
-            </div>
-            {attachment.like_count > 0 && (
-              <div className="flex justify-between">
-                <span>收藏数</span>
-                <span className="text-gray-900">{attachment.like_count}</span>
-              </div>
-            )}
-          </div>
+      {/* Info panel */}
+      <InfoPanel
+        attachment={attachment}
+        isVideo={isVideo}
+        downloadURL={originalDownloadURL}
+        filename={filename}
+        contentId={contentId}
+        commentCount={commentCount || 0}
+        onCommentCountChange={onCommentCountChange}
+        onClose={() => setInfoPanelOpen(false)}
+        open={infoPanelOpen}
+        width={INFO_PANEL_W}
+      />
 
-          {/* Comments */}
-          {contentId && (
-            <div className="pt-4 border-t border-gray-200">
-              <CommentSection
-                contentID={contentId}
-                attachmentID={attachment.id}
-                commentCount={commentCount || 0}
-                onCommentCountChange={onCommentCountChange}
-              />
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Thumbnail strip — fixed at bottom, shifts left when info panel open */}
+      {/* Thumbnail strip */}
       {items.length > 1 && (
-        <div className="fixed bottom-0 left-0 py-3 px-4 overflow-hidden transition-[right] duration-300 ease-in-out" style={{ zIndex: 101, height: THUMB_STRIP_H, right: infoPanelOpen ? INFO_PANEL_W : 0 }}>
-          <div ref={thumbStripRef} className="flex gap-1 overflow-x-auto select-none" style={{ scrollbarWidth: 'none', cursor: 'grab' }} onMouseDown={handleThumbMouseDown}>
-            {items.map((item, i) => {
-              const thumbSrc = item.type === 'video'
-                ? fileURL(item.url)
-                : fileURL(item.url, siteConfig?.gallery_detail_image_style)
-              const isActive = i === current
-              return (
-                <button
-                  key={item.id || i}
-                  className="relative flex-shrink-0 rounded overflow-hidden cursor-pointer transition-opacity focus:outline-none"
-                  style={{
-                    width: THUMB_SIZE,
-                    height: THUMB_SIZE,
-                    opacity: isActive ? 1 : 0.5,
-                    outline: isActive ? '2px solid white' : '2px solid transparent',
-                    outlineOffset: -2,
-                  }}
-                  onClick={() => handleThumbClick(i)}
-                >
-                  {item.type === 'video' ? (
-                    <video src={thumbSrc} className="w-full h-full object-cover" muted preload="metadata" />
-                  ) : (
-                    <img src={thumbSrc} alt="" className="w-full h-full object-cover" loading="lazy" draggable={false} />
-                  )}
-                  {item.type === 'video' && (
-                    <div className="absolute bottom-0.5 right-0.5 px-1 rounded text-[9px]" style={{ background: 'rgba(0,0,0,0.7)', color: 'white' }}>
-                      视频
-                    </div>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        </div>
+        <ThumbnailStrip
+          items={items}
+          current={current}
+          siteImageStyle={siteConfig?.gallery_detail_image_style}
+          onThumbClick={handleThumbClick}
+          onMouseDown={handleThumbMouseDown}
+          stripRef={thumbStripRef}
+          infoPanelOpen={infoPanelOpen}
+          infoPanelWidth={INFO_PANEL_W}
+        />
       )}
     </div>,
     document.body,

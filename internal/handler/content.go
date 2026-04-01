@@ -87,48 +87,6 @@ func (ctrl *Ctrl) GetContent(c *fox.Context) (*GetContentResponse, error) {
 	return resp, nil
 }
 
-// LikeContent toggles like on a content item.
-func (ctrl *Ctrl) LikeContent(c *fox.Context) (*entity.LikeResponse, error) {
-	ctx := c.Logger.WithContext(c.Request.Context())
-	contentID := c.Param("id")
-	user := CurrentUser(c)
-	if user == nil {
-		return nil, httperrors.ErrUnauthorized
-	}
-
-	content, err := ctrl.service.GetContentByID(ctx, contentID)
-	if err != nil {
-		return nil, httperrors.ErrInternalServerError
-	}
-	if content == nil {
-		return nil, httperrors.ErrNotFound
-	}
-
-	resp, err := ctrl.service.ToggleLike(ctx, user.ID, contentID, entity.TargetTypeContent)
-	if err != nil {
-		return nil, httperrors.ErrInternalServerError
-	}
-
-	return resp, nil
-}
-
-// LikeAttachment toggles like on an attachment (image/video in gallery).
-func (ctrl *Ctrl) LikeAttachment(c *fox.Context) (*entity.LikeResponse, error) {
-	ctx := c.Logger.WithContext(c.Request.Context())
-	attachmentID := c.Param("id")
-	user := CurrentUser(c)
-	if user == nil {
-		return nil, httperrors.ErrUnauthorized
-	}
-
-	resp, err := ctrl.service.ToggleLike(ctx, user.ID, attachmentID, entity.TargetTypeAttachment)
-	if err != nil {
-		return nil, httperrors.ErrInternalServerError
-	}
-
-	return resp, nil
-}
-
 // CreateContent creates a new content (authenticated users).
 func (ctrl *Ctrl) CreateContent(c *fox.Context, args entity.CreateContentArgs) (*entity.Content, error) {
 	ctx := c.Logger.WithContext(c.Request.Context())

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -6,13 +6,15 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
-import { Save, X, Plus, GripVertical, Trash2, Star, Upload, Loader2 } from 'lucide-react'
+import { Plus, GripVertical, Trash2, Star, Upload, Loader2 } from 'lucide-react'
 
-import { getContent, createContent, updateContent } from 'src/api/content'
-import { useAppContext } from 'src/context/app'
 import { uploadFile, fileURL } from 'src/api/upload'
 import { computeFileChecksum } from 'src/lib/file-checksum'
+import { useAppContext } from 'src/context/app'
+import { useContentEditor } from 'src/hooks/useContentEditor'
+import EditorActions from 'src/components/EditorActions'
 import type { ContentStatus, CreateContentArgs, CreateAttachmentArgs, AttachmentType } from 'src/types/content'
+import type { Content } from 'src/types/content'
 
 // GalleryEditorFormProps defines the configurable behavior of the gallery editor form.
 export interface GalleryEditorFormProps {
@@ -110,19 +112,12 @@ function SortableGalleryItem({ item, onRemove, onSetCover }: {
 
 // GalleryEditorForm is the editor form for creating/editing gallery (image/short-video) content.
 function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditorFormProps) {
-  const isNew = !id
   const { categories } = useAppContext()
 
-  const [title, setTitle] = useState('')
   const [summary, setSummary] = useState('')
-  const [category, setCategory] = useState<string>(categories[0]?.slug || '')
-  const [tags, setTags] = useState<string[]>([])
-  const [tagInput, setTagInput] = useState('')
   const [items, setItems] = useState<GalleryItem[]>([])
-  const [contentStatus, setContentStatus] = useState<ContentStatus>('draft')
+  const [tagInput, setTagInput] = useState('')
 
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -132,38 +127,41 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
-  // Load existing content for editing
-  useEffect(() => {
-    if (!id) return
-    setLoading(true)
-    getContent(id)
-      .then((res) => {
-        const c = res.data
-        setTitle(c.title)
-        setSummary(c.summary || '')
-        setCategory(c.category)
-        setTags(c.tags || [])
-        setContentStatus(c.status || 'published')
+  // Load type-specific fields from existing content
+  const handleLoad = useCallback((c: Content) => {
+    setSummary(c.summary || '')
 
-        if (c.attachments && c.attachments.length > 0) {
-          setItems(c.attachments.map((m) => ({
-            localId: m.id || `gal_${++galleryItemCounter}`,
-            url: m.url,
-            filename: m.filename || '',
-            mimeType: m.mime_type || '',
-            checksum: m.checksum || '',
-            type: m.type,
-            isCover: m.is_cover,
-            width: m.width || 0,
-            height: m.height || 0,
-            fileSize: m.file_size,
-            duration: m.duration,
-          })))
-        }
-      })
-      .catch(() => onLoadError())
-      .finally(() => setLoading(false))
-  }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (c.attachments && c.attachments.length > 0) {
+      setItems(c.attachments.map((m) => ({
+        localId: m.id || `gal_${++galleryItemCounter}`,
+        url: m.url,
+        filename: m.filename || '',
+        mimeType: m.mime_type || '',
+        checksum: m.checksum || '',
+        type: m.type,
+        isCover: m.is_cover,
+        width: m.width || 0,
+        height: m.height || 0,
+        fileSize: m.file_size,
+        duration: m.duration,
+      })))
+    }
+  }, [])
+
+  const {
+    isNew, loading, saving,
+    title, setTitle,
+    category, setCategory,
+    tags, setTags,
+    contentStatus, save,
+  } = useContentEditor({ id, onLoadError }, handleLoad)
+
+  // Set initial category from loaded categories
+  const [categoryInitialized, setCategoryInitialized] = useState(false)
+  if (!categoryInitialized && !id && categories.length > 0 && !category) {
+    setCategory(categories[0]?.slug || '')
+    setCategoryInitialized(true)
+  }
 
   const handleAddTag = () => {
     const tag = tagInput.trim()
@@ -278,44 +276,32 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
   const handleSubmit = async (status: ContentStatus) => {
     if (!title.trim() || items.length === 0) return
 
-    setSaving(true)
-    try {
-      const mediaItems: CreateAttachmentArgs[] = items.map((item, i) => ({
-        url: item.url,
-        filename: item.filename,
-        mime_type: item.mimeType,
-        checksum: item.checksum,
-        type: item.type,
-        sort_order: i,
-        is_cover: item.isCover,
-        width: item.width,
-        height: item.height,
-        file_size: item.fileSize,
-        duration: item.duration,
-      }))
+    const mediaItems: CreateAttachmentArgs[] = items.map((item, i) => ({
+      url: item.url,
+      filename: item.filename,
+      mime_type: item.mimeType,
+      checksum: item.checksum,
+      type: item.type,
+      sort_order: i,
+      is_cover: item.isCover,
+      width: item.width,
+      height: item.height,
+      file_size: item.fileSize,
+      duration: item.duration,
+    }))
 
-      const data: CreateContentArgs = {
-        title: title.trim(),
-        summary: summary.trim(),
-        type: 'gallery',
-        status,
-        category,
-        tags,
-        attachments: mediaItems,
-      }
-
-      if (isNew) {
-        const res = await createContent(data)
-        onSaved(res.data.id, status)
-      } else {
-        await updateContent(id!, data)
-        onSaved(id!, status)
-      }
-    } catch {
-      // Silently fail
-    } finally {
-      setSaving(false)
+    const data: CreateContentArgs = {
+      title: title.trim(),
+      summary: summary.trim(),
+      type: 'gallery',
+      status,
+      category,
+      tags,
+      attachments: mediaItems,
     }
+
+    const contentId = await save(data)
+    if (contentId) onSaved(contentId, status)
   }
 
   if (loading) {
@@ -441,30 +427,14 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-3 pt-4" style={{ borderTop: '1px solid #e5e5e5' }}>
-        {(isNew || contentStatus === 'draft') ? (
-          <>
-            <Button type="button" variant="outline" disabled={saving || uploading || !title.trim() || items.length === 0} onClick={() => handleSubmit('draft')}>
-              <Save size={16} />
-              {saving ? '保存中...' : '保存草稿'}
-            </Button>
-            <Button type="button" disabled={saving || uploading || !title.trim() || items.length === 0} onClick={() => handleSubmit('published')} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
-              {saving ? '发布中...' : '发布'}
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button type="button" disabled={saving || uploading || !title.trim() || items.length === 0} onClick={() => handleSubmit('published')} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
-              <Save size={16} />
-              {saving ? '保存中...' : '保存'}
-            </Button>
-            <Button type="button" variant="outline" disabled={saving || uploading} onClick={() => handleSubmit('draft')}>
-              转为草稿
-            </Button>
-          </>
-        )}
-        <Button type="button" variant="outline" onClick={onCancel}><X size={16} />取消</Button>
-      </div>
+      <EditorActions
+        saving={saving}
+        isNew={isNew}
+        contentStatus={contentStatus}
+        disabled={!title.trim() || items.length === 0 || uploading}
+        onSave={handleSubmit}
+        onCancel={onCancel}
+      />
     </form>
   )
 }

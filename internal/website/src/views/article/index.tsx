@@ -5,7 +5,7 @@ import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
 
-import { getContent, likeContent, favoriteContent } from 'src/api/content'
+import { getContent, toggleLike, favoriteContent } from 'src/api/content'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
 import { formatFileSize } from 'src/lib/utils'
 import { useAppContext } from 'src/context/app'
@@ -161,7 +161,7 @@ function ArticleDetail() {
               className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
               style={{ background: liked ? 'rgba(6,95,212,0.1)' : 'rgba(0,0,0,0.05)', color: liked ? '#065fd4' : '#0f0f0f' }}
               onClick={() => {
-                likeContent(content.id).then((res) => { setLiked(res.data.liked); setLikeCount(res.data.like_count) })
+                toggleLike('content', content.id).then((res) => { setLiked(res.data.liked); setLikeCount(res.data.like_count) })
               }}
             >
               <ThumbsUp size={18} fill={liked ? 'currentColor' : 'none'} />

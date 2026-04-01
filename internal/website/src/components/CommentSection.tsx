@@ -3,11 +3,60 @@ import { ThumbsUp, MessageCircle, ChevronDown, ChevronUp, Smile, Pin } from 'luc
 import dayjs from 'dayjs'
 import { useInfiniteQuery } from '@tanstack/react-query'
 
-import { listComments, createComment, likeComment as likeCommentAPI, pinComment } from 'src/api/content'
+import { listCommentsQuery, createCommentBody, toggleLike, pinComment } from 'src/api/content'
 import { useAppContext } from 'src/context/app'
 import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import type { Comment, CreateCommentArgs } from 'src/types/content'
+
+// COMMON_EMOJIS is the set of emojis available in the picker.
+const COMMON_EMOJIS = [
+  '😀', '😂', '🤣', '😊', '😍', '🥰', '😘', '😎',
+  '🤔', '😮', '😢', '😭', '😡', '🥺', '😱', '🤗',
+  '👍', '👎', '👏', '🙌', '🎉', '🔥', '❤️', '💯',
+  '✅', '⭐', '💪', '🙏', '😄', '😁', '🤩', '😇',
+]
+
+interface EmojiPickerProps {
+  active: boolean
+  onToggle: () => void
+  onSelect: (emoji: string) => void
+  pickerRef?: React.RefObject<HTMLDivElement | null>
+  iconSize?: number
+}
+
+// EmojiPicker renders an emoji selection popup triggered by a smile button.
+function EmojiPicker({ active, onToggle, onSelect, pickerRef, iconSize = 18 }: EmojiPickerProps) {
+  return (
+    <div className="relative" ref={active ? pickerRef : undefined}>
+      <button
+        type="button"
+        className="p-1.5 rounded-full hover:bg-black/5 transition-colors"
+        style={{ color: '#606060' }}
+        onClick={onToggle}
+      >
+        <Smile size={iconSize} />
+      </button>
+      {active && (
+        <div
+          className="absolute left-0 bottom-full mb-1 w-[280px] grid grid-cols-8 gap-0.5 p-2 rounded-lg shadow-lg border z-50"
+          style={{ background: '#fff', borderColor: '#e5e5e5' }}
+        >
+          {COMMON_EMOJIS.map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              className="w-8 h-8 flex items-center justify-center rounded hover:bg-black/5 text-lg cursor-pointer"
+              onClick={() => onSelect(emoji)}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 interface CommentSectionProps {
   contentID: string
@@ -49,13 +98,6 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
     return () => document.removeEventListener('mousedown', handleClick)
   }, [emojiPickerFor])
 
-  const commonEmojis = [
-    '😀', '😂', '🤣', '😊', '😍', '🥰', '😘', '😎',
-    '🤔', '😮', '😢', '😭', '😡', '🥺', '😱', '🤗',
-    '👍', '👎', '👏', '🙌', '🎉', '🔥', '❤️', '💯',
-    '✅', '⭐', '💪', '🙏', '😄', '😁', '🤩', '😇',
-  ]
-
   const insertEmoji = (emoji: string, target: 'new' | 'reply') => {
     if (target === 'new') {
       setNewComment((prev) => prev + emoji)
@@ -75,7 +117,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
     useInfiniteQuery({
       queryKey: ['comments', contentID, attachmentID],
       queryFn: ({ pageParam }) =>
-        listComments(contentID, { cursor: pageParam, limit: 20, attachment_id: attachmentID }),
+        listCommentsQuery({ content_id: contentID, cursor: pageParam, limit: 20, attachment_id: attachmentID }),
       getNextPageParam: (lastPage) => lastPage.data.next_cursor || undefined,
       initialPageParam: undefined as string | undefined,
     })
@@ -107,7 +149,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
   const handleSubmit = () => {
     if (!newComment.trim() || submitting) return
     setSubmitting(true)
-    createComment(contentID, { body: newComment.trim(), attachment_id: attachmentID })
+    createCommentBody({ content_id: contentID, body: newComment.trim(), attachment_id: attachmentID })
       .then((res) => {
         setLocalComments((prev) => [res.data, ...prev])
         setNewComment('')
@@ -128,7 +170,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
       reply_to_id: replyTo.commentID,
       attachment_id: attachmentID,
     }
-    createComment(contentID, replyData)
+    createCommentBody({ content_id: contentID, ...replyData })
       .then((res) => {
         // Add reply to the parent comment (in local or server comments)
         const addReply = (comments: Comment[]) =>
@@ -138,10 +180,6 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
               : c
           )
         setLocalComments(addReply)
-        // For server comments, we use a trick: store in local overrides is complex,
-        // so we just mutate the data pages directly
-        // Instead, just push to localComments as a standalone approach won't work for replies.
-        // The simplest approach: use the same localComments state
         setReplyTo(null)
         setReplyText('')
         localCountDelta.current += 1
@@ -154,7 +192,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
 
   // Toggle like on a comment
   const handleLikeComment = (commentID: string) => {
-    likeCommentAPI(commentID)
+    toggleLike('comment', commentID)
       .then((res) => {
         setLikedCommentIDs((prev) => {
           const next = new Set(prev)
@@ -297,33 +335,13 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
                 autoFocus
               />
               <div className="flex items-center justify-between mt-2">
-                <div className="relative" ref={emojiPickerFor === 'reply' ? emojiPickerRef : undefined}>
-                  <button
-                    type="button"
-                    className="p-1.5 rounded-full hover:bg-black/5 transition-colors"
-                    style={{ color: '#606060' }}
-                    onClick={() => setEmojiPickerFor(emojiPickerFor === 'reply' ? null : 'reply')}
-                  >
-                    <Smile size={16} />
-                  </button>
-                  {emojiPickerFor === 'reply' && (
-                    <div
-                      className="absolute left-0 bottom-full mb-1 w-[280px] grid grid-cols-8 gap-0.5 p-2 rounded-lg shadow-lg border z-50"
-                      style={{ background: '#fff', borderColor: '#e5e5e5' }}
-                    >
-                      {commonEmojis.map((emoji) => (
-                        <button
-                          key={emoji}
-                          type="button"
-                          className="w-8 h-8 flex items-center justify-center rounded hover:bg-black/5 text-lg cursor-pointer"
-                          onClick={() => insertEmoji(emoji, 'reply')}
-                        >
-                          {emoji}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <EmojiPicker
+                  active={emojiPickerFor === 'reply'}
+                  onToggle={() => setEmojiPickerFor(emojiPickerFor === 'reply' ? null : 'reply')}
+                  onSelect={(emoji) => insertEmoji(emoji, 'reply')}
+                  pickerRef={emojiPickerRef}
+                  iconSize={16}
+                />
                 <div className="flex gap-2">
                   <button
                     className="text-xs px-3 py-1 rounded-full"
@@ -378,33 +396,12 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
             />
             {commentFocused && (
               <div className="flex items-center justify-between mt-2">
-                <div className="relative" ref={emojiPickerFor === 'new' ? emojiPickerRef : undefined}>
-                  <button
-                    type="button"
-                    className="p-1.5 rounded-full hover:bg-black/5 transition-colors"
-                    style={{ color: '#606060' }}
-                    onClick={() => setEmojiPickerFor(emojiPickerFor === 'new' ? null : 'new')}
-                  >
-                    <Smile size={18} />
-                  </button>
-                  {emojiPickerFor === 'new' && (
-                    <div
-                      className="absolute left-0 bottom-full mb-1 w-[280px] grid grid-cols-8 gap-0.5 p-2 rounded-lg shadow-lg border z-50"
-                      style={{ background: '#fff', borderColor: '#e5e5e5' }}
-                    >
-                      {commonEmojis.map((emoji) => (
-                        <button
-                          key={emoji}
-                          type="button"
-                          className="w-8 h-8 flex items-center justify-center rounded hover:bg-black/5 text-lg cursor-pointer"
-                          onClick={() => insertEmoji(emoji, 'new')}
-                        >
-                          {emoji}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <EmojiPicker
+                  active={emojiPickerFor === 'new'}
+                  onToggle={() => setEmojiPickerFor(emojiPickerFor === 'new' ? null : 'new')}
+                  onSelect={(emoji) => insertEmoji(emoji, 'new')}
+                  pickerRef={emojiPickerRef}
+                />
                 <div className="flex gap-2">
                   <button
                     className="text-sm px-3 py-1.5 rounded-full"
