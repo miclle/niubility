@@ -24,7 +24,6 @@ const typeIcons: Record<ContentType, React.ReactNode> = {
   article: <FileText size={12} />,
 }
 const limit = 20
-const columnCount = 11
 
 const thStyle: React.CSSProperties = {
   padding: '12px 16px',
@@ -91,7 +90,7 @@ function ContentTable({ type, title }: ContentTableProps) {
               <col style={{ width: '96px' }} />
               <col style={{ width: '120px' }} />
               <col style={{ width: '160px' }} />
-              <col style={{ width: '240px' }} />
+              {type === 'video' && <col style={{ width: '240px' }} />}
               <col style={{ width: '76px' }} />
               <col style={{ width: '76px' }} />
               <col style={{ width: '76px' }} />
@@ -105,7 +104,7 @@ function ContentTable({ type, title }: ContentTableProps) {
                 <th style={thStyle}>状态</th>
                 <th style={thStyle}>分类</th>
                 <th style={thStyle}>作者</th>
-                <th style={thStyle}>Speaker</th>
+                {type === 'video' && <th style={thStyle}>Speaker</th>}
                 <th style={thStyle}>点赞</th>
                 <th style={thStyle}>评论</th>
                 <th style={thStyle}>收藏</th>
@@ -116,7 +115,7 @@ function ContentTable({ type, title }: ContentTableProps) {
             <tbody>
               {contents.length === 0 && !loading ? (
                 <tr>
-                  <td colSpan={columnCount} className="text-center py-8" style={{ color: '#909090' }}>
+                  <td colSpan={type === 'video' ? 11 : 10} className="text-center py-8" style={{ color: '#909090' }}>
                     暂无内容
                   </td>
                 </tr>
@@ -168,36 +167,38 @@ function ContentTable({ type, title }: ContentTableProps) {
                           <span className="truncate">{content.author?.name || '-'}</span>
                         </div>
                       </td>
-                      <td style={{ ...tdStyle, whiteSpace: 'normal' }}>
-                        {hasSpeakerInfo ? (
-                          <div className="flex items-start gap-2 min-w-0 max-w-[208px]">
-                            <Avatar className="w-6 h-6 flex-shrink-0">
-                              <SiteAvatarImage src={getSpeakerAvatar(content, siteConfig)} alt={getSpeakerDisplayName(content)} />
-                              <AvatarFallback className="text-xs">{getSpeakerDisplayName(content).charAt(0) || '-'}</AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0 overflow-hidden">
-                              <div className="truncate">{getSpeakerDisplayName(content)}</div>
-                              {content.speaker_bio && (
-                                <div
-                                  className="text-xs overflow-hidden"
-                                  style={{
-                                    color: '#909090',
-                                    display: '-webkit-box',
-                                    WebkitLineClamp: 2,
-                                    WebkitBoxOrient: 'vertical',
-                                    overflowWrap: 'anywhere',
-                                  }}
-                                  title={content.speaker_bio}
-                                >
-                                  {content.speaker_bio}
-                                </div>
-                              )}
+                      {type === 'video' && (
+                        <td style={{ ...tdStyle, whiteSpace: 'normal' }}>
+                          {hasSpeakerInfo ? (
+                            <div className="flex items-start gap-2 min-w-0 max-w-[208px]">
+                              <Avatar className="w-6 h-6 flex-shrink-0">
+                                <SiteAvatarImage src={getSpeakerAvatar(content, siteConfig)} alt={getSpeakerDisplayName(content)} />
+                                <AvatarFallback className="text-xs">{getSpeakerDisplayName(content).charAt(0) || '-'}</AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0 overflow-hidden">
+                                <div className="truncate">{getSpeakerDisplayName(content)}</div>
+                                {content.speaker_bio && (
+                                  <div
+                                    className="text-xs overflow-hidden"
+                                    style={{
+                                      color: '#909090',
+                                      display: '-webkit-box',
+                                      WebkitLineClamp: 2,
+                                      WebkitBoxOrient: 'vertical',
+                                      overflowWrap: 'anywhere',
+                                    }}
+                                    title={content.speaker_bio}
+                                  >
+                                    {content.speaker_bio}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ) : (
-                          '-'
-                        )}
-                      </td>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                      )}
                       <td style={tdStyle}>
                         <span className="flex items-center gap-1 text-xs"><Heart size={12} />{content.like_count}</span>
                       </td>
