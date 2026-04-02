@@ -45,7 +45,7 @@ export default function SidebarNav({ category, typeFilter, isHome, currentUser, 
         end
         className={() =>
           `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-            isHome && !typeFilter ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+            isHome && !typeFilter && !category ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
           }`
         }
         style={{ color: '#0f0f0f' }}

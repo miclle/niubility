@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Outlet, NavLink, useLocation, useParams } from 'react-router-dom'
+import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { Search, Menu, User, ServerOff } from 'lucide-react'
 
 import { useAppContext } from 'src/context/app'
@@ -15,7 +15,6 @@ import UserMenu from './UserMenu'
 function MainLayout() {
   const { initialized, currentUser, categories, siteConfig } = useAppContext()
     const location = useLocation()
-    const { slug } = useParams()
 
     // Apply site config to document head
     useSiteHead(siteConfig)
@@ -71,12 +70,12 @@ function MainLayout() {
             </div>
         )
     }
-    // Derive category from URL params or path
+    // Derive category and type from URL path only (sidebar highlighting + base filter)
     const isHome = location.pathname === '/'
     const typeRouteMap: Record<string, ContentType> = { videos: 'video', galleries: 'gallery', articles: 'article' }
-    const firstSegment = slug || location.pathname.split('/')[1] || ''
+    const firstSegment = location.pathname.split('/')[1] || ''
     const isTypeRoute = firstSegment in typeRouteMap
-    const category: string = (isHome || isTypeRoute) ? '' : ((slug && !slug.startsWith('@') ? slug : '') || firstSegment)
+    const category: string = (!isHome && !isTypeRoute && !firstSegment.startsWith('@')) ? firstSegment : ''
     // Derive type filter from path
     const typeFilter = (isTypeRoute ? typeRouteMap[firstSegment] : '') as ContentType | ''
     const handleSearch = () => {
