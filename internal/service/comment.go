@@ -118,6 +118,66 @@ func (s *Service) GetCommentWithUser(ctx context.Context, id string) (*entity.Co
 	return &comment, nil
 }
 
+// DeleteComment deletes a comment (and its replies) by ID, decrements the content's comment_count,
+// and removes associated likes.
+func (s *Service) DeleteComment(ctx context.Context, id string) error {
+	log := logger.NewWithContext(ctx)
+
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// Count the comment itself + its replies for total decrement
+		var totalCount int64
+		if err := tx.Model(&entity.Comment{}).
+			Where("id = ? OR parent_id = ?", id, id).
+			Count(&totalCount).Error; err != nil {
+			log.Errorf("DeleteComment: count comments: %v", err)
+			return fmt.Errorf("count comments to delete: %w", err)
+		}
+
+		// Collect all comment IDs (the comment + replies) to delete associated likes
+		var commentIDs []string
+		if err := tx.Model(&entity.Comment{}).
+			Where("id = ? OR parent_id = ?", id, id).
+			Pluck("id", &commentIDs).Error; err != nil {
+			log.Errorf("DeleteComment: pluck comment ids: %v", err)
+			return fmt.Errorf("pluck comment ids: %w", err)
+		}
+
+		// Get the content_id before deleting to update comment_count
+		var contentID string
+		if err := tx.Model(&entity.Comment{}).Where("id = ?", id).Pluck("content_id", &contentID).Error; err != nil {
+			log.Errorf("DeleteComment: get content_id: %v", err)
+			return fmt.Errorf("get content_id: %w", err)
+		}
+
+		// Delete associated likes for all comments being removed
+		if err := tx.Where("target_id IN ? AND target_type = ?", commentIDs, entity.TargetTypeComment).
+			Delete(&entity.Like{}).Error; err != nil {
+			log.Errorf("DeleteComment: delete likes: %v", err)
+			return fmt.Errorf("delete comment likes: %w", err)
+		}
+
+		// Delete replies first, then the parent comment
+		if err := tx.Where("parent_id = ?", id).Delete(&entity.Comment{}).Error; err != nil {
+			log.Errorf("DeleteComment: delete replies: %v", err)
+			return fmt.Errorf("delete comment replies: %w", err)
+		}
+
+		if err := tx.Where("id = ?", id).Delete(&entity.Comment{}).Error; err != nil {
+			log.Errorf("DeleteComment: delete comment: %v", err)
+			return fmt.Errorf("delete comment: %w", err)
+		}
+
+		// Decrement content comment_count
+		if err := tx.Model(&entity.Content{}).Where("id = ?", contentID).
+			UpdateColumn("comment_count", gorm.Expr("GREATEST(comment_count - ?, 0)", totalCount)).Error; err != nil {
+			log.Errorf("DeleteComment: update comment_count: %v", err)
+			return fmt.Errorf("update content comment_count: %w", err)
+		}
+
+		return nil
+	})
+}
+
 // PinComment pins or unpins a comment. Only top-level comments can be pinned.
 func (s *Service) PinComment(ctx context.Context, id string, pinned bool) (*entity.Comment, error) {
 	log := logger.NewWithContext(ctx)

@@ -1,11 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { ThumbsUp, MessageCircle, ChevronDown, ChevronUp, Smile, Pin } from 'lucide-react'
+import { ThumbsUp, MessageCircle, ChevronDown, ChevronUp, Smile, Pin, Trash2 } from 'lucide-react'
 import dayjs from 'dayjs'
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 
-import { listCommentsQuery, createCommentBody, toggleLike, pinComment } from 'src/api/content'
+import { listCommentsQuery, createCommentBody, toggleLike, pinComment, deleteComment } from 'src/api/content'
 import { useAppContext } from 'src/context/app'
 import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from 'src/components/ui/alert-dialog'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import type { Comment, CreateCommentArgs } from 'src/types/content'
 
@@ -68,6 +72,7 @@ interface CommentSectionProps {
 // CommentSection displays and manages comments for a content item.
 function CommentSection({ contentID, attachmentID, commentCount, onCommentCountChange }: CommentSectionProps) {
   const { currentUser } = useAppContext()
+  const queryClient = useQueryClient()
   const [likedCommentIDs, setLikedCommentIDs] = useState<Set<string>>(new Set())
   const [newComment, setNewComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -239,6 +244,20 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
       .catch(() => {})
   }
 
+  // Delete a comment (own comment or admin)
+  const handleDeleteComment = (commentID: string) => {
+    deleteComment(commentID)
+      .then(() => {
+        // Remove from local comments
+        setLocalComments((prev) => prev.filter((c) => c.id !== commentID && c.parent_id !== commentID))
+        // Remove from server comments by invalidating the query
+        queryClient.invalidateQueries({ queryKey: ['comments', contentID, attachmentID] })
+        localCountDelta.current -= 1
+        onCommentCountChange?.(commentCount + localCountDelta.current)
+      })
+      .catch(() => {})
+  }
+
   // Get display pinned_at considering local overrides
   const getDisplayPinnedAt = (comment: Comment): string | undefined => {
     if (pinOverrides.has(comment.id)) {
@@ -318,6 +337,38 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
                 <Pin size={14} fill={isPinned ? 'currentColor' : 'none'} />
                 <span>{isPinned ? '取消置顶' : '置顶'}</span>
               </button>
+            )}
+            {(comment.user_id === currentUser?.id || isAdmin) && (
+              <AlertDialog>
+                <AlertDialogTrigger className="flex items-center gap-1 text-xs transition-colors cursor-pointer" style={{ color: '#606060' }}>
+                  <Trash2 size={14} />
+                  <span>删除</span>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>删除评论</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      确定要删除这条评论吗？删除后不可恢复。
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <div className="rounded-md bg-muted/50 px-3 py-2 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="size-5">
+                        <SiteAvatarImage src={comment.user?.avatar || ''} alt={comment.user?.name || '匿名'} />
+                        <AvatarFallback className="text-[10px]">{comment.user?.name?.charAt(0) || '匿'}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs font-medium text-foreground">{comment.user?.name || '匿名用户'}</span>
+                    </div>
+                    <div className="text-sm text-muted-foreground line-clamp-3 whitespace-pre-wrap break-all">
+                      {comment.body}
+                    </div>
+                  </div>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>取消</AlertDialogCancel>
+                    <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={() => handleDeleteComment(comment.id)}>删除</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
 

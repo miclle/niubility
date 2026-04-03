@@ -56,3 +56,8 @@ export function listFavorites(params?: { limit?: number; cursor?: string }) {
 export function pinComment(commentID: string, pinned: boolean) {
   return client.post<Comment>(`/admin/comments/${commentID}/pin`, { pinned })
 }
+
+// deleteComment deletes a comment by ID. Users can delete their own comments; admins can delete any comment.
+export function deleteComment(commentID: string) {
+  return client.delete(`/comments/${commentID}`)
+}

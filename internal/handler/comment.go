@@ -120,6 +120,37 @@ func (ctrl *Ctrl) CreateCommentBody(c *fox.Context, args CreateCommentBodyArgs) 
 	return comment, nil
 }
 
+// DeleteComment deletes a comment. Users can delete their own comments; admins can delete any comment.
+// DELETE /api/v1/comments/:id
+func (ctrl *Ctrl) DeleteComment(c *fox.Context) (*struct{}, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+	user := CurrentUser(c)
+	if user == nil {
+		return nil, httperrors.ErrUnauthorized
+	}
+
+	commentID := c.Param("id")
+
+	// Verify comment exists and check permission
+	comment, err := ctrl.service.GetCommentByID(ctx, commentID)
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+	if comment == nil {
+		return nil, httperrors.ErrNotFound
+	}
+
+	if comment.UserID != user.ID && !user.IsAdmin() {
+		return nil, httperrors.ErrForbidden
+	}
+
+	if err := ctrl.service.DeleteComment(ctx, commentID); err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+
+	return nil, nil
+}
+
 // PinCommentRequest represents the request body for pinning a comment.
 type PinCommentRequest struct {
 	Pinned bool `json:"pinned"`
