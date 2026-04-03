@@ -6,43 +6,78 @@ AI 编码助手在 Niubility 仓库中的统一技术规范。
 
 ## 项目概述
 
-Niubility 是企业内部学习与文化平台，支持 `video`、`gallery`、`article` 三种内容类型，提供评论、点赞、收藏、关注等社交功能，并支持可选 SSO、S3 对象存储、企业微信同步。
+Niubility 是企业内部学习与文化平台，支持 `video`、`gallery`、`article` 三种内容类型，提供评论、点赞、收藏、关注等社交功能，并支持可选 SSO、S3 对象存储、企业微信同步。项目包含主站服务（Go + React 嵌入式 SPA）和独立的 CLI 工具（Go + cobra）。
 
 ## 技术栈
 
-- 后端：Go 1.25 + `fox-gonic/fox` + GORM + PostgreSQL
-- 前端：React 18 + TypeScript + Vite + Tailwind CSS 4 + shadcn/ui
+- 后端：Go 1.25 + `fox-gonic/fox` v0.0.9 + GORM v1.31 + PostgreSQL（默认）/ MySQL
+- 前端：React 18 + TypeScript 5 + Vite 6 + Tailwind CSS 4 + shadcn/ui 4
+  - React Router v7（路由）
+  - React Query v5（服务端状态）
+  - Tiptap v2（富文本编辑器）
+  - Video.js v8（视频播放）
+  - dnd-kit v6（拖拽排序）
+  - Lucide React（图标）
+  - dayjs（日期处理）
+  - Axios（HTTP 客户端）
 - 认证：密码登录 + 可选 OIDC / SAML 2.0 + JWT Cookie
 - 存储：S3 兼容对象存储
 - 集成：企业微信部门和用户同步
+- CLI：Go + cobra + viper（独立子项目，位于 `cli/`）
 
 ## 开发命令
 
 ```bash
-task install
-task dev
-task build
-task run
-task lint
-task check
-task test
-task clean
-task update-tools
+task install        # 安装前后端依赖
+task dev            # 启动开发环境（热重载）
+task build          # 构建生产二进制（含前端）
+task build-all      # 多平台构建
+task run            # 生产模式运行
+task lint           # 代码检查（gofmt、vet、staticcheck）
+task check          # 完整检查（lint + 前端类型检查 + mod tidy）
+task test           # 运行测试（race 检测 + 覆盖率）
+task clean          # 清理构建产物
+task update-tools   # 更新开发工具
+task build-cli      # 构建 CLI
+task build-cli-all  # 多平台构建 CLI
 ```
 
 ## 目录概览
 
 ```text
-cmd/niubility/            # 入口与本地配置
-internal/config/          # YAML 基础配置加载
+cmd/niubility/            # 主站入口与本地配置
+cli/                      # 独立 CLI 工具（cobra + viper）
+internal/config/          # YAML 基础配置加载（支持 PostgreSQL / MySQL）
 internal/entity/          # 数据模型与领域类型
 internal/handler/         # HTTP 处理器、路由注册、中间件
 internal/service/         # 业务逻辑、数据库操作、集成逻辑
 internal/website/src/     # React 前端
+  ├── api/                #   API 请求函数
+  ├── types/              #   TypeScript 类型定义
+  ├── views/              #   页面组件
+  │   ├── home/           #     首页
+  │   ├── video/          #     视频详情与编辑
+  │   ├── gallery/        #     图库详情与编辑
+  │   ├── article/        #     文章详情与编辑
+  │   ├── profile/        #     用户主页
+  │   ├── settings/       #     用户设置（账号、内容、收藏、安全、通知）
+  │   ├── admin/          #     管理后台
+  │   │   ├── contents/   #       内容管理（按类型分页）
+  │   │   ├── users/      #       用户管理
+  │   │   ├── categories/ #       分类管理
+  │   │   └── settings/   #       系统设置
+  │   ├── init/           #     系统初始化
+  │   ├── login/          #     登录
+  │   ├── register/       #     注册
+  │   └── errors/         #     错误页面
+  ├── components/         #   共享组件（UI、编辑器、上传、播放器等）
+  ├── layouts/            #   布局组件（MainLayout、AdminLayout、SettingsLayout）
+  └── router.tsx          #   路由配置
 pkg/sso/                  # OIDC / SAML Provider
 pkg/textencrypt/          # AES-256-GCM 文本加密
 pkg/gormlog/              # GORM 日志适配器
 .agents/rules/            # AI 协作细则
+.agents/skills/           # AI 工作流技能
 ```
 
 ## AI 协作入口
@@ -69,16 +104,26 @@ pkg/gormlog/              # GORM 日志适配器
 - 分层保持为 `Handler -> Service -> Entity`
 - 路由统一在 `internal/handler/handler.go` 中注册
 - 管理接口统一在 `/api/v1/admin/*` 下，并使用管理员鉴权
-- YAML 仅保留基础启动配置，其他运行期配置以 `settings` 表为准
+- 支持 PostgreSQL（默认）和 MySQL，通过 YAML 配置 `driver` 切换
+- YAML 仅保留基础启动配置（地址、数据库驱动和连接字符串），其他运行期配置以 `settings` 表为准
 - JWT 密钥、加密密钥、SSO 凭据、企业微信密钥、S3 secret 等敏感值不得明文暴露
 
 ### 前端
 
-- 路由使用 React Router，并延续 `MainLayout`、`AdminLayout`、`SettingsLayout`
+- 路由使用 React Router v7，延续 `MainLayout`、`AdminLayout`、`SettingsLayout`
+- 服务端状态管理使用 React Query（`@tanstack/react-query`），不引入额外状态管理库
 - API 调用放在 `internal/website/src/api/`
 - 类型定义放在 `internal/website/src/types/`
 - 页面放在 `internal/website/src/views/`
+- 富文本编辑使用 Tiptap，视频播放使用 Video.js
+- 拖拽排序使用 dnd-kit
 - 优先复用现有 shadcn/ui 与 Tailwind 风格，不随意引入新的 UI 基础设施
+
+### CLI
+
+- 独立 Go 模块，位于 `cli/`，使用 cobra 命令框架和 viper 配置管理
+- 通过 Cookie Jar 复用主站 JWT 会话，不引入独立认证协议
+- 构建：`task build-cli` 或 `task build-cli-all`
 
 ## 强制规则
 
@@ -87,7 +132,7 @@ pkg/gormlog/              # GORM 日志适配器
 - 涉及 API、设置项、上传链路、SSO、企业微信时，检查前后端和文档联动
 - 涉及敏感信息时，日志、测试数据、文档示例中都必须脱敏
 - 文档中的流程图、时序图、状态流转图统一使用 `Mermaid`，不要再提交 ASCII 图或截图式流程图
-- 没有完成相应验证前，不要宣称“已完成”“已修复”“测试通过”
+- 没有完成相应验证前，不要宣称"已完成""已修复""测试通过"
 
 ## 推荐做法
 
@@ -103,6 +148,7 @@ pkg/gormlog/              # GORM 日志适配器
 - 上传与资源访问：注意 presign、对象 key、访问 URL 与权限边界
 - 设置管理：注意 `entity.Setting*` 常量、service 读取逻辑、管理端表单和脱敏返回
 - SSO 与企业微信：注意回调地址、协议字段、密钥脱敏和错误日志
+- 资源分发：注意分发签名、域名、图片样式、TTL 等配置项
 
 ## 提交前最小检查
 
