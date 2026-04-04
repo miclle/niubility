@@ -694,11 +694,11 @@ cli/
 
 ### Phase 2：增强能力
 
-- [ ] `content edit <id>`
-- [ ] `favorite list` / `favorite toggle`
-- [ ] `comment list` / `comment create` / `comment delete`
-- [ ] `like toggle`
-- [ ] `follow toggle` / `following list` / `followers list`
+- [x] `content edit <id>`
+- [x] `favorite list` / `favorite toggle`
+- [x] `comment list` / `comment create` / `comment delete`
+- [x] `like toggle`
+- [x] `follow toggle` / `following list` / `followers list`
 - [ ] `profile view` / `profile update` / `profile change-password`
 - [ ] 更完善的 `--json` 输出与错误码约定
 - [ ] 打包与发布流程

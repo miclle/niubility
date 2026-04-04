@@ -337,3 +337,113 @@ func (o *ContentListOptions) ToQuery() url.Values {
 	}
 	return q
 }
+
+// Comment represents a comment
+type Comment struct {
+	ID           string  `json:"id"`
+	ContentID    string  `json:"content_id"`
+	AttachmentID string  `json:"attachment_id"`
+	UserID       string  `json:"user_id"`
+	ParentID     string  `json:"parent_id"`
+	ReplyToID    string  `json:"reply_to_id"`
+	Body         string  `json:"body"`
+	LikeCount    int64   `json:"like_count"`
+	PinnedAt     *string `json:"pinned_at"`
+	CreatedAt    string  `json:"created_at"`
+	UpdatedAt    string  `json:"updated_at"`
+
+	User    *User     `json:"user,omitempty"`
+	ReplyTo *Comment  `json:"reply_to,omitempty"`
+	Replies []Comment `json:"replies,omitempty"`
+}
+
+// CommentListResponse represents the response for comment list
+type CommentListResponse struct {
+	Items           []Comment `json:"items"`
+	NextCursor      string    `json:"next_cursor,omitempty"`
+	Total           int64     `json:"total"`
+	LikedCommentIDs []string  `json:"liked_comment_ids"`
+}
+
+// HasMore returns true if there are more results
+func (r *CommentListResponse) HasMore() bool {
+	return r.NextCursor != ""
+}
+
+// CommentListOptions represents options for listing comments
+type CommentListOptions struct {
+	Limit        int    `json:"limit"`
+	Cursor       string `json:"cursor"`
+	ContentID    string `json:"content_id"`
+	AttachmentID string `json:"attachment_id"`
+}
+
+// ToQuery converts options to URL query parameters
+func (o *CommentListOptions) ToQuery() url.Values {
+	q := url.Values{}
+	if o.Limit > 0 {
+		q.Set("limit", fmt.Sprintf("%d", o.Limit))
+	}
+	if o.Cursor != "" {
+		q.Set("cursor", o.Cursor)
+	}
+	if o.ContentID != "" {
+		q.Set("content_id", o.ContentID)
+	}
+	if o.AttachmentID != "" {
+		q.Set("attachment_id", o.AttachmentID)
+	}
+	return q
+}
+
+// CreateCommentRequest represents create comment request
+type CreateCommentRequest struct {
+	ContentID    string `json:"content_id"`
+	AttachmentID string `json:"attachment_id,omitempty"`
+	ParentID     string `json:"parent_id,omitempty"`
+	ReplyToID    string `json:"reply_to_id,omitempty"`
+	Body         string `json:"body"`
+}
+
+// LikeResponse represents the response for toggling a like
+type LikeResponse struct {
+	Liked     bool  `json:"liked"`
+	LikeCount int64 `json:"like_count"`
+}
+
+// ToggleLikeRequest represents the request for toggling a like
+type ToggleLikeRequest struct {
+	TargetType string `json:"target_type"` // content, comment, attachment
+	TargetID   string `json:"target_id"`
+}
+
+// FavoriteResponse represents the response for toggling a favorite
+type FavoriteResponse struct {
+	Favorited     bool  `json:"favorited"`
+	FavoriteCount int64 `json:"favorite_count"`
+}
+
+// FollowResponse represents the response for toggling a follow
+type FollowResponse struct {
+	Following      bool  `json:"following"`
+	FollowerCount  int64 `json:"follower_count"`
+	FollowingCount int64 `json:"following_count"`
+}
+
+// PaginationOptions represents common pagination parameters
+type PaginationOptions struct {
+	Limit  int    `json:"limit"`
+	Cursor string `json:"cursor"`
+}
+
+// ToQuery converts options to URL query parameters
+func (o *PaginationOptions) ToQuery() url.Values {
+	q := url.Values{}
+	if o.Limit > 0 {
+		q.Set("limit", fmt.Sprintf("%d", o.Limit))
+	}
+	if o.Cursor != "" {
+		q.Set("cursor", o.Cursor)
+	}
+	return q
+}

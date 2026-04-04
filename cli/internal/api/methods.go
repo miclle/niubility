@@ -189,3 +189,109 @@ func (c *Client) UpdateUser(ctx context.Context, id string, req *UpdateUserReque
 func (c *Client) DeleteUser(ctx context.Context, id string) error {
 	return c.Delete(ctx, fmt.Sprintf("/api/v1/admin/users/%s", id))
 }
+
+// ListComments lists comments for a content item
+func (c *Client) ListComments(ctx context.Context, opts *CommentListOptions) (*CommentListResponse, error) {
+	path := "/api/v1/comments"
+	if opts != nil {
+		query := opts.ToQuery()
+		if encoded := query.Encode(); encoded != "" {
+			path = path + "?" + encoded
+		}
+	}
+	var resp CommentListResponse
+	if err := c.Get(ctx, path, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// CreateComment creates a new comment
+func (c *Client) CreateComment(ctx context.Context, req *CreateCommentRequest) (*Comment, error) {
+	var resp Comment
+	if err := c.Post(ctx, "/api/v1/comments", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// DeleteComment deletes a comment by ID
+func (c *Client) DeleteComment(ctx context.Context, id string) error {
+	return c.Delete(ctx, fmt.Sprintf("/api/v1/comments/%s", id))
+}
+
+// ToggleLike toggles like on a content, comment, or attachment
+func (c *Client) ToggleLike(ctx context.Context, targetType, targetID string) (*LikeResponse, error) {
+	req := ToggleLikeRequest{TargetType: targetType, TargetID: targetID}
+	var resp LikeResponse
+	if err := c.Post(ctx, "/api/v1/likes", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// ToggleFavorite toggles favorite on a content item
+func (c *Client) ToggleFavorite(ctx context.Context, contentID string) (*FavoriteResponse, error) {
+	var resp FavoriteResponse
+	if err := c.Post(ctx, fmt.Sprintf("/api/v1/contents/%s/favorite", contentID), nil, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// ListFavorites lists the current user's favorited contents
+func (c *Client) ListFavorites(ctx context.Context, opts *PaginationOptions) (*ContentListResponse, error) {
+	path := "/api/v1/favorites"
+	if opts != nil {
+		query := opts.ToQuery()
+		if encoded := query.Encode(); encoded != "" {
+			path = path + "?" + encoded
+		}
+	}
+	var resp ContentListResponse
+	if err := c.Get(ctx, path, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// ToggleFollow toggles follow on a user
+func (c *Client) ToggleFollow(ctx context.Context, username string) (*FollowResponse, error) {
+	var resp FollowResponse
+	if err := c.Post(ctx, fmt.Sprintf("/api/v1/users/%s/follow", username), nil, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// ListFollowing lists users that a user is following
+func (c *Client) ListFollowing(ctx context.Context, username string, opts *PaginationOptions) (*UserListResponse, error) {
+	path := fmt.Sprintf("/api/v1/users/%s/following", username)
+	if opts != nil {
+		query := opts.ToQuery()
+		if encoded := query.Encode(); encoded != "" {
+			path = path + "?" + encoded
+		}
+	}
+	var resp UserListResponse
+	if err := c.Get(ctx, path, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// ListFollowers lists followers of a user
+func (c *Client) ListFollowers(ctx context.Context, username string, opts *PaginationOptions) (*UserListResponse, error) {
+	path := fmt.Sprintf("/api/v1/users/%s/followers", username)
+	if opts != nil {
+		query := opts.ToQuery()
+		if encoded := query.Encode(); encoded != "" {
+			path = path + "?" + encoded
+		}
+	}
+	var resp UserListResponse
+	if err := c.Get(ctx, path, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}

@@ -225,6 +225,37 @@ timeout: "30s"
 | `speaker_name` | string | 否 | 主讲人名称 |
 | `speaker_bio` | string | 否 | 主讲人简介 |
 
+### 评论
+
+| 命令 | 说明 |
+|------|------|
+| `niubility comment list --content <id>` | 列出内容的评论 |
+| `niubility comment ls` | 别名 |
+| `niubility comment create --content <id> --body <text>` | 创建评论 |
+| `niubility comment delete <id>` | 删除评论 |
+
+### 点赞
+
+| 命令 | 说明 |
+|------|------|
+| `niubility like --type <type> --id <id>` | 切换点赞（content/comment/attachment） |
+
+### 收藏
+
+| 命令 | 说明 |
+|------|------|
+| `niubility favorite list` | 列出收藏 |
+| `niubility favorite ls` | 别名 |
+| `niubility favorite toggle <id>` | 切换收藏 |
+
+### 关注
+
+| 命令 | 说明 |
+|------|------|
+| `niubility follow toggle <username>` | 切换关注 |
+| `niubility follow following <username>` | 列出正在关注 |
+| `niubility follow followers <username>` | 列出粉丝 |
+
 ## 退出码
 
 | 退出码 | 含义 |
