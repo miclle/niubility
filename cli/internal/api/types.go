@@ -475,3 +475,28 @@ type ReorderCategoryItem struct {
 type ReorderCategoriesRequest struct {
 	Items []ReorderCategoryItem `json:"items"`
 }
+
+// UpdateProfileRequest represents update profile request
+type UpdateProfileRequest struct {
+	Name           *string           `json:"name,omitempty"`
+	Bio            *string           `json:"bio,omitempty"`
+	Location       *string           `json:"location,omitempty"`
+	Avatar         *string           `json:"avatar,omitempty"`
+	SocialAccounts map[string]string `json:"social_accounts,omitempty"`
+}
+
+// ChangePasswordRequest represents change password request
+type ChangePasswordRequest struct {
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
+}
+
+// ChangePasswordResponse represents change password response
+type ChangePasswordResponse struct {
+	Message string `json:"message"`
+}
+
+// HasPasswordResponse represents has-password response
+type HasPasswordResponse struct {
+	HasPassword bool `json:"has_password"`
+}

@@ -174,6 +174,51 @@ func (c *Client) GetCurrentUser(ctx context.Context) (*User, error) {
 	return boot.User, nil
 }
 
+// GetProfile gets the current user's profile
+func (c *Client) GetProfile(ctx context.Context) (*User, error) {
+	var resp User
+	if err := c.Get(ctx, "/api/v1/profile", &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// UpdateProfile updates the current user's profile
+func (c *Client) UpdateProfile(ctx context.Context, req *UpdateProfileRequest) (*User, error) {
+	var resp User
+	if err := c.Patch(ctx, "/api/v1/profile", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// ChangePassword changes the current user's password
+func (c *Client) ChangePassword(ctx context.Context, req *ChangePasswordRequest) (*ChangePasswordResponse, error) {
+	var resp ChangePasswordResponse
+	if err := c.Post(ctx, "/api/v1/profile/change-password", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// HasPassword checks if the current user has a password set
+func (c *Client) HasPassword(ctx context.Context) (*HasPasswordResponse, error) {
+	var resp HasPasswordResponse
+	if err := c.Get(ctx, "/api/v1/profile/has-password", &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// GetUserProfile gets a user's public profile by username
+func (c *Client) GetUserProfile(ctx context.Context, username string) (*User, error) {
+	var resp User
+	if err := c.Get(ctx, fmt.Sprintf("/api/v1/users/%s/profile", username), &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
 // ListUsers lists users with admin-only filters
 func (c *Client) ListUsers(ctx context.Context, opts *UserListOptions) (*UserListResponse, error) {
 	path := "/api/v1/admin/users"

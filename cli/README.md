@@ -259,6 +259,22 @@ timeout: "30s"
 | `niubility follow following <username>` | 列出正在关注 |
 | `niubility follow followers <username>` | 列出粉丝 |
 
+### 个人资料
+
+| 命令 | 说明 |
+|------|------|
+| `niubility profile view` | 查看个人资料 |
+| `niubility profile update --name <name>` | 更新个人资料 |
+| `niubility profile change-password` | 修改密码 |
+
+### 个人资料
+
+| 命令 | 说明 |
+|------|------|
+| `niubility profile view` | 查看个人资料 |
+| `niubility profile update --name <name>` | 更新资料 |
+| `niubility profile change-password` | 修改密码 |
+
 ## 退出码
 
 | 退出码 | 含义 |

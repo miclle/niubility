@@ -699,7 +699,7 @@ cli/
 - [x] `comment list` / `comment create` / `comment delete`
 - [x] `like toggle`
 - [x] `follow toggle` / `following list` / `followers list`
-- [ ] `profile view` / `profile update` / `profile change-password`
+- [x] `profile view` / `profile update` / `profile change-password`
 - [ ] 更完善的 `--json` 输出与错误码约定
 - [ ] 打包与发布流程
 
