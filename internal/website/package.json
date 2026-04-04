@@ -6,6 +6,9 @@
   "engines": {
     "node": ">=v22.14.0"
   },
+  "overrides": {
+    "@xmldom/xmldom": "^0.8.12"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
