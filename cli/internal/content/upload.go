@@ -52,7 +52,7 @@ func (u *Uploader) UploadFile(ctx context.Context, localPath string) (key string
 	}
 
 	// Upload to S3
-	if err := u.client.Put(ctx, presign.PresignedURL, mtype.String(), file); err != nil {
+	if err := u.client.Upload(ctx, presign.PresignedURL, mtype.String(), file); err != nil {
 		return "", "", fmt.Errorf("failed to upload file: %w", err)
 	}
 

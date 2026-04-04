@@ -175,6 +175,7 @@ niubility user delete <user-id> --yes
 | `niubility content get <id>` | 别名 |
 | `niubility content create article <file>` | 创建文章 |
 | `niubility content new article <file>` | 别名 |
+| `niubility content edit <id> <file>` | 更新内容 |
 | `niubility content delete <id>` | 删除内容 |
 | `niubility content rm <id>` | 别名 |
 

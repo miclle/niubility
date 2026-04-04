@@ -79,8 +79,20 @@ var (
 	ErrEmptyCategory = errors.New("category is required in front-matter")
 )
 
-// ParseMarkdownFile parses a Markdown file with front-matter
+// ParseMarkdownFile parses a Markdown file with front-matter.
+// Title and Category are required for new content creation.
 func ParseMarkdownFile(path string) (*Article, error) {
+	return parseMarkdownFile(path, true)
+}
+
+// ParseMarkdownFilePartial parses a Markdown file without requiring title or category.
+// Used for content updates where only changed fields need to be present.
+func ParseMarkdownFilePartial(path string) (*Article, error) {
+	return parseMarkdownFile(path, false)
+}
+
+// parseMarkdownFile is the shared implementation for parsing Markdown files.
+func parseMarkdownFile(path string, requireFields bool) (*Article, error) {
 	// Read file
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -93,12 +105,14 @@ func ParseMarkdownFile(path string) (*Article, error) {
 		return nil, err
 	}
 
-	// Validate required fields
-	if fm.Title == "" {
-		return nil, ErrEmptyTitle
-	}
-	if fm.Category == "" {
-		return nil, ErrEmptyCategory
+	// Validate required fields (only for create)
+	if requireFields {
+		if fm.Title == "" {
+			return nil, ErrEmptyTitle
+		}
+		if fm.Category == "" {
+			return nil, ErrEmptyCategory
+		}
 	}
 
 	// Get base directory for resolving relative paths
@@ -142,7 +156,7 @@ func ParseMarkdownFile(path string) (*Article, error) {
 	bodyHTML := markdownToHTML(body)
 
 	// Validate status
-	status := api.ContentStatusDraft
+	var status api.ContentStatus
 	if fm.Status != "" {
 		if fm.Status != "draft" && fm.Status != "published" {
 			return nil, fmt.Errorf("invalid status '%s', must be 'draft' or 'published'", fm.Status)

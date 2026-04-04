@@ -27,6 +27,9 @@ var (
 	contentCreateStatus string
 	contentCreateYes    bool
 
+	// content edit flags
+	contentEditStatus string
+
 	// content delete flags
 	contentDeleteYes bool
 )
@@ -267,7 +270,7 @@ For articles, provide a Markdown file with front-matter:
 		req := &api.CreateContentRequest{
 			Title:       article.Title,
 			Summary:     article.Summary,
-			Body:        uploadResult.BodyHTML, // Use body HTML with replaced image URLs
+			Body:        uploadResult.BodyHTML,
 			Type:        api.ContentTypeArticle,
 			Status:      article.Status,
 			Category:    article.CategorySlug,
@@ -298,6 +301,120 @@ For articles, provide a Markdown file with front-matter:
 		fmt.Printf("Title: %s\n", created.Title)
 		fmt.Printf("Status: %s\n", created.Status)
 		fmt.Printf("URL: %s/contents/%s\n", cfg.Server, created.ID)
+
+		return nil
+	},
+}
+
+// contentEditCmd represents the content edit command
+var contentEditCmd = &cobra.Command{
+	Use:   "edit <id> <file>",
+	Short: "Update content from a Markdown file",
+	Long: `Update an existing content item from a Markdown file.
+
+The Markdown file supports the same front-matter format as "content create".
+Only fields present in the front-matter will be updated; omitted fields remain unchanged.`,
+	Example: `  # Update an article from Markdown file
+  niubility content edit 123 my-article.md
+
+  # Update with specific status
+  niubility content edit 123 my-article.md --status published`,
+	Args: cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		id := args[0]
+		filePath := args[1]
+
+		// Parse Markdown file (partial - no required field validation)
+		article, err := content.ParseMarkdownFilePartial(filePath)
+		if err != nil {
+			return fmt.Errorf("failed to parse file: %w", err)
+		}
+
+		ctx, cancel := getContext()
+		defer cancel()
+
+		// Validate category if provided
+		if article.CategorySlug != "" {
+			categories, err := apiClient.ListCategories(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to get categories: %w", err)
+			}
+			categoryExists := false
+			for _, cat := range categories {
+				if cat.Slug == article.CategorySlug {
+					categoryExists = true
+					break
+				}
+			}
+			if !categoryExists {
+				return fmt.Errorf("category '%s' not found", article.CategorySlug)
+			}
+		}
+
+		// Upload attachments if any
+		uploadResult, err := content.UploadAttachments(ctx, apiClient, article, filePath)
+		if err != nil {
+			return fmt.Errorf("failed to upload attachments: %w", err)
+		}
+
+		// Build update request - only set fields that were provided in front-matter
+		req := &api.UpdateContentRequest{}
+
+		if article.Title != "" {
+			req.Title = &article.Title
+		}
+		if article.Summary != "" {
+			req.Summary = &article.Summary
+		}
+		if uploadResult.BodyHTML != "" {
+			req.Body = &uploadResult.BodyHTML
+		}
+		if uploadResult.CoverURL != "" {
+			req.CoverURL = &uploadResult.CoverURL
+		}
+		if article.CategorySlug != "" {
+			req.Category = &article.CategorySlug
+		}
+		if article.Tags != nil {
+			req.Tags = article.Tags
+		}
+		if article.SpeakerID != "" {
+			req.SpeakerID = &article.SpeakerID
+		}
+		if article.SpeakerName != "" {
+			req.SpeakerName = &article.SpeakerName
+		}
+		if article.SpeakerBio != "" {
+			req.SpeakerBio = &article.SpeakerBio
+		}
+		if uploadResult.Attachments != nil {
+			req.Attachments = uploadResult.Attachments
+		}
+
+		// Override status from flag or front-matter
+		if contentEditStatus != "" {
+			s := api.ContentStatus(contentEditStatus)
+			req.Status = &s
+		} else if article.Status != "" {
+			req.Status = (*api.ContentStatus)(&article.Status)
+		}
+
+		// Update content
+		updated, err := apiClient.UpdateContent(ctx, id, req)
+		if err != nil {
+			return fmt.Errorf("failed to update content: %w", err)
+		}
+
+		// Output
+		if isJSONOutput() {
+			return output.NewPrinter(output.FormatJSON).PrintJSON(updated)
+		}
+
+		output.PrintSuccess("Content updated successfully")
+		fmt.Printf("ID: %s\n", updated.ID)
+		fmt.Printf("Title: %s\n", updated.Title)
+		fmt.Printf("Status: %s\n", updated.Status)
+		fmt.Printf("URL: %s/contents/%s\n", cfg.Server, updated.ID)
 
 		return nil
 	},
@@ -350,6 +467,7 @@ func init() {
 	contentCmd.AddCommand(contentListCmd)
 	contentCmd.AddCommand(contentViewCmd)
 	contentCmd.AddCommand(contentCreateCmd)
+	contentCmd.AddCommand(contentEditCmd)
 	contentCmd.AddCommand(contentDeleteCmd)
 
 	// content list flags
@@ -366,6 +484,9 @@ func init() {
 	// content create flags
 	contentCreateCmd.Flags().StringVarP(&contentCreateStatus, "status", "s", "", "Content status (draft/published)")
 	contentCreateCmd.Flags().BoolVarP(&contentCreateYes, "yes", "y", false, "Skip confirmation")
+
+	// content edit flags
+	contentEditCmd.Flags().StringVarP(&contentEditStatus, "status", "s", "", "Content status (draft/published)")
 
 	// content delete flags
 	contentDeleteCmd.Flags().BoolVarP(&contentDeleteYes, "yes", "y", false, "Skip confirmation")

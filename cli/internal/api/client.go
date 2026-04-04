@@ -165,8 +165,13 @@ func (c *Client) Delete(ctx context.Context, path string) error {
 	return c.do(ctx, http.MethodDelete, path, nil, nil)
 }
 
-// Put performs a PUT request (for S3 upload)
-func (c *Client) Put(ctx context.Context, url string, contentType string, body io.Reader) error {
+// Put performs a PUT request to the API
+func (c *Client) Put(ctx context.Context, path string, body, result interface{}) error {
+	return c.do(ctx, http.MethodPut, path, body, result)
+}
+
+// Upload performs a PUT request to a raw URL (for S3 upload)
+func (c *Client) Upload(ctx context.Context, url string, contentType string, body io.Reader) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, body)
 	if err != nil {
 		return fmt.Errorf("failed to create upload request: %w", err)

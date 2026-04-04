@@ -101,6 +101,15 @@ func (c *Client) DeleteContent(ctx context.Context, id string) error {
 	return c.Delete(ctx, fmt.Sprintf("/api/v1/contents/%s", id))
 }
 
+// UpdateContent updates an existing content
+func (c *Client) UpdateContent(ctx context.Context, id string, req *UpdateContentRequest) (*Content, error) {
+	var resp Content
+	if err := c.Put(ctx, fmt.Sprintf("/api/v1/contents/%s", id), req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
 // PresignUpload gets a presigned URL for file upload
 // contentType should be a MIME type like "image/png", "application/pdf"
 func (c *Client) PresignUpload(ctx context.Context, filename, contentType string) (*PresignResponse, error) {
