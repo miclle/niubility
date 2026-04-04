@@ -219,6 +219,25 @@ func (c *Client) GetUserProfile(ctx context.Context, username string) (*User, er
 	return &resp, nil
 }
 
+// ListSettings lists all settings (admin only)
+func (c *Client) ListSettings(ctx context.Context) ([]Setting, error) {
+	var resp ListSettingsResponse
+	if err := c.Get(ctx, "/api/v1/admin/settings", &resp); err != nil {
+		return nil, err
+	}
+	return resp.Settings, nil
+}
+
+// UpdateSettings updates settings (admin only)
+func (c *Client) UpdateSettings(ctx context.Context, settings map[string]string) ([]Setting, error) {
+	req := UpdateSettingsRequest{Settings: settings}
+	var resp ListSettingsResponse
+	if err := c.Patch(ctx, "/api/v1/admin/settings", req, &resp); err != nil {
+		return nil, err
+	}
+	return resp.Settings, nil
+}
+
 // ListUsers lists users with admin-only filters
 func (c *Client) ListUsers(ctx context.Context, opts *UserListOptions) (*UserListResponse, error) {
 	path := "/api/v1/admin/users"

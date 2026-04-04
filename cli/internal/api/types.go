@@ -500,3 +500,20 @@ type ChangePasswordResponse struct {
 type HasPasswordResponse struct {
 	HasPassword bool `json:"has_password"`
 }
+
+// Setting represents a key-value setting
+type Setting struct {
+	Key       string `json:"key"`
+	Value     string `json:"value"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+// ListSettingsResponse represents the response for listing settings
+type ListSettingsResponse struct {
+	Settings []Setting `json:"settings"`
+}
+
+// UpdateSettingsRequest represents update settings request
+type UpdateSettingsRequest struct {
+	Settings map[string]string `json:"settings"`
+}

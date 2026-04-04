@@ -707,7 +707,7 @@ cli/
 
 - [x] `category create` / `category update` / `category delete`
 - [ ] `category reorder`
-- [ ] `settings list` / `settings update`
+- [x] `settings list` / `settings update`
 - [ ] `comment pin`（管理员）
 
 ### Phase 3：扩展内容类型与体验

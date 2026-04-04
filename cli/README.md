@@ -267,6 +267,13 @@ timeout: "30s"
 | `niubility profile update --name <name>` | 更新个人资料 |
 | `niubility profile change-password` | 修改密码 |
 
+### 系统设置（管理员）
+
+| 命令 | 说明 |
+|------|------|
+| `niubility settings list` | 列出所有设置 |
+| `niubility settings set --set key=value` | 更新设置 |
+
 ### 个人资料
 
 | 命令 | 说明 |
