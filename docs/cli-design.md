@@ -705,7 +705,8 @@ cli/
 
 ### Phase 2.5：管理员增强
 
-- [ ] `category create` / `category update` / `category delete` / `category reorder`
+- [x] `category create` / `category update` / `category delete`
+- [ ] `category reorder`
 - [ ] `settings list` / `settings update`
 - [ ] `comment pin`（管理员）
 

@@ -447,3 +447,31 @@ func (o *PaginationOptions) ToQuery() url.Values {
 	}
 	return q
 }
+
+// CreateCategoryRequest represents create category request
+type CreateCategoryRequest struct {
+	Name      string `json:"name"`
+	Slug      string `json:"slug"`
+	Icon      string `json:"icon,omitempty"`
+	SortOrder int    `json:"sort_order,omitempty"`
+}
+
+// UpdateCategoryRequest represents update category request
+type UpdateCategoryRequest struct {
+	Name      *string `json:"name,omitempty"`
+	Slug      *string `json:"slug,omitempty"`
+	Icon      *string `json:"icon,omitempty"`
+	Visible   *bool   `json:"visible,omitempty"`
+	SortOrder *int    `json:"sort_order,omitempty"`
+}
+
+// ReorderCategoryItem represents a single item in a reorder request
+type ReorderCategoryItem struct {
+	ID        string `json:"id"`
+	SortOrder int    `json:"sort_order"`
+}
+
+// ReorderCategoriesRequest represents reorder categories request
+type ReorderCategoriesRequest struct {
+	Items []ReorderCategoryItem `json:"items"`
+}

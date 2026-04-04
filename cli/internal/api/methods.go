@@ -62,6 +62,38 @@ func (c *Client) ListCategories(ctx context.Context) ([]Category, error) {
 	return resp.Categories, nil
 }
 
+// CreateCategory creates a new category (admin only)
+func (c *Client) CreateCategory(ctx context.Context, req *CreateCategoryRequest) (*Category, error) {
+	var resp Category
+	if err := c.Post(ctx, "/api/v1/admin/categories", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// UpdateCategory updates a category (admin only)
+func (c *Client) UpdateCategory(ctx context.Context, id string, req *UpdateCategoryRequest) (*Category, error) {
+	var resp Category
+	if err := c.Put(ctx, fmt.Sprintf("/api/v1/admin/categories/%s", id), req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// DeleteCategory deletes a category (admin only)
+func (c *Client) DeleteCategory(ctx context.Context, id string) error {
+	return c.Delete(ctx, fmt.Sprintf("/api/v1/admin/categories/%s", id))
+}
+
+// ReorderCategories reorders categories (admin only)
+func (c *Client) ReorderCategories(ctx context.Context, req *ReorderCategoriesRequest) ([]Category, error) {
+	var resp CategoryListResponse
+	if err := c.Post(ctx, "/api/v1/admin/categories/reorder", req, &resp); err != nil {
+		return nil, err
+	}
+	return resp.Categories, nil
+}
+
 // ListContents lists contents with options
 func (c *Client) ListContents(ctx context.Context, opts *ContentListOptions) (*ContentListResponse, error) {
 	path := "/api/v1/contents"

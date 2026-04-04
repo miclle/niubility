@@ -151,6 +151,9 @@ niubility user delete <user-id> --yes
 |------|------|
 | `niubility category list` | 列出所有分类 |
 | `niubility category ls` | 别名 |
+| `niubility category create --name <name> --slug <slug>` | 创建分类（管理员） |
+| `niubility category update <id> --name <name>` | 更新分类（管理员） |
+| `niubility category delete <id>` | 删除分类（管理员） |
 
 ### 用户
 
