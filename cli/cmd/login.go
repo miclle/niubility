@@ -26,11 +26,21 @@ var (
 	loginSSO      bool
 )
 
+type loginMode string
+
+const (
+	loginModePassword loginMode = "password"
+	loginModeSSO      loginMode = "sso"
+)
+
 // loginCmd represents the login command
 var loginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "Login to Niubility server",
-	Long: `Login to Niubility server with username and password.
+	Long: `Login to Niubility server with username/password or SSO.
+
+If the server has SSO enabled, browser-based SSO is used by default unless
+username/password flags are provided.
 
 Examples:
   # Interactive login
@@ -99,7 +109,12 @@ Examples:
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
-		if loginSSO {
+		mode, err := resolveLoginMode(ctx, apiClient)
+		if err != nil {
+			return err
+		}
+
+		if mode == loginModeSSO {
 			if err := auth.SSOLogin(ctx, apiClient); err != nil {
 				return fmt.Errorf("SSO login failed: %w", err)
 			}
@@ -162,6 +177,26 @@ func init() {
 	loginCmd.Flags().StringVarP(&loginPassword, "password", "p", "", "Password (use --password-stdin for non-interactive)")
 	loginCmd.Flags().BoolVar(&passwordStdin, "password-stdin", false, "Read password from stdin")
 	loginCmd.Flags().BoolVar(&loginSSO, "sso", false, "Login with browser-based SSO")
+}
+
+func resolveLoginMode(ctx context.Context, apiClient *api.Client) (loginMode, error) {
+	if loginSSO {
+		return loginModeSSO, nil
+	}
+
+	if loginUsername != "" || loginPassword != "" || passwordStdin {
+		return loginModePassword, nil
+	}
+
+	boot, err := apiClient.Boot(ctx)
+	if err != nil {
+		return loginModePassword, nil
+	}
+	if boot.EnableSSO {
+		return loginModeSSO, nil
+	}
+
+	return loginModePassword, nil
 }
 
 func readPasswordLoginInput() (string, string, error) {

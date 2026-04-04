@@ -20,6 +20,9 @@ go install .
 # 交互式登录
 niubility login --server http://your-server:9000
 
+# 如果站点启用了 SSO，默认会自动走浏览器 SSO 登录
+niubility login --server http://your-server:9000
+
 # 使用独立 profile 登录不同环境
 niubility --profile prod login --server http://prod-server:9000 --sso
 niubility --profile dev login --server http://dev-server:9000 --sso
@@ -141,7 +144,7 @@ niubility user delete <user-id> --yes
 
 | 命令 | 说明 |
 |------|------|
-| `niubility login` | 使用用户名密码或 `--sso` 登录到服务器 |
+| `niubility login` | 登录到服务器；站点启用 SSO 时默认走浏览器 SSO，也可显式使用用户名密码或 `--sso` |
 | `niubility logout` | 登出 |
 | `niubility whoami` | 显示当前登录用户 |
 
