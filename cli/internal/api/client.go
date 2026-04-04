@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+const defaultCLIUserAgent = "niubility-cli"
+
 // Client is the API client for Niubility
 type Client struct {
 	// baseURL is the server base URL (e.g., http://127.0.0.1:9000)
@@ -24,6 +26,12 @@ type Client struct {
 
 	// timeout for requests
 	timeout time.Duration
+
+	accessToken string
+	clientType  string
+	clientID    string
+	clientName  string
+	userAgent   string
 }
 
 // Errors
@@ -68,6 +76,8 @@ func NewClient(server string, timeout time.Duration, jar http.CookieJar) (*Clien
 		baseURL:    baseURL,
 		httpClient: httpClient,
 		timeout:    timeout,
+		clientType: "cli",
+		userAgent:  defaultCLIUserAgent,
 	}, nil
 }
 
@@ -99,6 +109,21 @@ func (c *Client) do(ctx context.Context, method, path string, body, result inter
 		req.Header.Set("Content-Type", "application/json")
 	}
 	req.Header.Set("Accept", "application/json")
+	if c.accessToken != "" {
+		req.Header.Set("Authorization", "Bearer "+c.accessToken)
+	}
+	if c.clientType != "" {
+		req.Header.Set("X-Niubility-Client-Type", c.clientType)
+	}
+	if c.clientID != "" {
+		req.Header.Set("X-Niubility-Client-ID", c.clientID)
+	}
+	if c.clientName != "" {
+		req.Header.Set("X-Niubility-Client-Name", c.clientName)
+	}
+	if c.userAgent != "" {
+		req.Header.Set("User-Agent", c.userAgent)
+	}
 
 	// Execute request
 	resp, err := c.httpClient.Do(req)
@@ -196,4 +221,16 @@ func (c *Client) Upload(ctx context.Context, url string, contentType string, bod
 // GetBaseURL returns the base URL
 func (c *Client) GetBaseURL() string {
 	return c.baseURL.String()
+}
+
+// SetAccessToken updates the bearer token used for API requests.
+func (c *Client) SetAccessToken(token string) {
+	c.accessToken = token
+}
+
+// SetClientIdentity sets audit-friendly metadata headers for this client.
+func (c *Client) SetClientIdentity(clientType, clientID, clientName string) {
+	c.clientType = clientType
+	c.clientID = clientID
+	c.clientName = clientName
 }

@@ -2,11 +2,9 @@ package handler
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/fox-gonic/fox"
 	"github.com/fox-gonic/fox/httperrors"
-	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/miclle/niubility/internal/entity"
 	"github.com/miclle/niubility/internal/errors"
@@ -54,7 +52,7 @@ func (ctrl *Ctrl) Login(c *fox.Context, req *LoginRequest) (any, error) {
 		return nil, httperrors.New(errors.ErrAccountInactive.Code, errors.ErrAccountInactive.Message)
 	}
 
-	tokenString, err := ctrl.issueToken(user.Username)
+	tokenString, err := ctrl.startUserSession(c, user)
 	if err != nil {
 		c.Logger.Errorf("issue token failed: %v", err)
 		return nil, httperrors.ErrInternalServerError
@@ -118,20 +116,6 @@ func (ctrl *Ctrl) HasPassword(c *fox.Context) (*HasPasswordResponse, error) {
 	}
 
 	return &HasPasswordResponse{HasPassword: has}, nil
-}
-
-// issueToken creates a signed JWT token for the given username.
-func (ctrl *Ctrl) issueToken(username string) (string, error) {
-	timeNow := time.Now()
-	expiresAt := timeNow.Add(30 * 24 * time.Hour)
-
-	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
-		Issuer:    username,
-		IssuedAt:  jwt.NewNumericDate(timeNow),
-		ExpiresAt: jwt.NewNumericDate(expiresAt),
-	})
-
-	return jwtToken.SignedString([]byte(ctrl.service.GetJWTSecret()))
 }
 
 // setAuthCookie sets the authentication cookie on the response.

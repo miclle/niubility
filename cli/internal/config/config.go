@@ -31,8 +31,8 @@ type Config struct {
 	// Timeout for HTTP requests
 	Timeout string `mapstructure:"timeout"`
 
-	// CookieJar path for session persistence
-	CookieJar string `mapstructure:"cookie_jar"`
+	// Token is the persisted CLI bearer token.
+	Token string `mapstructure:"token"`
 }
 
 // Default configuration values
@@ -42,7 +42,6 @@ const (
 	DefaultEditor      = "vim"
 	DefaultStatus      = "draft"
 	DefaultTimeout     = "30s"
-	DefaultCookieJar   = "~/.config/niubility/cookies.json"
 	DefaultConfigDir   = "~/.config/niubility"
 	DefaultConfigFile  = "config.yaml"
 	DefaultProfilesDir = "~/.config/niubility/profiles"
@@ -110,7 +109,7 @@ func setDefaults(v *viper.Viper, profile string) {
 	v.SetDefault("editor", DefaultEditor)
 	v.SetDefault("default_status", DefaultStatus)
 	v.SetDefault("timeout", DefaultTimeout)
-	v.SetDefault("cookie_jar", DefaultCookieJarForProfile(profile))
+	v.SetDefault("token", "")
 }
 
 // validateConfig validates and normalizes configuration
@@ -131,7 +130,6 @@ func validateConfig(cfg *Config) error {
 	}
 
 	// Expand home directory in paths
-	cfg.CookieJar = expandHome(cfg.CookieJar)
 	cfg.Server = normalizeServerURL(cfg.Server)
 
 	return nil
@@ -173,7 +171,7 @@ func SaveProfile(profile string, cfg *Config, configPath string) error {
 		"editor":         cfg.Editor,
 		"default_status": cfg.DefaultStatus,
 		"timeout":        cfg.Timeout,
-		"cookie_jar":     cfg.CookieJar,
+		"token":          cfg.Token,
 	}
 
 	// Marshal to YAML
@@ -230,15 +228,6 @@ func ResolveConfigPath(profile, configPath string) string {
 	}
 
 	return filepath.Join(expandHome(DefaultProfilesDir), profile+".yaml")
-}
-
-// DefaultCookieJarForProfile returns the default cookie jar path for a profile.
-func DefaultCookieJarForProfile(profile string) string {
-	if isDefaultProfile(profile) {
-		return expandHome(DefaultCookieJar)
-	}
-
-	return filepath.Join(expandHome(DefaultProfilesDir), profile+".cookies.json")
 }
 
 // ValidateProfile validates a profile name.

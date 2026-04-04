@@ -20,6 +20,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	// Auto migrate all entities
 	if err := db.AutoMigrate(
 		&entity.User{},
+		&entity.UserSession{},
 		&entity.Content{},
 		&entity.Attachment{},
 		&entity.Setting{},

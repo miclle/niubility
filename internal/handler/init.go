@@ -28,7 +28,7 @@ func (ctrl *Ctrl) InitSystem(c *fox.Context, req *InitRequest) (any, error) {
 	}
 
 	// Auto-login: issue JWT token
-	tokenString, err := ctrl.issueToken(user.Username)
+	tokenString, err := ctrl.startUserSession(c, user)
 	if err != nil {
 		c.Logger.Errorf("issue token failed: %v", err)
 		return nil, httperrors.ErrInternalServerError

@@ -10,9 +10,9 @@ import (
 	"github.com/fox-gonic/fox"
 	"github.com/fox-gonic/fox/httperrors"
 	"github.com/fox-gonic/fox/render"
-	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/miclle/niubility/internal/entity"
+	"github.com/miclle/niubility/internal/service"
 )
 
 const (
@@ -20,6 +20,8 @@ const (
 	CookieName = "NIUBILITY"
 	// currentUserKey is the context key for the authenticated user.
 	currentUserKey = "_current_user"
+	// currentAuthClaimsKey is the context key for the authenticated JWT claims.
+	currentAuthClaimsKey = "_current_auth_claims"
 )
 
 // skipPaths are paths that bypass authentication entirely.
@@ -82,27 +84,36 @@ func (ctrl *Ctrl) AuthMiddleware(c *fox.Context) (res any) {
 	}
 
 	var (
-		token, _ = c.Cookie(CookieName)
-		claims   jwt.RegisteredClaims
-		err      error
+		claims *AuthClaims
+		err    error
 	)
 
-	if len(token) == 0 {
+	if requestAuthToken(c.Request) == "" {
 		goto unauthorized
 	}
 
-	_, err = jwt.ParseWithClaims(token, &claims, func(token *jwt.Token) (any, error) {
-		return []byte(ctrl.service.GetJWTSecret()), nil
-	})
+	claims, err = ctrl.parseAuthClaimsFromRequest(c.Request)
 	if err != nil {
 		goto unauthorized
 	}
 
-	if len(claims.Issuer) > 0 {
+	if claims != nil && len(claims.Issuer) > 0 {
+		if claims.SessionID != "" && !ctrl.service.IsUserSessionActive(ctx, claims.SessionID) {
+			goto unauthorized
+		}
+
 		user, err := ctrl.service.GetUserByUsername(ctx, claims.Issuer)
 		if err == nil && user != nil {
 			if user.Status == entity.UserStatusActivated {
 				c.Set(currentUserKey, user)
+				c.Set(currentAuthClaimsKey, claims)
+				_ = ctrl.service.TouchUserSession(ctx, claims.SessionID, service.SessionAuditInfo{
+					ClientType: claims.ClientType,
+					ClientID:   claims.ClientID,
+					ClientName: ctrl.requestClientInfo(c.Request).ClientName,
+					UserAgent:  c.Request.UserAgent(),
+					IPAddress:  requestIP(c.Request),
+				})
 				return nil
 			}
 			if strings.HasPrefix(path, "/api") {
@@ -265,4 +276,17 @@ func CurrentUser(c *fox.Context) *entity.User {
 		return nil
 	}
 	return user
+}
+
+// CurrentAuthClaims retrieves the authenticated claims from context.
+func CurrentAuthClaims(c *fox.Context) *AuthClaims {
+	v, exists := c.Get(currentAuthClaimsKey)
+	if !exists {
+		return nil
+	}
+	claims, ok := v.(*AuthClaims)
+	if !ok {
+		return nil
+	}
+	return claims
 }

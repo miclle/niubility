@@ -15,7 +15,7 @@ output: "json"
 editor: "nano"
 default_status: "published"
 timeout: "45s"
-cookie_jar: "~/custom/cookies.json"
+token: "jwt-token"
 `)
 
 	if err := os.WriteFile(configPath, content, 0644); err != nil {
@@ -48,7 +48,7 @@ func TestSaveTo_CustomPath(t *testing.T) {
 		Editor:        "vim",
 		DefaultStatus: "draft",
 		Timeout:       "30s",
-		CookieJar:     "~/.config/niubility/cookies.json",
+		Token:         "jwt-token",
 	}
 
 	if err := SaveTo(cfg, configPath); err != nil {
@@ -81,7 +81,7 @@ output: "table"
 editor: "vim"
 default_status: "draft"
 timeout: "30s"
-cookie_jar: "~/.config/niubility/cookies.json"
+token: "jwt-token"
 `)
 
 	if err := os.WriteFile(configPath, content, 0644); err != nil {
@@ -103,14 +103,6 @@ func TestResolveConfigPath_Profile(t *testing.T) {
 	want := filepath.Join(expandHome(DefaultProfilesDir), "prod.yaml")
 	if got != want {
 		t.Fatalf("ResolveConfigPath() = %q, want %q", got, want)
-	}
-}
-
-func TestDefaultCookieJarForProfile(t *testing.T) {
-	got := DefaultCookieJarForProfile("prod")
-	want := filepath.Join(expandHome(DefaultProfilesDir), "prod.cookies.json")
-	if got != want {
-		t.Fatalf("DefaultCookieJarForProfile() = %q, want %q", got, want)
 	}
 }
 

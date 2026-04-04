@@ -77,7 +77,7 @@ Start by logging in:
 		}
 
 		// Create auth manager
-		authMgr, err = auth.NewManager(cfg.CookieJar, cfg.Server)
+		authMgr, err = auth.NewManager(cfg.Token, cfg.Server)
 		if err != nil {
 			return fmt.Errorf("failed to create auth manager: %w", err)
 		}
@@ -87,6 +87,8 @@ Start by logging in:
 		if err != nil {
 			return fmt.Errorf("failed to create API client: %w", err)
 		}
+		apiClient.SetClientIdentity("cli", "", authMgr.GetClientName())
+		apiClient.SetAccessToken(authMgr.GetAccessToken())
 
 		return nil
 	},

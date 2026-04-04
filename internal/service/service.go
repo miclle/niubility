@@ -53,7 +53,7 @@ func New(ctx context.Context, driver, dsn string) (*Service, error) {
 		return nil, fmt.Errorf("connect to database: %w", err)
 	}
 
-	if err := db.WithContext(ctx).AutoMigrate(&entity.User{}, &entity.Content{}, &entity.Attachment{}, &entity.Setting{}, &entity.Department{}, &entity.Comment{}, &entity.Like{}, &entity.Category{}, &entity.Follow{}, &entity.Favorite{}); err != nil {
+	if err := db.WithContext(ctx).AutoMigrate(&entity.User{}, &entity.UserSession{}, &entity.Content{}, &entity.Attachment{}, &entity.Setting{}, &entity.Department{}, &entity.Comment{}, &entity.Like{}, &entity.Category{}, &entity.Follow{}, &entity.Favorite{}); err != nil {
 		return nil, fmt.Errorf("auto migrate: %w", err)
 	}
 

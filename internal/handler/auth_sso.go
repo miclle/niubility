@@ -169,7 +169,7 @@ func (ctrl *Ctrl) resolveSSOUser(c *fox.Context, userinfo *sso.UserInfo) (*entit
 }
 
 func (ctrl *Ctrl) setAuthCookieForUser(c *fox.Context, user *entity.User) error {
-	tokenString, err := ctrl.issueToken(user.Username)
+	tokenString, err := ctrl.startUserSession(c, user)
 	if err != nil {
 		return fmt.Errorf("create jwt token: %w", err)
 	}

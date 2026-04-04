@@ -80,6 +80,12 @@ func (ctrl *Ctrl) Logout(c *fox.Context, args *LogoutArgs) render.Redirect {
 	ctx := c.Logger.WithContext(c.Request.Context())
 	secure := ctrl.service.IsCookieSecure(ctx)
 
+	if claims, err := ctrl.parseAuthClaimsFromRequest(c.Request); err == nil {
+		if err := ctrl.service.RevokeUserSession(ctx, claims.SessionID); err != nil {
+			c.Logger.Errorf("revoke user session failed: %v", err)
+		}
+	}
+
 	cookie := &http.Cookie{
 		Name:     CookieName,
 		Value:    "",

@@ -69,7 +69,7 @@ Examples:
 				Editor:        config.DefaultEditor,
 				DefaultStatus: config.DefaultStatus,
 				Timeout:       config.DefaultTimeout,
-				CookieJar:     config.DefaultCookieJarForProfile(profileName),
+				Token:         "",
 			}
 		}
 
@@ -88,7 +88,7 @@ Examples:
 		}
 
 		// Create auth manager
-		authMgr, err := auth.NewManager(cfg.CookieJar, cfg.Server)
+		authMgr, err := auth.NewManager(cfg.Token, cfg.Server)
 		if err != nil {
 			return fmt.Errorf("failed to create auth manager: %w", err)
 		}
@@ -104,6 +104,8 @@ Examples:
 		if err != nil {
 			return fmt.Errorf("failed to create API client: %w", err)
 		}
+		apiClient.SetClientIdentity("cli", "", authMgr.GetClientName())
+		apiClient.SetAccessToken(authMgr.GetAccessToken())
 
 		// Login
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -130,16 +132,15 @@ Examples:
 			}
 		}
 
-		// Save session
-		if err := authMgr.Save(); err != nil {
-			return fmt.Errorf("failed to save session: %w", err)
+		if err := authMgr.SyncFromJar(); err != nil {
+			return fmt.Errorf("failed to sync auth token: %w", err)
 		}
+		cfg.Token = authMgr.GetAccessToken()
+		apiClient.SetAccessToken(cfg.Token)
 
-		// Save config if server was provided via flag
-		if loginServer != "" {
-			if err := config.SaveProfile(profileName, cfg, cfgFile); err != nil {
-				output.PrintError("failed to save config: %v", err)
-			}
+		// Persist config after successful login so server/token stay in sync.
+		if err := config.SaveProfile(profileName, cfg, cfgFile); err != nil {
+			output.PrintError("failed to save config: %v", err)
 		}
 
 		// Verify login with boot endpoint
