@@ -126,23 +126,6 @@ func (ctrl *Ctrl) setClientIDCookie(c *fox.Context, clientID string) {
 	http.SetCookie(c.Writer, cookie)
 }
 
-func (ctrl *Ctrl) clearClientIDCookie(c *fox.Context) {
-	secure := ctrl.service.IsCookieSecure(c.Request.Context())
-	cookie := &http.Cookie{
-		Name:     clientCookieName,
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		Secure:   secure,
-		HttpOnly: false,
-		SameSite: http.SameSiteLaxMode,
-	}
-	if secure {
-		cookie.SameSite = http.SameSiteNoneMode
-	}
-	http.SetCookie(c.Writer, cookie)
-}
-
 func (ctrl *Ctrl) parseAuthClaimsFromRequest(req *http.Request) (*AuthClaims, error) {
 	tokenString := requestAuthToken(req)
 	if tokenString == "" {
