@@ -270,18 +270,18 @@ type CreateContentRequest struct {
 // UpdateContentRequest represents update content request.
 // All fields are pointers; only non-nil fields will be updated.
 type UpdateContentRequest struct {
-	Title       *string       `json:"title,omitempty"`
-	Summary     *string       `json:"summary,omitempty"`
-	Body        *string       `json:"body,omitempty"`
-	CoverURL    *string       `json:"cover_url,omitempty"`
-	Type        *ContentType  `json:"type,omitempty"`
+	Title       *string        `json:"title,omitempty"`
+	Summary     *string        `json:"summary,omitempty"`
+	Body        *string        `json:"body,omitempty"`
+	CoverURL    *string        `json:"cover_url,omitempty"`
+	Type        *ContentType   `json:"type,omitempty"`
 	Status      *ContentStatus `json:"status,omitempty"`
-	Category    *string       `json:"category,omitempty"`
-	Tags        []string      `json:"tags,omitempty"`
-	SpeakerID   *string       `json:"speaker_id,omitempty"`
-	SpeakerName *string       `json:"speaker_name,omitempty"`
-	SpeakerBio  *string       `json:"speaker_bio,omitempty"`
-	Attachments []Attachment  `json:"attachments,omitempty"`
+	Category    *string        `json:"category,omitempty"`
+	Tags        []string       `json:"tags,omitempty"`
+	SpeakerID   *string        `json:"speaker_id,omitempty"`
+	SpeakerName *string        `json:"speaker_name,omitempty"`
+	SpeakerBio  *string        `json:"speaker_bio,omitempty"`
+	Attachments []Attachment   `json:"attachments,omitempty"`
 }
 
 // ContentListOptions represents options for listing contents
