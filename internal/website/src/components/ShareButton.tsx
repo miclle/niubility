@@ -4,13 +4,14 @@ import { Check, Copy, Link2, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { copyShareLink, copyText, getShareURL, type ShareOptions } from 'src/lib/share'
+import { buildShareDescription, copyShareLink, copyText, getShareURL, type ShareOptions } from 'src/lib/share'
 
 interface ShareButtonProps extends ShareOptions {
   className?: string
   style?: CSSProperties
 }
 
+// Renders the share dialog with quick actions for link and message copying.
 function ShareButton({ title, text, url, className, style }: ShareButtonProps) {
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -18,11 +19,15 @@ function ShareButton({ title, text, url, className, style }: ShareButtonProps) {
   const copiedTimerRef = useRef<number | null>(null)
   const messageCopiedTimerRef = useRef<number | null>(null)
   const shareURL = useMemo(() => getShareURL(url), [url])
+  const shareDescription = useMemo(() => buildShareDescription(text), [text])
   const shareMessage = useMemo(() => {
     const messageTitle = title?.trim() || '当前内容'
-    return `${messageTitle}\n${shareURL}`
-  }, [shareURL, title])
+    return shareDescription
+      ? `${messageTitle}\n${shareDescription}\n${shareURL}`
+      : `${messageTitle}\n${shareURL}`
+  }, [shareDescription, shareURL, title])
 
+  // Resets the copied state after a short success feedback window.
   const resetCopiedLater = useCallback(() => {
     if (copiedTimerRef.current !== null) {
       window.clearTimeout(copiedTimerRef.current)
@@ -33,6 +38,7 @@ function ShareButton({ title, text, url, className, style }: ShareButtonProps) {
     }, 2200)
   }, [])
 
+  // Copies the current share URL and updates the button success state.
   const handleCopy = useCallback(async () => {
     try {
       await copyShareLink(shareURL)
@@ -43,6 +49,7 @@ function ShareButton({ title, text, url, className, style }: ShareButtonProps) {
     }
   }, [resetCopiedLater, shareURL])
 
+  // Copies the formatted share message and shows temporary feedback.
   const handleCopyMessage = useCallback(async () => {
     try {
       await copyText(shareMessage)
@@ -59,6 +66,7 @@ function ShareButton({ title, text, url, className, style }: ShareButtonProps) {
     }
   }, [shareMessage])
 
+  // Clears pending timers on unmount to avoid stale state updates.
   useEffect(() => {
     return () => {
       if (copiedTimerRef.current !== null) {
@@ -70,6 +78,7 @@ function ShareButton({ title, text, url, className, style }: ShareButtonProps) {
     }
   }, [])
 
+  // Opens the dialog and pre-copies the link to reduce user effort.
   const handleOpen = useCallback(async () => {
     setOpen(true)
     await handleCopy()
@@ -142,12 +151,12 @@ function ShareButton({ title, text, url, className, style }: ShareButtonProps) {
                   >
                     <Link2 size={18} />
                   </span>
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-medium" style={{ color: '#0f0f0f' }}>
+                  <div className="min-w-0 flex-1">
+                    <div className="break-words text-sm font-medium leading-5" style={{ color: '#0f0f0f' }}>
                       {title || '当前内容'}
                     </div>
-                    <div className="truncate text-xs" style={{ color: '#606060' }}>
-                      {text || '共享当前页面链接'}
+                    <div className="mt-1 break-words text-xs leading-5" style={{ color: '#606060' }}>
+                      {shareDescription || '共享当前页面链接'}
                     </div>
                   </div>
                 </div>
@@ -157,7 +166,7 @@ function ShareButton({ title, text, url, className, style }: ShareButtonProps) {
                     readOnly
                     value={shareURL}
                     onFocus={(event) => event.currentTarget.select()}
-                    className="h-11 rounded-full border-0 bg-white px-4 text-sm shadow-none ring-1"
+                    className="h-11 min-w-0 flex-1 rounded-full border-0 bg-white px-4 text-sm shadow-none ring-1"
                     style={{ ['--tw-ring-color' as string]: 'rgba(0,0,0,0.08)' }}
                   />
                   <Button
