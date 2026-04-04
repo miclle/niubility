@@ -670,34 +670,44 @@ cli/
 
 ### Phase 0：协议对齐
 
-- [ ] 明确 CLI 会话存储格式（cookie jar 文件）
-- [ ] 明确 article 发布时 Markdown -> HTML 转换策略
-- [ ] 明确正文图片、封面图、文档附件的统一映射规则
-- [ ] 明确 `content view` 对 article HTML 的终端展示策略
+- [x] 明确 CLI 会话存储格式（cookie jar 文件）
+- [x] 明确 article 发布时 Markdown -> HTML 转换策略
+- [x] 明确正文图片、封面图、文档附件的统一映射规则
+- [x] 明确 `content view` 对 article HTML 的终端展示策略
 
 ### Phase 1：可用 MVP
 
-- [ ] CLI 脚手架
-- [ ] 全局配置与 `--server`
-- [ ] cookie jar 持久化
-- [ ] `login`
-- [ ] `logout`
-- [ ] `whoami`
-- [ ] `category list`
-- [ ] `content list`
-- [ ] `content view`
-- [ ] `content create article <file.md>`
-- [ ] `content delete`
+- [x] CLI 脚手架
+- [x] 全局配置与 `--server`
+- [x] cookie jar 持久化
+- [x] `login`
+- [x] `logout`
+- [x] `whoami`
+- [x] `category list`
+- [x] `content list`
+- [x] `content view`
+- [x] `content create article <file.md>`
+- [x] `content delete`
+- [x] `user list / view / create / update / delete`（超出 MVP 范围，已实现）
+- [x] SSO 登录（`login --sso`，超出 MVP 范围，已实现）
+- [x] Profile 多环境支持（`--profile`，超出 MVP 范围，已实现）
 
 ### Phase 2：增强能力
 
 - [ ] `content edit <id>`
-- [ ] `favorite list`
-- [ ] `comment list`
-- [ ] `comment create`
+- [ ] `favorite list` / `favorite toggle`
+- [ ] `comment list` / `comment create` / `comment delete`
 - [ ] `like toggle`
+- [ ] `follow toggle` / `following list` / `followers list`
+- [ ] `profile view` / `profile update` / `profile change-password`
 - [ ] 更完善的 `--json` 输出与错误码约定
 - [ ] 打包与发布流程
+
+### Phase 2.5：管理员增强
+
+- [ ] `category create` / `category update` / `category delete` / `category reorder`
+- [ ] `settings list` / `settings update`
+- [ ] `comment pin`（管理员）
 
 ### Phase 3：扩展内容类型与体验
 
@@ -821,8 +831,86 @@ cli/
 
 ## 待后续明确的问题
 
-- CLI 是否要支持 SSO 登录，还是第一阶段仅支持用户名密码
-- article 的 Markdown 转 HTML 选型与允许语法范围
+- ~~CLI 是否要支持 SSO 登录，还是第一阶段仅支持用户名密码~~ → 已实现 SSO 登录
+- ~~article 的 Markdown 转 HTML 选型与允许语法范围~~ → 已选型 gomarkdown/markdown
 - `content view` 是否需要保留原始 HTML/JSON 输出模式
 - gallery 短视频是否沿用 Web 端 120 秒限制，还是只沿用后端 200MB 限制
 - 是否需要在后端新增更适合 CLI 的导入/导出接口
+
+## 当前实现状态与差距分析（2026-04-04 更新）
+
+### 已实现功能
+
+| 功能 | 状态 | 备注 |
+|------|------|------|
+| `login`（用户名密码 + SSO） | ✅ | 含 `--sso`、`--password-stdin` |
+| `logout` | ✅ | |
+| `whoami` | ✅ | |
+| `category list` | ✅ | |
+| `content list`（含全部筛选参数） | ✅ | 支持 category/type/status/keyword/tag/sort/author_id/speaker_id/followed_by |
+| `content view` | ✅ | 支持 article/gallery/video |
+| `content create article`（Markdown + 上传） | ✅ | 含 front-matter、图片上传、附件上传 |
+| `content delete` | ✅ | |
+| `user list/view/create/update/delete` | ✅ | 管理员功能，超出 Phase 1 |
+| Profile 多环境 `--profile` | ✅ | 超出 Phase 1 |
+
+### 缺失功能（按优先级排列）
+
+#### P1：内容更新 — 补齐 CRUD 关键一环
+
+后端已有 `PUT /api/v1/contents/:id`，CLI 缺少 `content edit/update` 命令和 API client 方法。
+
+| 功能 | 后端接口 | CLI 状态 |
+|------|---------|---------|
+| `content edit <id>` | `PUT /api/v1/contents/:id` | ❌ 缺失 |
+
+#### P2：社交功能 — 互动能力
+
+后端已提供完整接口，CLI 完全未覆盖。
+
+| 功能 | 后端接口 | CLI 状态 |
+|------|---------|---------|
+| 评论列表 | `GET /api/v1/comments` | ❌ |
+| 创建评论 | `POST /api/v1/comments` | ❌ |
+| 删除评论 | `DELETE /api/v1/comments/:id` | ❌ |
+| 点赞切换 | `POST /api/v1/likes` | ❌ |
+| 收藏列表 | `GET /api/v1/favorites` | ❌ |
+| 收藏切换 | `POST /api/v1/contents/:id/favorite` | ❌ |
+| 关注/取关 | `POST /api/v1/users/:username/follow` | ❌ |
+| 关注列表 | `GET /api/v1/users/:username/following` | ❌ |
+| 粉丝列表 | `GET /api/v1/users/:username/followers` | ❌ |
+
+#### P3：管理员分类管理
+
+| 功能 | 后端接口 | CLI 状态 |
+|------|---------|---------|
+| 创建分类 | `POST /api/v1/admin/categories` | ❌ |
+| 更新分类 | `PUT /api/v1/admin/categories/:id` | ❌ |
+| 删除分类 | `DELETE /api/v1/admin/categories/:id` | ❌ |
+| 排序分类 | `POST /api/v1/admin/categories/reorder` | ❌ |
+
+#### P4：个人资料管理
+
+| 功能 | 后端接口 | CLI 状态 |
+|------|---------|---------|
+| 查看/修改个人资料 | `GET/PATCH /api/v1/profile` | ❌ |
+| 修改密码 | `POST /api/v1/profile/change-password` | ❌ |
+| 头像上传 | `POST /api/v1/profile/upload` | ❌ |
+
+#### P5：管理员设置管理
+
+| 功能 | 后端接口 | CLI 状态 |
+|------|---------|---------|
+| 列出设置 | `GET /api/v1/admin/settings` | ❌ |
+| 更新设置 | `PATCH /api/v1/admin/settings` | ❌ |
+
+#### P6（Phase 3）：Gallery/Video 创建
+
+- `content create gallery <dir>` — 需目录 + manifest 模式
+- `content create video <dir>` — 需目录 + manifest 模式
+
+### 需要的代码改动
+
+1. **`cli/internal/api/methods.go`** — 补充 `UpdateContent`、Comments、Likes、Favorites、Follows、Profile、Admin Categories、Admin Settings 的 API 方法
+2. **`cli/internal/api/types.go`** — 补充上述接口对应的请求/响应类型
+3. **`cli/cmd/`** — 新增各命令文件
