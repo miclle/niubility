@@ -144,11 +144,13 @@ function AccountSettings() {
   const avatarDisplayURL = avatar ? resolveAvatarURL(avatar) : ''
 
   return (
-    <div className="px-6 py-8 lg:px-12">
-      <h1 className="mb-8 text-[2rem] font-semibold tracking-tight" style={{ color: '#0f0f0f' }}>{t('settings:accountSettingsTitle')}</h1>
+    <div className="min-h-full bg-white">
+      <div className="border-b border-[#ececec] px-6 py-8 lg:px-12">
+        <h1 className="text-[2rem] font-semibold tracking-tight" style={{ color: '#0f0f0f' }}>{t('settings:accountSettingsTitle')}</h1>
+      </div>
 
       {/* Two-column layout: form left, avatar right */}
-      <div className="flex flex-col gap-10 xl:flex-row xl:items-start">
+      <div className="flex flex-col gap-10 px-6 py-8 lg:px-12 xl:flex-row xl:items-start">
         {/* Left column: form fields */}
         <div className="min-w-0 flex-1 space-y-8 xl:max-w-[720px]">
           {/* Basic info section */}

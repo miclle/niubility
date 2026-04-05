@@ -49,70 +49,72 @@ function Favorites() {
   }
 
   return (
-    <div className="px-6 py-8 lg:px-12">
-      <h1 className="mb-8 text-[2rem] font-semibold tracking-tight" style={{ color: '#0f0f0f' }}>{t('settings:myFavoritesTitle')}</h1>
+    <div className="min-h-full bg-white">
+      <div className="px-6 pt-8 pb-0 lg:px-12">
+        <h1 className="text-[2rem] font-semibold tracking-tight" style={{ color: '#0f0f0f' }}>{t('settings:myFavoritesTitle')}</h1>
 
-      <div className="flex gap-8 overflow-x-auto border-b border-[#ececec]">
-        {typeTabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveType(tab.key)}
-            className="relative shrink-0 pb-4 text-base font-medium transition-colors"
-            style={{ color: activeType === tab.key ? '#0f0f0f' : '#6f6f6f' }}
+        <div className="mt-6 -mx-6 flex gap-10 overflow-x-auto border-b border-[#ececec] px-6 lg:-mx-12 lg:px-12">
+          {typeTabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveType(tab.key)}
+              className="relative shrink-0 pb-2.5 text-[15px] font-semibold transition-colors"
+              style={{ color: activeType === tab.key ? '#0f0f0f' : '#6f6f6f' }}
           >
-            {tab.label}
-            {activeType === tab.key && (
-              <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full" style={{ background: '#0f0f0f' }} />
-            )}
-          </button>
-        ))}
-      </div>
-
-      {contents.length === 0 && !loading ? (
-        <div className="text-center py-16">
-          <Bookmark size={48} className="mx-auto mb-4" style={{ color: '#d4d4d4' }} />
-          <p className="text-sm" style={{ color: '#909090' }}>{t('settings:noFavoritesForType')}</p>
-        </div>
-      ) : (
-        <div className="space-y-1 pt-6">
-          {contents.map((content) => (
-            <div
-              key={content.id}
-              className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-black/5 transition-colors"
-            >
-              {/* Type icon */}
-              <div className="flex-shrink-0" style={{ color: '#909090' }}>
-                {typeIcon(content.type)}
-              </div>
-
-              {/* Title and meta */}
-              <div className="flex-1 min-w-0">
-                <NavLink
-                  to={contentDetailPath(content)}
-                  className="text-sm font-medium no-underline hover:underline truncate block"
-                  style={{ color: '#0f0f0f' }}
-                >
-                  {content.title}
-                </NavLink>
-                <div className="flex items-center gap-3 mt-1">
-                  <span className="text-xs" style={{ color: '#909090' }}>
-                    {content.author?.name || tc('common:unknownAuthor')}
-                  </span>
-                  <span className="text-xs" style={{ color: '#909090' }}>
-                    {new Date(content.created_at).toLocaleDateString('zh-CN')}
-                  </span>
-                  <span className="flex items-center gap-1 text-xs" style={{ color: '#909090' }}>
-                    <Heart size={12} /> {content.like_count}
-                  </span>
-                  <span className="flex items-center gap-1 text-xs" style={{ color: '#909090' }}>
-                    <MessageSquare size={12} /> {content.comment_count}
-                  </span>
-                </div>
-              </div>
-            </div>
+              {tab.label}
+              {activeType === tab.key && (
+                <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full" style={{ background: '#0f0f0f' }} />
+              )}
+            </button>
           ))}
         </div>
-      )}
+      </div>
+
+      {contents.length === 0 && !loading
+        ? (
+            <div className="text-center py-16">
+              <Bookmark size={48} className="mx-auto mb-4" style={{ color: '#d4d4d4' }} />
+              <p className="text-sm" style={{ color: '#909090' }}>{t('settings:noFavoritesForType')}</p>
+            </div>
+          )
+        : (
+            <div className="space-y-1 px-6 py-6 lg:px-12">
+              {contents.map((content) => (
+                <div
+                  key={content.id}
+                  className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-black/5 transition-colors"
+                >
+                  <div className="flex-shrink-0" style={{ color: '#909090' }}>
+                    {typeIcon(content.type)}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <NavLink
+                      to={contentDetailPath(content)}
+                      className="text-sm font-medium no-underline hover:underline truncate block"
+                      style={{ color: '#0f0f0f' }}
+                    >
+                      {content.title}
+                    </NavLink>
+                    <div className="mt-1 flex items-center gap-3">
+                      <span className="text-xs" style={{ color: '#909090' }}>
+                        {content.author?.name || tc('common:unknownAuthor')}
+                      </span>
+                      <span className="text-xs" style={{ color: '#909090' }}>
+                        {new Date(content.created_at).toLocaleDateString('zh-CN')}
+                      </span>
+                      <span className="flex items-center gap-1 text-xs" style={{ color: '#909090' }}>
+                        <Heart size={12} /> {content.like_count}
+                      </span>
+                      <span className="flex items-center gap-1 text-xs" style={{ color: '#909090' }}>
+                        <MessageSquare size={12} /> {content.comment_count}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
       <div ref={loaderRef} className="py-4 text-center text-sm" style={{ color: '#909090' }}>
         {loading ? tc('common:loading') : !hasNextPage && allContents.length > 0 ? tc('common:noMoreContent') : ''}

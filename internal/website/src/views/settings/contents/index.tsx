@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import { NavLink } from 'react-router-dom'
-import { FileText, Play, Image, Pencil, Heart, MessageSquare, Trash2, Send, ArrowDown, Sparkles } from 'lucide-react'
+import { Pencil, Heart, MessageSquare, Trash2, Send, ArrowDown, Sparkles, SlidersHorizontal } from 'lucide-react'
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 
 import { useAppContext } from 'src/context/app'
 import { listContents, updateContent, deleteContent } from 'src/api/content'
+import { getContentCover } from 'src/lib/content-assets'
 import { contentDetailPath, contentEditPath, contentNewPath } from 'src/lib/content-url'
 import { useIntersection } from 'src/hooks/use-intersection'
 import type { Content, ContentStatus, ContentType } from 'src/types/content'
@@ -18,7 +19,8 @@ const limit = 20
 function MyContents() {
   const { t } = useTranslation('settings')
   const { t: tc } = useTranslation('common')
-  const { currentUser } = useAppContext()
+  const { t: ta } = useTranslation('admin')
+  const { currentUser, siteConfig } = useAppContext()
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<ContentStatus>('published')
   const [activeType, setActiveType] = useState<ContentType>('video')
@@ -73,30 +75,21 @@ function MyContents() {
     }
   }
 
-  const typeIcon = (type: string) => {
-    if (type === 'video') return <Play size={20} />
-    if (type === 'gallery') return <Image size={20} />
-    return <FileText size={20} />
-  }
+  const activeTypeLabel = typeTabs.find((tab) => tab.key === activeType)?.label || t('settings:myContents')
 
   return (
     <div className="min-h-full bg-white">
-      <div className="border-b border-[#ececec] px-6 py-8 lg:px-12">
-        <div>
-          <h1 className="text-[2rem] font-semibold tracking-tight" style={{ color: '#0f0f0f' }}>
-            {t('settings:myContentsTitle')}
-          </h1>
-          <p className="mt-2 text-sm" style={{ color: '#606060' }}>
-            {t('settings:manageProfileAndContent')}
-          </p>
-        </div>
+      <div className="px-6 pt-8 pb-0 lg:px-12">
+        <h1 className="text-[2rem] font-semibold tracking-tight" style={{ color: '#0f0f0f' }}>
+          {t('settings:myContentsTitle')}
+        </h1>
 
-        <div className="mt-8 flex gap-8 overflow-x-auto border-b border-[#ececec]">
+        <div className="mt-6 -mx-6 flex gap-10 overflow-x-auto border-b border-[#ececec] px-6 lg:-mx-12 lg:px-12">
           {typeTabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveType(tab.key)}
-              className="relative shrink-0 pb-4 text-base font-medium transition-colors"
+              className="relative shrink-0 pb-2.5 text-[15px] font-semibold transition-colors"
               style={{ color: activeType === tab.key ? '#0f0f0f' : '#6f6f6f' }}
             >
               {tab.label}
@@ -106,10 +99,14 @@ function MyContents() {
             </button>
           ))}
         </div>
+      </div>
 
-        <div className="mt-6 flex flex-wrap items-center gap-3">
+      <div className="flex min-h-[76px] items-center gap-5 border-b border-[#ececec] px-6 lg:px-12">
+        <SlidersHorizontal size={20} style={{ color: '#0f0f0f' }} />
+        <span className="text-[15px]" style={{ color: '#8a8a8a' }}>{ta('admin:filter')}</span>
+        <div className="flex flex-wrap items-center gap-2">
           <button
-            className="rounded-full px-4 py-2 text-sm font-medium transition-colors"
+            className="rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
             onClick={() => setActiveTab('published')}
             style={{
               background: activeTab === 'published' ? '#0f0f0f' : '#f5f5f5',
@@ -119,7 +116,7 @@ function MyContents() {
             {t('settings:published')}
           </button>
           <button
-            className="rounded-full px-4 py-2 text-sm font-medium transition-colors"
+            className="rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
             onClick={() => setActiveTab('draft')}
             style={{
               background: activeTab === 'draft' ? '#0f0f0f' : '#f5f5f5',
@@ -155,63 +152,62 @@ function MyContents() {
           </NavLink>
         </div>
       ) : (
-        <div className="px-6 pb-8 lg:px-12">
+        <div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[920px] table-fixed">
+            <table className="w-full min-w-[1100px] table-fixed">
               <colgroup>
-                <col style={{ width: '42%' }} />
-                <col style={{ width: '12%' }} />
-                <col style={{ width: '12%' }} />
+                <col style={{ width: '46%' }} />
+                <col style={{ width: '16%' }} />
                 <col style={{ width: '14%' }} />
-                <col style={{ width: '7%' }} />
-                <col style={{ width: '7%' }} />
+                <col style={{ width: '10%' }} />
+                <col style={{ width: '8%' }} />
                 <col style={{ width: '6%' }} />
               </colgroup>
               <thead>
                 <tr className="border-b border-[#ececec]">
-                  <th className="px-4 py-5 text-left text-sm font-medium" style={{ color: '#606060' }}>{t('settings:contentColumn')}</th>
-                  <th className="px-4 py-5 text-left text-sm font-medium" style={{ color: '#606060' }}>{t('settings:statusColumn')}</th>
-                  <th className="px-4 py-5 text-left text-sm font-medium" style={{ color: '#606060' }}>{t('settings:typeColumn')}</th>
-                  <th className="px-4 py-5 text-left text-sm font-medium" style={{ color: '#0f0f0f' }}>
+                  <th className="px-6 py-6 text-left text-sm font-semibold" style={{ color: '#606060' }}>{activeTypeLabel}</th>
+                  <th className="px-4 py-6 text-left text-sm font-semibold" style={{ color: '#606060' }}>{t('settings:statusColumn')}</th>
+                  <th className="px-4 py-6 text-left text-sm font-semibold" style={{ color: '#0f0f0f' }}>
                     <span className="inline-flex items-center gap-1">
                       {t('settings:dateColumn')}
                       <ArrowDown size={14} />
                     </span>
                   </th>
-                  <th className="px-4 py-5 text-left text-sm font-medium" style={{ color: '#606060' }}>{t('settings:likesColumn')}</th>
-                  <th className="px-4 py-5 text-left text-sm font-medium" style={{ color: '#606060' }}>{t('settings:commentsColumn')}</th>
-                  <th className="px-4 py-5 text-left text-sm font-medium" style={{ color: '#606060' }}>{t('settings:actionsColumn')}</th>
+                  <th className="px-4 py-6 text-left text-sm font-semibold" style={{ color: '#606060' }}>{t('settings:likesColumn')}</th>
+                  <th className="px-4 py-6 text-left text-sm font-semibold" style={{ color: '#606060' }}>{t('settings:commentsColumn')}</th>
+                  <th className="px-4 py-6 text-left text-sm font-semibold" style={{ color: '#606060' }}>{t('settings:actionsColumn')}</th>
                 </tr>
               </thead>
               <tbody>
                 {contents.map((content) => (
-                  <tr key={content.id} className="border-b border-[#f0f0f0] align-top">
-                    <td className="px-4 py-5">
-                      <div className="flex items-start gap-4">
-                        <div
-                          className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
-                          style={{ background: '#f5f5f5', color: '#606060' }}
-                        >
-                          {typeIcon(content.type)}
+                  <tr key={content.id} className="border-b border-[#ececec] align-top">
+                    <td className="px-6 py-5">
+                      <div className="flex items-start gap-5">
+                        <div className="mt-0.5 h-24 w-[168px] shrink-0 overflow-hidden rounded-2xl bg-[#f5f5f5]">
+                          <img
+                            src={getContentCover(content, siteConfig)}
+                            alt={content.title}
+                            className="h-full w-full object-cover"
+                          />
                         </div>
 
                         <div className="min-w-0 flex-1">
                           <NavLink
                             to={activeTab === 'draft' ? contentEditPath(content) : contentDetailPath(content)}
-                            className="block truncate text-sm font-semibold no-underline hover:underline"
+                            className="block truncate text-[15px] font-medium no-underline hover:underline"
                             style={{ color: '#0f0f0f' }}
                           >
                             {content.title}
                           </NavLink>
                           {content.summary && (
-                            <p className="mt-1 line-clamp-2 text-sm leading-6" style={{ color: '#707070' }}>
+                            <p className="mt-3 line-clamp-2 text-sm leading-6" style={{ color: '#707070' }}>
                               {content.summary}
                             </p>
                           )}
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-5">
+                    <td className="px-4 py-5 text-sm" style={{ color: '#606060' }}>
                       <span
                         className="inline-flex rounded-full px-3 py-1 text-xs font-medium"
                         style={content.status === 'draft'
@@ -219,12 +215,6 @@ function MyContents() {
                           : { background: '#dcfce7', color: '#166534' }}
                       >
                         {content.status === 'draft' ? t('settings:draft') : t('settings:published')}
-                      </span>
-                    </td>
-                    <td className="px-4 py-5 text-sm" style={{ color: '#606060' }}>
-                      <span className="inline-flex items-center gap-1 rounded-full px-3 py-1" style={{ background: '#f5f5f5' }}>
-                        {typeIcon(content.type)}
-                        {tc(`common:${content.type}`)}
                       </span>
                     </td>
                     <td className="px-4 py-5 text-sm" style={{ color: '#606060' }}>
