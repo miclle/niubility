@@ -85,10 +85,10 @@ function SecuritySettings() {
   const showPasswordForm = registrationEnabled || userHasPassword
 
   return (
-    <div className="mx-auto py-8 px-6" style={{ maxWidth: 960 }}>
-      <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>{t('settings:securitySettings')}</h1>
+    <div className="px-6 py-8 lg:px-12">
+      <h1 className="mb-8 text-[2rem] font-semibold tracking-tight" style={{ color: '#0f0f0f' }}>{t('settings:securitySettings')}</h1>
 
-      <div className="space-y-8">
+      <div className="max-w-[720px] space-y-8">
         {showPasswordForm ? (
           <div className="space-y-4">
             <h2 className="text-base font-medium" style={{ color: '#0f0f0f' }}>{t('settings:changePassword')}</h2>

@@ -144,13 +144,13 @@ function AccountSettings() {
   const avatarDisplayURL = avatar ? resolveAvatarURL(avatar) : ''
 
   return (
-    <div className="mx-auto py-8 px-6" style={{ maxWidth: 960 }}>
-      <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>{t('settings:accountSettingsTitle')}</h1>
+    <div className="px-6 py-8 lg:px-12">
+      <h1 className="mb-8 text-[2rem] font-semibold tracking-tight" style={{ color: '#0f0f0f' }}>{t('settings:accountSettingsTitle')}</h1>
 
       {/* Two-column layout: form left, avatar right */}
-      <div className="flex gap-10">
+      <div className="flex flex-col gap-10 xl:flex-row xl:items-start">
         {/* Left column: form fields */}
-        <div className="flex-1 min-w-0 space-y-8">
+        <div className="min-w-0 flex-1 space-y-8 xl:max-w-[720px]">
           {/* Basic info section */}
           <div className="space-y-4">
             <div>
@@ -250,10 +250,10 @@ function AccountSettings() {
         </div>
 
         {/* Right column: avatar */}
-        <div className="flex-shrink-0" style={{ width: 200 }}>
+        <div className="flex-shrink-0 xl:w-[200px]">
           <Label className="text-sm font-medium mb-3 block" style={{ color: '#606060' }}>{t('settings:avatar')}</Label>
           <div className="relative group cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
-            <Avatar style={{ width: 200, height: 200 }}>
+            <Avatar className="h-[200px] w-[200px]">
               <SiteAvatarImage src={avatarDisplayURL} alt={name} />
               <AvatarFallback style={{ fontSize: 64 }}>{name?.charAt(0) || currentUser?.username?.charAt(0) || '?'}</AvatarFallback>
             </Avatar>

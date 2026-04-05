@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react'
+import { useRef, useCallback, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { FileText, Play, Image, Heart, MessageSquare, Bookmark } from 'lucide-react'
 import { useInfiniteQuery } from '@tanstack/react-query'
@@ -8,6 +8,7 @@ import { useAppContext } from 'src/context/app'
 import { listFavorites } from 'src/api/content'
 import { contentDetailPath } from 'src/lib/content-url'
 import { useIntersection } from 'src/hooks/use-intersection'
+import type { ContentType } from 'src/types/content'
 
 const limit = 20
 
@@ -16,6 +17,13 @@ function Favorites() {
   const { t } = useTranslation('settings')
   const { t: tc } = useTranslation('common')
   const { currentUser } = useAppContext()
+  const [activeType, setActiveType] = useState<ContentType>('video')
+
+  const typeTabs: Array<{ key: ContentType; label: string }> = [
+    { key: 'video', label: t('settings:videos') },
+    { key: 'gallery', label: t('settings:galleries') },
+    { key: 'article', label: t('settings:articles') },
+  ]
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
     useInfiniteQuery({
@@ -26,7 +34,8 @@ function Favorites() {
       enabled: !!currentUser,
     })
 
-  const contents = data?.pages.flatMap((p) => p.data.items) ?? []
+  const allContents = data?.pages.flatMap((p) => p.data.items) ?? []
+  const contents = allContents.filter((content) => content.type === activeType)
   const loaderRef = useRef<HTMLDivElement>(null)
   const handleIntersect = useCallback(() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage() }, [hasNextPage, isFetchingNextPage, fetchNextPage])
   useIntersection(loaderRef, handleIntersect)
@@ -40,16 +49,32 @@ function Favorites() {
   }
 
   return (
-    <div className="mx-auto py-8 px-6" style={{ maxWidth: 960 }}>
-      <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>{t('settings:myFavoritesTitle')}</h1>
+    <div className="px-6 py-8 lg:px-12">
+      <h1 className="mb-8 text-[2rem] font-semibold tracking-tight" style={{ color: '#0f0f0f' }}>{t('settings:myFavoritesTitle')}</h1>
+
+      <div className="flex gap-8 overflow-x-auto border-b border-[#ececec]">
+        {typeTabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveType(tab.key)}
+            className="relative shrink-0 pb-4 text-base font-medium transition-colors"
+            style={{ color: activeType === tab.key ? '#0f0f0f' : '#6f6f6f' }}
+          >
+            {tab.label}
+            {activeType === tab.key && (
+              <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full" style={{ background: '#0f0f0f' }} />
+            )}
+          </button>
+        ))}
+      </div>
 
       {contents.length === 0 && !loading ? (
         <div className="text-center py-16">
           <Bookmark size={48} className="mx-auto mb-4" style={{ color: '#d4d4d4' }} />
-          <p className="text-sm" style={{ color: '#909090' }}>{tc('common:noContent')}</p>
+          <p className="text-sm" style={{ color: '#909090' }}>{t('settings:noFavoritesForType')}</p>
         </div>
       ) : (
-        <div className="space-y-1">
+        <div className="space-y-1 pt-6">
           {contents.map((content) => (
             <div
               key={content.id}
@@ -90,7 +115,7 @@ function Favorites() {
       )}
 
       <div ref={loaderRef} className="py-4 text-center text-sm" style={{ color: '#909090' }}>
-        {loading ? tc('common:loading') : !hasNextPage && contents.length > 0 ? tc('common:noMoreContent') : ''}
+        {loading ? tc('common:loading') : !hasNextPage && allContents.length > 0 ? tc('common:noMoreContent') : ''}
       </div>
     </div>
   )
