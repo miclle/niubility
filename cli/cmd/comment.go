@@ -29,9 +29,10 @@ var (
 
 // commentCmd represents the comment command
 var commentCmd = &cobra.Command{
-	Use:   "comment",
-	Short: "Manage comments",
-	Long:  `Manage comments on content items.`,
+	Use:     "comment",
+	Aliases: []string{"cmt"},
+	Short:   "Manage comments",
+	Long:    `Manage comments on content items.`,
 }
 
 // commentListCmd represents the comment list command

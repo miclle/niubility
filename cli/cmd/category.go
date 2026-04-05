@@ -30,9 +30,10 @@ var (
 
 // categoryCmd represents the category command
 var categoryCmd = &cobra.Command{
-	Use:   "category",
-	Short: "Manage categories",
-	Long:  `Manage content categories on Niubility platform.`,
+	Use:     "category",
+	Aliases: []string{"cat"},
+	Short:   "Manage categories",
+	Long:    `Manage content categories on Niubility platform.`,
 }
 
 // categoryListCmd represents the category list command

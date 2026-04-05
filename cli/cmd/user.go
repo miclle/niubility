@@ -51,9 +51,10 @@ var (
 )
 
 var userCmd = &cobra.Command{
-	Use:   "user",
-	Short: "Manage users",
-	Long:  `Manage users on Niubility platform. Most subcommands require admin permission.`,
+	Use:     "user",
+	Aliases: []string{"usr"},
+	Short:   "Manage users",
+	Long:    `Manage users on Niubility platform. Most subcommands require admin permission.`,
 }
 
 var userListCmd = &cobra.Command{

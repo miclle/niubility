@@ -17,9 +17,10 @@ var (
 
 // favoriteCmd represents the favorite command
 var favoriteCmd = &cobra.Command{
-	Use:   "favorite",
-	Short: "Manage favorites",
-	Long:  `Manage your favorited content items.`,
+	Use:     "favorite",
+	Aliases: []string{"fav"},
+	Short:   "Manage favorites",
+	Long:    `Manage your favorited content items.`,
 }
 
 // favoriteListCmd represents the favorite list command

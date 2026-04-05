@@ -36,8 +36,9 @@ var (
 
 // contentCmd represents the content command
 var contentCmd = &cobra.Command{
-	Use:   "content",
-	Short: "Manage content",
+	Use:     "content",
+	Aliases: []string{"cnt"},
+	Short:   "Manage content",
 	Long: `Manage content on Niubility platform.
 
 Content types: article, gallery, video

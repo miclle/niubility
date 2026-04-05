@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/miclle/niubility/cli/internal/api"
@@ -32,6 +33,26 @@ var (
 	// output format
 	outputFormat string
 )
+
+const commandHelpTemplate = `{{with (or .Long .Short)}}{{. | trimTrailingWhitespaces}}{{end}}
+
+Usage:
+  {{if .Runnable}}{{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}{{.CommandPath}} [command]{{end}}
+
+{{if gt (len .Aliases) 0}}Aliases:
+  {{joinStrings .Aliases ", "}}
+
+{{end}}{{if .HasAvailableSubCommands}}Available Commands:
+{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}  {{rpad (commandDisplayName .) 30 }} {{.Short}}
+{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}Flags:
+{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}
+{{end}}{{if .HasAvailableInheritedFlags}}Global Flags:
+{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}
+{{end}}{{if .HasHelpSubCommands}}Additional help topics:
+{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}  {{rpad (commandDisplayName .) 30 }} {{.Short}}
+{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
+Use "{{.CommandPath}} [command] --help" for more information about a command.
+{{end}}`
 
 // rootCmd represents the base command
 var rootCmd = &cobra.Command{
@@ -103,6 +124,10 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
+	cobra.AddTemplateFunc("commandDisplayName", commandDisplayName)
+	cobra.AddTemplateFunc("joinStrings", strings.Join)
+	rootCmd.SetHelpTemplate(commandHelpTemplate)
+	rootCmd.SetUsageTemplate(commandHelpTemplate)
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ~/.config/niubility/config.yaml)")
 	rootCmd.PersistentFlags().StringVar(&profileName, "profile", "", "isolated profile name for multi-server login")
@@ -129,4 +154,12 @@ func getContext() (context.Context, context.CancelFunc) {
 		}
 	}
 	return context.WithTimeout(context.Background(), timeout)
+}
+
+func commandDisplayName(cmd *cobra.Command) string {
+	if len(cmd.Aliases) == 0 {
+		return cmd.Name()
+	}
+
+	return fmt.Sprintf("%s (aliases: %s)", cmd.Name(), strings.Join(cmd.Aliases, ", "))
 }
