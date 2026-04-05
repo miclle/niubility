@@ -1,0 +1,18 @@
+{
+  "loading": "Loading...",
+  "notFound": "Content not found",
+  "draftBanner": "Draft preview — this content has not been published yet and is only visible to the author",
+  "playlist": "Playlist · {{count}} videos",
+  "download": "Downloads",
+  "relatedVideos": "Other related videos",
+  "noRelated": "No related content",
+  "articleDate": "MMMM D, YYYY",
+  "speaker": "Speaker:",
+  "collapse": "Show less",
+  "expand": "Show more",
+  "videoItem": "Video {{index}}",
+  "galleryItem": "Gallery",
+  "videoType": "Video",
+  "galleryType": "Gallery",
+  "articleType": "Article"
+}

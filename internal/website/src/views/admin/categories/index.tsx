@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/u
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Plus, Pencil, Trash2, Save, X, GripVertical, Home, Play, FileText, BookOpen, GraduationCap, Heart, Star, Lightbulb, Trophy, Coffee, Briefcase, Globe, Flame, type LucideIcon } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { listAllCategories, createCategory, updateCategory, reorderCategories, deleteCategory } from 'src/api/category'
 import type { Category } from 'src/types/content'
@@ -29,6 +30,8 @@ function SortableRow({ cat, onEdit, onDelete, onToggleVisible }: {
   onDelete: (id: string) => void
   onToggleVisible: (id: string, visible: boolean) => void
 }) {
+  const { t } = useTranslation('admin')
+  const { t: tc } = useTranslation('common')
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: cat.id })
 
   const style = {
@@ -87,17 +90,17 @@ function SortableRow({ cat, onEdit, onDelete, onToggleVisible }: {
               </Button>
             } />
             <AlertDialogContent>
-              <AlertDialogTitle>确认删除</AlertDialogTitle>
+              <AlertDialogTitle>{tc('common:confirm')}</AlertDialogTitle>
               <AlertDialogDescription>
-                确定要删除分类「{cat.name}」吗？如果该分类下有内容，将无法删除。
+                {t('admin:categoryDeleteConfirm', { name: cat.name })}
               </AlertDialogDescription>
               <div className="flex justify-end gap-3 mt-4">
                 <AlertDialogCancel>
-                  <Button variant="outline" style={{ borderRadius: '18px' }}>取消</Button>
+                  <Button variant="outline" style={{ borderRadius: '18px' }}>{tc('common:cancel')}</Button>
                 </AlertDialogCancel>
                 <AlertDialogAction>
                   <Button variant="destructive" onClick={() => onDelete(cat.id)} style={{ borderRadius: '18px' }}>
-                    确认删除
+                    {tc('common:confirm')}
                   </Button>
                 </AlertDialogAction>
               </div>
@@ -111,6 +114,8 @@ function SortableRow({ cat, onEdit, onDelete, onToggleVisible }: {
 
 // AdminCategories displays the admin category management page with drag-and-drop sorting.
 function AdminCategories() {
+  const { t } = useTranslation('admin')
+  const { t: tc } = useTranslation('common')
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -196,7 +201,7 @@ function AdminCategories() {
 
   const handleSave = async () => {
     if (!formName.trim() || !formSlug.trim()) {
-      setError('名称和 Slug 不能为空')
+      setError(t('admin:categorySaveError'))
       return
     }
     setSaving(true)
@@ -210,7 +215,7 @@ function AdminCategories() {
       setDialogOpen(false)
       fetchCategories()
     } catch {
-      setError('保存失败，请重试')
+      setError(tc('common:saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -221,18 +226,18 @@ function AdminCategories() {
       await deleteCategory(id)
       fetchCategories()
     } catch (err: any) {
-      const msg = err?.response?.data?.meta || err?.response?.data?.error || '删除失败'
-      alert(typeof msg === 'string' ? msg : '该分类下有内容，无法删除')
+      const msg = err?.response?.data?.meta || err?.response?.data?.error
+      alert(typeof msg === 'string' ? msg : t('admin:categoryDeleteError'))
     }
   }
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>分类管理</h1>
+        <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>{t('admin:categoryManagement')}</h1>
         <Button onClick={openCreate} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
           <Plus size={16} />
-          新建分类
+          {t('admin:newCategory')}
         </Button>
       </div>
 
@@ -242,23 +247,23 @@ function AdminCategories() {
             <thead>
               <tr style={{ background: '#f9f9f9' }}>
                 <th style={{ padding: '12px 8px 12px 16px', width: 40 }} />
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>名称</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>Slug</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>图标</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>内容数</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>显示</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>操作</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>{t('admin:categoryName')}</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>{t('admin:categorySlug')}</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>{t('admin:categoryIcon')}</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>{t('admin:categoryContentCount')}</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>{t('admin:categoryDisplay')}</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>{t('admin:categoryActions')}</th>
               </tr>
             </thead>
             <SortableContext items={categories.map((c) => c.id)} strategy={verticalListSortingStrategy}>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-8" style={{ color: '#909090' }}>加载中...</td>
+                    <td colSpan={7} className="text-center py-8" style={{ color: '#909090' }}>{tc('common:loading')}</td>
                   </tr>
                 ) : categories.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-8" style={{ color: '#909090' }}>暂无分类</td>
+                    <td colSpan={7} className="text-center py-8" style={{ color: '#909090' }}>{t('admin:noCategories')}</td>
                   </tr>
                 ) : (
                   categories.map((cat) => (
@@ -281,27 +286,27 @@ function AdminCategories() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editing ? '编辑分类' : '新建分类'}</DialogTitle>
+            <DialogTitle>{editing ? t('admin:editCategory') : t('admin:newCategory')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>名称 *</label>
-              <Input placeholder="分类名称" value={formName} onChange={(e) => setFormName(e.target.value)} />
+              <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('admin:categoryName')} *</label>
+              <Input placeholder={t('admin:categoryNamePlaceholder')} value={formName} onChange={(e) => setFormName(e.target.value)} />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>
-                Slug *
-                {editing && <span className="text-xs font-normal ml-2" style={{ color: '#909090' }}>（编辑时不可修改）</span>}
+                {t('admin:categorySlug')} *
+                {editing && <span className="text-xs font-normal ml-2" style={{ color: '#909090' }}>{t('admin:categorySlugHint')}</span>}
               </label>
               <Input
-                placeholder="URL 路径段，如 learning"
+                placeholder={t('admin:categorySlugPlaceholder')}
                 value={formSlug}
                 onChange={(e) => setFormSlug(e.target.value)}
                 disabled={!!editing}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>图标</label>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('admin:categoryIcon')}</label>
               <Select value={formIcon} onValueChange={(val) => val && setFormIcon(val)}>
                 <SelectTrigger className="w-full">
                   <span className="inline-flex items-center gap-2">
@@ -330,12 +335,12 @@ function AdminCategories() {
             <DialogClose render={
               <Button variant="outline">
                 <X size={16} />
-                取消
+                {tc('common:cancel')}
               </Button>
             } />
             <Button onClick={handleSave} disabled={saving} style={{ background: '#0f0f0f', color: '#ffffff' }}>
               <Save size={16} />
-              {saving ? '保存中...' : '保存'}
+              {saving ? tc('common:saving') : t('admin:save')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -7,6 +7,7 @@ import { queryClient } from 'src/lib/query-client'
 import App from './App'
 import type { BootResponse } from 'src/types/user'
 
+import 'src/i18n'
 import 'src/globals.css'
 
 // Boot the application: fetch system state, then render.

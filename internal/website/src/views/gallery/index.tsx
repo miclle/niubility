@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { ThumbsUp, MessageCircle, Pencil, Bookmark } from 'lucide-react'
 import dayjs from 'dayjs'
-import relativeTime from 'dayjs/plugin/relativeTime'
-import 'dayjs/locale/zh-cn'
+import { useTranslation } from 'react-i18next'
 
 import { getContent, toggleLike, favoriteContent } from 'src/api/content'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
@@ -17,11 +16,9 @@ import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import type { Content } from 'src/types/content'
 
-dayjs.extend(relativeTime)
-dayjs.locale('zh-cn')
-
 // GalleryDetail displays a single gallery (image) content item with justified grid and lightbox.
 function GalleryDetail() {
+  const { t } = useTranslation('content')
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { currentUser, categories, siteConfig } = useAppContext()
@@ -101,11 +98,11 @@ function GalleryDetail() {
   }, [])
 
   if (loading) {
-    return <div className="p-6 text-center" style={{ color: '#606060' }}>加载中...</div>
+    return <div className="p-6 text-center" style={{ color: '#606060' }}>{t('content:loading')}</div>
   }
 
   if (error || !content) {
-    return <div className="p-6 text-center" style={{ color: '#606060' }}>内容不存在</div>
+    return <div className="p-6 text-center" style={{ color: '#606060' }}>{t('content:notFound')}</div>
   }
 
   const isDraft = content.status === 'draft'
@@ -118,7 +115,7 @@ function GalleryDetail() {
       {/* Draft banner */}
       {isDraft && (
         <div className="mb-4 px-4 py-3 rounded-xl text-sm font-medium" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
-          草稿预览 — 此内容尚未发布，仅作者可见
+          {t('common:draftBanner')}
         </div>
       )}
 
@@ -175,7 +172,7 @@ function GalleryDetail() {
           {canEdit && (
             <Link to={contentEditPath(content)} className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors no-underline" style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}>
               <Pencil size={16} />
-              <span>编辑</span>
+              <span>{t('common:edit')}</span>
             </Link>
           )}
         </div>

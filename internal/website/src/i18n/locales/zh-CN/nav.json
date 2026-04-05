@@ -1,0 +1,16 @@
+{
+  "home": "首页",
+  "following": "关注",
+  "types": "类型",
+  "video": "视频",
+  "gallery": "图集",
+  "article": "文章",
+  "profile": "个人主页",
+  "settings": "个人设置",
+  "admin": "管理后台",
+  "logout": "退出登录",
+  "create": "创建",
+  "notInitialized": "系统尚未初始化",
+  "contactAdmin": "请联系管理员完成初始设置",
+  "signIn": "登录"
+}

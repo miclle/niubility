@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 interface PaginationProps {
   page: number
@@ -9,6 +10,7 @@ interface PaginationProps {
 
 // Pagination provides YouTube-style page navigation controls.
 function Pagination({ page, limit, total, onChange }: PaginationProps) {
+  const { t } = useTranslation('common')
   const totalPages = Math.max(1, Math.ceil(total / limit))
 
   if (totalPages <= 1) return null
@@ -26,7 +28,7 @@ function Pagination({ page, limit, total, onChange }: PaginationProps) {
         }}
       >
         <ChevronLeft size={16} />
-        上一页
+        {t('common:prevPage')}
       </button>
       <span className="text-sm px-3" style={{ color: '#606060' }}>
         {page} / {totalPages}
@@ -41,7 +43,7 @@ function Pagination({ page, limit, total, onChange }: PaginationProps) {
           border: '1px solid #e5e5e5',
         }}
       >
-        下一页
+        {t('common:nextPage')}
         <ChevronRight size={16} />
       </button>
     </div>

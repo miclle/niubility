@@ -1,6 +1,7 @@
 import { FileText, Trash2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { formatFileSize } from 'src/lib/utils'
+import { useTranslation } from 'react-i18next'
 import type { DocumentItem } from 'src/lib/document'
 import type { RefObject } from 'react'
 
@@ -14,9 +15,10 @@ interface DocumentUploadSectionProps {
 
 // DocumentUploadSection renders a drag-drop zone and list for document attachments.
 function DocumentUploadSection({ documents, docInputRef, onUpload, onChange, onRemove }: DocumentUploadSectionProps) {
+  const { t } = useTranslation('editor')
   return (
     <div>
-      <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>资料附件</label>
+      <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('documentAttachments')}</label>
       <div
         className="rounded-lg cursor-pointer transition-colors flex flex-col items-center justify-center gap-2 p-6"
         style={{ border: '2px dashed #d4d4d4', background: '#fafafa' }}
@@ -25,7 +27,7 @@ function DocumentUploadSection({ documents, docInputRef, onUpload, onChange, onR
         onDrop={(e) => { e.preventDefault(); onUpload(Array.from(e.dataTransfer.files)) }}
       >
         <FileText size={20} style={{ color: '#909090' }} />
-        <span className="text-sm" style={{ color: '#909090' }}>拖拽文件到此处或点击选择（PDF, PPT, DOC, XLS, TXT等）</span>
+        <span className="text-sm" style={{ color: '#909090' }}>{t('documentHint')}</span>
       </div>
       <input
         ref={docInputRef}
@@ -42,7 +44,7 @@ function DocumentUploadSection({ documents, docInputRef, onUpload, onChange, onR
               <FileText size={20} style={{ color: '#909090' }} />
               <div className="flex-1 min-w-0">
                 <Input
-                  placeholder="文件标题（可选）"
+                  placeholder={t('documentTitleOptional')}
                   value={doc.title}
                   onChange={(e) => onChange(doc.localId, 'title', e.target.value)}
                   className="mb-1"

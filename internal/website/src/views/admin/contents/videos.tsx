@@ -1,7 +1,9 @@
 import ContentTable from './ContentTable'
+import { useTranslation } from 'react-i18next'
 
 function AdminVideoContents() {
-  return <ContentTable type="video" title="内容管理 / 视频" />
+  const { t } = useTranslation('admin')
+  return <ContentTable type="video" title={t('admin:contentManagementVideos')} />
 }
 
 export default AdminVideoContents

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Navigate, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Loader2, ServerOff } from 'lucide-react'
@@ -11,6 +12,7 @@ import { login } from 'src/api/user'
 
 // Login provides the username+password login page.
 function Login() {
+  const { t } = useTranslation('auth')
   const { initialized, currentUser, registrationEnabled, ssoEnabled, ssoLoginUrl, siteConfig, setCurrentUser } = useAppContext()
   const navigate = useNavigate()
 
@@ -34,8 +36,8 @@ function Login() {
             <ServerOff size={28} style={{ color: '#909090' }} />
           </div>
           <h1 className="text-2xl font-semibold mb-2" style={{ color: '#0f0f0f' }}>{siteTitle}</h1>
-          <p className="text-sm mb-1" style={{ color: '#606060' }}>系统尚未初始化</p>
-          <p className="text-xs" style={{ color: '#909090' }}>请联系管理员完成初始设置</p>
+          <p className="text-sm mb-1" style={{ color: '#606060' }}>{t('auth:notInitialized')}</p>
+          <p className="text-xs" style={{ color: '#909090' }}>{t('auth:contactAdmin')}</p>
         </div>
       </div>
     )
@@ -56,7 +58,7 @@ function Login() {
       setCurrentUser(res.data.user)
       navigate('/')
     } catch (err: any) {
-      setError(err.response?.data?.meta || '登录失败，请检查用户名和密码')
+      setError(err.response?.data?.meta || t('auth:loginFailed'))
     } finally {
       setLoading(false)
     }
@@ -71,7 +73,7 @@ function Login() {
           ) : (
             <h1 className="text-2xl font-semibold mb-2" style={{ color: '#0f0f0f' }}>{siteTitle}</h1>
           )}
-          <p className="text-sm" style={{ color: '#606060' }}>登录你的账户</p>
+          <p className="text-sm" style={{ color: '#606060' }}>{t('auth:loginToAccount')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -82,21 +84,21 @@ function Login() {
           )}
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>用户名</label>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('auth:username')}</label>
             <Input
               required
-              placeholder="请输入用户名"
+              placeholder={t('auth:usernamePlaceholder')}
               value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>密码</label>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('auth:password')}</label>
             <Input
               required
               type="password"
-              placeholder="请输入密码"
+              placeholder={t('auth:passwordPlaceholder')}
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
@@ -108,7 +110,7 @@ function Login() {
             className="w-full"
             style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}
           >
-            {loading ? <><Loader2 size={16} className="animate-spin" /> 登录中...</> : '登录'}
+            {loading ? <><Loader2 size={16} className="animate-spin" /> {t('auth:loggingIn')}</> : t('auth:login')}
           </Button>
         </form>
 
@@ -117,7 +119,7 @@ function Login() {
           <div className="mt-4">
             <div className="flex items-center gap-3 mb-4">
               <div className="flex-1 h-px" style={{ background: '#e5e5e5' }} />
-              <span className="text-xs" style={{ color: '#909090' }}>或</span>
+              <span className="text-xs" style={{ color: '#909090' }}>{t('auth:or')}</span>
               <div className="flex-1 h-px" style={{ background: '#e5e5e5' }} />
             </div>
             <a
@@ -125,7 +127,7 @@ function Login() {
               className="flex items-center justify-center w-full py-2 rounded-full text-sm font-medium no-underline transition-colors"
               style={{ border: '1px solid #e5e5e5', color: '#0f0f0f' }}
             >
-              SSO 登录
+              {t('auth:ssoLogin')}
             </a>
           </div>
         )}
@@ -133,8 +135,8 @@ function Login() {
         {/* Registration link */}
         {registrationEnabled && (
           <p className="mt-6 text-center text-sm" style={{ color: '#606060' }}>
-            还没有账户？{' '}
-            <Link to="/register" className="font-medium" style={{ color: '#065fd4' }}>注册</Link>
+            {t('auth:noAccount')}{' '}
+            <Link to="/register" className="font-medium" style={{ color: '#065fd4' }}>{t('auth:register')}</Link>
           </p>
         )}
       </div>

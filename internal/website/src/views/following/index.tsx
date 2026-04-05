@@ -1,6 +1,7 @@
 import { useRef, useCallback } from 'react'
 import { UserPlus } from 'lucide-react'
 import { useInfiniteQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 
 import { useAppContext } from 'src/context/app'
 import { listContents } from 'src/api/content'
@@ -9,6 +10,7 @@ import { useIntersection } from 'src/hooks/use-intersection'
 
 // FollowingFeed displays contents from users that the current user follows.
 function FollowingFeed() {
+  const { t } = useTranslation('home')
   const { currentUser } = useAppContext()
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
@@ -33,8 +35,8 @@ function FollowingFeed() {
       {contents.length === 0 && !loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3" style={{ color: '#606060' }}>
           <UserPlus size={48} strokeWidth={1.5} />
-          <p className="text-base font-medium" style={{ color: '#0f0f0f' }}>关注感兴趣的人</p>
-          <p className="text-sm">关注后，他们发布的内容将出现在这里</p>
+          <p className="text-base font-medium" style={{ color: '#0f0f0f' }}>{t('home:followPeople')}</p>
+          <p className="text-sm">{t('home:followDescription')}</p>
         </div>
       ) : (
         <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
@@ -45,8 +47,8 @@ function FollowingFeed() {
       )}
 
       <div ref={loadMoreRef} className="text-center py-8" style={{ color: '#606060' }}>
-        {loading && '加载中...'}
-        {!hasNextPage && contents.length > 0 && '没有更多内容了'}
+        {loading && t('home:loading')}
+        {!hasNextPage && contents.length > 0 && t('home:noMore')}
       </div>
     </div>
   )

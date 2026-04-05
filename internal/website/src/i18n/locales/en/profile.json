@@ -1,0 +1,23 @@
+{
+  "videos": "{{count}} videos",
+  "articles": "{{count}} articles",
+  "followers": "{{count}} followers",
+  "following": "Following {{count}}",
+  "noVideos": "No videos yet",
+  "noArticles": "No articles yet",
+  "noFollowers": "No followers yet",
+  "noFollowing": "Not following anyone yet",
+  "follow": "Follow",
+  "unfollow": "Unfollow",
+  "followed": "Following",
+  "loadFailed": "Failed to load",
+  "all": "All",
+  "gallery": "Gallery",
+  "speakers": "Speakers",
+  "noFavorites": "No favorites yet",
+  "tabFollowing": "Following",
+  "tabFollowers": "Followers",
+  "tabFavorites": "Favorites",
+  "totalLikes": "{{count}} likes",
+  "speakerSessions": "{{count}} sessions as speaker"
+}

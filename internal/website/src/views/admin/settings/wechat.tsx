@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Settings, Shield, RefreshCw, CheckCircle, XCircle, Loader2, Users, Building2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { syncWechat } from 'src/api/user'
 import { MASKED_VALUE, useSettings, useSaveSettings, SettingsLoading, SettingsFeedback, SaveButton } from './shared'
 
 // SettingsWechat provides the WeChat Work settings page with sync functionality.
 function SettingsWechat() {
+  const { t } = useTranslation('admin')
   const { loading, settingsMap, reload } = useSettings()
   const { saving, success, error, save } = useSaveSettings(reload)
 
@@ -54,7 +56,7 @@ function SettingsWechat() {
       const res = await syncWechat()
       setSyncResult(res.data)
     } catch (err) {
-      setSyncError('同步失败，请检查企业微信配置')
+      setSyncError(t('admin:syncFailed'))
       console.error('Sync error:', err)
     } finally {
       setSyncing(false)
@@ -65,43 +67,43 @@ function SettingsWechat() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>企业微信配置</h1>
+      <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>{t('admin:wechatConfig')}</h1>
 
       <SettingsFeedback success={success} error={error} />
 
       <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
         <div className="flex items-center gap-2 mb-6">
           <Settings size={20} style={{ color: '#0f0f0f' }} />
-          <h3 className="font-medium" style={{ color: '#0f0f0f' }}>企业微信配置</h3>
+          <h3 className="font-medium" style={{ color: '#0f0f0f' }}>{t('admin:wechatConfig')}</h3>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>企业 ID (CorpID)</label>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:corpID')}</label>
             <Input
-              placeholder="请输入企业 ID"
+              placeholder={t('admin:corpIDPlaceholder')}
               value={wechatForm.corp_id}
               onChange={(e) => setWechatForm({ ...wechatForm, corp_id: e.target.value })}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>应用 AgentID</label>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:appAgentID')}</label>
             <Input
-              placeholder="请输入应用 AgentID"
+              placeholder={t('admin:appAgentIDPlaceholder')}
               value={wechatForm.app_agentid}
               onChange={(e) => setWechatForm({ ...wechatForm, app_agentid: e.target.value })}
             />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
-              应用 Secret
+              {t('admin:appSecret')}
               {hasExistingWechatSecret && (
-                <span className="ml-2 text-xs" style={{ color: '#166534' }}>(已设置，留空保持不变)</span>
+                <span className="ml-2 text-xs" style={{ color: '#166534' }}>{t('admin:synced')}</span>
               )}
             </label>
             <Input
               type="password"
-              placeholder={hasExistingWechatSecret ? '留空保持现有密钥不变' : '请输入应用 Secret'}
+              placeholder={hasExistingWechatSecret ? t('admin:appSecretPlaceholderSet') : t('admin:appSecretPlaceholderNew')}
               value={wechatForm.app_secret}
               onChange={(e) => setWechatForm({ ...wechatForm, app_secret: e.target.value })}
             />
@@ -114,7 +116,7 @@ function SettingsWechat() {
       <div className="p-4 rounded-xl" style={{ background: '#f9f9f9', border: '1px solid #e5e5e5' }}>
         <div className="flex items-center gap-2">
           <Shield size={14} style={{ color: '#166534' }} />
-          <span className="text-xs" style={{ color: '#166534' }}>敏感信息（如 Secret）使用 AES-256-GCM 加密存储</span>
+          <span className="text-xs" style={{ color: '#166534' }}>{t('admin:sensitiveInfoNote')}</span>
         </div>
       </div>
 
@@ -122,11 +124,11 @@ function SettingsWechat() {
       <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
         <div className="flex items-center gap-2 mb-4">
           <RefreshCw size={20} style={{ color: '#0f0f0f' }} />
-          <h3 className="font-medium" style={{ color: '#0f0f0f' }}>企业微信同步</h3>
+          <h3 className="font-medium" style={{ color: '#0f0f0f' }}>{t('admin:wechatSync')}</h3>
         </div>
 
         <p className="text-sm mb-4" style={{ color: '#606060' }}>
-          从企业微信同步所有部门和用户信息到系统。包括部门架构、用户姓名、手机号、头像等信息。
+          {t('admin:wechatSyncDesc')}
         </p>
 
         {/* Sync result */}
@@ -135,27 +137,27 @@ function SettingsWechat() {
             <div className="flex items-center gap-2 mb-3">
               <CheckCircle size={16} style={{ color: syncResult.users_failed > 0 ? '#92400e' : '#166534' }} />
               <span className="text-sm font-medium" style={{ color: syncResult.users_failed > 0 ? '#92400e' : '#166534' }}>
-                同步完成
+                {t('admin:syncComplete')}
               </span>
             </div>
             <div className="grid grid-cols-3 gap-4 ml-6">
               <div className="flex items-center gap-2">
                 <Building2 size={14} style={{ color: '#606060' }} />
                 <span className="text-sm" style={{ color: '#606060' }}>
-                  部门: <span className="font-medium" style={{ color: '#0f0f0f' }}>{syncResult.departments_synced}</span>
+                  {t('admin:syncDeptCount')}: <span className="font-medium" style={{ color: '#0f0f0f' }}>{syncResult.departments_synced}</span>
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <Users size={14} style={{ color: '#606060' }} />
                 <span className="text-sm" style={{ color: '#606060' }}>
-                  用户: <span className="font-medium" style={{ color: '#166534' }}>{syncResult.users_synced}</span>
+                  {t('admin:syncUserCount')}: <span className="font-medium" style={{ color: '#166534' }}>{syncResult.users_synced}</span>
                 </span>
               </div>
               {syncResult.users_failed > 0 && (
                 <div className="flex items-center gap-2">
                   <XCircle size={14} style={{ color: '#991b1b' }} />
                   <span className="text-sm" style={{ color: '#991b1b' }}>
-                    失败: {syncResult.users_failed}
+                    {t('admin:syncFailedCount')}: {syncResult.users_failed}
                   </span>
                 </div>
               )}
@@ -180,12 +182,12 @@ function SettingsWechat() {
           {syncing ? (
             <>
               <Loader2 size={16} className="animate-spin" />
-              同步中...
+              {t('admin:syncing')}
             </>
           ) : (
             <>
               <RefreshCw size={16} />
-              同步企业和用户
+              {t('admin:syncDeptAndUsers')}
             </>
           )}
         </Button>
@@ -193,13 +195,9 @@ function SettingsWechat() {
 
       {/* Sync instructions */}
       <div className="p-4 rounded-xl" style={{ background: '#f9f9f9', border: '1px solid #e5e5e5' }}>
-        <h4 className="font-medium mb-2" style={{ color: '#0f0f0f' }}>同步说明</h4>
+        <h4 className="font-medium mb-2" style={{ color: '#0f0f0f' }}>{t('admin:syncInstructions')}</h4>
         <ul className="text-sm space-y-1" style={{ color: '#606060' }}>
-          <li>• 点击同步按钮将从企业微信获取所有部门和用户信息</li>
-          <li>• 部门信息包括：部门名称、父部门关系</li>
-          <li>• 用户信息包括：姓名、邮箱、手机、头像、所属部门</li>
-          <li>• 新用户会自动创建，已有用户会更新信息</li>
-          <li>• 请确保已在上方正确配置企业微信</li>
+          <li>• {t('admin:syncInstructionsList')}</li>
         </ul>
       </div>
     </div>

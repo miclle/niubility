@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Check, Copy, Link2, Share2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,6 +14,7 @@ interface ShareButtonProps extends ShareOptions {
 
 // Renders the share dialog with quick actions for link and message copying.
 function ShareButton({ title, text, url, className, style }: ShareButtonProps) {
+  const { t } = useTranslation('common')
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [messageCopied, setMessageCopied] = useState(false)
@@ -21,11 +23,11 @@ function ShareButton({ title, text, url, className, style }: ShareButtonProps) {
   const shareURL = useMemo(() => getShareURL(url), [url])
   const shareDescription = useMemo(() => buildShareDescription(text), [text])
   const shareMessage = useMemo(() => {
-    const messageTitle = title?.trim() || '当前内容'
+    const messageTitle = title?.trim() || t('common:currentContent')
     return shareDescription
       ? `${messageTitle}\n${shareDescription}\n${shareURL}`
       : `${messageTitle}\n${shareURL}`
-  }, [shareDescription, shareURL, title])
+  }, [shareDescription, shareURL, title, t])
 
   // Resets the copied state after a short success feedback window.
   const resetCopiedLater = useCallback(() => {
@@ -95,7 +97,7 @@ function ShareButton({ title, text, url, className, style }: ShareButtonProps) {
         }}
       >
         <Share2 size={18} />
-        <span>分享</span>
+        <span>{t('common:share')}</span>
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -103,10 +105,10 @@ function ShareButton({ title, text, url, className, style }: ShareButtonProps) {
           <div className="bg-white">
             <DialogHeader className="gap-1 px-6 pt-6">
               <DialogTitle className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>
-                分享
+                {t('common:share')}
               </DialogTitle>
               <DialogDescription style={{ color: '#606060' }}>
-                链接已经复制好，可以直接发送给同事。
+                {t('common:linkCopied')}
               </DialogDescription>
             </DialogHeader>
 
@@ -124,7 +126,7 @@ function ShareButton({ title, text, url, className, style }: ShareButtonProps) {
                   >
                     {copied ? <Check size={20} /> : <Copy size={20} />}
                   </span>
-                  <span className="text-sm font-medium">{copied ? '已复制链接' : '复制链接'}</span>
+                  <span className="text-sm font-medium">{copied ? t('common:linkCopied') : t('common:copyLink')}</span>
                 </button>
 
                 <button
@@ -139,7 +141,7 @@ function ShareButton({ title, text, url, className, style }: ShareButtonProps) {
                   >
                     {messageCopied ? <Check size={20} /> : <Share2 size={20} />}
                   </span>
-                  <span className="text-sm font-medium">{messageCopied ? '已复制文案' : '复制分享文案'}</span>
+                  <span className="text-sm font-medium">{messageCopied ? t('common:shareMessageCopied') : t('common:copyShareMessage')}</span>
                 </button>
               </div>
 
@@ -153,10 +155,10 @@ function ShareButton({ title, text, url, className, style }: ShareButtonProps) {
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="break-words text-sm font-medium leading-5" style={{ color: '#0f0f0f' }}>
-                      {title || '当前内容'}
+                      {title || t('common:currentContent')}
                     </div>
                     <div className="mt-1 break-words text-xs leading-5" style={{ color: '#606060' }}>
-                      {shareDescription || '共享当前页面链接'}
+                      {shareDescription || t('common:sharePageLink')}
                     </div>
                   </div>
                 </div>
@@ -175,7 +177,7 @@ function ShareButton({ title, text, url, className, style }: ShareButtonProps) {
                     className="h-11 rounded-full px-5 text-sm font-medium"
                     style={{ background: copied ? '#065fd4' : '#0f0f0f', color: '#fff' }}
                   >
-                    {copied ? '已复制' : '复制'}
+                    {copied ? t('common:copied') : t('common:copy')}
                   </Button>
                 </div>
               </div>

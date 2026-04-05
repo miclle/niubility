@@ -1,6 +1,7 @@
 import { useRef, useCallback } from 'react'
 import { useOutletContext, useSearchParams } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 
 import { listContents } from 'src/api/content'
 import ContentCard from 'src/components/ContentCard'
@@ -21,21 +22,22 @@ const chipClass = (active: boolean) =>
     active ? 'bg-[#0f0f0f] text-white' : 'bg-[#f2f2f2] text-[#0f0f0f] hover:bg-[#e5e5e5]'
   }`
 
-// contentTypeOptions defines the type chips shown on category pages.
-const contentTypeOptions: { value: ContentType; label: string }[] = [
-  { value: 'video', label: '视频' },
-  { value: 'gallery', label: '图集' },
-  { value: 'article', label: '文章' },
-]
-
 // Home displays the content list page with infinite scroll.
 // On type pages (/videos) → top chips are categories.
 // On category pages (/tech) → top chips are content types.
 // On home (/) → top chips are categories.
 function Home() {
+  const { t } = useTranslation('home')
   const { keyword, typeFilter, category } = useOutletContext<HomeContext>()
   const { categories } = useAppContext()
   const [searchParams, setSearchParams] = useSearchParams()
+
+  // contentTypeOptions defines the type chips shown on category pages.
+  const contentTypeOptions: { value: ContentType; label: string }[] = [
+    { value: 'video', label: t('common:video') },
+    { value: 'gallery', label: t('common:gallery') },
+    { value: 'article', label: t('common:article') },
+  ]
 
   // On category pages show type chips; otherwise show category chips
   const showTypeChips = !!category
@@ -86,7 +88,7 @@ function Home() {
       {/* Category chips — shown on home and type pages (/videos, /galleries, /articles) */}
       {showCategoryChips && (
         <div className="flex gap-2 pb-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-          <button className={chipClass(!activeCategory)} onClick={() => handleCategoryClick(null)}>全部</button>
+          <button className={chipClass(!activeCategory)} onClick={() => handleCategoryClick(null)}>{t('common:all')}</button>
           {categories.map((cat) => (
             <button key={cat.slug} className={chipClass(activeCategory === cat.slug)} onClick={() => handleCategoryClick(cat.slug)}>{cat.name}</button>
           ))}
@@ -96,7 +98,7 @@ function Home() {
       {/* Type chips — shown on category pages (/<category-slug>) */}
       {showTypeChips && (
         <div className="flex gap-2 pb-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-          <button className={chipClass(!activeType)} onClick={() => handleTypeClick(null)}>全部</button>
+          <button className={chipClass(!activeType)} onClick={() => handleTypeClick(null)}>{t('common:all')}</button>
           {contentTypeOptions.map((opt) => (
             <button key={opt.value} className={chipClass(activeType === opt.value)} onClick={() => handleTypeClick(opt.value)}>{opt.label}</button>
           ))}
@@ -106,7 +108,7 @@ function Home() {
       {/* Content grid - 4 cards per row */}
       {contents.length === 0 && !loading ? (
         <div className="text-center py-20" style={{ color: '#606060' }}>
-          暂无内容
+          {t('home:noContentYet')}
         </div>
       ) : (
         <div
@@ -123,8 +125,8 @@ function Home() {
 
       {/* Loading indicator / Infinite scroll trigger */}
       <div ref={loadMoreRef} className="text-center py-8" style={{ color: '#606060' }}>
-        {loading && '加载中...'}
-        {!hasNextPage && contents.length > 0 && '没有更多内容了'}
+        {loading && t('home:loading')}
+        {!hasNextPage && contents.length > 0 && t('home:noMore')}
       </div>
     </div>
   )

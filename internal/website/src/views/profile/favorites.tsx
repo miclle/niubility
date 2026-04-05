@@ -1,5 +1,6 @@
 import { useRef, useCallback } from 'react'
 import { useOutletContext } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useInfiniteQuery } from '@tanstack/react-query'
 
 import { listUserFavorites } from 'src/api/user'
@@ -9,6 +10,7 @@ import type { ProfileContext } from './index'
 
 // ProfileFavorites displays the favorited content grid for a user profile.
 export default function ProfileFavorites() {
+  const { t } = useTranslation(['profile', 'common'])
   const { profile } = useOutletContext<ProfileContext>()
   const username = profile.user.username
 
@@ -31,7 +33,7 @@ export default function ProfileFavorites() {
     <>
       {contents.length === 0 && !loading ? (
         <div className="text-center py-20" style={{ color: '#606060' }}>
-          暂无收藏
+          {t('profile:noFavorites')}
         </div>
       ) : (
         <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
@@ -41,8 +43,8 @@ export default function ProfileFavorites() {
         </div>
       )}
       <div ref={loadMoreRef} className="text-center py-8" style={{ color: '#606060' }}>
-        {loading && '加载中...'}
-        {!hasNextPage && contents.length > 0 && '没有更多内容了'}
+        {loading && t('common:loading')}
+        {!hasNextPage && contents.length > 0 && t('common:noMoreContent')}
       </div>
     </>
   )

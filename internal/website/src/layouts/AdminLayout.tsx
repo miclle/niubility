@@ -4,12 +4,14 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { FileText, Users, ArrowLeft, LogOut, Settings, Menu, FolderOpen, ChevronDown, UserPlus, HardDrive, MessageSquare, CircleUserRound, User, Plus, Play, ImageIcon, Globe2, type LucideIcon } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { useAppContext } from 'src/context/app'
 import { useSiteHead } from 'src/hooks/useSiteHead'
 import { siteResourceURL } from 'src/api/upload'
 import { contentNewPath } from 'src/lib/content-url'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
+import LanguageSwitcher from 'src/components/LanguageSwitcher'
 
 // NavChild represents a sub-menu item under a parent nav item.
 interface NavChild {
@@ -28,6 +30,7 @@ interface NavItem {
 
 // AdminLayout provides the admin panel layout with collapsible sidebar navigation.
 function AdminLayout() {
+  const { t } = useTranslation('admin')
   const { currentUser, siteConfig } = useAppContext()
   const location = useLocation()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -53,24 +56,24 @@ function AdminLayout() {
     {
       to: '/admin/contents',
       icon: FileText,
-      label: '内容管理',
+      label: t('admin:contentManagement'),
       children: [
-        { to: '/admin/contents/videos', icon: Play, label: '视频' },
-        { to: '/admin/contents/galleries', icon: ImageIcon, label: '图集' },
-        { to: '/admin/contents/articles', icon: FileText, label: '文章' },
+        { to: '/admin/contents/videos', icon: Play, label: t('admin:video') },
+        { to: '/admin/contents/galleries', icon: ImageIcon, label: t('admin:gallery') },
+        { to: '/admin/contents/articles', icon: FileText, label: t('admin:article') },
       ],
     },
-    { to: '/admin/categories', icon: FolderOpen, label: '分类管理' },
-    { to: '/admin/users', icon: Users, label: '用户管理' },
+    { to: '/admin/categories', icon: FolderOpen, label: t('admin:categoryManagement') },
+    { to: '/admin/users', icon: Users, label: t('admin:userManagement') },
     {
       to: '/admin/settings',
       icon: Settings,
-      label: '系统配置',
+      label: t('admin:systemConfig'),
       children: [
-        { to: '/admin/settings/site', icon: Globe2, label: '站点配置' },
-        { to: '/admin/settings/auth', icon: UserPlus, label: '认证配置' },
-        { to: '/admin/settings/storage', icon: HardDrive, label: '存储配置' },
-        { to: '/admin/settings/wechat', icon: MessageSquare, label: '企业微信' },
+        { to: '/admin/settings/site', icon: Globe2, label: t('admin:siteConfig') },
+        { to: '/admin/settings/auth', icon: UserPlus, label: t('admin:authConfig') },
+        { to: '/admin/settings/storage', icon: HardDrive, label: t('admin:storageConfig') },
+        { to: '/admin/settings/wechat', icon: MessageSquare, label: t('admin:wechat') },
       ],
     },
   ]
@@ -95,7 +98,7 @@ function AdminLayout() {
             )}
           </NavLink>
           {!sidebarCollapsed && (
-            <span className="text-xs" style={{ color: '#909090' }}>管理后台</span>
+            <span className="text-xs" style={{ color: '#909090' }}>{t('admin:adminPanel')}</span>
           )}
         </div>
 
@@ -214,12 +217,12 @@ function AdminLayout() {
                 <TooltipTrigger render={<button type="button" />}>
                   <ArrowLeft size={24} />
                 </TooltipTrigger>
-                <TooltipContent side="right">返回前台</TooltipContent>
+                <TooltipContent side="right">{t('admin:backToFront')}</TooltipContent>
               </Tooltip>
             ) : (
               <>
                 <ArrowLeft size={24} />
-                <span className="text-sm">返回前台</span>
+                <span className="text-sm">{t('admin:backToFront')}</span>
               </>
             )}
           </NavLink>
@@ -241,7 +244,7 @@ function AdminLayout() {
             <Menu size={24} style={{ color: '#0f0f0f' }} />
           </button>
 
-          {/* Right: Create button + User menu */}
+          {/* Right: Create button + LanguageSwitcher + User menu */}
           <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -251,25 +254,27 @@ function AdminLayout() {
                     style={{ background: '#0f0f0f', color: '#ffffff' }}
                   >
                     <Plus size={16} />
-                    创建
+                    {t('nav:create')}
                   </button>
                 }
               />
               <DropdownMenuContent align="end">
                 <DropdownMenuItem render={<Link to={contentNewPath('video')} />}>
                   <Play size={16} />
-                  视频
+                  {t('nav:video')}
                 </DropdownMenuItem>
                 <DropdownMenuItem render={<Link to={contentNewPath('gallery')} />}>
                   <ImageIcon size={16} />
-                  图集
+                  {t('nav:gallery')}
                 </DropdownMenuItem>
                 <DropdownMenuItem render={<Link to={contentNewPath('article')} />}>
                   <FileText size={16} />
-                  文章
+                  {t('nav:article')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+
+            <LanguageSwitcher />
 
             {/* User menu */}
             <DropdownMenu>
@@ -293,11 +298,11 @@ function AdminLayout() {
               <DropdownMenuSeparator />
               <DropdownMenuItem render={<Link to={`/@${currentUser.username}`} />}>
                 <CircleUserRound size={16} />
-                个人主页
+                {t('nav:profile')}
               </DropdownMenuItem>
               <DropdownMenuItem render={<Link to="/settings/account" />}>
                 <User size={16} />
-                个人设置
+                {t('nav:settings')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -307,7 +312,7 @@ function AdminLayout() {
                 }}
               >
                 <LogOut size={16} />
-                退出登录
+                {t('nav:logout')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -1,0 +1,16 @@
+{
+  "home": "Home",
+  "following": "Following",
+  "types": "Types",
+  "video": "Video",
+  "gallery": "Gallery",
+  "article": "Article",
+  "profile": "Profile",
+  "settings": "Settings",
+  "admin": "Admin",
+  "logout": "Logout",
+  "create": "Create",
+  "notInitialized": "System not initialized",
+  "contactAdmin": "Please contact an administrator to complete the initial setup",
+  "signIn": "Sign in"
+}

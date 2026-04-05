@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 // TagInputProps defines the props for the TagInput component.
 export interface TagInputProps {
@@ -17,6 +18,7 @@ export interface TagInputProps {
 
 // TagInput is a reusable component for entering and managing tags.
 export default function TagInput({ tags, onChange, label = '标签', placeholder = '输入标签后按回车或点击添加' }: TagInputProps) {
+  const { t } = useTranslation('editor')
   const [tagInput, setTagInput] = useState('')
 
   const handleAddTag = () => {
@@ -55,7 +57,7 @@ export default function TagInput({ tags, onChange, label = '标签', placeholder
           className="flex-1"
         />
         <Button type="button" variant="outline" onClick={handleAddTag}>
-          <Plus size={14} />添加
+          <Plus size={14} />{t('addTag')}
         </Button>
       </div>
       {tags.length > 0 && (

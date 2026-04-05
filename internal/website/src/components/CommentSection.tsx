@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { ThumbsUp, MessageCircle, ChevronDown, ChevronUp, Smile, Pin, Trash2 } from 'lucide-react'
 import dayjs from 'dayjs'
+import { useTranslation } from 'react-i18next'
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 
 import { listCommentsQuery, createCommentBody, toggleLike, pinComment, deleteComment } from 'src/api/content'
@@ -71,6 +72,7 @@ interface CommentSectionProps {
 
 // CommentSection displays and manages comments for a content item.
 function CommentSection({ contentID, attachmentID, commentCount, onCommentCountChange }: CommentSectionProps) {
+  const { t } = useTranslation('comments')
   const { currentUser } = useAppContext()
   const queryClient = useQueryClient()
   const [likedCommentIDs, setLikedCommentIDs] = useState<Set<string>>(new Set())
@@ -285,12 +287,12 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
           {/* Header */}
           <div className="flex items-center gap-2">
             <span className="text-[13px] font-medium" style={{ color: '#0f0f0f' }}>
-              {comment.user?.name || '匿名用户'}
+              {comment.user?.name || t('comments:anonymousUser')}
             </span>
             {isPinned && (
               <span className="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded" style={{ color: '#065fd4', background: 'rgba(6,95,212,0.1)' }}>
                 <Pin size={10} />
-                置顶
+                {t('comments:pinned')}
               </span>
             )}
             <span className="text-xs" style={{ color: '#606060' }}>
@@ -326,7 +328,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
               onClick={() => startReply(comment.id, parentID, comment.user?.name || '匿名用户')}
             >
               <MessageCircle size={14} />
-              <span>回复</span>
+              <span>{t('comments:reply')}</span>
             </button>
             {isAdmin && !isReply && (
               <button
@@ -335,20 +337,20 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
                 onClick={() => handlePinComment(comment.id, isPinned)}
               >
                 <Pin size={14} fill={isPinned ? 'currentColor' : 'none'} />
-                <span>{isPinned ? '取消置顶' : '置顶'}</span>
+                <span>{isPinned ? t('comments:unpin') : t('comments:pinned')}</span>
               </button>
             )}
             {(comment.user_id === currentUser?.id || isAdmin) && (
               <AlertDialog>
                 <AlertDialogTrigger className="flex items-center gap-1 text-xs transition-colors cursor-pointer" style={{ color: '#606060' }}>
                   <Trash2 size={14} />
-                  <span>删除</span>
+                  <span>{t('comments:delete')}</span>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>删除评论</AlertDialogTitle>
+                    <AlertDialogTitle>{t('comments:deleteComment')}</AlertDialogTitle>
                     <AlertDialogDescription>
-                      确定要删除这条评论吗？删除后不可恢复。
+                      {t('comments:deleteConfirm')}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <div className="rounded-md bg-muted/50 px-3 py-2 space-y-1.5">
@@ -357,15 +359,15 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
                         <SiteAvatarImage src={comment.user?.avatar || ''} alt={comment.user?.name || '匿名'} />
                         <AvatarFallback className="text-[10px]">{comment.user?.name?.charAt(0) || '匿'}</AvatarFallback>
                       </Avatar>
-                      <span className="text-xs font-medium text-foreground">{comment.user?.name || '匿名用户'}</span>
+                      <span className="text-xs font-medium text-foreground">{comment.user?.name || t('comments:anonymousUser')}</span>
                     </div>
                     <div className="text-sm text-muted-foreground line-clamp-3 whitespace-pre-wrap break-all">
                       {comment.body}
                     </div>
                   </div>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>取消</AlertDialogCancel>
-                    <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={() => handleDeleteComment(comment.id)}>删除</AlertDialogAction>
+                    <AlertDialogCancel>{t('comments:cancel')}</AlertDialogCancel>
+                    <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={() => handleDeleteComment(comment.id)}>{t('comments:delete')}</AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
@@ -379,7 +381,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
                 rows={1}
                 className="w-full border-b text-sm py-1 outline-none bg-transparent resize-none overflow-hidden"
                 style={{ borderColor: '#065fd4', color: '#0f0f0f' }}
-                placeholder={`回复 @${replyTo.userName}`}
+                placeholder={t('comments:replyTo', { name: replyTo.userName })}
                 value={replyText}
                 onChange={(e) => { setReplyText(e.target.value); autoResize(e.target) }}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReply() } }}
@@ -399,7 +401,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
                     style={{ color: '#606060' }}
                     onClick={() => setReplyTo(null)}
                   >
-                    取消
+                    {t('comments:cancel')}
                   </button>
                   <button
                     className="text-xs px-3 py-1 rounded-full text-white disabled:opacity-50"
@@ -407,7 +409,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
                     disabled={!replyText.trim() || submitting}
                     onClick={handleReply}
                   >
-                    回复
+                    {t('comments:reply')}
                   </button>
                 </div>
               </div>
@@ -424,7 +426,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
   return (
     <div className="mt-6">
       <h3 className="text-base font-medium mb-5" style={{ color: '#0f0f0f' }}>
-        {total > 0 ? `${total} 条评论` : '评论'}
+        {total > 0 ? t('comments:commentsCount', { count: total }) : t('comments:comments')}
       </h3>
 
       {/* New comment input */}
@@ -439,7 +441,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
               rows={1}
               className="w-full border-b text-sm py-1 outline-none bg-transparent resize-none overflow-hidden"
               style={{ borderColor: commentFocused ? '#0f0f0f' : '#e5e5e5', color: '#0f0f0f' }}
-              placeholder="添加评论..."
+              placeholder={t('comments:addComment')}
               value={newComment}
               onChange={(e) => { setNewComment(e.target.value); autoResize(e.target) }}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit() } }}
@@ -459,7 +461,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
                     style={{ color: '#606060' }}
                     onClick={() => { setNewComment(''); setCommentFocused(false) }}
                   >
-                    取消
+                    {t('comments:cancel')}
                   </button>
                   <button
                     className="text-sm px-3 py-1.5 rounded-full text-white disabled:opacity-50"
@@ -467,7 +469,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
                     disabled={!newComment.trim() || submitting}
                     onClick={handleSubmit}
                   >
-                    评论
+                    {t('comments:submit')}
                   </button>
                 </div>
               </div>
@@ -491,7 +493,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
                   onClick={() => toggleReplies(comment.id)}
                 >
                   {expandedReplies.has(comment.id) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                  {comment.replies.length} 条回复
+                  {t('comments:repliesCount', { count: comment.replies.length })}
                 </button>
 
                 {expandedReplies.has(comment.id) && (
@@ -514,14 +516,14 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
             disabled={loading}
             onClick={() => fetchNextPage()}
           >
-            {loading ? '加载中...' : '加载更多评论'}
+            {loading ? t('common:loading') : t('comments:loadMore')}
           </button>
         </div>
       )}
 
       {!loading && allComments.length === 0 && (
         <div className="text-center py-8 text-sm" style={{ color: '#606060' }}>
-          暂无评论，来说两句吧
+          {t('comments:noComments')}
         </div>
       )}
     </div>

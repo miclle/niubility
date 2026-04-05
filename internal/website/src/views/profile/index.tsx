@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, NavLink, Outlet } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { CalendarDays, FileText, Heart, Video, BookOpen, Mic, MapPin, Github, Globe, ExternalLink, UserCheck, Users, Bookmark, Images } from 'lucide-react'
 import dayjs from 'dayjs'
 
@@ -34,19 +35,10 @@ function socialLinkEntries(accounts: Record<string, string>) {
 }
 
 // Tab navigation items with route paths.
-const profileTabs: { label: string; path: string; icon: React.ReactNode }[] = [
-  { label: '全部', path: '', icon: <FileText size={16} /> },
-  { label: '视频', path: 'videos', icon: <Video size={16} /> },
-  { label: '图集', path: 'galleries', icon: <Images size={16} /> },
-  { label: '文章', path: 'articles', icon: <BookOpen size={16} /> },
-  { label: '主讲', path: 'speakers', icon: <Mic size={16} /> },
-  { label: '关注', path: 'following', icon: <UserCheck size={16} /> },
-  { label: '粉丝', path: 'followers', icon: <Users size={16} /> },
-  { label: '收藏', path: 'favorites', icon: <Bookmark size={16} /> },
-]
 
 // FollowButton renders a follow/unfollow button for a user.
 export function FollowButton({ username, following: initialFollowing, onToggle }: { username: string; following: boolean; onToggle?: (following: boolean, followerCount: number, followingCount: number) => void }) {
+  const { t } = useTranslation('profile')
   const [following, setFollowing] = useState(initialFollowing)
   const [loading, setLoading] = useState(false)
 
@@ -75,13 +67,14 @@ export function FollowButton({ username, following: initialFollowing, onToggle }
         : { background: '#0f0f0f', color: '#ffffff', borderColor: '#0f0f0f' }
       }
     >
-      {following ? '已关注' : '关注'}
+      {following ? t('profile:followed') : t('profile:follow')}
     </button>
   )
 }
 
 // UserListItem renders a single user row in following/followers lists.
 export function UserListItem({ user, currentUserID, isFollowingTab }: { user: User; currentUserID?: string; isFollowingTab: boolean }) {
+  const { t } = useTranslation('profile')
   const navigate = useNavigate()
   const isMe = currentUserID === user.id
 
@@ -97,7 +90,7 @@ export function UserListItem({ user, currentUserID, isFollowingTab }: { user: Us
         {user.bio && <div className="text-xs mt-0.5 truncate" style={{ color: '#606060' }}>{user.bio}</div>}
       </div>
       <div className="flex items-center gap-2 text-xs" style={{ color: '#606060' }}>
-        <span>{user.follower_count} 粉丝</span>
+        <span>{t('profile:followers', { count: user.follower_count })}</span>
         {!isMe && (
           <FollowButton username={user.username} following={isFollowingTab} />
         )}
@@ -108,10 +101,21 @@ export function UserListItem({ user, currentUserID, isFollowingTab }: { user: Us
 
 // ProfileLayout renders the profile header, tab navigation, and child route outlet.
 export default function ProfileLayout() {
+  const { t } = useTranslation(['profile', 'common'])
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
   const { currentUser } = useAppContext()
   const username = slug?.replace(/^@/, '')
+  const profileTabs: { label: string; path: string; icon: React.ReactNode }[] = [
+    { label: t('profile:all'), path: '', icon: <FileText size={16} /> },
+    { label: t('common:video'), path: 'videos', icon: <Video size={16} /> },
+    { label: t('common:gallery'), path: 'galleries', icon: <Images size={16} /> },
+    { label: t('common:article'), path: 'articles', icon: <BookOpen size={16} /> },
+    { label: t('profile:speakers'), path: 'speakers', icon: <Mic size={16} /> },
+    { label: t('profile:tabFollowing'), path: 'following', icon: <UserCheck size={16} /> },
+    { label: t('profile:tabFollowers'), path: 'followers', icon: <Users size={16} /> },
+    { label: t('profile:tabFavorites'), path: 'favorites', icon: <Bookmark size={16} /> },
+  ]
   const [profile, setProfile] = useState<UserProfileResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -145,7 +149,7 @@ export default function ProfileLayout() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20" style={{ color: '#606060' }}>
-        加载中...
+        {t('common:loading')}
       </div>
     )
   }
@@ -153,7 +157,7 @@ export default function ProfileLayout() {
   if (notFound || !profile) {
     return (
       <div className="flex items-center justify-center py-20" style={{ color: '#606060' }}>
-        用户不存在
+        {t('common:notFound')}
       </div>
     )
   }
@@ -193,7 +197,7 @@ export default function ProfileLayout() {
             <div className="flex items-center gap-4 mt-3 text-sm flex-wrap" style={{ color: '#606060' }}>
               <span className="flex items-center gap-1">
                 <CalendarDays size={14} />
-                {dayjs(user.created_at).format('YYYY 年 M 月')}加入
+                {dayjs(user.created_at).format(t('common:dateFormat'))}{t('common:joined')}
               </span>
               {user.location && (
                 <span className="flex items-center gap-1">
@@ -206,27 +210,27 @@ export default function ProfileLayout() {
                 style={{ color: '#606060' }}
                 onClick={() => navigate(`${basePath}/following`)}
               >
-                <span style={{ color: '#0f0f0f', fontWeight: 600 }}>{user.following_count}</span> 关注
+                <span style={{ color: '#0f0f0f', fontWeight: 600 }}>{user.following_count}</span> {t('profile:tabFollowing')}
               </button>
               <button
                 className="flex items-center gap-1 hover:underline cursor-pointer bg-transparent border-0 p-0 text-sm"
                 style={{ color: '#606060' }}
                 onClick={() => navigate(`${basePath}/followers`)}
               >
-                <span style={{ color: '#0f0f0f', fontWeight: 600 }}>{user.follower_count}</span> 粉丝
+                <span style={{ color: '#0f0f0f', fontWeight: 600 }}>{user.follower_count}</span> {t('profile:tabFollowers')}
               </button>
               <span className="flex items-center gap-1">
                 <FileText size={14} />
-                {content_count} 篇内容
+                {t('profile:articles', { count: content_count })}
               </span>
               <span className="flex items-center gap-1">
                 <Heart size={14} />
-                {total_likes} 次获赞
+                {t('profile:totalLikes', { count: total_likes })}
               </span>
               {speaker_content_count > 0 && (
                 <span className="flex items-center gap-1">
                   <Mic size={14} />
-                  {speaker_content_count} 次主讲
+                  {t('profile:speakerSessions', { count: speaker_content_count })}
                 </span>
               )}
             </div>

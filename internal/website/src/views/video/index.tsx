@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ThumbsUp, MessageCircle, Pencil, Bookmark, Download, FileText } from 'lucide-react'
 import dayjs from 'dayjs'
-import relativeTime from 'dayjs/plugin/relativeTime'
-import 'dayjs/locale/zh-cn'
+import { useTranslation } from 'react-i18next'
 
 import { getContent, listContents, toggleLike, favoriteContent } from 'src/api/content'
 import { fileURL } from 'src/api/upload'
@@ -18,11 +17,9 @@ import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import type { Content } from 'src/types/content'
 
-dayjs.extend(relativeTime)
-dayjs.locale('zh-cn')
-
 // VideoDetail displays a single video content item.
 function VideoDetail() {
+  const { t } = useTranslation('content')
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -79,11 +76,11 @@ function VideoDetail() {
   }, [id, navigate])
 
   if (loading) {
-    return <div className="p-6 text-center" style={{ color: '#606060' }}>加载中...</div>
+    return <div className="p-6 text-center" style={{ color: '#606060' }}>{t('content:loading')}</div>
   }
 
   if (error || !content) {
-    return <div className="p-6 text-center" style={{ color: '#606060' }}>内容不存在</div>
+    return <div className="p-6 text-center" style={{ color: '#606060' }}>{t('content:notFound')}</div>
   }
 
   const isDraft = content.status === 'draft'
@@ -143,7 +140,7 @@ function VideoDetail() {
         {canEdit && (
           <Link to={contentEditPath(content)} className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors no-underline" style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}>
             <Pencil size={16} />
-            <span>编辑</span>
+            <span>{t('common:edit')}</span>
           </Link>
         )}
       </div>
@@ -167,13 +164,13 @@ function VideoDetail() {
         </div>
       )}
       <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-        <span className="font-medium">主讲人：</span>
+        <span className="font-medium">{t('content:speaker')}</span>
         {speakerDisplayName}
         {content.speaker_bio && <span className="ml-2" style={{ color: '#606060' }}>- {content.speaker_bio}</span>}
       </div>
       {(content.summary || content.speaker_name || content.speaker || content.speaker_bio) && (
         <button className="mt-2 text-sm font-medium" style={{ color: '#065fd4' }} onClick={() => setDescExpanded(!descExpanded)}>
-          {descExpanded ? '收起' : '展开'}
+          {descExpanded ? t('content:collapse') : t('content:expand')}
         </button>
       )}
     </div>
@@ -184,7 +181,7 @@ function VideoDetail() {
     return (
       <div className="rounded-xl overflow-hidden mb-4" style={{ border: '1px solid #e5e5e5' }}>
         <div className="px-4 py-2 text-sm font-medium" style={{ background: '#f9f9f9', color: '#0f0f0f' }}>
-          播放列表 · {videoItems.length} 个视频
+          {t('content:playlist', { count: videoItems.length })}
         </div>
         <div>
           {videoItems.map((v, i) => (
@@ -200,13 +197,13 @@ function VideoDetail() {
               <div className="relative flex-shrink-0 rounded overflow-hidden" style={{ width: 80, aspectRatio: '16/9' }}>
                 <img
                   src={fileURL(v.cover_url || content.cover_url) || getDefaultContentCover(content.type, siteConfig)}
-                  alt={v.title || `视频 ${i + 1}`}
+                  alt={v.title || t('content:videoItem', { index: i + 1 })}
                   className="w-full h-full object-cover"
                 />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm line-clamp-1" style={{ color: '#0f0f0f', fontWeight: i === currentVideoIndex ? 600 : 400 }}>
-                  {v.title || `视频 ${i + 1}`}
+                  {v.title || t('content:videoItem', { index: i + 1 })}
                 </div>
                 {v.description && <div className="text-xs line-clamp-1" style={{ color: '#606060' }}>{v.description}</div>}
               </div>
@@ -221,7 +218,7 @@ function VideoDetail() {
     <div className="hidden xl:block flex-shrink-0 w-[400px]">
       {renderPlaylist()}
       {relatedContents.length > 0 && (
-        <div className="text-sm font-medium mb-3" style={{ color: '#0f0f0f' }}>其他相关视频</div>
+        <div className="text-sm font-medium mb-3" style={{ color: '#0f0f0f' }}>{t('content:relatedVideos')}</div>
       )}
       <div className="space-y-3">
         {relatedContents.map((item) => (
@@ -229,11 +226,11 @@ function VideoDetail() {
             <div className="relative flex-shrink-0 rounded-lg overflow-hidden bg-zinc-100" style={{ width: 168, aspectRatio: '16/9' }}>
               <img src={getContentCover(item, siteConfig)} alt={item.title} className="w-full h-full object-cover" />
               {item.type === 'video' && (
-                <div className="absolute bottom-1 right-1 px-1 rounded text-xs" style={{ background: 'rgba(0,0,0,0.7)', color: 'white' }}>视频</div>
+                <div className="absolute bottom-1 right-1 px-1 rounded text-xs" style={{ background: 'rgba(0,0,0,0.7)', color: 'white' }}>{t('common:video')}</div>
               )}
               {item.type === 'gallery' && (
                 <div className="absolute bottom-1 right-1 px-1 rounded text-xs" style={{ background: 'rgba(0,0,0,0.7)', color: 'white' }}>
-                  {(item.attachments || []).length}图
+                  {t('content:photoCount', { count: (item.attachments || []).length })}
                 </div>
               )}
             </div>
@@ -245,7 +242,7 @@ function VideoDetail() {
           </Link>
         ))}
         {relatedContents.length === 0 && (
-          <div className="text-center py-8 text-sm" style={{ color: '#606060' }}>暂无相关内容</div>
+          <div className="text-center py-8 text-sm" style={{ color: '#606060' }}>{t('content:noRelated')}</div>
         )}
       </div>
     </div>
@@ -257,7 +254,7 @@ function VideoDetail() {
 
     return (
       <div className="mt-4 p-4 rounded-xl" style={{ background: '#fff', border: '1px solid #e5e5e5' }}>
-        <h3 className="text-base font-medium mb-3" style={{ color: '#0f0f0f' }}>资料下载</h3>
+        <h3 className="text-base font-medium mb-3" style={{ color: '#0f0f0f' }}>{t('content:download')}</h3>
         <div className="space-y-2">
           {docs.map((doc) => (
             <a
@@ -287,7 +284,7 @@ function VideoDetail() {
 
   const draftBanner = isDraft ? (
     <div className="mb-4 px-4 py-3 rounded-xl text-sm font-medium" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
-      草稿预览 — 此内容尚未发布，仅作者可见
+      {t('common:draftBanner')}
     </div>
   ) : null
 

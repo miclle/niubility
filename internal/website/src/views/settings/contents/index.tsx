@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react'
 import { NavLink } from 'react-router-dom'
 import { FileText, Play, Image, Pencil, Heart, MessageSquare, Trash2, Send } from 'lucide-react'
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 
 import { useAppContext } from 'src/context/app'
 import { listContents, updateContent, deleteContent } from 'src/api/content'
@@ -13,6 +14,8 @@ const limit = 20
 
 // MyContents displays the current user's content list with draft/published tabs and infinite scroll.
 function MyContents() {
+  const { t } = useTranslation('settings')
+  const { t: tc } = useTranslation('common')
   const { currentUser } = useAppContext()
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<ContentStatus>('published')
@@ -46,7 +49,7 @@ function MyContents() {
   }
 
   const handleDelete = async (content: Content) => {
-    if (!confirm('确定要删除这条内容吗？')) return
+    if (!confirm(tc('common:confirmDelete'))) return
     try {
       await deleteContent(content.id)
       invalidate()
@@ -63,7 +66,7 @@ function MyContents() {
 
   return (
     <div className="mx-auto py-8 px-6" style={{ maxWidth: 960 }}>
-      <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>我的内容</h1>
+      <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>{t('settings:myContentsTitle')}</h1>
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 p-1 rounded-lg" style={{ background: '#f5f5f5' }}>
@@ -72,14 +75,14 @@ function MyContents() {
           style={{ background: activeTab === 'published' ? '#ffffff' : 'transparent', color: activeTab === 'published' ? '#0f0f0f' : '#606060', boxShadow: activeTab === 'published' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none' }}
           onClick={() => setActiveTab('published')}
         >
-          已发布
+          {t('settings:published')}
         </button>
         <button
           className="flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors"
           style={{ background: activeTab === 'draft' ? '#ffffff' : 'transparent', color: activeTab === 'draft' ? '#0f0f0f' : '#606060', boxShadow: activeTab === 'draft' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none' }}
           onClick={() => setActiveTab('draft')}
         >
-          草稿
+          {t('settings:draft')}
         </button>
       </div>
 
@@ -87,7 +90,7 @@ function MyContents() {
         <div className="text-center py-16">
           <FileText size={48} className="mx-auto mb-4" style={{ color: '#d4d4d4' }} />
           <p className="text-sm" style={{ color: '#909090' }}>
-            {activeTab === 'draft' ? '暂无草稿' : '暂无发布的内容'}
+            {activeTab === 'draft' ? t('settings:noDrafts') : t('settings:noPublished')}
           </p>
         </div>
       ) : (
@@ -135,7 +138,7 @@ function MyContents() {
                     onClick={() => handlePublish(content)}
                     className="p-1.5 rounded-lg hover:bg-black/10 transition-colors"
                     style={{ color: '#065fd4' }}
-                    title="发布"
+                    title={t('settings:publish')}
                   >
                     <Send size={16} />
                   </button>
@@ -144,7 +147,7 @@ function MyContents() {
                   to={contentEditPath(content)}
                   className="p-1.5 rounded-lg hover:bg-black/10 transition-colors no-underline"
                   style={{ color: '#606060' }}
-                  title="编辑"
+                  title={t('settings:edit')}
                 >
                   <Pencil size={16} />
                 </NavLink>
@@ -152,7 +155,7 @@ function MyContents() {
                   onClick={() => handleDelete(content)}
                   className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
                   style={{ color: '#cc0000' }}
-                  title="删除"
+                  title={t('settings:delete')}
                 >
                   <Trash2 size={16} />
                 </button>
@@ -163,7 +166,7 @@ function MyContents() {
       )}
 
       <div ref={loaderRef} className="py-4 text-center text-sm" style={{ color: '#909090' }}>
-        {loading ? '加载中...' : !hasNextPage && contents.length > 0 ? '没有更多了' : ''}
+        {loading ? tc('common:loading') : !hasNextPage && contents.length > 0 ? tc('common:noMoreContent') : ''}
       </div>
     </div>
   )

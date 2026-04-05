@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Loader2 } from 'lucide-react'
@@ -9,6 +10,7 @@ import { initSystem } from 'src/api/user'
 
 // Init provides the initial super admin setup page.
 function Init() {
+  const { t } = useTranslation('auth')
   const { initialized, setCurrentUser } = useAppContext()
   const navigate = useNavigate()
 
@@ -26,12 +28,12 @@ function Init() {
     setError('')
 
     if (form.password !== form.confirmPassword) {
-      setError('两次输入的密码不一致')
+      setError(t('auth:passwordMismatch'))
       return
     }
 
     if (form.password.length < 6) {
-      setError('密码至少需要 6 个字符')
+      setError(t('auth:passwordTooShort'))
       return
     }
 
@@ -45,7 +47,7 @@ function Init() {
       setCurrentUser(res.data)
       navigate('/admin')
     } catch (err: any) {
-      setError(err.response?.data?.meta || '初始化失败，请稍后重试')
+      setError(err.response?.data?.meta || t('auth:initFailed'))
     } finally {
       setLoading(false)
     }
@@ -56,7 +58,7 @@ function Init() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-semibold mb-2" style={{ color: '#0f0f0f' }}>Niubility</h1>
-          <p className="text-sm" style={{ color: '#606060' }}>欢迎使用，请设置超级管理员账户</p>
+          <p className="text-sm" style={{ color: '#606060' }}>{t('auth:initWelcome')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -67,43 +69,43 @@ function Init() {
           )}
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>用户名</label>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('auth:username')}</label>
             <Input
               required
-              placeholder="请输入用户名"
+              placeholder={t('auth:usernamePlaceholder')}
               value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>邮箱</label>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('auth:email')}</label>
             <Input
               required
               type="email"
-              placeholder="请输入邮箱"
+              placeholder={t('auth:emailPlaceholder')}
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>密码</label>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('auth:password')}</label>
             <Input
               required
               type="password"
-              placeholder="请输入密码（至少 6 位）"
+              placeholder={t('auth:initPasswordHint')}
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>确认密码</label>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('auth:confirmPassword')}</label>
             <Input
               required
               type="password"
-              placeholder="请再次输入密码"
+              placeholder={t('auth:confirmPasswordPlaceholder')}
               value={form.confirmPassword}
               onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
             />
@@ -115,7 +117,7 @@ function Init() {
             className="w-full"
             style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}
           >
-            {loading ? <><Loader2 size={16} className="animate-spin" /> 初始化中...</> : '完成初始化'}
+            {loading ? <><Loader2 size={16} className="animate-spin" /> {t('auth:initializing')}</> : t('auth:completeInit')}
           </Button>
         </form>
       </div>

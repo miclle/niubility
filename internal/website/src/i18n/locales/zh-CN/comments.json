@@ -1,0 +1,18 @@
+{
+  "anonymousUser": "匿名用户",
+  "commentsCount": "{{count}} 条评论",
+  "comments": "评论",
+  "reply": "回复",
+  "replyTo": "回复 @{{name}}",
+  "pinned": "置顶",
+  "unpin": "取消置顶",
+  "delete": "删除",
+  "deleteComment": "删除评论",
+  "deleteConfirm": "确定要删除这条评论吗？删除后不可恢复。",
+  "addComment": "添加评论...",
+  "cancel": "取消",
+  "submit": "评论",
+  "repliesCount": "{{count}} 条回复",
+  "loadMore": "加载更多评论",
+  "noComments": "暂无评论，来说两句吧"
+}

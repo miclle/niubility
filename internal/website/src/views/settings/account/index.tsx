@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { useTranslation } from 'react-i18next'
 
 import { useAppContext } from 'src/context/app'
 import { getProfile, updateProfile } from 'src/api/user'
@@ -38,6 +39,7 @@ function addPrefix(value: string, prefix: string): string {
 
 // AccountSettings allows users to edit their own profile.
 function AccountSettings() {
+  const { t } = useTranslation('settings')
   const { currentUser, setCurrentUser } = useAppContext()
   const [loading, setLoading] = useState(true)
 
@@ -70,11 +72,11 @@ function AccountSettings() {
       }
       setSocialAccounts(stripped)
     } catch {
-      setError('加载个人信息失败')
+      setError(t('settings:loadFailed'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     loadProfile()
@@ -90,7 +92,7 @@ function AccountSettings() {
       const key = await uploadAvatar(file)
       setAvatar(key)
     } catch {
-      setError('头像上传失败')
+      setError(t('settings:avatarFailed'))
     } finally {
       setAvatarUploading(false)
     }
@@ -122,7 +124,7 @@ function AccountSettings() {
       // Update global user state
       setCurrentUser(res.data as User)
     } catch {
-      setError('保存失败，请稍后重试')
+      setError(t('settings:saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -140,7 +142,7 @@ function AccountSettings() {
 
   return (
     <div className="mx-auto py-8 px-6" style={{ maxWidth: 960 }}>
-      <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>账户设置</h1>
+      <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>{t('settings:accountSettingsTitle')}</h1>
 
       {/* Two-column layout: form left, avatar right */}
       <div className="flex gap-10">
@@ -149,24 +151,24 @@ function AccountSettings() {
           {/* Basic info section */}
           <div className="space-y-4">
             <div>
-              <Label htmlFor="name" className="text-sm mb-1.5 block" style={{ color: '#606060' }}>姓名</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="输入你的姓名" />
+              <Label htmlFor="name" className="text-sm mb-1.5 block" style={{ color: '#606060' }}>{t('settings:name')}</Label>
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('settings:inputName')} />
             </div>
 
             <div>
-              <Label htmlFor="bio" className="text-sm mb-1.5 block" style={{ color: '#606060' }}>个人简介</Label>
-              <Textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} placeholder="介绍一下你自己" rows={3} />
+              <Label htmlFor="bio" className="text-sm mb-1.5 block" style={{ color: '#606060' }}>{t('settings:bio')}</Label>
+              <Textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} placeholder={t('settings:inputBio')} rows={3} />
             </div>
 
             <div>
-              <Label htmlFor="location" className="text-sm mb-1.5 block" style={{ color: '#606060' }}>所在地</Label>
-              <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="例如：上海" />
+              <Label htmlFor="location" className="text-sm mb-1.5 block" style={{ color: '#606060' }}>{t('settings:location')}</Label>
+              <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t('settings:inputLocation')} />
             </div>
           </div>
 
           {/* Social accounts section */}
           <div className="space-y-4">
-            <h2 className="text-base font-medium" style={{ color: '#0f0f0f' }}>社交账号</h2>
+            <h2 className="text-base font-medium" style={{ color: '#0f0f0f' }}>{t('settings:socialAccounts')}</h2>
 
             {socialFields.map((field) => (
               <div key={field.key}>
@@ -203,7 +205,7 @@ function AccountSettings() {
           {success && (
             <div className="p-3 rounded-lg flex items-center gap-2" style={{ background: '#dcfce7' }}>
               <CheckCircle size={16} style={{ color: '#166534' }} />
-              <span className="text-sm" style={{ color: '#166534' }}>个人信息已保存</span>
+              <span className="text-sm" style={{ color: '#166534' }}>{t('settings:profileSaved')}</span>
             </div>
           )}
           {error && (
@@ -220,16 +222,16 @@ function AccountSettings() {
             style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}
           >
             {saving ? (
-              <><Loader2 size={16} className="animate-spin" /> 保存中...</>
+              <><Loader2 size={16} className="animate-spin" /> {t('settings:saving')}</>
             ) : (
-              <><Save size={16} /> 保存</>
+              <><Save size={16} /> {t('settings:save')}</>
             )}
           </Button>
         </div>
 
         {/* Right column: avatar */}
         <div className="flex-shrink-0" style={{ width: 200 }}>
-          <Label className="text-sm font-medium mb-3 block" style={{ color: '#606060' }}>头像</Label>
+          <Label className="text-sm font-medium mb-3 block" style={{ color: '#606060' }}>{t('settings:avatar')}</Label>
           <div className="relative group cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
             <Avatar style={{ width: 200, height: 200 }}>
               <SiteAvatarImage src={avatarDisplayURL} alt={name} />
@@ -252,7 +254,7 @@ function AccountSettings() {
             className="mt-3 w-full text-sm px-4 py-1.5 rounded-md transition-colors cursor-pointer"
             style={{ border: '1px solid #d0d7de', background: '#f6f8fa', color: '#24292f' }}
           >
-            更换头像
+            {t('settings:changeAvatarButton')}
           </button>
         </div>
       </div>

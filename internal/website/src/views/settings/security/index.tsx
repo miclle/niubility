@@ -3,12 +3,14 @@ import { Loader2, Save, CheckCircle, XCircle, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useTranslation } from 'react-i18next'
 
 import { useAppContext } from 'src/context/app'
 import { changePassword, hasPassword } from 'src/api/user'
 
 // SecuritySettings allows users to change their password.
 function SecuritySettings() {
+  const { t } = useTranslation('settings')
   const { registrationEnabled } = useAppContext()
   const [loading, setLoading] = useState(true)
   const [userHasPassword, setUserHasPassword] = useState(false)
@@ -41,17 +43,17 @@ function SecuritySettings() {
     setSuccess(false)
 
     if (newPassword.length < 6) {
-      setError('新密码长度不能少于 6 位')
+      setError(t('settings:passwordMinLength'))
       return
     }
 
     if (newPassword !== confirmPassword) {
-      setError('两次输入的密码不一致')
+      setError(t('settings:passwordMismatch'))
       return
     }
 
     if (userHasPassword && !oldPassword) {
-      setError('请输入旧密码')
+      setError(t('settings:enterOldPassword'))
       return
     }
 
@@ -64,7 +66,7 @@ function SecuritySettings() {
       setConfirmPassword('')
       setUserHasPassword(true)
     } catch (err: any) {
-      const message = err?.response?.data?.message || '密码修改失败'
+      const message = err?.response?.data?.message || t('settings:passwordChangeFailed')
       setError(message)
     } finally {
       setSaving(false)
@@ -84,52 +86,52 @@ function SecuritySettings() {
 
   return (
     <div className="mx-auto py-8 px-6" style={{ maxWidth: 960 }}>
-      <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>安全设置</h1>
+      <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>{t('settings:securitySettings')}</h1>
 
       <div className="space-y-8">
         {showPasswordForm ? (
           <div className="space-y-4">
-            <h2 className="text-base font-medium" style={{ color: '#0f0f0f' }}>修改密码</h2>
+            <h2 className="text-base font-medium" style={{ color: '#0f0f0f' }}>{t('settings:changePassword')}</h2>
 
             {userHasPassword ? (
               <div>
-                <Label htmlFor="old-password" className="text-sm mb-1.5 block" style={{ color: '#606060' }}>旧密码</Label>
+                <Label htmlFor="old-password" className="text-sm mb-1.5 block" style={{ color: '#606060' }}>{t('settings:oldPassword')}</Label>
                 <Input
                   id="old-password"
                   type="password"
                   value={oldPassword}
                   onChange={(e) => setOldPassword(e.target.value)}
-                  placeholder="输入当前密码"
+                  placeholder={t('settings:enterCurrentPassword')}
                 />
               </div>
             ) : (
               <div className="p-3 rounded-lg flex items-center gap-2" style={{ background: '#f0f9ff' }}>
                 <Info size={16} style={{ color: '#0369a1' }} />
                 <span className="text-sm" style={{ color: '#0369a1' }}>
-                  你当前通过 SSO 登录，尚未设置密码。设置密码后可使用用户名 + 密码登录。
+                  {t('settings:ssoLoginNote')}
                 </span>
               </div>
             )}
 
             <div>
-              <Label htmlFor="new-password" className="text-sm mb-1.5 block" style={{ color: '#606060' }}>新密码</Label>
+              <Label htmlFor="new-password" className="text-sm mb-1.5 block" style={{ color: '#606060' }}>{t('settings:newPassword')}</Label>
               <Input
                 id="new-password"
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="至少 6 位"
+                placeholder={t('settings:minChars')}
               />
             </div>
 
             <div>
-              <Label htmlFor="confirm-password" className="text-sm mb-1.5 block" style={{ color: '#606060' }}>确认新密码</Label>
+              <Label htmlFor="confirm-password" className="text-sm mb-1.5 block" style={{ color: '#606060' }}>{t('settings:confirmNewPassword')}</Label>
               <Input
                 id="confirm-password"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="再次输入新密码"
+                placeholder={t('settings:enterNewPasswordAgain')}
               />
             </div>
 
@@ -137,7 +139,7 @@ function SecuritySettings() {
             {success && (
               <div className="p-3 rounded-lg flex items-center gap-2" style={{ background: '#dcfce7' }}>
                 <CheckCircle size={16} style={{ color: '#166534' }} />
-                <span className="text-sm" style={{ color: '#166534' }}>密码修改成功</span>
+                <span className="text-sm" style={{ color: '#166534' }}>{t('settings:passwordChangeSuccess')}</span>
               </div>
             )}
             {error && (
@@ -153,9 +155,9 @@ function SecuritySettings() {
               style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}
             >
               {saving ? (
-                <><Loader2 size={16} className="animate-spin" /> 保存中...</>
+                <><Loader2 size={16} className="animate-spin" /> {t('settings:savingPassword')}</>
               ) : (
-                <><Save size={16} /> {userHasPassword ? '修改密码' : '设置密码'}</>
+                <><Save size={16} /> {userHasPassword ? t('settings:changePassword') : t('settings:setPassword')}</>
               )}
             </Button>
           </div>
@@ -163,7 +165,7 @@ function SecuritySettings() {
           <div className="text-center py-16">
             <Info size={48} className="mx-auto mb-4" style={{ color: '#d4d4d4' }} />
             <p className="text-sm" style={{ color: '#909090' }}>
-              你当前通过 SSO 登录，密码由身份提供商管理。
+              {t('settings:ssoPasswordManaged')}
             </p>
           </div>
         )}

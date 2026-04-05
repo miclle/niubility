@@ -30,7 +30,9 @@ function manualChunks(id: string) {
   if (
     id.includes('@tanstack/react-query') ||
     id.includes('axios') ||
-    id.includes('dayjs')
+    id.includes('dayjs') ||
+    id.includes('i18next') ||
+    id.includes('react-i18next')
   ) {
     return 'data-vendor'
   }

@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { X } from 'lucide-react'
 
 import { searchUsers } from 'src/api/user'
+import { useTranslation } from 'react-i18next'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import type { SearchUserItem } from 'src/types/user'
 
@@ -21,6 +22,7 @@ export interface SpeakerSelectorProps {
 
 // SpeakerSelector is a reusable component for selecting a speaker/author from user search.
 export default function SpeakerSelector({ defaultSpeaker, onChange, label = '作者/主讲人', show = true }: SpeakerSelectorProps) {
+  const { t } = useTranslation('editor')
   const [speakerId, setSpeakerId] = useState(defaultSpeaker?.id || '')
   const [selectedSpeaker, setSelectedSpeaker] = useState<SearchUserItem | null>(defaultSpeaker || null)
   const [speakerInput, setSpeakerInput] = useState('')
@@ -105,7 +107,7 @@ export default function SpeakerSelector({ defaultSpeaker, onChange, label = '作
         ) : (
           <div className="relative" ref={speakerDropdownRef}>
             <Input
-              placeholder="输入作者姓名，可自动匹配员工"
+              placeholder={t('speakerPlaceholder')}
               value={speakerInput}
               onChange={(e) => handleSpeakerInputChange(e.target.value)}
               onFocus={() => { if (speakerResults.length > 0) setShowSpeakerDropdown(true) }}

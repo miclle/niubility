@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { LogOut, Settings, User, CircleUserRound } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import type { User as UserType } from 'src/types/user'
@@ -13,6 +14,7 @@ interface UserMenuProps {
 
 // UserMenu renders the user dropdown menu.
 export default function UserMenu({ user }: UserMenuProps) {
+  const { t } = useTranslation('nav')
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -32,16 +34,16 @@ export default function UserMenu({ user }: UserMenuProps) {
         <DropdownMenuSeparator />
         <DropdownMenuItem render={<Link to={`/@${user.username}`} />}>
           <CircleUserRound size={16} />
-          个人主页
+          {t('nav:profile')}
         </DropdownMenuItem>
         <DropdownMenuItem render={<Link to="/settings/account" />}>
           <User size={16} />
-          个人设置
+          {t('nav:settings')}
         </DropdownMenuItem>
         {(user.role === 'admin' || user.role === 'super_admin') && (
           <DropdownMenuItem render={<Link to="/admin" />}>
             <Settings size={16} />
-            管理后台
+            {t('nav:admin')}
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
@@ -52,7 +54,7 @@ export default function UserMenu({ user }: UserMenuProps) {
           }}
         >
           <LogOut size={16} />
-          退出登录
+          {t('nav:logout')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -1,0 +1,18 @@
+{
+  "loading": "加载中...",
+  "notFound": "内容不存在",
+  "draftBanner": "草稿预览 — 此内容尚未发布，仅作者可见",
+  "playlist": "播放列表 · {{count}} 个视频",
+  "download": "资料下载",
+  "relatedVideos": "其他相关视频",
+  "noRelated": "暂无相关内容",
+  "articleDate": "YYYY 年 M 月 D 日",
+  "speaker": "主讲人：",
+  "collapse": "收起",
+  "expand": "展开",
+  "videoItem": "视频 {{index}}",
+  "galleryItem": "图集",
+  "videoType": "视频",
+  "galleryType": "图集",
+  "articleType": "文章"
+}

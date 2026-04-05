@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { User, FileText, Shield, Bell, ArrowLeft, Bookmark, type LucideIcon } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 // NavItem represents a settings navigation item.
 interface NavItem {
@@ -8,18 +9,18 @@ interface NavItem {
   label: string
 }
 
-// navItems defines the settings sidebar navigation items.
-const navItems: NavItem[] = [
-  { to: '/settings/account', icon: User, label: '账户' },
-  { to: '/settings/contents', icon: FileText, label: '我的内容' },
-  { to: '/settings/favorites', icon: Bookmark, label: '我的收藏' },
-  { to: '/settings/security', icon: Shield, label: '安全设置' },
-  { to: '/settings/notifications', icon: Bell, label: '通知设置' },
-]
-
 // SettingsLayout provides a sidebar navigation for user settings pages.
 function SettingsLayout() {
+  const { t } = useTranslation('settings')
   const location = useLocation()
+
+  const navItems: NavItem[] = [
+    { to: '/settings/account', icon: User, label: t('settings:account') },
+    { to: '/settings/contents', icon: FileText, label: t('settings:myContents') },
+    { to: '/settings/favorites', icon: Bookmark, label: t('settings:myFavorites') },
+    { to: '/settings/security', icon: Shield, label: t('settings:security') },
+    { to: '/settings/notifications', icon: Bell, label: t('settings:notifications') },
+  ]
 
   return (
     <div className="flex min-h-[calc(100vh-56px)]">
@@ -31,7 +32,7 @@ function SettingsLayout() {
         <div className="flex flex-col h-full">
           {/* Title */}
           <div className="px-6 py-4">
-            <h2 className="text-base font-semibold" style={{ color: '#0f0f0f' }}>个人设置</h2>
+            <h2 className="text-base font-semibold" style={{ color: '#0f0f0f' }}>{t('settings:accountSettings')}</h2>
           </div>
 
           {/* Navigation */}
@@ -61,7 +62,7 @@ function SettingsLayout() {
               style={{ color: '#0f0f0f' }}
             >
               <ArrowLeft size={20} />
-              <span className="text-sm">返回首页</span>
+              <span className="text-sm">{t('settings:backToHome')}</span>
             </NavLink>
           </div>
         </div>

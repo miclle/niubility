@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 
@@ -26,6 +27,7 @@ export interface ArticleEditorFormProps {
 
 // ArticleEditorForm is the editor form for creating/editing long-form article content.
 function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }: ArticleEditorFormProps) {
+  const { t } = useTranslation('editor')
   const { currentUser, categories } = useAppContext()
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'super_admin'
 
@@ -129,7 +131,7 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
   }
 
   if (loading) {
-    return <div className="text-center py-20" style={{ color: '#909090' }}>加载中...</div>
+    return <div className="text-center py-20" style={{ color: '#909090' }}>{t('loading')}</div>
   }
 
   return (
@@ -138,7 +140,7 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
       <div>
         <textarea
           ref={titleRef}
-          placeholder="输入文章标题..."
+          placeholder={t('titlePlaceholder')}
           value={title}
           onChange={(e) => { setTitle(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }}
           onInput={(e) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px' }}
@@ -151,7 +153,7 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
 
       {/* Cover Image */}
       <div>
-        <ImageUpload value={coverUrl} onChange={setCoverUrl} placeholder="拖拽或点击上传封面图片" />
+        <ImageUpload value={coverUrl} onChange={setCoverUrl} placeholder={t('coverDragOrClick')} />
       </div>
 
       {/* Body - Rich Text Editor */}
@@ -164,16 +166,16 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
 
       {/* Meta fields in a compact section */}
       <div className="bg-white rounded-xl p-5 space-y-4" style={{ border: '1px solid #e5e5e5' }}>
-        <h3 className="text-sm font-medium" style={{ color: '#0f0f0f' }}>文章设置</h3>
+        <h3 className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('articleSettings')}</h3>
 
         {/* Category */}
         {categories.length > 0 && (
           <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>分类 *</label>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('category')} *</label>
             <Select value={category} onValueChange={(val) => val && setCategory(val)}>
               <SelectTrigger className="w-full">
                 <span className="flex-1 text-left">
-                  {category ? categories.find((c) => c.slug === category)?.name || category : '选择分类'}
+                  {category ? categories.find((c) => c.slug === category)?.name || category : t('categoryPlaceholder')}
                 </span>
               </SelectTrigger>
               <SelectContent>
@@ -186,7 +188,7 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
         )}
 
         {/* Tags */}
-        <TagInput tags={tags} onChange={setTags} label="标签" />
+        <TagInput tags={tags} onChange={setTags} label={t('tags')} />
 
         {/* Speaker (admin only) */}
         {isAdmin && (
@@ -194,11 +196,11 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
             <SpeakerSelector
               defaultSpeaker={selectedSpeaker || undefined}
               onChange={handleSpeakerChange}
-              label="作者/主讲人"
+              label={t('authorOrSpeaker')}
             />
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>作者简介</label>
-              <Input placeholder="作者简介" value={speakerBio} onChange={(e) => setSpeakerBio(e.target.value)} />
+              <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('authorBio')}</label>
+              <Input placeholder={t('speakerBioPlaceholder')} value={speakerBio} onChange={(e) => setSpeakerBio(e.target.value)} />
             </div>
           </div>
         )}

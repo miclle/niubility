@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ThumbsUp, MessageCircle, Pencil, Bookmark, Download, FileText } from 'lucide-react'
 import dayjs from 'dayjs'
-import relativeTime from 'dayjs/plugin/relativeTime'
-import 'dayjs/locale/zh-cn'
+import { useTranslation } from 'react-i18next'
 
 import { getContent, toggleLike, favoriteContent } from 'src/api/content'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
@@ -15,11 +14,9 @@ import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import type { Content } from 'src/types/content'
 
-dayjs.extend(relativeTime)
-dayjs.locale('zh-cn')
-
 // ArticleDetail displays a single article content item in a Medium-style layout.
 function ArticleDetail() {
+  const { t } = useTranslation('content')
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { currentUser } = useAppContext()
@@ -53,11 +50,11 @@ function ArticleDetail() {
   }, [id, navigate])
 
   if (loading) {
-    return <div className="p-6 text-center" style={{ color: '#606060' }}>加载中...</div>
+    return <div className="p-6 text-center" style={{ color: '#606060' }}>{t('content:loading')}</div>
   }
 
   if (error || !content) {
-    return <div className="p-6 text-center" style={{ color: '#606060' }}>内容不存在</div>
+    return <div className="p-6 text-center" style={{ color: '#606060' }}>{t('content:notFound')}</div>
   }
 
   const isDraft = content.status === 'draft'
@@ -69,7 +66,7 @@ function ArticleDetail() {
 
     return (
       <div className="mb-8 p-4 rounded-xl" style={{ background: '#fff', border: '1px solid #e5e5e5' }}>
-        <h3 className="text-base font-medium mb-3" style={{ color: '#0f0f0f' }}>资料下载</h3>
+        <h3 className="text-base font-medium mb-3" style={{ color: '#0f0f0f' }}>{t('content:download')}</h3>
         <div className="space-y-2">
           {docs.map((doc) => (
             <a
@@ -99,7 +96,7 @@ function ArticleDetail() {
 
   const draftBanner = isDraft ? (
     <div className="mb-4 px-4 py-3 rounded-xl text-sm font-medium" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
-      草稿预览 — 此内容尚未发布，仅作者可见
+      {t('common:draftBanner')}
     </div>
   ) : null
 
@@ -117,10 +114,10 @@ function ArticleDetail() {
           </Avatar>
           <div>
             <div className="text-sm font-medium" style={{ color: '#0f0f0f' }}>
-              {content.speaker?.name || content.author?.name || content.speaker_name || '未知作者'}
+              {content.speaker?.name || content.author?.name || content.speaker_name || t('common:unknownAuthor')}
             </div>
             <div className="text-xs" style={{ color: '#606060' }}>
-              {dayjs(content.created_at).format('YYYY 年 M 月 D 日')}
+              {dayjs(content.created_at).format(t('content:articleDate'))}
               {content.speaker_bio && <span> · {content.speaker_bio}</span>}
             </div>
           </div>
@@ -190,7 +187,7 @@ function ArticleDetail() {
             {canEdit && (
               <Link to={contentEditPath(content)} className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors no-underline" style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}>
                 <Pencil size={16} />
-                <span>编辑</span>
+                <span>{t('common:edit')}</span>
               </Link>
             )}
           </div>

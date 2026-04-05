@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Globe2, Upload, Shield } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { useAppContext } from 'src/context/app'
 import { useSettings, useSaveSettings, SettingsLoading, SaveButton } from './shared'
@@ -10,6 +11,7 @@ import type { SiteConfig } from 'src/types/user'
 
 // SettingsSite provides the site configuration settings page.
 function SettingsSite() {
+    const { t } = useTranslation('admin')
     const { siteConfig, setSiteConfig } = useAppContext()
     const { loading, settingsMap, reload } = useSettings()
     const { saving, save } = useSaveSettings(reload)
@@ -53,7 +55,7 @@ function SettingsSite() {
             const key = await uploadSiteResource(file)
             setFaviconURL(key)
         } catch (err) {
-            console.error('Upload favicon failed:', err)
+            console.error(t('admin:uploadFaviconFailed'), err)
         } finally {
             setUploading(false)
         }
@@ -68,7 +70,7 @@ function SettingsSite() {
             const key = await uploadSiteResource(file)
             setLogoURL(key)
         } catch (err) {
-            console.error('Upload logo failed:', err)
+            console.error(t('admin:uploadLogoFailed'), err)
         } finally {
             setUploading(false)
         }
@@ -85,7 +87,7 @@ function SettingsSite() {
             const key = await uploadSiteResource(file)
             setter(key)
         } catch (err) {
-            console.error('Upload content asset failed:', err)
+            console.error(t('admin:uploadContentAssetFailed'), err)
         } finally {
             setUploading(false)
         }
@@ -139,12 +141,12 @@ function SettingsSite() {
             <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
                 <div className="flex items-center gap-2 mb-6">
                     <Globe2 size={20} style={{ color: '#0f0f0f' }} />
-                    <h3 className="font-medium" style={{ color: '#0f0f0f' }}>基本设置</h3>
+                    <h3 className="font-medium" style={{ color: '#0f0f0f' }}>{t('admin:basicSettings')}</h3>
                 </div>
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
-                            网站名称
+                            {t('admin:siteName')}
                         </label>
                         <Input
                             placeholder="Niubility"
@@ -154,30 +156,30 @@ function SettingsSite() {
                     </div>
                     <div>
                         <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
-                            网站描述
+                            {t('admin:siteDescription')}
                         </label>
                         <Input
-                            placeholder="企业内部学习与文化平台"
+                            placeholder={t('admin:siteDescriptionPlaceholder')}
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                         />
                     </div>
                     <div>
                         <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
-                            网站关键词
+                            {t('admin:siteKeywords')}
                         </label>
                         <Input
-                            placeholder="学习,文化,视频,平台"
+                            placeholder={t('admin:siteKeywordsPlaceholder')}
                             value={keywords}
                             onChange={(e) => setKeywords(e.target.value)}
                         />
                     </div>
                     <div>
                         <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
-                            版本标识
+                            {t('admin:versionLabel')}
                         </label>
                         <Input
-                            placeholder="例如 v2.3.1 / 2026 Spring"
+                            placeholder={t('admin:versionLabelPlaceholder')}
                             value={version}
                             onChange={(e) => setVersion(e.target.value)}
                         />
@@ -241,16 +243,16 @@ function SettingsSite() {
 
             <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
                 <div className="flex items-center gap-2 mb-6">
-                    <h3 className="font-medium" style={{ color: '#0f0f0f' }}>内容默认图</h3>
+                    <h3 className="font-medium" style={{ color: '#0f0f0f' }}>{t('admin:contentDefaultImages')}</h3>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                     <div>
                         <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
-                            视频默认封面
+                            {t('admin:videoDefaultCover')}
                         </label>
                         <div className="flex items-center gap-3">
                             {videoDefaultCoverURL && (
-                                <img src={siteResourceURL(videoDefaultCoverURL)} alt="视频默认封面" className="h-10 w-16 rounded object-cover" />
+                                <img src={siteResourceURL(videoDefaultCoverURL)} alt={t('admin:videoDefaultCover')} className="h-10 w-16 rounded object-cover" />
                             )}
                             <button
                                 type="button"
@@ -272,11 +274,11 @@ function SettingsSite() {
                     </div>
                     <div>
                         <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
-                            视频 speaker 默认头像
+                            {t('admin:videoSpeakerDefaultAvatar')}
                         </label>
                         <div className="flex items-center gap-3">
                             {videoSpeakerDefaultAvatarURL && (
-                                <img src={siteResourceURL(videoSpeakerDefaultAvatarURL)} alt="视频 speaker 默认头像" className="h-10 w-10 rounded-full object-cover" />
+                                <img src={siteResourceURL(videoSpeakerDefaultAvatarURL)} alt={t('admin:videoSpeakerDefaultAvatar')} className="h-10 w-10 rounded-full object-cover" />
                             )}
                             <button
                                 type="button"
@@ -298,7 +300,7 @@ function SettingsSite() {
                     </div>
                 </div>
                 <p className="mt-3 text-xs" style={{ color: '#606060' }}>
-                    当视频未设置封面、speaker 未设置头像时，会自动回退到这里配置的默认资源。图集会优先使用已上传图片中的封面图或首张图片。
+                    {t('admin:contentDefaultImagesHelp')}
                 </p>
             </div>
 
@@ -306,12 +308,12 @@ function SettingsSite() {
             <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
                 <div className="flex items-center gap-2 mb-6">
                     <Shield size={20} style={{ color: '#0f0f0f' }} />
-                    <h3 className="font-medium" style={{ color: '#0f0f0f' }}>版权与安全</h3>
+                    <h3 className="font-medium" style={{ color: '#0f0f0f' }}>{t('admin:copyrightAndSecurity')}</h3>
                 </div>
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
-                            版权标识
+                            {t('admin:copyrightLabel')}
                         </label>
                         <Input
                             placeholder="Niubility"
@@ -331,8 +333,8 @@ function SettingsSite() {
                             </label>
                         </div>
                         <div>
-                            <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>强制 HTTPS</span>
-                            <p className="text-xs" style={{ color: '#606060' }}>开启后所有 HTTP 请求将重定向到 HTTPS（生产环境建议开启）</p>
+                            <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:forceHTTPS')}</span>
+                            <p className="text-xs" style={{ color: '#606060' }}>{t('admin:forceHTTPSDesc')}</p>
                         </div>
                     </div>
                 </div>
@@ -341,17 +343,17 @@ function SettingsSite() {
             {/* Footer */}
             <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
                 <div className="flex items-center gap-2 mb-6">
-                    <h3 className="font-medium" style={{ color: '#0f0f0f' }}>页脚内容</h3>
+                    <h3 className="font-medium" style={{ color: '#0f0f0f' }}>{t('admin:footerContentLabel')}</h3>
                 </div>
                 <div>
                     <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
-                        页脚内容
+                        {t('admin:footerContentLabel')}
                     </label>
                     <p className="text-xs mb-2" style={{ color: '#606060' }}>
-                        支持 HTML 格式，留空则不显示
+                        {t('admin:footerContentHelp')}
                     </p>
                     <textarea
-                        placeholder="支持 HTML 格式，留空则不显示"
+                        placeholder={t('admin:footerContentPlaceholder')}
                         value={footer}
                         onChange={(e) => setFooter(e.target.value)}
                         className="w-full min-h-32 rounded-lg px-3 py-2 resize-none focus:outline-none"

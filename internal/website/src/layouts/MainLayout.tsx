@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { Search, Menu, User, ServerOff } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { useAppContext } from 'src/context/app'
 import { useSiteHead } from 'src/hooks/useSiteHead'
@@ -10,9 +11,11 @@ import type { ContentType } from 'src/types/content'
 import SidebarNav from './SidebarNav'
 import CreateMenu from './CreateMenu'
 import UserMenu from './UserMenu'
+import LanguageSwitcher from 'src/components/LanguageSwitcher'
 
 // MainLayout provides YouTube-style layout with top nav and left sidebar.
 function MainLayout() {
+  const { t } = useTranslation('nav')
   const { initialized, currentUser, categories, siteConfig } = useAppContext()
     const location = useLocation()
 
@@ -64,8 +67,8 @@ function MainLayout() {
                         <ServerOff size={28} style={{ color: '#909090' }} />
                     </div>
                     <h1 className="text-2xl font-semibold mb-2" style={{ color: '#0f0f0f' }}>Niubility</h1>
-                    <p className="text-sm mb-1" style={{ color: '#606060' }}>系统尚未初始化</p>
-                    <p className="text-xs" style={{ color: '#909090' }}>请联系管理员完成初始设置</p>
+                    <p className="text-sm mb-1" style={{ color: '#606060' }}>{t('nav:notInitialized')}</p>
+                    <p className="text-xs" style={{ color: '#909090' }}>{t('nav:contactAdmin')}</p>
                 </div>
             </div>
         )
@@ -127,7 +130,7 @@ function MainLayout() {
                 <div className="yt-search-box">
                     <input
                         type="text"
-                        placeholder="搜索"
+                        placeholder={t('nav:search')}
                         value={searchValue}
                         onChange={(e) => setSearchValue(e.target.value)}
                         onKeyDown={handleSearchKeyDown}
@@ -142,6 +145,7 @@ function MainLayout() {
                     {currentUser ? (
                         <>
                             <CreateMenu />
+                            <LanguageSwitcher />
                             <UserMenu user={currentUser} />
                         </>
                     ) : (
@@ -156,7 +160,7 @@ function MainLayout() {
                             }}
                         >
                             <User size={16} />
-                            登录
+                            {t('nav:signIn')}
                         </a>
                     )}
                 </div>

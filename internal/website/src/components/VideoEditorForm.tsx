@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -58,6 +59,7 @@ function SortableVideoItem({ item, index, onChange, onRemove }: {
   onChange: (localId: string, field: keyof VideoItem, value: string | number) => void
   onRemove: (localId: string) => void
 }) {
+  const { t } = useTranslation('editor')
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.localId })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
 
@@ -68,7 +70,7 @@ function SortableVideoItem({ item, index, onChange, onRemove }: {
         <div className="flex-shrink-0 mt-1"><GripVertical size={16} style={{ color: '#d4d4d4' }} /></div>
         <div className="flex-1 flex flex-col items-center gap-2 py-4">
           <Loader2 size={24} className="animate-spin" style={{ color: '#909090' }} />
-          <span className="text-sm" style={{ color: '#909090' }}>上传中 {item.progress}%</span>
+          <span className="text-sm" style={{ color: '#909090' }}>{t('uploading')} {item.progress}%</span>
           <div className="w-full max-w-xs h-1.5 rounded-full overflow-hidden" style={{ background: '#e5e5e5' }}>
             <div className="h-full rounded-full transition-all" style={{ width: `${item.progress}%`, background: '#0f0f0f' }} />
           </div>
@@ -102,13 +104,13 @@ function SortableVideoItem({ item, index, onChange, onRemove }: {
 
           {/* Cover image */}
           <div className="flex-shrink-0 w-40">
-            <ImageUpload value={item.coverUrl} onChange={(url) => onChange(item.localId, 'coverUrl', url)} placeholder="上传封面" />
+            <ImageUpload value={item.coverUrl} onChange={(url) => onChange(item.localId, 'coverUrl', url)} placeholder={t('uploadCover')} />
           </div>
 
           {/* Title and description */}
           <div className="flex-1 space-y-2">
-            <Input placeholder="视频标题（可选）" value={item.title} onChange={(e) => onChange(item.localId, 'title', e.target.value)} />
-            <Textarea placeholder="视频描述（可选）" value={item.description} onChange={(e) => onChange(item.localId, 'description', e.target.value)} rows={3} />
+            <Input placeholder={t('videoTitleOptional')} value={item.title} onChange={(e) => onChange(item.localId, 'title', e.target.value)} />
+            <Textarea placeholder={t('videoDescriptionOptional')} value={item.description} onChange={(e) => onChange(item.localId, 'description', e.target.value)} rows={3} />
           </div>
         </div>
       </div>
@@ -118,6 +120,7 @@ function SortableVideoItem({ item, index, onChange, onRemove }: {
 
 // VideoEditorForm is the editor form for creating/editing video content with playlist.
 function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }: VideoEditorFormProps) {
+  const { t } = useTranslation('editor')
   const { currentUser, categories } = useAppContext()
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'super_admin'
 
@@ -208,7 +211,7 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
         // Check for duplicates in existing videos (use ref to avoid stale closure)
         const existingVideo = videosRef.current.find((v) => v.checksum === checksum && v.checksum !== '')
         if (existingVideo) {
-          setUploadError(`视频 ${file.name} 与已有视频 "${existingVideo.filename}" 内容相同，已跳过`)
+          setUploadError(t('videoExistsSkipped', { filename: file.name, existing: existingVideo.filename }))
           continue
         }
 
@@ -222,10 +225,10 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
         })
         setVideos((prev) => prev.map((v) => v.localId === localId ? { ...v, url: key, uploading: false, progress: 100 } : v))
       } catch (err) {
-        setUploadError(`视频 ${file.name} 上传失败: ${err instanceof Error ? err.message : '未知错误'}`)
+        setUploadError(t('videoUploadFailed', { filename: file.name, error: err instanceof Error ? err.message : 'Unknown error' }))
       }
     }
-  }, [])
+  }, [t])
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -288,7 +291,7 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
   }
 
   if (loading) {
-    return <div className="text-center py-20" style={{ color: '#909090' }}>加载中...</div>
+    return <div className="text-center py-20" style={{ color: '#909090' }}>{t('loading')}</div>
   }
 
   const hasUploading = videos.some((v) => v.uploading) || documents.some((d) => d.uploading)
@@ -297,18 +300,18 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
     <form onSubmit={(e) => e.preventDefault()} className="bg-white rounded-xl p-6 space-y-5" style={{ border: '1px solid #e5e5e5' }}>
       {/* Title */}
       <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>标题 *</label>
-        <Input placeholder="请输入视频标题" value={title} onChange={(e) => setTitle(e.target.value)} required />
+        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('title')} *</label>
+        <Input placeholder={t('titlePlaceholder')} value={title} onChange={(e) => setTitle(e.target.value)} required />
       </div>
 
       {/* Category */}
       {categories.length > 0 && (
         <div>
-          <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>分类 *</label>
+          <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('category')} *</label>
           <Select value={category} onValueChange={(val) => val && setCategory(val)}>
             <SelectTrigger className="w-full">
               <span className="flex-1 text-left">
-                {category ? categories.find((c) => c.slug === category)?.name || category : '选择分类'}
+                {category ? categories.find((c) => c.slug === category)?.name || category : t('categoryPlaceholder')}
               </span>
             </SelectTrigger>
             <SelectContent>
@@ -322,19 +325,19 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
 
       {/* Summary */}
       <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>摘要</label>
-        <Textarea placeholder="请输入内容摘要" value={summary} onChange={(e) => setSummary(e.target.value)} rows={2} />
+        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('description')}</label>
+        <Textarea placeholder={t('descriptionPlaceholder')} value={summary} onChange={(e) => setSummary(e.target.value)} rows={2} />
       </div>
 
       {/* Cover Image */}
       <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>封面图</label>
+        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('cover')}</label>
         <ImageUpload value={coverUrl} onChange={setCoverUrl} />
       </div>
 
       {/* Video Upload Area */}
       <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>上传视频 *</label>
+        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('uploadVideo')} *</label>
         {uploadError && (
           <div className="text-xs mb-2 p-2 rounded" style={{ color: '#cc0000', background: '#fff0f0' }}>{uploadError}</div>
         )}
@@ -346,7 +349,7 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
           onDrop={(e) => { e.preventDefault(); handleUploadFiles(Array.from(e.dataTransfer.files)) }}
         >
           <Upload size={24} style={{ color: '#909090' }} />
-          <span className="text-sm" style={{ color: '#909090' }}>拖拽视频到此处或点击选择，支持多个文件</span>
+          <span className="text-sm" style={{ color: '#909090' }}>{t('uploadVideoHint')}</span>
         </div>
         <input ref={fileInputRef} type="file" accept="video/*" multiple onChange={(e) => { if (e.target.files) handleUploadFiles(Array.from(e.target.files)); e.target.value = '' }} className="hidden" />
       </div>
@@ -354,7 +357,7 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
       {/* Video List */}
       {videos.length > 0 && (
         <div>
-          <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>视频列表</label>
+          <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('videoList')}</label>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={videos.map((v) => v.localId)} strategy={verticalListSortingStrategy}>
               <div className="space-y-2 rounded-lg" style={{ border: '1px solid #e5e5e5' }}>
@@ -377,7 +380,7 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
       <DocumentUploadSection documents={documents} docInputRef={docInputRef} onUpload={handleDocumentUpload} onChange={handleDocumentChange} onRemove={handleRemoveDocument} />
 
       {/* Tags */}
-      <TagInput tags={tags} onChange={setTags} label="标签" />
+      <TagInput tags={tags} onChange={setTags} label={t('tags')} />
 
       {/* Speaker (admin only) */}
       {isAdmin && (
@@ -385,11 +388,11 @@ function VideoEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError }:
           <SpeakerSelector
             defaultSpeaker={selectedSpeaker || undefined}
             onChange={handleSpeakerChange}
-            label="主讲人"
+            label={t('speaker')}
           />
           <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>主讲人简介</label>
-            <Input placeholder="主讲人简介" value={speakerBio} onChange={(e) => setSpeakerBio(e.target.value)} />
+            <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('speakerBio')}</label>
+            <Input placeholder={t('speakerBioPlaceholder')} value={speakerBio} onChange={(e) => setSpeakerBio(e.target.value)} />
           </div>
         </div>
       )}

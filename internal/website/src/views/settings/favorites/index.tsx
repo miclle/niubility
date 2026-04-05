@@ -2,6 +2,7 @@ import { useRef, useCallback } from 'react'
 import { NavLink } from 'react-router-dom'
 import { FileText, Play, Image, Heart, MessageSquare, Bookmark } from 'lucide-react'
 import { useInfiniteQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 
 import { useAppContext } from 'src/context/app'
 import { listFavorites } from 'src/api/content'
@@ -12,6 +13,8 @@ const limit = 20
 
 // Favorites displays the current user's favorited content list with infinite scroll.
 function Favorites() {
+  const { t } = useTranslation('settings')
+  const { t: tc } = useTranslation('common')
   const { currentUser } = useAppContext()
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
@@ -38,12 +41,12 @@ function Favorites() {
 
   return (
     <div className="mx-auto py-8 px-6" style={{ maxWidth: 960 }}>
-      <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>我的收藏</h1>
+      <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>{t('settings:myFavoritesTitle')}</h1>
 
       {contents.length === 0 && !loading ? (
         <div className="text-center py-16">
           <Bookmark size={48} className="mx-auto mb-4" style={{ color: '#d4d4d4' }} />
-          <p className="text-sm" style={{ color: '#909090' }}>暂无收藏内容</p>
+          <p className="text-sm" style={{ color: '#909090' }}>{tc('common:noContent')}</p>
         </div>
       ) : (
         <div className="space-y-1">
@@ -68,7 +71,7 @@ function Favorites() {
                 </NavLink>
                 <div className="flex items-center gap-3 mt-1">
                   <span className="text-xs" style={{ color: '#909090' }}>
-                    {content.author?.name || '未知作者'}
+                    {content.author?.name || tc('common:unknownAuthor')}
                   </span>
                   <span className="text-xs" style={{ color: '#909090' }}>
                     {new Date(content.created_at).toLocaleDateString('zh-CN')}
@@ -87,7 +90,7 @@ function Favorites() {
       )}
 
       <div ref={loaderRef} className="py-4 text-center text-sm" style={{ color: '#909090' }}>
-        {loading ? '加载中...' : !hasNextPage && contents.length > 0 ? '没有更多了' : ''}
+        {loading ? tc('common:loading') : !hasNextPage && contents.length > 0 ? tc('common:noMoreContent') : ''}
       </div>
     </div>
   )

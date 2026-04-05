@@ -1,5 +1,6 @@
 import { useRef, useCallback } from 'react'
 import { useLocation, useOutletContext } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useInfiniteQuery } from '@tanstack/react-query'
 
 import { listContents } from 'src/api/content'
@@ -22,6 +23,7 @@ function tabFromPath(pathname: string): ContentTab {
 
 // ProfileContents displays the content grid for a user profile (all/video/article/speaker).
 export default function ProfileContents() {
+  const { t } = useTranslation(['profile', 'common'])
   const { profile } = useOutletContext<ProfileContext>()
   const location = useLocation()
   const tab = tabFromPath(location.pathname)
@@ -57,7 +59,7 @@ export default function ProfileContents() {
     <>
       {contents.length === 0 && !loading ? (
         <div className="text-center py-20" style={{ color: '#606060' }}>
-          暂无内容
+          {t('common:noContent')}
         </div>
       ) : (
         <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
@@ -67,8 +69,8 @@ export default function ProfileContents() {
         </div>
       )}
       <div ref={loadMoreRef} className="text-center py-8" style={{ color: '#606060' }}>
-        {loading && '加载中...'}
-        {!hasNextPage && contents.length > 0 && '没有更多内容了'}
+        {loading && t('common:loading')}
+        {!hasNextPage && contents.length > 0 && t('common:noMoreContent')}
       </div>
     </>
   )

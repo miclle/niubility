@@ -5,21 +5,22 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Loader2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { updateUser } from 'src/api/user'
 import type { User, Role, UserStatus, UpdateUserArgs } from 'src/types/user'
 
-// roleLabels maps role values to Chinese display labels with styles
-const roleLabels: Record<Role, { label: string; bg: string; color: string }> = {
-  super_admin: { label: '超级管理员', bg: '#fde68a', color: '#78350f' },
-  admin: { label: '管理员', bg: '#fef3c7', color: '#92400e' },
-  user: { label: '普通用户', bg: '#f2f2f2', color: '#606060' },
+// roleColors maps role values to background/text colors only (labels are translated inline)
+const roleColors: Record<Role, { bg: string; color: string }> = {
+  super_admin: { bg: '#fde68a', color: '#78350f' },
+  admin: { bg: '#fef3c7', color: '#92400e' },
+  user: { bg: '#f2f2f2', color: '#606060' },
 }
 
-// statusLabels maps status values to Chinese display labels with styles
-const statusLabels: Record<UserStatus, { label: string; bg: string; color: string }> = {
-  activated: { label: '已激活', bg: '#dcfce7', color: '#166534' },
-  deactivated: { label: '已禁用', bg: '#fee2e2', color: '#991b1b' },
+// statusColors maps status values to background/text colors only (labels are translated inline)
+const statusColors: Record<UserStatus, { bg: string; color: string }> = {
+  activated: { bg: '#dcfce7', color: '#166534' },
+  deactivated: { bg: '#fee2e2', color: '#991b1b' },
 }
 
 // UserEditForm represents the editable form state for a user.
@@ -45,14 +46,14 @@ function formatSocialAccounts(socialAccounts?: Record<string, string>) {
 }
 
 // parseSocialAccounts parses key=value text format into a record, with validation.
-function parseSocialAccounts(value: string): { ok: true; value: Record<string, string> } | { ok: false; message: string } {
+function parseSocialAccounts(value: string): { ok: true; value: Record<string, string> } | { ok: false; code: 'invalid_format' } {
   const lines = value.split('\n').map(line => line.trim()).filter(Boolean)
   const result: Record<string, string> = {}
 
   for (const line of lines) {
     const [key, ...rest] = line.split('=')
     if (!key || rest.length === 0) {
-      return { ok: false, message: '社交账号格式不正确，请使用每行 key=value' }
+      return { ok: false, code: 'invalid_format' }
     }
     result[key.trim()] = rest.join('=').trim()
   }
@@ -71,6 +72,8 @@ interface UserEditModalProps {
 
 // UserEditModal renders a dialog for editing user information.
 function UserEditModal({ user, open, onOpenChange, getDepartmentNames, onSaved }: UserEditModalProps) {
+  const { t } = useTranslation('admin')
+  const { t: tc } = useTranslation('common')
   const [form, setForm] = useState<UserEditForm | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -103,13 +106,13 @@ function UserEditModal({ user, open, onOpenChange, getDepartmentNames, onSaved }
     if (!user || !form) return
 
     if (!form.username.trim() || !form.email.trim()) {
-      setSaveError('用户名和邮箱不能为空')
+      setSaveError(t('admin:usernameEmailRequired'))
       return
     }
 
     const socialAccounts = parseSocialAccounts(form.social_accounts)
     if (!socialAccounts.ok) {
-      setSaveError(socialAccounts.message)
+      setSaveError(t('admin:socialAccountsFormatError'))
       return
     }
 
@@ -138,8 +141,8 @@ function UserEditModal({ user, open, onOpenChange, getDepartmentNames, onSaved }
       onOpenChange(false)
       setForm(null)
     } catch (error: any) {
-      const message = error?.response?.data?.message || '保存失败，请稍后重试'
-      setSaveError(typeof message === 'string' ? message : '保存失败，请稍后重试')
+      const message = error?.response?.data?.message || tc('common:saveFailed')
+      setSaveError(typeof message === 'string' ? message : tc('common:saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -157,60 +160,60 @@ function UserEditModal({ user, open, onOpenChange, getDepartmentNames, onSaved }
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>编辑用户信息</DialogTitle>
+          <DialogTitle>{t('admin:editUserInfo')}</DialogTitle>
         </DialogHeader>
 
         {form && (
           <div className="grid gap-4 py-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>用户名</label>
+                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:userName')}</label>
                 <Input value={form.username} onChange={(e) => handleFormChange('username', e.target.value)} />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>姓名</label>
+                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:fullName')}</label>
                 <Input value={form.name} onChange={(e) => handleFormChange('name', e.target.value)} />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>邮箱</label>
+                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:emailAddress')}</label>
                 <Input type="email" value={form.email} onChange={(e) => handleFormChange('email', e.target.value)} />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>手机</label>
+                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:mobilePhone')}</label>
                 <Input value={form.mobile} onChange={(e) => handleFormChange('mobile', e.target.value)} />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>角色</label>
+                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:userRole')}</label>
                 <Select value={form.role} onValueChange={(value) => handleFormChange('role', value as Role)}>
                   <SelectTrigger>
                     <SelectValue>
-                      <span>{roleLabels[form.role].label}</span>
+                      <span>{roleColors[form.role] ? t('admin:' + (form.role === 'super_admin' ? 'superAdmin' : form.role === 'admin' ? 'admin' : 'user')) : form.role}</span>
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="super_admin">超级管理员</SelectItem>
-                    <SelectItem value="admin">管理员</SelectItem>
-                    <SelectItem value="user">普通用户</SelectItem>
+                    <SelectItem value="super_admin">{t('admin:superAdmin')}</SelectItem>
+                    <SelectItem value="admin">{t('admin:admin')}</SelectItem>
+                    <SelectItem value="user">{t('admin:user')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>状态</label>
+                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:userStatus')}</label>
                 <Select value={form.status} onValueChange={(value) => handleFormChange('status', value as UserStatus)}>
                   <SelectTrigger>
                     <SelectValue>
-                      <span>{statusLabels[form.status].label}</span>
+                      <span>{statusColors[form.status] ? t('admin:' + (form.status === 'activated' ? 'activated' : 'deactivated')) : form.status}</span>
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="activated">已激活</SelectItem>
-                    <SelectItem value="deactivated">已禁用</SelectItem>
+                    <SelectItem value="activated">{t('admin:activated')}</SelectItem>
+                    <SelectItem value="deactivated">{t('admin:deactivated')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -218,40 +221,40 @@ function UserEditModal({ user, open, onOpenChange, getDepartmentNames, onSaved }
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>部门</label>
-                <Input value={form.department_ids} onChange={(e) => handleFormChange('department_ids', e.target.value)} placeholder="如 1,2,3" />
+                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:userDepartment')}</label>
+                <Input value={form.department_ids} onChange={(e) => handleFormChange('department_ids', e.target.value)} placeholder={t('admin:departmentHint')} />
                 <div className="text-xs" style={{ color: '#909090' }}>
                   {getDepartmentNames(form.department_ids)}
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>重置密码</label>
-                <Input type="password" value={form.password} onChange={(e) => handleFormChange('password', e.target.value)} placeholder="留空则不修改" />
+                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:resetPassword')}</label>
+                <Input type="password" value={form.password} onChange={(e) => handleFormChange('password', e.target.value)} placeholder={t('admin:resetPasswordHint')} />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>头像地址</label>
+              <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:avatarURL')}</label>
               <Input value={form.avatar} onChange={(e) => handleFormChange('avatar', e.target.value)} />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>所在地</label>
+              <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:userLocation')}</label>
               <Input value={form.location} onChange={(e) => handleFormChange('location', e.target.value)} />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>简介</label>
+              <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:userBio')}</label>
               <Textarea rows={3} value={form.bio} onChange={(e) => handleFormChange('bio', e.target.value)} />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>社交账号</label>
+              <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:socialAccountsLabel')}</label>
               <Textarea
                 rows={4}
                 value={form.social_accounts}
                 onChange={(e) => handleFormChange('social_accounts', e.target.value)}
-                placeholder={'每行一个，格式为 key=value\n例如 github=alice'}
+                placeholder={t('admin:socialAccountsPlaceholder')}
               />
             </div>
 
@@ -262,10 +265,10 @@ function UserEditModal({ user, open, onOpenChange, getDepartmentNames, onSaved }
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => handleOpenChange(false)}>取消</Button>
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>{tc('common:cancel')}</Button>
           <Button onClick={handleSaveUser} disabled={saving}>
             {saving ? <Loader2 size={14} className="animate-spin" /> : null}
-            保存
+            {t('admin:save')}
           </Button>
         </DialogFooter>
       </DialogContent>

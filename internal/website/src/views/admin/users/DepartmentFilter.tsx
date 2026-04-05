@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Search, ChevronRight, ChevronDown, Building2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import type { Department } from 'src/types/user'
 
@@ -32,6 +33,7 @@ function DepartmentFilter({
   selectedId,
   onSelect,
 }: DepartmentFilterProps) {
+  const { t } = useTranslation('admin')
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
@@ -112,7 +114,7 @@ function DepartmentFilter({
         className="flex items-center gap-2 rounded-lg border border-input bg-transparent px-3 h-8 text-sm whitespace-nowrap transition-colors hover:bg-accent/50"
       >
         <Building2 size={14} style={{ color: '#606060' }} />
-        <span style={{ color: selectedDept ? '#0f0f0f' : '#606060' }}>{selectedDept ? selectedDept.name : '全部部门'}</span>
+        <span style={{ color: selectedDept ? '#0f0f0f' : '#606060' }}>{selectedDept ? selectedDept.name : t('admin:allDepartments')}</span>
         <ChevronDown size={14} style={{ color: '#909090' }} />
       </button>
       {open && (
@@ -124,7 +126,7 @@ function DepartmentFilter({
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="搜索部门..."
+                placeholder={t('admin:searchDept')}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="w-full h-8 rounded-md border border-input bg-transparent pl-8 pr-3 text-sm outline-none focus:border-ring focus:ring-1 focus:ring-ring/50"
@@ -136,7 +138,7 @@ function DepartmentFilter({
             {filteredDepts ? (
               // Search mode: flat list
               filteredDepts.length === 0 ? (
-                <div className="py-4 text-center text-sm" style={{ color: '#909090' }}>无匹配部门</div>
+                <div className="py-4 text-center text-sm" style={{ color: '#909090' }}>{t('admin:noMatchedDept')}</div>
               ) : (
                 filteredDepts.map(dept => {
                   const isSelected = String(dept.id) === selectedId
@@ -162,7 +164,7 @@ function DepartmentFilter({
                   onClick={() => handleSelect('')}
                 >
                   <span className="w-4" />
-                  <span className="text-sm flex-1" style={{ color: !selectedId ? '#0f0f0f' : '#606060', fontWeight: !selectedId ? 500 : 400 }}>全部部门</span>
+                  <span className="text-sm flex-1" style={{ color: !selectedId ? '#0f0f0f' : '#606060', fontWeight: !selectedId ? 500 : 400 }}>{t('admin:allDepartments')}</span>
                 </div>
                 {tree.map(node => renderNode(node))}
               </>

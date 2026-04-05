@@ -1,5 +1,6 @@
 import { useRef, useCallback } from 'react'
 import { useOutletContext } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useInfiniteQuery } from '@tanstack/react-query'
 
 import { listFollowing } from 'src/api/user'
@@ -11,6 +12,7 @@ const limit = 20
 
 // ProfileFollowing displays the list of users that the profile user is following.
 export default function ProfileFollowing() {
+  const { t } = useTranslation(['profile', 'common'])
   const { profile, currentUser } = useOutletContext<ProfileContext>()
   const username = profile.user.username
 
@@ -34,7 +36,7 @@ export default function ProfileFollowing() {
     <>
       {users.length === 0 && !loading ? (
         <div className="text-center py-20" style={{ color: '#606060' }}>
-          暂未关注任何人
+          {t('profile:noFollowing')}
         </div>
       ) : (
         <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
@@ -44,8 +46,8 @@ export default function ProfileFollowing() {
         </div>
       )}
       <div ref={loadMoreRef} className="text-center py-8" style={{ color: '#606060' }}>
-        {loading && '加载中...'}
-        {!hasNextPage && users.length > 0 && '没有更多了'}
+        {loading && t('common:loading')}
+        {!hasNextPage && users.length > 0 && t('common:noMore')}
       </div>
     </>
   )

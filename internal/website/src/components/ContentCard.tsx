@@ -2,7 +2,6 @@ import { useNavigate } from 'react-router-dom'
 import { Play, Image, FileText } from 'lucide-react'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
-import 'dayjs/locale/zh-cn'
 
 import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
@@ -11,16 +10,17 @@ import { appendImageStyle } from 'src/api/upload'
 import { getContentCover, getVideoSpeakerAvatar, getVideoSpeakerDisplayName } from 'src/lib/content-assets'
 import { useAppContext } from 'src/context/app'
 import type { Content } from 'src/types/content'
+import { useTranslation } from 'react-i18next'
 
 dayjs.extend(relativeTime)
-dayjs.locale('zh-cn')
 
 // ContentCard displays a content item as a card with type-specific visual indicators.
 function ContentCard({ content, hideAuthor = false }: { content: Content; hideAuthor?: boolean }) {
+  const { t } = useTranslation('common')
   const navigate = useNavigate()
   const { siteConfig } = useAppContext()
   const displayUser = content.type === 'video' ? content.speaker : content.author
-  const displayName = content.type === 'video' ? getVideoSpeakerDisplayName(content) : (content.author?.name || '未知作者')
+  const displayName = content.type === 'video' ? getVideoSpeakerDisplayName(content) : (content.author?.name || t('common:unknownAuthor'))
   const displayAvatar = content.type === 'video' ? getVideoSpeakerAvatar(content, siteConfig) : (content.author?.avatar || '')
   const profilePath = displayUser?.username ? `/@${displayUser.username}` : ''
   const mediaItems = content.attachments || []
@@ -68,7 +68,7 @@ function ContentCard({ content, hideAuthor = false }: { content: Content; hideAu
               {/* Video count badge */}
               {mediaItems.length > 1 && (
                 <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded text-xs font-medium" style={{ background: 'rgba(0,0,0,0.7)', color: 'white' }}>
-                  {mediaItems.length} 个视频
+                  {t('common:videoCount', { count: mediaItems.length })}
                 </div>
               )}
             </>
@@ -84,7 +84,7 @@ function ContentCard({ content, hideAuthor = false }: { content: Content; hideAu
           {content.type === 'article' && (
             <div className="absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium" style={{ background: 'rgba(0,0,0,0.7)', color: 'white' }}>
               <FileText size={12} />
-              文章
+              {t('common:article')}
             </div>
           )}
         </div>
@@ -96,8 +96,8 @@ function ContentCard({ content, hideAuthor = false }: { content: Content; hideAu
         {!hideAuthor && (
           <div className="flex-shrink-0" onClick={handleProfileClick}>
             <Avatar className={profilePath ? 'cursor-pointer' : ''}>
-              <SiteAvatarImage src={displayAvatar} alt={displayName || '匿名'} />
-              <AvatarFallback>{displayName?.charAt(0) || '匿'}</AvatarFallback>
+              <SiteAvatarImage src={displayAvatar} alt={displayName || t('common:anonymous')} />
+              <AvatarFallback>{displayName?.charAt(0) || t('common:anonymous')}</AvatarFallback>
             </Avatar>
           </div>
         )}

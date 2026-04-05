@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -52,6 +53,7 @@ function SortableGalleryItem({ item, onRemove, onSetCover }: {
   onRemove: (localId: string) => void
   onSetCover: (localId: string) => void
 }) {
+  const { t } = useTranslation('editor')
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.localId })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
 
@@ -82,7 +84,7 @@ function SortableGalleryItem({ item, onRemove, onSetCover }: {
             onClick={() => onSetCover(item.localId)}
             className="p-1 rounded-full transition-colors"
             style={{ background: item.isCover ? '#f59e0b' : 'rgba(0,0,0,0.5)' }}
-            title={item.isCover ? '当前封面' : '设为封面'}
+            title={item.isCover ? t('currentCover') : t('setAsCover')}
           >
             <Star size={12} fill={item.isCover ? 'white' : 'none'} className="text-white" />
           </button>
@@ -98,12 +100,12 @@ function SortableGalleryItem({ item, onRemove, onSetCover }: {
       </div>
       {item.isCover && (
         <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-medium" style={{ background: '#f59e0b', color: 'white' }}>
-          封面
+          {t('cover')}
         </div>
       )}
       {item.type === 'video' && (
         <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded text-[10px]" style={{ background: 'rgba(0,0,0,0.7)', color: 'white' }}>
-          视频
+          {t('video')}
         </div>
       )}
     </div>
@@ -112,6 +114,7 @@ function SortableGalleryItem({ item, onRemove, onSetCover }: {
 
 // GalleryEditorForm is the editor form for creating/editing gallery (image/short-video) content.
 function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditorFormProps) {
+  const { t } = useTranslation('editor')
   const { categories } = useAppContext()
 
   const [summary, setSummary] = useState('')
@@ -179,7 +182,7 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
       const mediaType: AttachmentType = isVideo ? 'video' : 'image'
 
       if (isVideo && file.size > GALLERY_VIDEO_MAX_SIZE) {
-        setUploadError(`文件 ${file.name} 超过 200MB 限制，已跳过`)
+        setUploadError(t('galleryFileSizeExceeded', { filename: file.name }))
         continue
       }
 
@@ -190,7 +193,7 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
           setItems((prev) => { resolve(prev.some((i) => i.checksum === checksum)); return prev })
         })
         if (isDuplicate) {
-          setUploadError(`文件 ${file.name} 已存在，已跳过`)
+          setUploadError(t('galleryFileExists', { filename: file.name }))
           continue
         }
 
@@ -232,7 +235,7 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
           video.src = fileURL(url)
           video.onloadedmetadata = () => {
             if (video.duration > GALLERY_VIDEO_MAX_DURATION) {
-              setUploadError(`文件 ${file.name} 时长超过 ${GALLERY_VIDEO_MAX_DURATION} 秒，已移除`)
+              setUploadError(t('galleryVideoDurationExceeded', { filename: file.name, duration: GALLERY_VIDEO_MAX_DURATION }))
               setItems((prev) => prev.filter((i) => i.localId !== localId))
             } else {
               setItems((prev) => prev.map((i) => i.localId === localId ? { ...i, duration: video.duration } : i))
@@ -240,12 +243,12 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
           }
         }
       } catch {
-        setUploadError(`文件 ${file.name} 上传失败`)
+        setUploadError(t('galleryFileUploadFailed', { filename: file.name }))
       }
     }
 
     setUploading(false)
-  }, [])
+  }, [t])
 
   const handleRemoveItem = useCallback((localId: string) => {
     setItems((prev) => {
@@ -305,7 +308,7 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
   }
 
   if (loading) {
-    return <div className="text-center py-20" style={{ color: '#909090' }}>加载中...</div>
+    return <div className="text-center py-20" style={{ color: '#909090' }}>{t('loading')}</div>
   }
 
   const uploadedItems = items.filter((i) => i.url)
@@ -314,18 +317,18 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
     <form onSubmit={(e) => e.preventDefault()} className="bg-white rounded-xl p-6 space-y-5" style={{ border: '1px solid #e5e5e5' }}>
       {/* Title */}
       <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>标题 *</label>
-        <Input placeholder="请输入标题" value={title} onChange={(e) => setTitle(e.target.value)} required />
+        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('title')} *</label>
+        <Input placeholder={t('titlePlaceholder')} value={title} onChange={(e) => setTitle(e.target.value)} required />
       </div>
 
       {/* Category */}
       {categories.length > 0 && (
         <div>
-          <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>分类 *</label>
+          <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('category')} *</label>
           <Select value={category} onValueChange={(val) => val && setCategory(val)}>
             <SelectTrigger className="w-full">
               <span className="flex-1 text-left">
-                {category ? categories.find((c) => c.slug === category)?.name || category : '选择分类'}
+                {category ? categories.find((c) => c.slug === category)?.name || category : t('categoryPlaceholder')}
               </span>
             </SelectTrigger>
             <SelectContent>
@@ -339,14 +342,14 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
 
       {/* Summary */}
       <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>描述</label>
-        <Textarea placeholder="请输入图集描述" value={summary} onChange={(e) => setSummary(e.target.value)} rows={3} />
+        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('galleryDescription')}</label>
+        <Textarea placeholder={t('galleryDescriptionPlaceholder')} value={summary} onChange={(e) => setSummary(e.target.value)} rows={3} />
       </div>
 
       {/* Gallery Items */}
       <div>
         <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>
-          图片/短视频 * <span className="font-normal text-xs" style={{ color: '#909090' }}>（视频 ≤120 秒，≤200MB）</span>
+          {t('galleryItemsHint')} * <span className="font-normal text-xs" style={{ color: '#909090' }}>{t('galleryItemsVideoTip')}</span>
         </label>
         {uploadError && (
           <div className="text-xs mb-2" style={{ color: '#cc0000' }}>{uploadError}</div>
@@ -380,12 +383,12 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
           {uploading ? (
             <>
               <Loader2 size={24} className="animate-spin" style={{ color: '#909090' }} />
-              <span className="text-sm" style={{ color: '#909090' }}>上传中...</span>
+              <span className="text-sm" style={{ color: '#909090' }}>{t('uploading')}</span>
             </>
           ) : (
             <>
               <Upload size={24} style={{ color: '#909090' }} />
-              <span className="text-sm" style={{ color: '#909090' }}>拖拽图片或短视频到此处，或点击选择（支持多选）</span>
+              <span className="text-sm" style={{ color: '#909090' }}>{t('galleryUploadHint')}</span>
             </>
           )}
           <input
@@ -404,16 +407,16 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
 
       {/* Tags */}
       <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>标签</label>
+        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('tags')}</label>
         <div className="flex items-center gap-2 mb-2">
           <Input
-            placeholder="输入标签后按回车或点击添加"
+            placeholder={t('tagsPlaceholder')}
             value={tagInput}
             onChange={(e) => setTagInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag() } }}
             className="flex-1"
           />
-          <Button type="button" variant="outline" onClick={handleAddTag}><Plus size={14} />添加</Button>
+          <Button type="button" variant="outline" onClick={handleAddTag}><Plus size={14} />{t('addTag')}</Button>
         </div>
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-2">

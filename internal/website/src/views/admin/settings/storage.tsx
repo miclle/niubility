@@ -3,22 +3,14 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { HardDrive, Shield } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { useAppContext } from 'src/context/app'
 import { MASKED_VALUE, useSettings, useSaveSettings, SettingsLoading, SettingsFeedback, SaveButton } from './shared'
 
-const deliveryProviderLabels: Record<string, string> = {
-  disabled: '关闭分发签名',
-  qiniu: '七牛云私有分发',
-}
-
-const privateAccessLabels: Record<string, string> = {
-  true: '开启签名访问',
-  false: '关闭签名访问',
-}
-
 // SettingsStorage provides the S3 storage settings page.
 function SettingsStorage() {
+  const { t } = useTranslation('admin')
   const { siteConfig, setSiteConfig } = useAppContext()
   const { loading, settingsMap, reload } = useSettings()
   const storageSave = useSaveSettings(reload)
@@ -106,86 +98,86 @@ function SettingsStorage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>存储配置</h1>
+      <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>{t('admin:storageConfig')}</h1>
 
       <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
         <div className="flex items-center gap-2 mb-6">
           <HardDrive size={20} style={{ color: '#0f0f0f' }} />
-          <h3 className="font-medium" style={{ color: '#0f0f0f' }}>对象存储配置（S3 兼容）</h3>
+          <h3 className="font-medium" style={{ color: '#0f0f0f' }}>{t('admin:objectStorageConfig')}</h3>
         </div>
 
         <SettingsFeedback success={storageSave.success} error={storageSave.error} />
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>服务地址（Endpoint）</label>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:serviceEndpoint')}</label>
             <Input
-              placeholder="请输入对象存储服务地址"
+              placeholder={t('admin:serviceEndpointPlaceholder')}
               value={s3Form.endpoint}
               onChange={(e) => setS3Form({ ...s3Form, endpoint: e.target.value })}
             />
-            <p className="text-xs mt-1" style={{ color: '#909090' }}>示例：https://s3.amazonaws.com</p>
+            <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:serviceEndpointExample')}</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>区域（Region）</label>
+              <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:storageRegion')}</label>
               <Input
-                placeholder="请输入存储区域"
+                placeholder={t('admin:storageRegionPlaceholder')}
                 value={s3Form.region}
                 onChange={(e) => setS3Form({ ...s3Form, region: e.target.value })}
               />
-              <p className="text-xs mt-1" style={{ color: '#909090' }}>示例：cn-east-1</p>
+              <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:storageRegionExample')}</p>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>存储桶（Bucket）</label>
+              <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:storageBucket')}</label>
               <Input
-                placeholder="请输入存储桶名称"
+                placeholder={t('admin:storageBucketPlaceholder')}
                 value={s3Form.bucket}
                 onChange={(e) => setS3Form({ ...s3Form, bucket: e.target.value })}
               />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>访问密钥（Access Key）</label>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:accessKey')}</label>
             <Input
-              placeholder="请输入访问密钥"
+              placeholder={t('admin:accessKeyPlaceholder')}
               value={s3Form.access_key}
               onChange={(e) => setS3Form({ ...s3Form, access_key: e.target.value })}
             />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
-              访问密钥口令（Secret Key）
+              {t('admin:secretKey')}
               {hasExistingS3Secret && (
-                <span className="ml-2 text-xs" style={{ color: '#166534' }}>(已设置，留空保持不变)</span>
+                <span className="ml-2 text-xs" style={{ color: '#166534' }}>{t('admin:secretSetHint')}</span>
               )}
             </label>
             <Input
               type="password"
-              placeholder={hasExistingS3Secret ? '留空保持现有密钥不变' : '请输入访问密钥口令'}
+              placeholder={hasExistingS3Secret ? t('admin:secretKeyPlaceholderSet') : t('admin:secretKeyPlaceholderNew')}
               value={s3Form.secret_key}
               onChange={(e) => setS3Form({ ...s3Form, secret_key: e.target.value })}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>公开访问地址（可选）</label>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:publicURL')}</label>
             <Input
-              placeholder="请输入公开访问地址"
+              placeholder={t('admin:publicURLPlaceholder')}
               value={s3Form.public_url}
               onChange={(e) => setS3Form({ ...s3Form, public_url: e.target.value })}
             />
-            <p className="text-xs mt-1" style={{ color: '#909090' }}>示例：https://cdn.example.com</p>
-            <p className="text-xs mt-1" style={{ color: '#909090' }}>仅用于公开访问模式。若启用了下方的私有分发配置，系统会优先使用分发域名而不是这里。</p>
+            <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:publicURLExample')}</p>
+            <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:publicURLHelp')}</p>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>跨域来源（CORS，可选）</label>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:corsOrigin')}</label>
             <Textarea
               rows={3}
               placeholder={"http://localhost:9000\nhttps://example.com"}
               value={s3Form.cors_origin}
               onChange={(e) => setS3Form({ ...s3Form, cors_origin: e.target.value })}
             />
-            <p className="text-xs mt-1" style={{ color: '#909090' }}>允许浏览器跨域上传的来源地址，每行一个，保存时会自动配置 S3 存储桶 CORS 规则</p>
+            <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:corsOriginHelp')}</p>
           </div>
         </div>
 
@@ -197,73 +189,73 @@ function SettingsStorage() {
       <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
         <div className="flex items-center gap-2 mb-6">
           <HardDrive size={20} style={{ color: '#0f0f0f' }} />
-          <h3 className="font-medium" style={{ color: '#0f0f0f' }}>资源分发配置</h3>
+          <h3 className="font-medium" style={{ color: '#0f0f0f' }}>{t('admin:resourceDistributionConfig')}</h3>
         </div>
 
         <SettingsFeedback success={deliverySave.success} error={deliverySave.error} />
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>分发方式</label>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:distributionMethod')}</label>
             <Select
               value={deliveryForm.provider}
               onValueChange={(value) => value && setDeliveryForm({ ...deliveryForm, provider: value })}
             >
               <SelectTrigger className="w-full">
                 <SelectValue>
-                  <span>{deliveryProviderLabels[deliveryForm.provider] || '请选择分发方式'}</span>
+                  <span>{deliveryForm.provider === 'qiniu' ? t('admin:qiniuDistribution') : deliveryForm.provider === 'disabled' ? t('admin:disabledDistribution') : t('admin:selectDistributionMethod')}</span>
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="disabled">关闭分发签名</SelectItem>
-                <SelectItem value="qiniu">七牛云私有分发</SelectItem>
+                <SelectItem value="disabled">{t('admin:disabledDistribution')}</SelectItem>
+                <SelectItem value="qiniu">{t('admin:qiniuDistribution')}</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs mt-1" style={{ color: '#909090' }}>当前第一阶段支持“关闭分发签名”和“七牛云私有分发”。七牛云模式会复用上方的访问密钥与访问密钥口令，为分发域名生成私有样式访问 URL。</p>
+            <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:distributionMethodDesc')}</p>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>分发域名</label>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:distributionDomain')}</label>
             <Input
-              placeholder="请输入分发域名"
+              placeholder={t('admin:distributionDomainPlaceholder')}
               value={deliveryForm.domain}
               onChange={(e) => setDeliveryForm({ ...deliveryForm, domain: e.target.value })}
             />
-            <p className="text-xs mt-1" style={{ color: '#909090' }}>示例：https://img.example.com</p>
-            <p className="text-xs mt-1" style={{ color: '#909090' }}>对外访问资源的分发域名。私有分发与图片样式都通过这个域名生效。</p>
+            <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:distributionDomainExample')}</p>
+            <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:distributionDomainHelp')}</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>私有访问</label>
+              <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:privateAccess')}</label>
               <Select
                 value={deliveryForm.private_enabled}
                 onValueChange={(value) => value && setDeliveryForm({ ...deliveryForm, private_enabled: value })}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue>
-                    <span>{privateAccessLabels[deliveryForm.private_enabled] || '请选择访问方式'}</span>
+                    <span>{deliveryForm.private_enabled === 'true' ? t('admin:enablePrivateAccess') : deliveryForm.private_enabled === 'false' ? t('admin:disablePrivateAccess') : t('admin:selectAccessMethod')}</span>
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="true">开启签名访问</SelectItem>
-                  <SelectItem value="false">关闭签名访问</SelectItem>
+                  <SelectItem value="true">{t('admin:enablePrivateAccess')}</SelectItem>
+                  <SelectItem value="false">{t('admin:disablePrivateAccess')}</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs mt-1" style={{ color: '#909090' }}>启用后会为最终分发 URL 追加访问时效与签名。</p>
+              <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:privateAccessHelp')}</p>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>链接有效期（秒）</label>
+              <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:urlTTLSeconds')}</label>
               <Input
-                placeholder="请输入链接有效期"
+                placeholder={t('admin:urlTTLSecondsPlaceholder')}
                 value={deliveryForm.url_ttl_seconds}
                 onChange={(e) => setDeliveryForm({ ...deliveryForm, url_ttl_seconds: e.target.value })}
               />
-              <p className="text-xs mt-1" style={{ color: '#909090' }}>示例：3600</p>
-              <p className="text-xs mt-1" style={{ color: '#909090' }}>私有分发链接有效期，单位秒。</p>
+              <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:urlTTLSecondsExample')}</p>
+              <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:urlTTLSecondsHelp')}</p>
             </div>
           </div>
         </div>
         <p className="mt-4 text-xs" style={{ color: '#606060' }}>
-          若要在私有对象场景下继续使用图片样式，请配置 qiniu 分发域名，并保持 bucket 为私有。系统会复用上方配置的 Access Key / Secret Key，对最终分发 URL 进行签名；前端访问到的是已签名的分发 URL，而不是 S3 的 X-Amz 临时下载地址。
+          {t('admin:privateDistributionNote')}
         </p>
 
         <div className="mt-6">
@@ -274,7 +266,7 @@ function SettingsStorage() {
       <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
         <div className="flex items-center gap-2 mb-6">
           <HardDrive size={20} style={{ color: '#0f0f0f' }} />
-          <h3 className="font-medium" style={{ color: '#0f0f0f' }}>图片样式</h3>
+          <h3 className="font-medium" style={{ color: '#0f0f0f' }}>{t('admin:imageStyles')}</h3>
         </div>
 
         <SettingsFeedback success={imageStyleSave.success} error={imageStyleSave.error} />
@@ -282,41 +274,41 @@ function SettingsStorage() {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
-              图集封面卡片样式
+              {t('admin:galleryCardImageStyle')}
             </label>
             <Input
-              placeholder="请输入图集封面卡片样式"
+              placeholder={t('admin:galleryCardImageStylePlaceholder')}
               value={galleryCardImageStyle}
               onChange={(e) => setGalleryCardImageStyle(e.target.value)}
             />
-            <p className="text-xs mt-1" style={{ color: '#909090' }}>示例：imageView2/1/w/720/h/405</p>
+            <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:galleryCardImageStyleExample')}</p>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
-              图集详情页图片样式
+              {t('admin:galleryDetailImageStyle')}
             </label>
             <Input
-              placeholder="请输入图集详情页图片样式"
+              placeholder={t('admin:galleryDetailImageStylePlaceholder')}
               value={galleryDetailImageStyle}
               onChange={(e) => setGalleryDetailImageStyle(e.target.value)}
             />
-            <p className="text-xs mt-1" style={{ color: '#909090' }}>示例：imageView2/2/w/960</p>
+            <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:galleryDetailImageStyleExample')}</p>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
-              头像样式
+              {t('admin:avatarImageStyle')}
             </label>
             <Input
-              placeholder="请输入头像样式"
+              placeholder={t('admin:avatarImageStylePlaceholder')}
               value={avatarImageStyle}
               onChange={(e) => setAvatarImageStyle(e.target.value)}
             />
-            <p className="text-xs mt-1" style={{ color: '#909090' }}>示例：imageView2/1/w/160/h/160</p>
+            <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:avatarImageStyleExample')}</p>
           </div>
         </div>
 
         <p className="mt-4 text-xs" style={{ color: '#606060' }}>
-          这里填写的是原样附加到图片 URL 后的查询片段，不需要包含 `?`。建议与上方的分发域名、私有访问策略配套配置。
+          {t('admin:imageStyleHelp')}
         </p>
 
         <div className="mt-6">
@@ -327,7 +319,7 @@ function SettingsStorage() {
       <div className="p-4 rounded-xl" style={{ background: '#f9f9f9', border: '1px solid #e5e5e5' }}>
         <div className="flex items-center gap-2">
           <Shield size={14} style={{ color: '#166534' }} />
-          <span className="text-xs" style={{ color: '#166534' }}>敏感信息（如 Secret Key）使用 AES-256-GCM 加密存储</span>
+          <span className="text-xs" style={{ color: '#166534' }}>{t('admin:secretKeyStorageNote')}</span>
         </div>
       </div>
     </div>

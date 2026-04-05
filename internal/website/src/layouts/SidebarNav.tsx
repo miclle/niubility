@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { Home, Play, FileText, BookOpen, GraduationCap, Heart, Star, Lightbulb, Trophy, Coffee, Briefcase, Globe, Flame, UserCheck, ImageIcon, type LucideIcon } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import type { Category } from 'src/types/content'
 import { useAppContext } from 'src/context/app'
@@ -33,6 +34,7 @@ interface SidebarNavProps {
 
 // SidebarNav renders the sidebar navigation content.
 export default function SidebarNav({ category, typeFilter, isHome, currentUser, categories, locationPathname }: SidebarNavProps) {
+  const { t } = useTranslation('nav')
   const { siteConfig } = useAppContext()
   const copyright = siteConfig?.copyright?.trim() || 'Niubility'
   const siteVersion = siteConfig?.version?.trim() || ''
@@ -51,7 +53,7 @@ export default function SidebarNav({ category, typeFilter, isHome, currentUser, 
         style={{ color: '#0f0f0f' }}
       >
         <Home size={24} />
-        <span className="text-sm">首页</span>
+        <span className="text-sm">{t('nav:home')}</span>
       </NavLink>
       {currentUser && (
         <NavLink
@@ -64,7 +66,7 @@ export default function SidebarNav({ category, typeFilter, isHome, currentUser, 
           style={{ color: '#0f0f0f' }}
         >
           <UserCheck size={24} />
-          <span className="text-sm">关注</span>
+          <span className="text-sm">{t('nav:following')}</span>
         </NavLink>
       )}
     </div>
@@ -74,7 +76,7 @@ export default function SidebarNav({ category, typeFilter, isHome, currentUser, 
   const renderTypeFilterNav = () => (
     <div className="px-3">
       <div className="flex items-center justify-between px-3 py-1 mb-1">
-        <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>类型</span>
+        <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('nav:types')}</span>
       </div>
       <NavLink
         to="/videos"
@@ -82,7 +84,7 @@ export default function SidebarNav({ category, typeFilter, isHome, currentUser, 
         style={{ color: '#0f0f0f' }}
       >
         <Play size={24} />
-        <span className="text-sm">视频</span>
+        <span className="text-sm">{t('nav:video')}</span>
       </NavLink>
       <NavLink
         to="/galleries"
@@ -90,7 +92,7 @@ export default function SidebarNav({ category, typeFilter, isHome, currentUser, 
         style={{ color: '#0f0f0f' }}
       >
         <ImageIcon size={24} />
-        <span className="text-sm">图集</span>
+        <span className="text-sm">{t('nav:gallery')}</span>
       </NavLink>
       <NavLink
         to="/articles"
@@ -98,7 +100,7 @@ export default function SidebarNav({ category, typeFilter, isHome, currentUser, 
         style={{ color: '#0f0f0f' }}
       >
         <FileText size={24} />
-        <span className="text-sm">文章</span>
+        <span className="text-sm">{t('nav:article')}</span>
       </NavLink>
     </div>
   )

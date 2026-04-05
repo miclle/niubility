@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Trash2, Heart, MessageSquare, Play, Image, FileText, Bookmark } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -17,7 +18,6 @@ import { useIntersection } from 'src/hooks/use-intersection'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import type { ContentType } from 'src/types/content'
 
-const typeLabels: Record<ContentType, string> = { video: '视频', gallery: '图集', article: '文章' }
 const typeIcons: Record<ContentType, React.ReactNode> = {
   video: <Play size={12} />,
   gallery: <Image size={12} />,
@@ -46,6 +46,8 @@ export interface ContentTableProps {
 }
 
 function ContentTable({ type, title }: ContentTableProps) {
+  const { t } = useTranslation('admin')
+  const { t: tc } = useTranslation('common')
   const { categories, siteConfig } = useAppContext()
   const queryClient = useQueryClient()
   const categoryLabels = Object.fromEntries(categories.map((c) => [c.slug, c.name]))
@@ -99,24 +101,24 @@ function ContentTable({ type, title }: ContentTableProps) {
             </colgroup>
             <thead>
               <tr style={{ background: '#f9f9f9' }}>
-                <th style={thStyle}>标题</th>
-                <th style={thStyle}>类型</th>
-                <th style={thStyle}>状态</th>
-                <th style={thStyle}>分类</th>
-                <th style={thStyle}>作者</th>
+                <th style={thStyle}>{t('admin:title')}</th>
+                <th style={thStyle}>{t('admin:type')}</th>
+                <th style={thStyle}>{t('admin:status')}</th>
+                <th style={thStyle}>{t('admin:category')}</th>
+                <th style={thStyle}>{t('admin:author')}</th>
                 {type === 'video' && <th style={thStyle}>Speaker</th>}
-                <th style={thStyle}>点赞</th>
-                <th style={thStyle}>评论</th>
-                <th style={thStyle}>收藏</th>
-                <th style={thStyle}>创建时间</th>
-                <th style={thStyle}>操作</th>
+                <th style={thStyle}>{t('admin:likes')}</th>
+                <th style={thStyle}>{t('admin:comments')}</th>
+                <th style={thStyle}>{t('admin:favorites')}</th>
+                <th style={thStyle}>{t('admin:createdAt')}</th>
+                <th style={thStyle}>{t('admin:actions')}</th>
               </tr>
             </thead>
             <tbody>
               {contents.length === 0 && !loading ? (
                 <tr>
                   <td colSpan={type === 'video' ? 11 : 10} className="text-center py-8" style={{ color: '#909090' }}>
-                    暂无内容
+                    {t('admin:noContent')}
                   </td>
                 </tr>
               ) : (
@@ -133,7 +135,7 @@ function ContentTable({ type, title }: ContentTableProps) {
                             {coverUrl ? (
                               <img src={coverUrl} alt="" className="w-full h-full object-cover" />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-xs" style={{ color: '#909090' }}>无封面</div>
+                              <div className="w-full h-full flex items-center justify-center text-xs" style={{ color: '#909090' }}>{t('admin:noCover')}</div>
                             )}
                           </div>
                           <div className="min-w-0 flex-1 overflow-hidden">
@@ -145,12 +147,12 @@ function ContentTable({ type, title }: ContentTableProps) {
                       <td style={tdStyle}>
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs" style={{ background: '#f2f2f2', color: '#606060' }}>
                           {typeIcons[content.type]}
-                          {typeLabels[content.type]}
+                          {tc(content.type)}
                         </span>
                       </td>
                       <td style={tdStyle}>
                         <span className="px-2 py-0.5 rounded text-xs" style={content.status === 'draft' ? { background: '#fef3c7', color: '#92400e' } : { background: '#d1fae5', color: '#065f46' }}>
-                          {content.status === 'draft' ? '草稿' : '已发布'}
+                          {content.status === 'draft' ? t('admin:draft') : t('admin:published')}
                         </span>
                       </td>
                       <td style={tdStyle}>
@@ -223,17 +225,17 @@ function ContentTable({ type, title }: ContentTableProps) {
                               </Button>
                             } />
                             <AlertDialogContent>
-                              <AlertDialogTitle>确认删除</AlertDialogTitle>
+                              <AlertDialogTitle>{tc('common:confirm')}</AlertDialogTitle>
                               <AlertDialogDescription>
-                                确定要删除「{content.title}」吗？此操作不可撤销。
+                                {t('admin:confirmDeleteContent', { title: content.title })}
                               </AlertDialogDescription>
                               <div className="flex justify-end gap-3 mt-4">
                                 <AlertDialogCancel>
-                                  <Button variant="outline" style={{ borderRadius: '18px' }}>取消</Button>
+                                  <Button variant="outline" style={{ borderRadius: '18px' }}>{tc('common:cancel')}</Button>
                                 </AlertDialogCancel>
                                 <AlertDialogAction>
                                   <Button variant="destructive" onClick={() => handleDelete(content.id)} style={{ borderRadius: '18px' }}>
-                                    确认删除
+                                    {tc('common:confirm')}
                                   </Button>
                                 </AlertDialogAction>
                               </div>
@@ -251,7 +253,7 @@ function ContentTable({ type, title }: ContentTableProps) {
       </div>
 
       <div ref={loaderRef} className="py-4 text-center text-sm" style={{ color: '#909090' }}>
-        {loading ? '加载中...' : !hasNextPage && contents.length > 0 ? '没有更多了' : ''}
+        {loading ? tc('common:loading') : !hasNextPage && contents.length > 0 ? tc('common:noMoreContent') : ''}
       </div>
     </div>
   )

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Search, Loader2, X, Pencil } from 'lucide-react'
 import dayjs from 'dayjs'
 import { useInfiniteQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 
 import { listUsers, updateUser, listDepartments } from 'src/api/user'
 import { useIntersection } from 'src/hooks/use-intersection'
@@ -15,17 +16,17 @@ import UserEditModal from './UserEditModal'
 import LabeledSelect from './LabeledSelect'
 import type { User, Role, UserStatus, Department } from 'src/types/user'
 
-// roleLabels maps role values to Chinese display labels with styles
-const roleLabels: Record<Role, { label: string; bg: string; color: string }> = {
-  super_admin: { label: '超级管理员', bg: '#fde68a', color: '#78350f' },
-  admin: { label: '管理员', bg: '#fef3c7', color: '#92400e' },
-  user: { label: '普通用户', bg: '#f2f2f2', color: '#606060' },
+// roleColors maps role values to background/text colors only (labels are translated inline)
+const roleColors: Record<Role, { bg: string; color: string }> = {
+  super_admin: { bg: '#fde68a', color: '#78350f' },
+  admin: { bg: '#fef3c7', color: '#92400e' },
+  user: { bg: '#f2f2f2', color: '#606060' },
 }
 
-// statusLabels maps status values to Chinese display labels with styles
-const statusLabels: Record<UserStatus, { label: string; bg: string; color: string }> = {
-  activated: { label: '已激活', bg: '#dcfce7', color: '#166534' },
-  deactivated: { label: '已禁用', bg: '#fee2e2', color: '#991b1b' },
+// statusColors maps status values to background/text colors only (labels are translated inline)
+const statusColors: Record<UserStatus, { bg: string; color: string }> = {
+  activated: { bg: '#dcfce7', color: '#166534' },
+  deactivated: { bg: '#fee2e2', color: '#991b1b' },
 }
 
 // Table cell styles (module-level for stable references across renders)
@@ -40,6 +41,7 @@ const limit = 20
 
 // AdminUsers displays the admin user management page with department sidebar and user list.
 function AdminUsers() {
+  const { t } = useTranslation('admin')
   const [searchParams, setSearchParams] = useSearchParams()
   const [departments, setDepartments] = useState<Department[]>([])
   const [deptMap, setDeptMap] = useState<Map<number, string>>(new Map())
@@ -128,9 +130,9 @@ function AdminUsers() {
     <div className="flex flex-col flex-1 min-h-0">
       {/* Title */}
       <div className="flex items-center justify-between mb-4 shrink-0">
-        <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>用户管理</h1>
+        <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>{t('admin:userManagement')}</h1>
         <div className="text-sm" style={{ color: '#606060' }}>
-          共 {total} 个用户
+          {t('admin:userCount', { count: total })}
         </div>
       </div>
 
@@ -139,7 +141,7 @@ function AdminUsers() {
         <div className="relative" style={{ minWidth: 280 }}>
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#909090' }} />
           <Input
-            placeholder="搜索用户名、姓名、邮箱或手机号..."
+            placeholder={t('admin:searchPlaceholder')}
             value={search}
             onChange={(e) => updateFilters('search', e.target.value)}
             className="pl-9"
@@ -159,7 +161,7 @@ function AdminUsers() {
             style={{ color: '#606060', background: '#f2f2f2' }}
           >
             <X size={14} />
-            清除筛选
+            {t('admin:clearFilters')}
           </button>
         )}
 
@@ -173,23 +175,23 @@ function AdminUsers() {
           <table style={{ minWidth: 1200, borderCollapse: 'separate', borderSpacing: 0, width: '100%' }}>
             <thead className="sticky top-0 z-20">
               <tr>
-                <th style={stickyTh}>用户</th>
-                <th style={thStyle}>邮箱</th>
-                <th style={thStyle}>手机</th>
-                <th style={thStyle}>部门</th>
-                <th style={thStyle}>关注</th>
-                <th style={thStyle}>角色</th>
-                <th style={thStyle}>状态</th>
-                <th style={thStyle}>注册时间</th>
-                <th style={thStyle}>更新时间</th>
-                <th style={thStyle}>操作</th>
+                <th style={stickyTh}>{t('admin:users')}</th>
+                <th style={thStyle}>{t('admin:emailAddress')}</th>
+                <th style={thStyle}>{t('admin:mobilePhone')}</th>
+                <th style={thStyle}>{t('admin:department')}</th>
+                <th style={thStyle}>{t('admin:followCount')} / {t('admin:fansCount')}</th>
+                <th style={thStyle}>{t('admin:role')}</th>
+                <th style={thStyle}>{t('admin:status')}</th>
+                <th style={thStyle}>{t('admin:createdAt')}</th>
+                <th style={thStyle}>{t('admin:updatedAt')}</th>
+                <th style={thStyle}>{t('admin:actions')}</th>
               </tr>
             </thead>
             <tbody>
               {users.length === 0 && !loading ? (
                 <tr>
                   <td colSpan={columnCount} style={{ textAlign: 'center', padding: 32, color: '#909090' }}>
-                    {hasFilters ? '未找到匹配的用户' : '暂无用户'}
+                    {hasFilters ? t('admin:noUsersMatch') : t('admin:noUsersFound')}
                   </td>
                 </tr>
               ) : (
@@ -215,22 +217,22 @@ function AdminUsers() {
                       </span>
                     </td>
                     <td style={tdStyle}>
-                      <span className="text-xs">{user.following_count} 关注</span>
+                      <span className="text-xs">{user.following_count} {t('admin:followCount')}</span>
                       <span className="mx-1" style={{ color: '#e5e5e5' }}>|</span>
-                      <span className="text-xs">{user.follower_count} 粉丝</span>
+                      <span className="text-xs">{user.follower_count} {t('admin:fansCount')}</span>
                     </td>
                     <td style={tdStyle}>
-                      <LabeledSelect value={user.role} labels={roleLabels} onChange={(val) => handleFieldChange(user.id, 'role', val)} />
+                      <LabeledSelect value={user.role} colors={roleColors} labelKey={(v) => t('admin:' + (v === 'super_admin' ? 'superAdmin' : v === 'admin' ? 'admin' : 'user'))} onChange={(val) => handleFieldChange(user.id, 'role', val)} />
                     </td>
                     <td style={tdStyle}>
-                      <LabeledSelect value={user.status} labels={statusLabels} onChange={(val) => handleFieldChange(user.id, 'status', val)} />
+                      <LabeledSelect value={user.status} colors={statusColors} labelKey={(v) => t('admin:' + (v === 'activated' ? 'activated' : 'deactivated'))} onChange={(val) => handleFieldChange(user.id, 'status', val)} />
                     </td>
                     <td style={tdStyle}>{dayjs(user.created_at).format('YYYY-MM-DD HH:mm')}</td>
                     <td style={tdStyle}>{dayjs(user.updated_at).format('YYYY-MM-DD HH:mm')}</td>
                     <td style={tdStyle}>
                       <Button variant="ghost" size="sm" onClick={() => openEditDialog(user)} style={{ color: '#606060' }}>
                         <Pencil size={14} />
-                        编辑
+                        {t('admin:edit')}
                       </Button>
                     </td>
                   </tr>
@@ -244,11 +246,11 @@ function AdminUsers() {
             {loading && hasNextPage && (
               <div className="flex items-center justify-center gap-2" style={{ color: '#909090' }}>
                 <Loader2 size={16} className="animate-spin" />
-                <span className="text-sm">加载更多...</span>
+                <span className="text-sm">{t('admin:loadingMore')}</span>
               </div>
             )}
             {!hasNextPage && users.length > 0 && (
-              <span className="text-sm" style={{ color: '#909090' }}>已加载全部用户</span>
+              <span className="text-sm" style={{ color: '#909090' }}>{t('admin:allUsersLoaded')}</span>
             )}
           </div>
         </div>
