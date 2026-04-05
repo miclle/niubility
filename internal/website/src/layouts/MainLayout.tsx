@@ -11,7 +11,6 @@ import type { ContentType } from 'src/types/content'
 import SidebarNav from './SidebarNav'
 import CreateMenu from './CreateMenu'
 import UserMenu from './UserMenu'
-import LanguageSwitcher from 'src/components/LanguageSwitcher'
 
 // MainLayout provides YouTube-style layout with top nav and left sidebar.
 function MainLayout() {
@@ -145,7 +144,6 @@ function MainLayout() {
                     {currentUser ? (
                         <>
                             <CreateMenu />
-                            <LanguageSwitcher />
                             <UserMenu user={currentUser} />
                         </>
                     ) : (

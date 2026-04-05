@@ -11,7 +11,6 @@ import { useSiteHead } from 'src/hooks/useSiteHead'
 import { siteResourceURL } from 'src/api/upload'
 import { contentNewPath } from 'src/lib/content-url'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
-import LanguageSwitcher from 'src/components/LanguageSwitcher'
 
 // NavChild represents a sub-menu item under a parent nav item.
 interface NavChild {
@@ -244,7 +243,7 @@ function AdminLayout() {
             <Menu size={24} style={{ color: '#0f0f0f' }} />
           </button>
 
-          {/* Right: Create button + LanguageSwitcher + User menu */}
+          {/* Right: Create button + User menu */}
           <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -274,7 +273,6 @@ function AdminLayout() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <LanguageSwitcher />
 
             {/* User menu */}
             <DropdownMenu>

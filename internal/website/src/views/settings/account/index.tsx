@@ -5,7 +5,9 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { useTranslation } from 'react-i18next'
+import i18n from 'src/i18n'
 
 import { useAppContext } from 'src/context/app'
 import { getProfile, updateProfile } from 'src/api/user'
@@ -53,6 +55,7 @@ function AccountSettings() {
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
   const [avatarUploading, setAvatarUploading] = useState(false)
+  const [language, setLanguage] = useState(i18n.language)
   const avatarInputRef = useRef<HTMLInputElement>(null)
 
   // Load profile data
@@ -199,6 +202,23 @@ function AccountSettings() {
                 )}
               </div>
             ))}
+          </div>
+
+          {/* Language section */}
+          <div className="space-y-4">
+            <h2 className="text-base font-medium" style={{ color: '#0f0f0f' }}>{t('settings:language')}</h2>
+            <div>
+              <Select value={language} onValueChange={(v) => { const lng = v || 'zh-CN'; setLanguage(lng); i18n.changeLanguage(lng); localStorage.setItem('i18nextLng', lng) }}>
+                <SelectTrigger className="w-full max-w-xs">
+                  <span>{language === 'en' ? t('settings:languageEn') : t('settings:languageZhCN')}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="zh-CN">{t('settings:languageZhCN')}</SelectItem>
+                  <SelectItem value="en">{t('settings:languageEn')}</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs mt-1.5" style={{ color: '#909090' }}>{t('settings:languageDescription')}</p>
+            </div>
           </div>
 
           {/* Feedback */}
