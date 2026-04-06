@@ -175,7 +175,6 @@ let placeholderIdCounter = 0
 
 // RichTextEditor is a Tiptap-based rich text editor with image upload support.
 function RichTextEditor({ value, onChange }: RichTextEditorProps) {
-  const { t } = useTranslation('editor')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const editor = useEditor({

@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, XCircle, Loader2, Save } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
 
 import { listSettings, updateSettings } from 'src/api/setting'
 
