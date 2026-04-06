@@ -2,8 +2,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/miclle/niubility/cli/internal/api"
 	"github.com/miclle/niubility/cli/internal/output"
 	"github.com/spf13/cobra"
@@ -41,18 +39,27 @@ var followToggleCmd = &cobra.Command{
 
 		resp, err := apiClient.ToggleFollow(ctx, username)
 		if err != nil {
-			return fmt.Errorf("failed to toggle follow: %w", err)
+			return wrapLocalizedError("Follow.Toggle.Error.ToggleFailed", "failed to toggle follow", err)
 		}
 
 		if isJSONOutput() {
 			return output.NewPrinter(output.FormatJSON).PrintJSON(resp)
 		}
 
-		state := "unfollowed"
+		state := localizedText("Follow.Toggle.State.Unfollowed", "unfollowed", nil)
 		if resp.Following {
-			state = "followed"
+			state = localizedText("Follow.Toggle.State.Followed", "followed", nil)
 		}
-		output.PrintSuccess("%s %s (followers: %d, following: %d)", state, username, resp.FollowerCount, resp.FollowingCount)
+		output.PrintSuccessT(
+			"Follow.Toggle.Success",
+			"{{.State}} {{.Username}} (followers: {{.Followers}}, following: {{.Following}})",
+			map[string]interface{}{
+				"State":     state,
+				"Username":  username,
+				"Followers": resp.FollowerCount,
+				"Following": resp.FollowingCount,
+			},
+		)
 		return nil
 	},
 }
@@ -77,7 +84,7 @@ var followListFollowingCmd = &cobra.Command{
 
 		resp, err := apiClient.ListFollowing(ctx, username, opts)
 		if err != nil {
-			return fmt.Errorf("failed to list following: %w", err)
+			return wrapLocalizedError("Follow.Following.Error.ListFailed", "failed to list following", err)
 		}
 
 		if isJSONOutput() {
@@ -85,18 +92,23 @@ var followListFollowingCmd = &cobra.Command{
 		}
 
 		if len(resp.Items) == 0 {
-			fmt.Printf("%s is not following anyone\n", username)
+			printLocalizedMessage("Follow.Following.Empty", "{{.Username}} is not following anyone", map[string]interface{}{"Username": username})
 			return nil
 		}
 
-		table := output.NewTable("ID", "USERNAME", "NAME", "ROLE")
+		table := output.NewTable(
+			localizedText("Common.Label.Identifier", "ID", nil),
+			localizedText("Common.Label.Username", "USERNAME", nil),
+			localizedText("Common.Label.Name", "NAME", nil),
+			localizedText("Common.Label.Role", "ROLE", nil),
+		)
 		for _, u := range resp.Items {
 			table.AddRow(u.ID, u.Username, u.Name, u.Role)
 		}
 		table.Print()
 
 		if resp.HasMore() {
-			fmt.Printf("\nMore results available. Use --cursor %s to get next page.\n", resp.NextCursor)
+			printPagination(resp.NextCursor)
 		}
 
 		return nil
@@ -123,7 +135,7 @@ var followListFollowersCmd = &cobra.Command{
 
 		resp, err := apiClient.ListFollowers(ctx, username, opts)
 		if err != nil {
-			return fmt.Errorf("failed to list followers: %w", err)
+			return wrapLocalizedError("Follow.Followers.Error.ListFailed", "failed to list followers", err)
 		}
 
 		if isJSONOutput() {
@@ -131,18 +143,23 @@ var followListFollowersCmd = &cobra.Command{
 		}
 
 		if len(resp.Items) == 0 {
-			fmt.Printf("%s has no followers\n", username)
+			printLocalizedMessage("Follow.Followers.Empty", "{{.Username}} has no followers", map[string]interface{}{"Username": username})
 			return nil
 		}
 
-		table := output.NewTable("ID", "USERNAME", "NAME", "ROLE")
+		table := output.NewTable(
+			localizedText("Common.Label.Identifier", "ID", nil),
+			localizedText("Common.Label.Username", "USERNAME", nil),
+			localizedText("Common.Label.Name", "NAME", nil),
+			localizedText("Common.Label.Role", "ROLE", nil),
+		)
 		for _, u := range resp.Items {
 			table.AddRow(u.ID, u.Username, u.Name, u.Role)
 		}
 		table.Print()
 
 		if resp.HasMore() {
-			fmt.Printf("\nMore results available. Use --cursor %s to get next page.\n", resp.NextCursor)
+			printPagination(resp.NextCursor)
 		}
 
 		return nil
@@ -159,4 +176,32 @@ func init() {
 	followListFollowingCmd.Flags().StringVar(&followListCursor, "cursor", "", "Pagination cursor")
 	followListFollowersCmd.Flags().IntVarP(&followListLimit, "limit", "l", 20, "Limit number of results")
 	followListFollowersCmd.Flags().StringVar(&followListCursor, "cursor", "", "Pagination cursor")
+}
+
+func localizeFollowCommands() {
+	followCmd.Short = localizedText("Follow.Short", "Manage follows", nil)
+	followCmd.Long = localizedText("Follow.Long", "Manage user follow relationships.", nil)
+
+	followToggleCmd.Short = localizedText("Follow.Toggle.Short", "Toggle follow on a user", nil)
+	followToggleCmd.Long = localizedText("Follow.Toggle.Long", "Toggle follow on a user. Same command to follow or unfollow.", nil)
+	followToggleCmd.Example = localizedText("Follow.Toggle.Example", followToggleCmd.Example, nil)
+
+	followListFollowingCmd.Short = localizedText("Follow.Following.Short", "List users that a user is following", nil)
+	followListFollowingCmd.Example = localizedText("Follow.Following.Example", followListFollowingCmd.Example, nil)
+
+	followListFollowersCmd.Short = localizedText("Follow.Followers.Short", "List followers of a user", nil)
+	followListFollowersCmd.Example = localizedText("Follow.Followers.Example", followListFollowersCmd.Example, nil)
+
+	if flag := followListFollowingCmd.Flags().Lookup("limit"); flag != nil {
+		flag.Usage = localizedText("Common.Flag.Limit", "Limit number of results", nil)
+	}
+	if flag := followListFollowingCmd.Flags().Lookup("cursor"); flag != nil {
+		flag.Usage = localizedText("Common.Flag.Cursor", "Pagination cursor", nil)
+	}
+	if flag := followListFollowersCmd.Flags().Lookup("limit"); flag != nil {
+		flag.Usage = localizedText("Common.Flag.Limit", "Limit number of results", nil)
+	}
+	if flag := followListFollowersCmd.Flags().Lookup("cursor"); flag != nil {
+		flag.Usage = localizedText("Common.Flag.Cursor", "Pagination cursor", nil)
+	}
 }

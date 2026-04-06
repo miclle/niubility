@@ -4,6 +4,8 @@ package api
 import (
 	"context"
 	"fmt"
+
+	clii18n "github.com/miclle/niubility/cli/internal/i18n"
 )
 
 // Boot calls the boot endpoint
@@ -169,7 +171,7 @@ func (c *Client) GetCurrentUser(ctx context.Context) (*User, error) {
 		return nil, err
 	}
 	if !boot.IsAuthenticated() || boot.User == nil {
-		return nil, fmt.Errorf("not authenticated")
+		return nil, fmt.Errorf("%s", clii18n.T("APIClient.Error.NotAuthenticated", "not authenticated", nil))
 	}
 	return boot.User, nil
 }

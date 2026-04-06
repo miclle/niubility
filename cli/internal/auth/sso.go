@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -11,13 +12,14 @@ import (
 	"time"
 
 	"github.com/miclle/niubility/cli/internal/api"
+	clii18n "github.com/miclle/niubility/cli/internal/i18n"
 )
 
 const ssoSuccessPageHTML = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>登录完成</title>
+  <title>Login complete</title>
   <style>
     body { font-family: sans-serif; background: #f5f5f5; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
     .card { background: white; padding: 32px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); max-width: 420px; text-align: center; }
@@ -25,8 +27,8 @@ const ssoSuccessPageHTML = `<!DOCTYPE html>
 </head>
 <body>
   <div class="card">
-    <h1>登录已完成</h1>
-    <p>你可以回到终端继续使用 Niubility CLI。</p>
+    <h1>Login complete</h1>
+    <p>You can return to the terminal and continue using Niubility CLI.</p>
   </div>
 </body>
 </html>`
@@ -40,7 +42,7 @@ type ssoCallbackResult struct {
 func SSOLogin(ctx context.Context, client *api.Client) error {
 	listener, callbackURL, err := startLocalCallbackServer()
 	if err != nil {
-		return fmt.Errorf("start local callback server: %w", err)
+		return fmt.Errorf("%s: %w", clii18n.T("SSO.Error.StartCallbackServer", "start local callback server", nil), err)
 	}
 	defer func() {
 		_ = listener.Close()
@@ -51,7 +53,7 @@ func SSOLogin(ctx context.Context, client *api.Client) error {
 	go func() {
 		if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
 			select {
-			case results <- ssoCallbackResult{Error: fmt.Sprintf("local callback server error: %v", err)}:
+			case results <- ssoCallbackResult{Error: fmt.Sprintf("%s: %v", clii18n.T("SSO.Error.CallbackServer", "local callback server error", nil), err)}:
 			default:
 			}
 		}
@@ -62,30 +64,30 @@ func SSOLogin(ctx context.Context, client *api.Client) error {
 
 	startResp, err := client.StartCLISSO(ctx, callbackURL)
 	if err != nil {
-		return fmt.Errorf("create CLI SSO login session: %w", err)
+		return fmt.Errorf("%s: %w", clii18n.T("SSO.Error.CreateSession", "create CLI SSO login session", nil), err)
 	}
 
-	fmt.Println("正在启动 SSO 登录流程...")
-	fmt.Printf("本地回调服务器已启动: %s\n\n", callbackURL)
-	fmt.Println("正在打开浏览器...")
-	fmt.Printf("如果浏览器没有自动打开，请手动访问:\n%s\n\n", startResp.BrowserURL)
-	fmt.Println("等待登录完成...")
+	fmt.Println(clii18n.T("SSO.Message.StartingFlow", "Starting SSO login flow...", nil))
+	fmt.Printf("%s: %s\n\n", clii18n.T("SSO.Message.CallbackServerStarted", "Local callback server started", nil), callbackURL)
+	fmt.Println(clii18n.T("SSO.Message.OpeningBrowser", "Opening browser...", nil))
+	fmt.Printf("%s:\n%s\n\n", clii18n.T("SSO.Message.ManualVisit", "If the browser did not open automatically, visit this URL manually", nil), startResp.BrowserURL)
+	fmt.Println(clii18n.T("SSO.Message.Waiting", "Waiting for login to complete...", nil))
 
 	if err := openBrowser(startResp.BrowserURL); err != nil {
-		fmt.Printf("无法自动打开浏览器，请手动访问上述 URL: %v\n", err)
+		fmt.Printf("%s: %v\n", clii18n.T("SSO.Error.OpenBrowser", "Could not open the browser automatically, please visit the URL above manually", nil), err)
 	}
 
 	select {
 	case result := <-results:
 		if result.Error != "" {
-			return fmt.Errorf(result.Error)
+			return errors.New(result.Error)
 		}
 		if result.Ticket == "" {
-			return fmt.Errorf("no ticket received from local callback")
+			return fmt.Errorf("%s", clii18n.T("SSO.Error.NoTicket", "no ticket received from local callback", nil))
 		}
 
 		if _, err := client.ExchangeCLISSOTicket(ctx, result.Ticket); err != nil {
-			return fmt.Errorf("exchange CLI SSO ticket: %w", err)
+			return fmt.Errorf("%s: %w", clii18n.T("SSO.Error.ExchangeTicket", "exchange CLI SSO ticket", nil), err)
 		}
 		return nil
 
@@ -116,9 +118,9 @@ func buildLocalCallbackMux(results chan<- ssoCallbackResult) *http.ServeMux {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		if result.Error != "" {
 			w.WriteHeader(http.StatusBadRequest)
-			_, _ = w.Write([]byte("<html><body><h1>登录失败</h1><p>请返回终端查看错误信息。</p></body></html>"))
+			_, _ = w.Write([]byte(clii18n.T("SSO.Page.Error", "<html><body><h1>Login failed</h1><p>Please return to the terminal to view the error details.</p></body></html>", nil)))
 		} else {
-			_, _ = w.Write([]byte(ssoSuccessPageHTML))
+			_, _ = w.Write([]byte(clii18n.T("SSO.Page.Success", ssoSuccessPageHTML, nil)))
 		}
 
 		select {
@@ -132,7 +134,7 @@ func buildLocalCallbackMux(results chan<- ssoCallbackResult) *http.ServeMux {
 
 func openBrowser(target string) error {
 	if _, err := url.Parse(target); err != nil {
-		return fmt.Errorf("invalid browser URL: %w", err)
+		return fmt.Errorf("%s: %w", clii18n.T("SSO.Error.InvalidBrowserURL", "invalid browser URL", nil), err)
 	}
 
 	var cmd *exec.Cmd

@@ -10,6 +10,7 @@ import (
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/miclle/niubility/cli/internal/api"
+	clii18n "github.com/miclle/niubility/cli/internal/i18n"
 )
 
 // Uploader handles file uploads
@@ -28,7 +29,7 @@ func (u *Uploader) UploadFile(ctx context.Context, localPath string) (key string
 	// Read file
 	file, err := os.Open(localPath)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to open file: %w", err)
+		return "", "", fmt.Errorf("%s: %w", clii18n.T("ContentUpload.Error.OpenFile", "failed to open file", nil), err)
 	}
 	defer func() {
 		_ = file.Close()
@@ -37,23 +38,23 @@ func (u *Uploader) UploadFile(ctx context.Context, localPath string) (key string
 	// Detect MIME type
 	mtype, err := mimetype.DetectReader(file)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to detect MIME type: %w", err)
+		return "", "", fmt.Errorf("%s: %w", clii18n.T("ContentUpload.Error.DetectMIME", "failed to detect MIME type", nil), err)
 	}
 	// Reset reader position
 	if _, err := file.Seek(0, 0); err != nil {
-		return "", "", fmt.Errorf("failed to seek file: %w", err)
+		return "", "", fmt.Errorf("%s: %w", clii18n.T("ContentUpload.Error.SeekFile", "failed to seek file", nil), err)
 	}
 
 	// Get presigned URL with actual MIME type
 	filename := filepath.Base(localPath)
 	presign, err := u.client.PresignUpload(ctx, filename, mtype.String())
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get presigned URL: %w", err)
+		return "", "", fmt.Errorf("%s: %w", clii18n.T("ContentUpload.Error.GetPresignedURL", "failed to get presigned URL", nil), err)
 	}
 
 	// Upload to S3
 	if err := u.client.Upload(ctx, presign.PresignedURL, mtype.String(), file); err != nil {
-		return "", "", fmt.Errorf("failed to upload file: %w", err)
+		return "", "", fmt.Errorf("%s: %w", clii18n.T("ContentUpload.Error.UploadFile", "failed to upload file", nil), err)
 	}
 
 	return presign.Key, attachmentAccessURL(presign.Key), nil
@@ -82,7 +83,7 @@ func UploadAttachments(ctx context.Context, client *api.Client, article *Article
 	if article.CoverPath != "" {
 		key, _, err := uploader.UploadFile(ctx, article.CoverPath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to upload cover: %w", err)
+			return nil, fmt.Errorf("%s: %w", clii18n.T("ContentUpload.Error.UploadCover", "failed to upload cover", nil), err)
 		}
 		coverURL = key
 		attachments = append(attachments, api.Attachment{
@@ -97,7 +98,7 @@ func UploadAttachments(ctx context.Context, client *api.Client, article *Article
 	for _, imgPath := range article.ImagePaths {
 		key, accessURL, err := uploader.UploadFile(ctx, imgPath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to upload image %s: %w", imgPath, err)
+			return nil, fmt.Errorf("%s %s: %w", clii18n.T("ContentUpload.Error.UploadImage", "failed to upload image", nil), imgPath, err)
 		}
 		imageURLMap[imgPath] = accessURL
 		attachments = append(attachments, api.Attachment{
@@ -111,7 +112,7 @@ func UploadAttachments(ctx context.Context, client *api.Client, article *Article
 	for _, attPath := range article.Attachments {
 		key, _, err := uploader.UploadFile(ctx, attPath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to upload attachment %s: %w", attPath, err)
+			return nil, fmt.Errorf("%s %s: %w", clii18n.T("ContentUpload.Error.UploadAttachment", "failed to upload attachment", nil), attPath, err)
 		}
 		attachments = append(attachments, api.Attachment{
 			Type:     "document",

@@ -84,7 +84,7 @@ var contentListCmd = &cobra.Command{
 		// List contents
 		resp, err := apiClient.ListContents(ctx, opts)
 		if err != nil {
-			return fmt.Errorf("failed to list contents: %w", err)
+			return wrapLocalizedError("Content.List.Error.ListFailed", "failed to list contents", err)
 		}
 
 		// Output
@@ -93,12 +93,20 @@ var contentListCmd = &cobra.Command{
 		}
 
 		if len(resp.Items) == 0 {
-			fmt.Println("No contents found")
+			printLocalizedMessage("Content.List.Empty", "No contents found", nil)
 			return nil
 		}
 
 		// Table output
-		table := output.NewTable("ID", "TITLE", "TYPE", "CATEGORY", "STATUS", "AUTHOR", "CREATED")
+		table := output.NewTable(
+			localizedText("Common.Label.Identifier", "ID", nil),
+			localizedText("Common.Label.Title", "TITLE", nil),
+			localizedText("Common.Label.Type", "TYPE", nil),
+			localizedText("Common.Label.Category", "CATEGORY", nil),
+			localizedText("Common.Label.Status", "STATUS", nil),
+			localizedText("Common.Label.Author", "AUTHOR", nil),
+			localizedText("Common.Label.Created", "CREATED", nil),
+		)
 		for _, c := range resp.Items {
 			category := c.Category
 			author := ""
@@ -119,7 +127,7 @@ var contentListCmd = &cobra.Command{
 
 		// Show pagination info
 		if resp.HasMore() {
-			fmt.Printf("\nMore results available. Use --cursor %s to get next page.\n", resp.NextCursor)
+			printPagination(resp.NextCursor)
 		}
 
 		return nil
@@ -141,7 +149,7 @@ var contentViewCmd = &cobra.Command{
 
 		c, err := apiClient.GetContent(ctx, id)
 		if err != nil {
-			return fmt.Errorf("failed to get content: %w", err)
+			return wrapLocalizedError("Content.View.Error.GetFailed", "failed to get content", err)
 		}
 
 		// Output
@@ -150,42 +158,49 @@ var contentViewCmd = &cobra.Command{
 		}
 
 		// Pretty print
-		fmt.Printf("ID: %s\n", c.ID)
-		fmt.Printf("Title: %s\n", c.Title)
-		fmt.Printf("Type: %s\n", c.Type)
-		fmt.Printf("Status: %s\n", c.Status)
+		printLocalizedField("Common.Label.Identifier", "ID", c.ID)
+		printLocalizedField("Common.Label.Title", "Title", c.Title)
+		printLocalizedField("Common.Label.Type", "Type", string(c.Type))
+		printLocalizedField("Common.Label.Status", "Status", string(c.Status))
 		if c.Category != "" {
-			fmt.Printf("Category: %s\n", c.Category)
+			printLocalizedField("Common.Label.Category", "Category", c.Category)
 		}
 		if len(c.Tags) > 0 {
-			fmt.Printf("Tags: %s\n", strings.Join(c.Tags, ", "))
+			printLocalizedField("Common.Label.Tags", "Tags", strings.Join(c.Tags, ", "))
 		}
 		if c.Summary != "" {
-			fmt.Printf("\nSummary:\n%s\n", c.Summary)
+			fmt.Printf("\n%s:\n%s\n", localizedText("Common.Label.Summary", "Summary", nil), c.Summary)
 		}
 		if c.Author != nil {
-			fmt.Printf("\nAuthor: %s\n", c.Author.Name)
+			fmt.Printf("\n%s: %s\n", localizedText("Common.Label.Author", "Author", nil), c.Author.Name)
 		}
 		if c.SpeakerName != "" {
-			fmt.Printf("Speaker: %s\n", c.SpeakerName)
+			printLocalizedField("Common.Label.Speaker", "Speaker", c.SpeakerName)
 			if c.SpeakerBio != "" {
-				fmt.Printf("Speaker Bio: %s\n", c.SpeakerBio)
+				printLocalizedField("Common.Label.SpeakerBio", "Speaker Bio", c.SpeakerBio)
 			}
 		}
-		fmt.Printf("\nStats: %d likes, %d favorites\n", c.LikeCount, c.FavoriteCount)
+		fmt.Printf(
+			"\n%s: %d %s, %d %s\n",
+			localizedText("Common.Label.Stats", "Stats", nil),
+			c.LikeCount,
+			localizedText("Common.Label.Likes", "likes", nil),
+			c.FavoriteCount,
+			localizedText("Common.Label.Favorites", "favorites", nil),
+		)
 
 		// For articles, show body preview
 		if c.Type == api.ContentTypeArticle && c.Body != "" {
-			fmt.Printf("\nBody Preview:\n%s\n", output.Truncate(c.Body, 500))
+			fmt.Printf("\n%s:\n%s\n", localizedText("Common.Label.BodyPreview", "Body Preview", nil), output.Truncate(c.Body, 500))
 		}
 
 		// Show attachments
 		if len(c.Attachments) > 0 {
-			fmt.Printf("\nAttachments (%d):\n", len(c.Attachments))
+			fmt.Printf("\n%s:\n", localizedText("Content.View.Attachments", "Attachments ({{.Count}})", map[string]interface{}{"Count": len(c.Attachments)}))
 			for _, att := range c.Attachments {
 				cover := ""
 				if att.IsCover {
-					cover = " [cover]"
+					cover = localizedText("Content.View.CoverSuffix", " [cover]", nil)
 				}
 				fmt.Printf("  - %s (%s)%s\n", att.Filename, att.Type, cover)
 			}
@@ -225,13 +240,13 @@ For articles, provide a Markdown file with front-matter:
 
 		// Validate content type
 		if contentType != "article" {
-			return fmt.Errorf("only 'article' content type is supported in this version")
+			return localizedError("Content.Create.Error.UnsupportedType", "only 'article' content type is supported in this version")
 		}
 
 		// Parse Markdown file
 		article, err := content.ParseMarkdownFile(filePath)
 		if err != nil {
-			return fmt.Errorf("failed to parse file: %w", err)
+			return wrapLocalizedError("Content.Create.Error.ParseFailed", "failed to parse file", err)
 		}
 
 		// Override status from flag
@@ -247,7 +262,7 @@ For articles, provide a Markdown file with front-matter:
 
 		categories, err := apiClient.ListCategories(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to get categories: %w", err)
+			return wrapLocalizedError("Content.Create.Error.CategoriesFailed", "failed to get categories", err)
 		}
 
 		categoryExists := false
@@ -258,13 +273,13 @@ For articles, provide a Markdown file with front-matter:
 			}
 		}
 		if !categoryExists {
-			return fmt.Errorf("category '%s' not found", article.CategorySlug)
+			return fmt.Errorf("%s", localizedText("Content.Create.Error.CategoryNotFound", "category '{{.Slug}}' not found", map[string]interface{}{"Slug": article.CategorySlug}))
 		}
 
 		// Upload attachments if any
 		uploadResult, err := content.UploadAttachments(ctx, apiClient, article, filePath)
 		if err != nil {
-			return fmt.Errorf("failed to upload attachments: %w", err)
+			return wrapLocalizedError("Content.Create.Error.UploadFailed", "failed to upload attachments", err)
 		}
 
 		// Build create request
@@ -289,7 +304,7 @@ For articles, provide a Markdown file with front-matter:
 		// Create content
 		created, err := apiClient.CreateContent(ctx, req)
 		if err != nil {
-			return fmt.Errorf("failed to create content: %w", err)
+			return wrapLocalizedError("Content.Create.Error.CreateFailed", "failed to create content", err)
 		}
 
 		// Output
@@ -297,11 +312,11 @@ For articles, provide a Markdown file with front-matter:
 			return output.NewPrinter(output.FormatJSON).PrintJSON(created)
 		}
 
-		output.PrintSuccess("Content created successfully")
-		fmt.Printf("ID: %s\n", created.ID)
-		fmt.Printf("Title: %s\n", created.Title)
-		fmt.Printf("Status: %s\n", created.Status)
-		fmt.Printf("URL: %s/contents/%s\n", cfg.Server, created.ID)
+		output.PrintSuccessT("Content.Create.Success.Created", "Content created successfully", nil)
+		printLocalizedField("Common.Label.Identifier", "ID", created.ID)
+		printLocalizedField("Common.Label.Title", "Title", created.Title)
+		printLocalizedField("Common.Label.Status", "Status", string(created.Status))
+		printLocalizedField("Common.Label.URL", "URL", fmt.Sprintf("%s/contents/%s", cfg.Server, created.ID))
 
 		return nil
 	},
@@ -328,7 +343,7 @@ Only fields present in the front-matter will be updated; omitted fields remain u
 		// Parse Markdown file (partial - no required field validation)
 		article, err := content.ParseMarkdownFilePartial(filePath)
 		if err != nil {
-			return fmt.Errorf("failed to parse file: %w", err)
+			return wrapLocalizedError("Content.Edit.Error.ParseFailed", "failed to parse file", err)
 		}
 
 		ctx, cancel := getContext()
@@ -338,7 +353,7 @@ Only fields present in the front-matter will be updated; omitted fields remain u
 		if article.CategorySlug != "" {
 			categories, err := apiClient.ListCategories(ctx)
 			if err != nil {
-				return fmt.Errorf("failed to get categories: %w", err)
+				return wrapLocalizedError("Content.Edit.Error.CategoriesFailed", "failed to get categories", err)
 			}
 			categoryExists := false
 			for _, cat := range categories {
@@ -348,14 +363,14 @@ Only fields present in the front-matter will be updated; omitted fields remain u
 				}
 			}
 			if !categoryExists {
-				return fmt.Errorf("category '%s' not found", article.CategorySlug)
+				return fmt.Errorf("%s", localizedText("Content.Edit.Error.CategoryNotFound", "category '{{.Slug}}' not found", map[string]interface{}{"Slug": article.CategorySlug}))
 			}
 		}
 
 		// Upload attachments if any
 		uploadResult, err := content.UploadAttachments(ctx, apiClient, article, filePath)
 		if err != nil {
-			return fmt.Errorf("failed to upload attachments: %w", err)
+			return wrapLocalizedError("Content.Edit.Error.UploadFailed", "failed to upload attachments", err)
 		}
 
 		// Build update request - only set fields that were provided in front-matter
@@ -403,7 +418,7 @@ Only fields present in the front-matter will be updated; omitted fields remain u
 		// Update content
 		updated, err := apiClient.UpdateContent(ctx, id, req)
 		if err != nil {
-			return fmt.Errorf("failed to update content: %w", err)
+			return wrapLocalizedError("Content.Edit.Error.UpdateFailed", "failed to update content", err)
 		}
 
 		// Output
@@ -411,11 +426,11 @@ Only fields present in the front-matter will be updated; omitted fields remain u
 			return output.NewPrinter(output.FormatJSON).PrintJSON(updated)
 		}
 
-		output.PrintSuccess("Content updated successfully")
-		fmt.Printf("ID: %s\n", updated.ID)
-		fmt.Printf("Title: %s\n", updated.Title)
-		fmt.Printf("Status: %s\n", updated.Status)
-		fmt.Printf("URL: %s/contents/%s\n", cfg.Server, updated.ID)
+		output.PrintSuccessT("Content.Edit.Success.Updated", "Content updated successfully", nil)
+		printLocalizedField("Common.Label.Identifier", "ID", updated.ID)
+		printLocalizedField("Common.Label.Title", "Title", updated.Title)
+		printLocalizedField("Common.Label.Status", "Status", string(updated.Status))
+		printLocalizedField("Common.Label.URL", "URL", fmt.Sprintf("%s/contents/%s", cfg.Server, updated.ID))
 
 		return nil
 	},
@@ -437,16 +452,11 @@ var contentDeleteCmd = &cobra.Command{
 			c, err := apiClient.GetContent(ctx, id)
 			cancel()
 			if err != nil {
-				return fmt.Errorf("failed to get content: %w", err)
+				return wrapLocalizedError("Content.Delete.Error.GetFailed", "failed to get content", err)
 			}
 
-			fmt.Printf("Are you sure you want to delete '%s'? [y/N]: ", c.Title)
-			var response string
-			if _, err := fmt.Scanln(&response); err != nil {
-				response = ""
-			}
-			if strings.ToLower(response) != "y" && strings.ToLower(response) != "yes" {
-				fmt.Println("Cancelled")
+			if !confirmAction("Content.Delete.Prompt", "Are you sure you want to delete '{{.Title}}'? [y/N]: ", map[string]interface{}{"Title": c.Title}) {
+				printLocalizedMessage("Common.Message.Cancelled", "Cancelled", nil)
 				return nil
 			}
 		}
@@ -455,10 +465,10 @@ var contentDeleteCmd = &cobra.Command{
 		defer cancel()
 
 		if err := apiClient.DeleteContent(ctx, id); err != nil {
-			return fmt.Errorf("failed to delete content: %w", err)
+			return wrapLocalizedError("Content.Delete.Error.DeleteFailed", "failed to delete content", err)
 		}
 
-		output.PrintSuccess("Content %s deleted", id)
+		output.PrintSuccessT("Content.Delete.Success.Deleted", "Content {{.ID}} deleted", map[string]interface{}{"ID": id})
 		return nil
 	},
 }
@@ -491,4 +501,67 @@ func init() {
 
 	// content delete flags
 	contentDeleteCmd.Flags().BoolVarP(&contentDeleteYes, "yes", "y", false, "Skip confirmation")
+}
+
+func localizeContentCommands() {
+	contentCmd.Short = localizedText("Content.Short", "Manage content", nil)
+	contentCmd.Long = localizedText("Content.Long", contentCmd.Long, nil)
+
+	contentListCmd.Short = localizedText("Content.List.Short", "List contents", nil)
+	contentListCmd.Long = localizedText("Content.List.Long", "List contents with optional filters.", nil)
+	contentListCmd.Example = localizedText("Content.List.Example", contentListCmd.Example, nil)
+
+	contentViewCmd.Short = localizedText("Content.View.Short", "View content details", nil)
+	contentViewCmd.Long = localizedText("Content.View.Long", "View detailed information about a content item.", nil)
+
+	contentCreateCmd.Short = localizedText("Content.Create.Short", "Create new content", nil)
+	contentCreateCmd.Long = localizedText("Content.Create.Long", contentCreateCmd.Long, nil)
+	contentCreateCmd.Example = localizedText("Content.Create.Example", contentCreateCmd.Example, nil)
+
+	contentEditCmd.Short = localizedText("Content.Edit.Short", "Update content from a Markdown file", nil)
+	contentEditCmd.Long = localizedText("Content.Edit.Long", contentEditCmd.Long, nil)
+	contentEditCmd.Example = localizedText("Content.Edit.Example", contentEditCmd.Example, nil)
+
+	contentDeleteCmd.Short = localizedText("Content.Delete.Short", "Delete content", nil)
+	contentDeleteCmd.Long = localizedText("Content.Delete.Long", "Delete a content item by ID.", nil)
+
+	if flag := contentListCmd.Flags().Lookup("limit"); flag != nil {
+		flag.Usage = localizedText("Common.Flag.Limit", "Limit number of results", nil)
+	}
+	if flag := contentListCmd.Flags().Lookup("cursor"); flag != nil {
+		flag.Usage = localizedText("Common.Flag.Cursor", "Pagination cursor", nil)
+	}
+	if flag := contentListCmd.Flags().Lookup("category"); flag != nil {
+		flag.Usage = localizedText("Content.Flag.Category", "Filter by category slug", nil)
+	}
+	if flag := contentListCmd.Flags().Lookup("type"); flag != nil {
+		flag.Usage = localizedText("Content.Flag.Type", "Filter by type (article/gallery/video)", nil)
+	}
+	if flag := contentListCmd.Flags().Lookup("status"); flag != nil {
+		flag.Usage = localizedText("Content.Flag.Status", "Filter by status (draft/published)", nil)
+	}
+	if flag := contentListCmd.Flags().Lookup("keyword"); flag != nil {
+		flag.Usage = localizedText("Content.Flag.Keyword", "Search by keyword", nil)
+	}
+	if flag := contentListCmd.Flags().Lookup("tag"); flag != nil {
+		flag.Usage = localizedText("Content.Flag.Tag", "Filter by tag", nil)
+	}
+	if flag := contentListCmd.Flags().Lookup("sort"); flag != nil {
+		flag.Usage = localizedText("Content.Flag.Sort", "Sort order", nil)
+	}
+	if flag := contentListCmd.Flags().Lookup("author-id"); flag != nil {
+		flag.Usage = localizedText("Content.Flag.AuthorID", "Filter by author ID", nil)
+	}
+	if flag := contentCreateCmd.Flags().Lookup("status"); flag != nil {
+		flag.Usage = localizedText("Content.Create.Flag.Status", "Content status (draft/published)", nil)
+	}
+	if flag := contentCreateCmd.Flags().Lookup("yes"); flag != nil {
+		flag.Usage = localizedText("Common.Flag.SkipConfirmation", "Skip confirmation", nil)
+	}
+	if flag := contentEditCmd.Flags().Lookup("status"); flag != nil {
+		flag.Usage = localizedText("Content.Edit.Flag.Status", "Content status (draft/published)", nil)
+	}
+	if flag := contentDeleteCmd.Flags().Lookup("yes"); flag != nil {
+		flag.Usage = localizedText("Common.Flag.SkipConfirmation", "Skip confirmation", nil)
+	}
 }

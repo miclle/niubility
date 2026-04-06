@@ -15,6 +15,7 @@ output: "json"
 editor: "nano"
 default_status: "published"
 timeout: "45s"
+language: "zh_CN.UTF-8"
 token: "jwt-token"
 `)
 
@@ -36,6 +37,9 @@ token: "jwt-token"
 	if cfg.DefaultStatus != "published" {
 		t.Fatalf("DefaultStatus = %q, want %q", cfg.DefaultStatus, "published")
 	}
+	if cfg.Language != "zh-CN" {
+		t.Fatalf("Language = %q, want %q", cfg.Language, "zh-CN")
+	}
 }
 
 func TestSaveTo_CustomPath(t *testing.T) {
@@ -48,6 +52,7 @@ func TestSaveTo_CustomPath(t *testing.T) {
 		Editor:        "vim",
 		DefaultStatus: "draft",
 		Timeout:       "30s",
+		Language:      "zh-CN",
 		Token:         "jwt-token",
 	}
 
@@ -69,6 +74,9 @@ func TestSaveTo_CustomPath(t *testing.T) {
 	}
 	if loaded.Output != cfg.Output {
 		t.Fatalf("Output = %q, want %q", loaded.Output, cfg.Output)
+	}
+	if loaded.Language != cfg.Language {
+		t.Fatalf("Language = %q, want %q", loaded.Language, cfg.Language)
 	}
 }
 
@@ -119,5 +127,27 @@ func TestValidateProfile(t *testing.T) {
 		if err := ValidateProfile(profile); err == nil {
 			t.Fatalf("ValidateProfile(%q) expected error, got nil", profile)
 		}
+	}
+}
+
+func TestLoadFrom_InvalidLanguage(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "config.yaml")
+
+	content := []byte(`server: "http://example.com:9000"
+output: "table"
+editor: "vim"
+default_status: "draft"
+timeout: "30s"
+language: "fr"
+token: ""
+`)
+
+	if err := os.WriteFile(configPath, content, 0644); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	if _, err := LoadFrom(configPath); err == nil {
+		t.Fatal("LoadFrom() expected error for unsupported language, got nil")
 	}
 }

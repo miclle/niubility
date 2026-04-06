@@ -1,0 +1,143 @@
+Help:
+  Usage: Usage
+  Aliases: Aliases
+  AliasesLabel: aliases
+  AvailableCommands: Available Commands
+  Flags: Flags
+  GlobalFlags: Global Flags
+  AdditionalTopics: Additional help topics
+  Use: Use
+  MoreInfo: for more information about a command
+Root:
+  Short: CLI tool for Niubility platform
+  Long: |-
+    Niubility CLI allows you to interact with Niubility platform from the command line.
+
+    You can browse content, publish articles, manage categories, and more.
+
+    Start by logging in:
+      niubility login --server http://your-server:9000
+  Flag:
+    Config: config file (default is ~/.config/niubility/config.yaml)
+    Profile: isolated profile name for multi-server login
+    Output: output format (table or json)
+    Language: language for CLI messages (en or zh-CN)
+  Error:
+    FailedLoadConfig: failed to load config
+    ServerNotConfigured: server not configured. Run 'niubility login --server <url>' first
+    InvalidTimeout: invalid timeout
+    FailedCreateAuthManager: failed to create auth manager
+    FailedCreateAPIClient: failed to create API client
+Common:
+  Label:
+    ConfigPath: Config Path
+    Server: Server
+    Profile: Profile
+    OutputFormat: Output
+    Editor: Editor
+    DefaultStatus: Default Status
+    Timeout: Timeout
+    Language: Language
+    TokenStored: Token Stored
+    Username: Username
+    Password: Password
+    Role: Role
+    Email: Email
+    Location: Location
+  Status:
+    NotLoggedIn: Not logged in
+Output:
+  ErrorPrefix: Error
+Login:
+  Short: Login to Niubility server
+  Long: |-
+    Login to Niubility server with username/password or SSO.
+
+    If the server has SSO enabled, browser-based SSO is used by default unless
+    username/password flags are provided.
+
+    Examples:
+      # Interactive login
+      niubility login
+
+      # Specify server
+      niubility login --server http://localhost:9000
+
+      # Login with SSO
+      niubility login --server http://localhost:9000 --sso
+
+      # Non-interactive login
+      niubility login --server http://localhost:9000 --username admin --password-stdin < password.txt
+  Flag:
+    Server: Niubility server URL
+    Username: Username
+    Password: Password (use --password-stdin for non-interactive)
+    PasswordStdin: Read password from stdin
+    SSO: Login with browser-based SSO
+  Error:
+    ServerRequired: server address is required. Use --server flag or set it in config
+    SSOConflict: --sso cannot be used with username/password flags
+    SSOFailed: SSO login failed
+    LoginFailed: login failed
+    FailedSyncAuthToken: failed to sync auth token
+    FailedSaveConfig: failed to save config
+    FailedVerifyLogin: failed to verify login
+    FailedReadUsername: failed to read username
+    FailedReadPassword: failed to read password
+    CredentialsRequired: username and password are required
+  Success:
+    LoggedInAs: Logged in as {{.Name}}
+WhoAmI:
+  Short: Show current logged in user
+  Long: |-
+    Show information about the currently logged in user.
+
+    This command calls the boot endpoint to verify authentication status
+    and display user information.
+  Error:
+    FailedGetBootInfo: failed to get boot info
+  Output:
+    LoggedInAs: Logged in as
+Logout:
+  Short: Logout from Niubility server
+  Long: |-
+    Logout from Niubility server and clear local session.
+
+    This command clears the local session and optionally calls
+    the server logout endpoint to invalidate the server-side session.
+  Error:
+    ServerLogoutFailed: server logout failed
+    FailedClearSession: failed to clear session
+    FailedSaveConfig: failed to save config
+  Success:
+    LoggedOut: Logged out
+Config:
+  Command:
+    Short: Manage local CLI configuration
+    Long: |-
+      Manage local CLI configuration stored on this machine.
+
+      Use this command to persist preferences such as the default CLI language.
+    Show:
+      Short: Show local CLI configuration
+      Long: |-
+        Show the local CLI configuration for the current profile.
+
+        Sensitive values such as tokens are not printed directly.
+    SetLanguage:
+      Short: Persist the default CLI language
+      Long: |-
+        Persist the default CLI language into the local config file.
+
+        Supported values:
+          en
+          zh-CN
+
+        Examples:
+          niubility config set-language zh-CN
+          niubility --profile prod config set-language en
+      Success:
+        Saved: CLI language saved as {{.Language}}
+      Error:
+        InvalidLanguage: language must be 'en' or 'zh-CN', got '{{.Value}}'
+        SaveFailed: failed to save config

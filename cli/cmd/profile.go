@@ -42,31 +42,37 @@ var profileViewCmd = &cobra.Command{
 
 		user, err := apiClient.GetProfile(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to get profile: %w", err)
+			return wrapLocalizedError("Profile.View.Error.GetFailed", "failed to get profile", err)
 		}
 
 		if isJSONOutput() {
 			return output.NewPrinter(output.FormatJSON).PrintJSON(user)
 		}
 
-		fmt.Printf("ID: %s\n", user.ID)
-		fmt.Printf("Username: %s\n", user.Username)
-		fmt.Printf("Name: %s\n", user.Name)
-		fmt.Printf("Email: %s\n", user.Email)
+		printLocalizedField("Common.Label.Identifier", "ID", user.ID)
+		printLocalizedField("Common.Label.Username", "Username", user.Username)
+		printLocalizedField("Common.Label.Name", "Name", user.Name)
+		printLocalizedField("Common.Label.Email", "Email", user.Email)
 		if user.Mobile != "" {
-			fmt.Printf("Mobile: %s\n", user.Mobile)
+			printLocalizedField("Common.Label.Mobile", "Mobile", user.Mobile)
 		}
 		if user.Bio != "" {
-			fmt.Printf("Bio: %s\n", user.Bio)
+			printLocalizedField("Common.Label.Bio", "Bio", user.Bio)
 		}
 		if user.Location != "" {
-			fmt.Printf("Location: %s\n", user.Location)
+			printLocalizedField("Common.Label.Location", "Location", user.Location)
 		}
-		fmt.Printf("Role: %s\n", user.Role)
-		fmt.Printf("Status: %s\n", user.Status)
-		fmt.Printf("Followers: %d | Following: %d\n", user.FollowerCount, user.FollowingCount)
+		printLocalizedField("Common.Label.Role", "Role", user.Role)
+		printLocalizedField("Common.Label.Status", "Status", user.Status)
+		fmt.Printf(
+			"%s: %d | %s: %d\n",
+			localizedText("Common.Label.Followers", "Followers", nil),
+			user.FollowerCount,
+			localizedText("Common.Label.Following", "Following", nil),
+			user.FollowingCount,
+		)
 		if len(user.SocialAccounts) > 0 {
-			fmt.Printf("Social: ")
+			fmt.Printf("%s: ", localizedText("Common.Label.Social", "Social", nil))
 			var parts []string
 			for k, v := range user.SocialAccounts {
 				parts = append(parts, fmt.Sprintf("%s=%s", k, v))
@@ -113,7 +119,7 @@ var profileUpdateCmd = &cobra.Command{
 			for _, s := range profileUpdateSocialAccounts {
 				parts := strings.SplitN(s, "=", 2)
 				if len(parts) != 2 {
-					return fmt.Errorf("invalid social account format: %s (expected key=value)", s)
+					return fmt.Errorf("%s", localizedText("Profile.Update.Error.InvalidSocial", "invalid social account format: {{.Value}} (expected key=value)", map[string]interface{}{"Value": s}))
 				}
 				socials[parts[0]] = parts[1]
 			}
@@ -122,14 +128,14 @@ var profileUpdateCmd = &cobra.Command{
 
 		updated, err := apiClient.UpdateProfile(ctx, req)
 		if err != nil {
-			return fmt.Errorf("failed to update profile: %w", err)
+			return wrapLocalizedError("Profile.Update.Error.UpdateFailed", "failed to update profile", err)
 		}
 
 		if isJSONOutput() {
 			return output.NewPrinter(output.FormatJSON).PrintJSON(updated)
 		}
 
-		output.PrintSuccess("Profile updated")
+		output.PrintSuccessT("Profile.Update.Success.Updated", "Profile updated", nil)
 		return nil
 	},
 }
@@ -146,7 +152,7 @@ var profileChangePasswordCmd = &cobra.Command{
 		// Check if user has a password
 		hasPassword, err := apiClient.HasPassword(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to check password status: %w", err)
+			return wrapLocalizedError("Profile.Password.Error.CheckFailed", "failed to check password status", err)
 		}
 
 		oldPassword := profileOldPassword
@@ -154,32 +160,32 @@ var profileChangePasswordCmd = &cobra.Command{
 
 		// Interactive password input if not provided via flags
 		if hasPassword.HasPassword && oldPassword == "" {
-			fmt.Print("Old password: ")
+			fmt.Printf("%s: ", localizedText("Profile.Password.Label.OldPassword", "Old password", nil))
 			bytes, err := term.ReadPassword(0)
 			fmt.Println()
 			if err != nil {
-				return fmt.Errorf("failed to read password: %w", err)
+				return wrapLocalizedError("Profile.Password.Error.ReadFailed", "failed to read password", err)
 			}
 			oldPassword = string(bytes)
 		}
 
 		if newPassword == "" {
-			fmt.Print("New password: ")
+			fmt.Printf("%s: ", localizedText("Profile.Password.Label.NewPassword", "New password", nil))
 			bytes, err := term.ReadPassword(0)
 			fmt.Println()
 			if err != nil {
-				return fmt.Errorf("failed to read password: %w", err)
+				return wrapLocalizedError("Profile.Password.Error.ReadFailed", "failed to read password", err)
 			}
 			newPassword = string(bytes)
 
-			fmt.Print("Confirm new password: ")
+			fmt.Printf("%s: ", localizedText("Profile.Password.Label.ConfirmNewPassword", "Confirm new password", nil))
 			confirmBytes, err := term.ReadPassword(0)
 			fmt.Println()
 			if err != nil {
-				return fmt.Errorf("failed to read password: %w", err)
+				return wrapLocalizedError("Profile.Password.Error.ReadFailed", "failed to read password", err)
 			}
 			if newPassword != string(confirmBytes) {
-				return fmt.Errorf("passwords do not match")
+				return localizedError("Profile.Password.Error.PasswordMismatch", "passwords do not match")
 			}
 		}
 
@@ -190,7 +196,7 @@ var profileChangePasswordCmd = &cobra.Command{
 
 		resp, err := apiClient.ChangePassword(ctx, req)
 		if err != nil {
-			return fmt.Errorf("failed to change password: %w", err)
+			return wrapLocalizedError("Profile.Password.Error.ChangeFailed", "failed to change password", err)
 		}
 
 		output.PrintSuccess(resp.Message)
@@ -214,4 +220,41 @@ func init() {
 	// profile change-password flags
 	profileChangePasswordCmd.Flags().StringVar(&profileOldPassword, "old-password", "", "Old password (will prompt if not provided)")
 	profileChangePasswordCmd.Flags().StringVar(&profileNewPassword, "new-password", "", "New password (will prompt if not provided)")
+}
+
+func localizeProfileCommands() {
+	profileCmd.Short = localizedText("Profile.Short", "Manage your profile", nil)
+	profileCmd.Long = localizedText("Profile.Long", "View and update your profile, change password.", nil)
+
+	profileViewCmd.Short = localizedText("Profile.View.Short", "View your profile", nil)
+	profileViewCmd.Long = localizedText("Profile.View.Long", "View your current profile information.", nil)
+
+	profileUpdateCmd.Short = localizedText("Profile.Update.Short", "Update your profile", nil)
+	profileUpdateCmd.Long = localizedText("Profile.Update.Long", "Update your profile fields. Only specified fields will be changed.", nil)
+	profileUpdateCmd.Example = localizedText("Profile.Update.Example", profileUpdateCmd.Example, nil)
+
+	profileChangePasswordCmd.Short = localizedText("Profile.Password.Short", "Change your password", nil)
+	profileChangePasswordCmd.Long = localizedText("Profile.Password.Long", "Change your password. You will be prompted for old and new passwords interactively.", nil)
+
+	if flag := profileUpdateCmd.Flags().Lookup("name"); flag != nil {
+		flag.Usage = localizedText("Profile.Flag.Name", "Display name", nil)
+	}
+	if flag := profileUpdateCmd.Flags().Lookup("bio"); flag != nil {
+		flag.Usage = localizedText("Profile.Flag.Bio", "Bio", nil)
+	}
+	if flag := profileUpdateCmd.Flags().Lookup("location"); flag != nil {
+		flag.Usage = localizedText("Profile.Flag.Location", "Location", nil)
+	}
+	if flag := profileUpdateCmd.Flags().Lookup("avatar"); flag != nil {
+		flag.Usage = localizedText("Profile.Flag.Avatar", "Avatar URL", nil)
+	}
+	if flag := profileUpdateCmd.Flags().Lookup("social"); flag != nil {
+		flag.Usage = localizedText("Profile.Flag.Social", "Social account (key=value, e.g. github=alice)", nil)
+	}
+	if flag := profileChangePasswordCmd.Flags().Lookup("old-password"); flag != nil {
+		flag.Usage = localizedText("Profile.Password.Flag.OldPassword", "Old password (will prompt if not provided)", nil)
+	}
+	if flag := profileChangePasswordCmd.Flags().Lookup("new-password"); flag != nil {
+		flag.Usage = localizedText("Profile.Password.Flag.NewPassword", "New password (will prompt if not provided)", nil)
+	}
 }

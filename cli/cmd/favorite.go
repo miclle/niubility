@@ -2,8 +2,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/miclle/niubility/cli/internal/api"
 	"github.com/miclle/niubility/cli/internal/output"
 	"github.com/spf13/cobra"
@@ -45,7 +43,7 @@ var favoriteListCmd = &cobra.Command{
 
 		resp, err := apiClient.ListFavorites(ctx, opts)
 		if err != nil {
-			return fmt.Errorf("failed to list favorites: %w", err)
+			return wrapLocalizedError("Favorite.List.Error.ListFailed", "failed to list favorites", err)
 		}
 
 		if isJSONOutput() {
@@ -53,11 +51,18 @@ var favoriteListCmd = &cobra.Command{
 		}
 
 		if len(resp.Items) == 0 {
-			fmt.Println("No favorites found")
+			printLocalizedMessage("Favorite.List.Empty", "No favorites found", nil)
 			return nil
 		}
 
-		table := output.NewTable("ID", "TITLE", "TYPE", "CATEGORY", "STATUS", "AUTHOR")
+		table := output.NewTable(
+			localizedText("Common.Label.Identifier", "ID", nil),
+			localizedText("Common.Label.Title", "TITLE", nil),
+			localizedText("Common.Label.Type", "TYPE", nil),
+			localizedText("Common.Label.Category", "CATEGORY", nil),
+			localizedText("Common.Label.Status", "STATUS", nil),
+			localizedText("Common.Label.Author", "AUTHOR", nil),
+		)
 		for _, c := range resp.Items {
 			author := ""
 			if c.Author != nil {
@@ -75,7 +80,7 @@ var favoriteListCmd = &cobra.Command{
 		table.Print()
 
 		if resp.HasMore() {
-			fmt.Printf("\nMore results available. Use --cursor %s to get next page.\n", resp.NextCursor)
+			printPagination(resp.NextCursor)
 		}
 
 		return nil
@@ -101,18 +106,22 @@ var favoriteToggleCmd = &cobra.Command{
 
 		resp, err := apiClient.ToggleFavorite(ctx, id)
 		if err != nil {
-			return fmt.Errorf("failed to toggle favorite: %w", err)
+			return wrapLocalizedError("Favorite.Toggle.Error.ToggleFailed", "failed to toggle favorite", err)
 		}
 
 		if isJSONOutput() {
 			return output.NewPrinter(output.FormatJSON).PrintJSON(resp)
 		}
 
-		state := "unfavorited"
+		state := localizedText("Favorite.Toggle.State.Unfavorited", "unfavorited", nil)
 		if resp.Favorited {
-			state = "favorited"
+			state = localizedText("Favorite.Toggle.State.Favorited", "favorited", nil)
 		}
-		output.PrintSuccess("%s content %s (total: %d)", state, id, resp.FavoriteCount)
+		output.PrintSuccessT(
+			"Favorite.Toggle.Success",
+			"{{.State}} content {{.ID}} (total: {{.Total}})",
+			map[string]interface{}{"State": state, "ID": id, "Total": resp.FavoriteCount},
+		)
 		return nil
 	},
 }
@@ -124,4 +133,24 @@ func init() {
 
 	favoriteListCmd.Flags().IntVarP(&favoriteListLimit, "limit", "l", 20, "Limit number of results")
 	favoriteListCmd.Flags().StringVar(&favoriteListCursor, "cursor", "", "Pagination cursor")
+}
+
+func localizeFavoriteCommands() {
+	favoriteCmd.Short = localizedText("Favorite.Short", "Manage favorites", nil)
+	favoriteCmd.Long = localizedText("Favorite.Long", "Manage your favorited content items.", nil)
+
+	favoriteListCmd.Short = localizedText("Favorite.List.Short", "List favorites", nil)
+	favoriteListCmd.Long = localizedText("Favorite.List.Long", "List your favorited content items.", nil)
+	favoriteListCmd.Example = localizedText("Favorite.List.Example", favoriteListCmd.Example, nil)
+
+	favoriteToggleCmd.Short = localizedText("Favorite.Toggle.Short", "Toggle favorite on a content item", nil)
+	favoriteToggleCmd.Long = localizedText("Favorite.Toggle.Long", "Toggle favorite on a content item. Same command to favorite or unfavorite.", nil)
+	favoriteToggleCmd.Example = localizedText("Favorite.Toggle.Example", favoriteToggleCmd.Example, nil)
+
+	if flag := favoriteListCmd.Flags().Lookup("limit"); flag != nil {
+		flag.Usage = localizedText("Common.Flag.Limit", "Limit number of results", nil)
+	}
+	if flag := favoriteListCmd.Flags().Lookup("cursor"); flag != nil {
+		flag.Usage = localizedText("Common.Flag.Cursor", "Pagination cursor", nil)
+	}
 }

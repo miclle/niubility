@@ -12,6 +12,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	clii18n "github.com/miclle/niubility/cli/internal/i18n"
 )
 
 const authCookieName = "NIUBILITY"
@@ -26,7 +28,7 @@ type Manager struct {
 
 // Errors
 var (
-	ErrNoSession = errors.New("no active session, please run 'niubility login'")
+	ErrNoSession = errors.New(clii18n.T("Auth.Error.NoSession", "no active session, please run 'niubility login'", nil))
 )
 
 // NewManager creates a new auth manager.
@@ -34,12 +36,12 @@ func NewManager(token, server string) (*Manager, error) {
 	server = normalizeServerURL(server)
 
 	if _, err := url.Parse(server); err != nil {
-		return nil, fmt.Errorf("invalid server URL: %w", err)
+		return nil, fmt.Errorf("%s: %w", clii18n.T("Auth.Error.InvalidServerURL", "invalid server URL", nil), err)
 	}
 
 	jar, err := cookiejar.New(nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create cookie jar: %w", err)
+		return nil, fmt.Errorf("%s: %w", clii18n.T("Auth.Error.CreateCookieJar", "failed to create cookie jar", nil), err)
 	}
 
 	return &Manager{
@@ -127,22 +129,22 @@ func normalizeServerURL(raw string) string {
 func parseJWTExpiry(token string) (time.Time, error) {
 	parts := strings.Split(token, ".")
 	if len(parts) < 2 {
-		return time.Time{}, fmt.Errorf("invalid jwt format")
+		return time.Time{}, fmt.Errorf("%s", clii18n.T("Auth.Error.InvalidJWTFormat", "invalid jwt format", nil))
 	}
 
 	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
 	if err != nil {
-		return time.Time{}, fmt.Errorf("decode jwt payload: %w", err)
+		return time.Time{}, fmt.Errorf("%s: %w", clii18n.T("Auth.Error.DecodeJWTPayload", "decode jwt payload", nil), err)
 	}
 
 	var claims struct {
 		Exp int64 `json:"exp"`
 	}
 	if err := json.Unmarshal(payload, &claims); err != nil {
-		return time.Time{}, fmt.Errorf("parse jwt payload: %w", err)
+		return time.Time{}, fmt.Errorf("%s: %w", clii18n.T("Auth.Error.ParseJWTPayload", "parse jwt payload", nil), err)
 	}
 	if claims.Exp <= 0 {
-		return time.Time{}, fmt.Errorf("jwt exp missing")
+		return time.Time{}, fmt.Errorf("%s", clii18n.T("Auth.Error.JWTExpMissing", "jwt exp missing", nil))
 	}
 
 	return time.Unix(claims.Exp, 0), nil

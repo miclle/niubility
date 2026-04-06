@@ -12,6 +12,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	clii18n "github.com/miclle/niubility/cli/internal/i18n"
 )
 
 const defaultCLIUserAgent = "niubility-cli"
@@ -36,11 +38,11 @@ type Client struct {
 
 // Errors
 var (
-	ErrUnauthorized = errors.New("unauthorized: please run 'niubility login'")
-	ErrForbidden    = errors.New("forbidden: you don't have permission")
-	ErrNotFound     = errors.New("resource not found")
-	ErrServer       = errors.New("server error")
-	ErrUploadFailed = errors.New("upload failed")
+	ErrUnauthorized = errors.New(clii18n.T("APIClient.Error.Unauthorized", "unauthorized: please run 'niubility login'", nil))
+	ErrForbidden    = errors.New(clii18n.T("APIClient.Error.Forbidden", "forbidden: you don't have permission", nil))
+	ErrNotFound     = errors.New(clii18n.T("APIClient.Error.NotFound", "resource not found", nil))
+	ErrServer       = errors.New(clii18n.T("APIClient.Error.Server", "server error", nil))
+	ErrUploadFailed = errors.New(clii18n.T("APIClient.Error.UploadFailed", "upload failed", nil))
 )
 
 // APIError represents an error response from the API
@@ -53,14 +55,14 @@ func (e *APIError) Error() string {
 	if e.Message != "" {
 		return e.Message
 	}
-	return fmt.Sprintf("API error: status %d", e.StatusCode)
+	return clii18n.T("APIClient.Error.APIErrorStatus", "API error: status {{.Status}}", map[string]interface{}{"Status": e.StatusCode})
 }
 
 // NewClient creates a new API client
 func NewClient(server string, timeout time.Duration, jar http.CookieJar) (*Client, error) {
 	baseURL, err := url.Parse(server)
 	if err != nil {
-		return nil, fmt.Errorf("invalid server URL: %w", err)
+		return nil, fmt.Errorf("%s: %w", clii18n.T("APIClient.Error.InvalidServerURL", "invalid server URL", nil), err)
 	}
 
 	// Ensure base URL doesn't have trailing slash
@@ -86,7 +88,7 @@ func (c *Client) do(ctx context.Context, method, path string, body, result inter
 	// Build URL
 	u, err := c.baseURL.Parse(path)
 	if err != nil {
-		return fmt.Errorf("invalid URL path: %w", err)
+		return fmt.Errorf("%s: %w", clii18n.T("APIClient.Error.InvalidURLPath", "invalid URL path", nil), err)
 	}
 
 	// Encode body
@@ -94,7 +96,7 @@ func (c *Client) do(ctx context.Context, method, path string, body, result inter
 	if body != nil {
 		data, err := json.Marshal(body)
 		if err != nil {
-			return fmt.Errorf("failed to encode request body: %w", err)
+			return fmt.Errorf("%s: %w", clii18n.T("APIClient.Error.EncodeRequestBody", "failed to encode request body", nil), err)
 		}
 		reqBody = bytes.NewReader(data)
 	}
@@ -102,7 +104,7 @@ func (c *Client) do(ctx context.Context, method, path string, body, result inter
 	// Create request
 	req, err := http.NewRequestWithContext(ctx, method, u.String(), reqBody)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return fmt.Errorf("%s: %w", clii18n.T("APIClient.Error.CreateRequest", "failed to create request", nil), err)
 	}
 
 	if body != nil {
@@ -128,7 +130,7 @@ func (c *Client) do(ctx context.Context, method, path string, body, result inter
 	// Execute request
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("request failed: %w", err)
+		return fmt.Errorf("%s: %w", clii18n.T("APIClient.Error.RequestFailed", "request failed", nil), err)
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -137,7 +139,7 @@ func (c *Client) do(ctx context.Context, method, path string, body, result inter
 	// Read response body
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
+		return fmt.Errorf("%s: %w", clii18n.T("APIClient.Error.ReadResponseBody", "failed to read response body", nil), err)
 	}
 
 	// Handle error status codes
@@ -163,7 +165,7 @@ func (c *Client) do(ctx context.Context, method, path string, body, result inter
 	// Decode successful response
 	if result != nil && len(respBody) > 0 {
 		if err := json.Unmarshal(respBody, result); err != nil {
-			return fmt.Errorf("failed to decode response: %w", err)
+			return fmt.Errorf("%s: %w", clii18n.T("APIClient.Error.DecodeResponse", "failed to decode response", nil), err)
 		}
 	}
 
@@ -199,13 +201,13 @@ func (c *Client) Put(ctx context.Context, path string, body, result interface{})
 func (c *Client) Upload(ctx context.Context, url string, contentType string, body io.Reader) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, body)
 	if err != nil {
-		return fmt.Errorf("failed to create upload request: %w", err)
+		return fmt.Errorf("%s: %w", clii18n.T("APIClient.Error.CreateUploadRequest", "failed to create upload request", nil), err)
 	}
 	req.Header.Set("Content-Type", contentType)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("upload request failed: %w", err)
+		return fmt.Errorf("%s: %w", clii18n.T("APIClient.Error.UploadRequestFailed", "upload request failed", nil), err)
 	}
 	defer func() {
 		_ = resp.Body.Close()

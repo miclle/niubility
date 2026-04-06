@@ -2,8 +2,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/miclle/niubility/cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -23,7 +21,7 @@ and display user information.`,
 
 		boot, err := apiClient.Boot(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to get boot info: %w", err)
+			return wrapLocalizedError("WhoAmI.Error.FailedGetBootInfo", "failed to get boot info", err)
 		}
 
 		// Output
@@ -39,21 +37,21 @@ and display user information.`,
 
 		// Table output
 		if !boot.IsAuthenticated() || boot.User == nil {
-			fmt.Println("Not logged in")
+			output.PrintInfoT("Common.Status.NotLoggedIn", "Not logged in", nil)
 			return nil
 		}
 
-		fmt.Printf("Logged in as: %s\n", boot.User.Name)
-		fmt.Printf("Username: %s\n", boot.User.Username)
-		fmt.Printf("Email: %s\n", boot.User.Email)
-		fmt.Printf("Role: %s\n", boot.User.Role)
+		printLocalizedField("WhoAmI.Output.LoggedInAs", "Logged in as", boot.User.Name)
+		printLocalizedField("Common.Label.Username", "Username", boot.User.Username)
+		printLocalizedField("Common.Label.Email", "Email", boot.User.Email)
+		printLocalizedField("Common.Label.Role", "Role", boot.User.Role)
 		if profileName != "" {
-			fmt.Printf("Profile: %s\n", profileName)
+			printLocalizedField("Common.Label.Profile", "Profile", profileName)
 		}
 		if boot.User.Location != "" {
-			fmt.Printf("Location: %s\n", boot.User.Location)
+			printLocalizedField("Common.Label.Location", "Location", boot.User.Location)
 		}
-		fmt.Printf("Server: %s\n", cfg.Server)
+		printLocalizedField("Common.Label.Server", "Server", cfg.Server)
 
 		return nil
 	},

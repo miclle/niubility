@@ -1,0 +1,618 @@
+Help:
+  Usage: 用法
+  Aliases: 别名
+  AliasesLabel: 别名
+  AvailableCommands: 可用命令
+  Flags: 选项
+  GlobalFlags: 全局选项
+  AdditionalTopics: 其他帮助主题
+  Use: 使用
+  MoreInfo: 获取命令的更多信息
+  Flag:
+    Help: '{{.Command}} 的帮助'
+  Command:
+    Short: 查看任意命令的帮助
+    CompletionShort: 为指定 shell 生成自动补全脚本
+Root:
+  Short: Niubility 平台命令行工具
+  Long: |-
+    Niubility CLI 用于通过命令行与 Niubility 平台交互。
+
+    你可以浏览内容、发布文章、管理分类等。
+
+    可以先执行登录：
+      niubility login --server http://your-server:9000
+  Flag:
+    Config: 配置文件路径（默认 `~/.config/niubility/config.yaml`）
+    Profile: 多环境登录时使用的独立 profile 名称
+    Output: 输出格式（table 或 json）
+    Language: CLI 文案语言（en 或 zh-CN）
+  Error:
+    FailedLoadConfig: 加载配置失败
+    ServerNotConfigured: 尚未配置服务器，请先运行 'niubility login --server <url>'
+    InvalidTimeout: 无效的超时时间
+    FailedCreateAuthManager: 创建认证管理器失败
+    FailedCreateAPIClient: 创建 API 客户端失败
+Common:
+  Label:
+    Identifier: ID
+    ConfigPath: 配置文件路径
+    Name: 名称
+    Slug: Slug
+    Server: 服务器
+    Profile: Profile
+    OutputFormat: 输出格式
+    Editor: 编辑器
+    DefaultStatus: 默认状态
+    Timeout: 超时时间
+    Language: 语言
+    TokenStored: 已保存 Token
+    Username: 用户名
+    Password: 密码
+    Role: 角色
+    Email: 邮箱
+    Location: 地点
+    Title: 标题
+    Type: 类型
+    Category: 分类
+    Status: 状态
+    Author: 作者
+    Created: 创建时间
+    Updated: 更新时间
+    Count: 数量
+    Visible: 可见
+    Sort: 排序
+    Mobile: 手机号
+    Avatar: 头像
+    Bio: 简介
+    DepartmentIDs: 部门 ID
+    Departments: 部门
+    SocialAccounts: 社交账号：
+    Followers: 粉丝
+    Following: 关注中
+    Social: 社交账号
+    Likes: 点赞
+    Favorites: 收藏
+    Key: 键
+    Value: 值
+    Summary: 摘要
+    Tags: 标签
+    Speaker: 主讲人
+    SpeakerBio: 主讲人简介
+    Stats: 统计
+    BodyPreview: 正文预览
+    URL: 链接
+  Status:
+    NotLoggedIn: 未登录
+  Message:
+    Cancelled: 已取消
+    MoreResults: 还有更多结果，使用 `--cursor {{.Cursor}}` 获取下一页。
+    Total: 总计：{{.Count}}
+  Flag:
+    Cursor: 分页游标
+    Limit: 限制返回结果数量
+    SkipConfirmation: 跳过确认
+  Word:
+    Yes: 是
+    No: 否
+    Unknown: 未知
+Output:
+  ErrorPrefix: 错误
+Login:
+  Short: 登录 Niubility 服务器
+  Long: |-
+    通过用户名/密码或 SSO 登录 Niubility 服务器。
+
+    如果服务器启用了 SSO，在未显式提供用户名/密码参数时，
+    默认会使用浏览器 SSO 登录。
+
+    示例：
+      # 交互式登录
+      niubility login
+
+      # 指定服务器
+      niubility login --server http://localhost:9000
+
+      # 使用 SSO 登录
+      niubility login --server http://localhost:9000 --sso
+
+      # 非交互式登录
+      niubility login --server http://localhost:9000 --username admin --password-stdin < password.txt
+  Flag:
+    Server: Niubility 服务器地址
+    Username: 用户名
+    Password: 密码（非交互场景请使用 --password-stdin）
+    PasswordStdin: 从标准输入读取密码
+    SSO: 使用浏览器 SSO 登录
+  Error:
+    ServerRequired: 必须提供服务器地址，请使用 --server 或在配置中设置
+    SSOConflict: --sso 不能与用户名/密码参数同时使用
+    SSOFailed: SSO 登录失败
+    LoginFailed: 登录失败
+    FailedSyncAuthToken: 同步认证令牌失败
+    FailedSaveConfig: 保存配置失败
+    FailedVerifyLogin: 校验登录状态失败
+    FailedReadUsername: 读取用户名失败
+    FailedReadPassword: 读取密码失败
+    CredentialsRequired: 用户名和密码不能为空
+  Success:
+    LoggedInAs: 已登录为 {{.Name}}
+WhoAmI:
+  Short: 显示当前登录用户
+  Long: |-
+    显示当前登录用户的信息。
+
+    该命令会调用 boot 接口校验认证状态，
+    并展示当前用户信息。
+  Error:
+    FailedGetBootInfo: 获取 boot 信息失败
+  Output:
+    LoggedInAs: 当前登录用户
+Logout:
+  Short: 从 Niubility 服务器登出
+  Long: |-
+    从 Niubility 服务器登出并清除本地会话。
+
+    该命令会清理本地会话，并在可能时调用服务端登出接口，
+    使服务端会话失效。
+  Error:
+    ServerLogoutFailed: 服务端登出失败
+    FailedClearSession: 清除本地会话失败
+    FailedSaveConfig: 保存配置失败
+  Success:
+    LoggedOut: 已登出
+Category:
+  Short: 管理分类
+  Long: 管理 Niubility 平台上的内容分类。
+  Flag:
+    NameRequired: 分类名称（必填）
+    SlugRequired: 分类 slug（必填）
+    Name: 分类名称
+    Slug: 分类 slug
+    Icon: 分类图标
+    SortOrder: 排序值
+    Visible: 可见性（true/false）
+  List:
+    Short: 列出所有分类
+    Long: 列出所有可用内容分类。
+    Empty: 没有找到分类
+    Error:
+      ListFailed: 获取分类列表失败
+  Create:
+    Short: 创建分类（仅管理员）
+    Long: 创建一个新的内容分类，需要管理员权限。
+    Success:
+      Created: 分类已创建
+    Error:
+      NameRequired: 必须提供 `--name`
+      SlugRequired: 必须提供 `--slug`
+      CreateFailed: 创建分类失败
+  Update:
+    Short: 更新分类（仅管理员）
+    Long: 更新已有内容分类，仅修改显式传入的字段。
+    Success:
+      Updated: 分类已更新
+    Error:
+      UpdateFailed: 更新分类失败
+  Delete:
+    Short: 删除分类（仅管理员）
+    Long: 按 ID 删除内容分类，需要管理员权限。
+    Prompt: '确认删除分类 {{.ID}} 吗？[y/N]:'
+    Success:
+      Deleted: 分类 {{.ID}} 已删除
+    Error:
+      DeleteFailed: 删除分类失败
+Comment:
+  Short: 管理评论
+  Long: 管理内容上的评论。
+  Flag:
+    ContentRequired: 内容 ID（必填）
+    Attachment: 附件 ID
+    Parent: 父评论 ID（用于回复）
+    ReplyTo: 回复目标评论 ID
+    BodyRequired: 评论内容（必填）
+  List:
+    Short: 列出评论
+    Long: 列出某个内容的评论。
+    Empty: 没有找到评论
+    Total: 评论（总数：{{.Count}}）
+    PinnedSuffix: ' [已置顶]'
+    Error:
+      ContentRequired: 必须提供 `--content`
+      ListFailed: 获取评论列表失败
+  Create:
+    Short: 创建评论
+    Long: 在某个内容下创建评论。
+    Success:
+      Created: 评论已创建
+    Error:
+      ContentRequired: 必须提供 `--content`
+      BodyRequired: 必须提供 `--body`
+      CreateFailed: 创建评论失败
+  Delete:
+    Short: 删除评论
+    Long: 按 ID 删除评论。
+    Prompt: '确认删除评论 {{.ID}} 吗？[y/N]:'
+    Success:
+      Deleted: 评论 {{.ID}} 已删除
+    Error:
+      DeleteFailed: 删除评论失败
+Content:
+  Short: 管理内容
+  Long: |-
+    管理 Niubility 平台上的内容。
+
+    内容类型：article、gallery、video
+    状态：draft、published
+  Flag:
+    Category: 按分类 slug 过滤
+    Type: 按类型过滤（article/gallery/video）
+    Status: 按状态过滤（draft/published）
+    Keyword: 按关键词搜索
+    Tag: 按标签过滤
+    Sort: 排序方式
+    AuthorID: 按作者 ID 过滤
+  List:
+    Short: 列出内容
+    Long: 按条件列出内容。
+    Empty: 没有找到内容
+    Error:
+      ListFailed: 获取内容列表失败
+  View:
+    Short: 查看内容详情
+    Long: 查看单个内容的详细信息。
+    Attachments: 附件（{{.Count}}）
+    CoverSuffix: ' [封面]'
+    Error:
+      GetFailed: 获取内容失败
+  Create:
+    Short: 创建内容
+    Long: |-
+      从本地文件创建新内容。
+
+      对文章类型，请提供包含 front-matter 的 Markdown 文件：
+        ---
+        title: My Article
+        category: learning
+        tags: [go, tutorial]
+        status: draft
+        cover: ./cover.png
+        attachments:
+          - ./slides.pdf
+        ---
+
+        Article content in Markdown...
+    Flag:
+      Status: 内容状态（draft/published）
+    Success:
+      Created: 内容创建成功
+    Error:
+      UnsupportedType: 当前版本仅支持 `article` 类型
+      ParseFailed: 解析文件失败
+      CategoriesFailed: 获取分类失败
+      CategoryNotFound: 未找到分类 `{{.Slug}}`
+      UploadFailed: 上传附件失败
+      CreateFailed: 创建内容失败
+  Edit:
+    Short: 从 Markdown 文件更新内容
+    Long: |-
+      从 Markdown 文件更新已有内容。
+
+      Markdown 文件支持与 `content create` 相同的 front-matter 格式。
+      只有 front-matter 中出现的字段才会更新；未提供的字段保持不变。
+    Flag:
+      Status: 内容状态（draft/published）
+    Success:
+      Updated: 内容更新成功
+    Error:
+      ParseFailed: 解析文件失败
+      CategoriesFailed: 获取分类失败
+      CategoryNotFound: 未找到分类 `{{.Slug}}`
+      UploadFailed: 上传附件失败
+      UpdateFailed: 更新内容失败
+  Delete:
+    Short: 删除内容
+    Long: 按 ID 删除内容。
+    Prompt: '确认删除 “{{.Title}}” 吗？[y/N]:'
+    Success:
+      Deleted: 内容 {{.ID}} 已删除
+    Error:
+      GetFailed: 获取内容失败
+      DeleteFailed: 删除内容失败
+Favorite:
+  Short: 管理收藏
+  Long: 管理你收藏的内容。
+  List:
+    Short: 列出收藏
+    Long: 列出你已收藏的内容。
+    Empty: 没有找到收藏内容
+    Error:
+      ListFailed: 获取收藏列表失败
+  Toggle:
+    Short: 切换内容收藏状态
+    Long: 切换某个内容的收藏状态，同一命令用于收藏或取消收藏。
+    State:
+      Favorited: 已收藏
+      Unfavorited: 已取消收藏
+    Success: '{{.State}} 内容 {{.ID}}（总数：{{.Total}}）'
+    Error:
+      ToggleFailed: 切换收藏状态失败
+Follow:
+  Short: 管理关注关系
+  Long: 管理用户之间的关注关系。
+  Toggle:
+    Short: 切换对某个用户的关注状态
+    Long: 切换对某个用户的关注状态，同一命令用于关注或取消关注。
+    State:
+      Followed: 已关注
+      Unfollowed: 已取消关注
+    Success: '{{.State}} {{.Username}}（粉丝：{{.Followers}}，关注中：{{.Following}}）'
+    Error:
+      ToggleFailed: 切换关注状态失败
+  Following:
+    Short: 列出某个用户关注的人
+    Empty: '{{.Username}} 当前没有关注任何人'
+    Error:
+      ListFailed: 获取关注列表失败
+  Followers:
+    Short: 列出某个用户的粉丝
+    Empty: '{{.Username}} 还没有粉丝'
+    Error:
+      ListFailed: 获取粉丝列表失败
+Like:
+  Short: 切换点赞状态
+  Long: 切换对内容、评论或附件的点赞状态。
+  Flag:
+    Type: 目标类型：content、comment、attachment
+    TargetID: 目标 ID
+  State:
+    Liked: 已点赞
+    Unliked: 已取消点赞
+  Success: '{{.State}} {{.Type}} {{.ID}}（总数：{{.Total}}）'
+  Error:
+    TypeRequired: 必须提供 `--type`（content、comment、attachment）
+    TargetIDRequired: 必须提供 `--id`
+    ToggleFailed: 切换点赞状态失败
+Profile:
+  Short: 管理个人资料
+  Long: 查看和更新个人资料、修改密码。
+  Flag:
+    Name: 显示名称
+    Bio: 简介
+    Location: 地点
+    Avatar: 头像 URL
+    Social: 社交账号（key=value，例如 github=alice）
+  View:
+    Short: 查看个人资料
+    Long: 查看当前登录用户的资料信息。
+    Error:
+      GetFailed: 获取个人资料失败
+  Update:
+    Short: 更新个人资料
+    Long: 更新个人资料字段，只会修改显式传入的字段。
+    Success:
+      Updated: 个人资料已更新
+    Error:
+      InvalidSocial: 无效的社交账号格式：{{.Value}}（应为 key=value）
+      UpdateFailed: 更新个人资料失败
+  Password:
+    Short: 修改密码
+    Long: 修改密码；如果未通过参数传入旧密码/新密码，会在交互中提示输入。
+    Flag:
+      OldPassword: 旧密码（未提供时会提示输入）
+      NewPassword: 新密码（未提供时会提示输入）
+    Label:
+      OldPassword: 旧密码
+      NewPassword: 新密码
+      ConfirmNewPassword: 确认新密码
+    Error:
+      CheckFailed: 检查密码状态失败
+      ReadFailed: 读取密码失败
+      PasswordMismatch: 两次输入的新密码不一致
+      ChangeFailed: 修改密码失败
+Settings:
+  Short: 管理系统设置（仅管理员）
+  Long: 查看和更新系统设置，需要管理员权限。
+  Flag:
+    Set: 设置项 `key=value`
+  List:
+    Short: 列出所有设置
+    Long: 列出所有系统设置，敏感值会被脱敏。
+    Empty: 没有找到设置项
+    Error:
+      ListFailed: 获取设置列表失败
+  Set:
+    Short: 更新设置
+    Long: 更新一个或多个设置项，使用 `key=value` 形式传入。
+    Success:
+      Updated: 设置已更新
+    Error:
+      ValuesRequired: 至少需要提供一组 `key=value`
+      InvalidFormat: 无效格式：{{.Value}}（应为 key=value）
+      UpdateFailed: 更新设置失败
+User:
+  Short: 管理用户
+  Long: 管理 Niubility 平台上的用户，大多数子命令需要管理员权限。
+  Flag:
+    ListLimit: 返回用户的最大数量
+    ListCursor: 下一页游标
+    Search: 按姓名、用户名、邮箱或手机号搜索
+    DepartmentID: 按部门 ID 过滤
+    Username: 用户名
+    Email: 邮箱
+    Password: 密码
+    Name: 显示名称
+    Mobile: 手机号
+    Avatar: 头像 URL 或资源路径
+    Bio: 简介
+    Location: 地点
+    DepartmentIDs: 逗号分隔的部门 ID 列表
+    Role: 角色：user、admin、super_admin
+    Status: 状态：activated、deactivated
+    CreatedAt: 自定义 created_at（RFC3339 格式）
+    UpdatedAt: 自定义 updated_at（RFC3339 格式）
+    Social: 社交账号，格式为 key=value，可重复传入
+  List:
+    Short: 列出用户
+    Long: 按搜索条件和部门过滤列出用户。
+    Empty: 没有找到用户
+    Error:
+      ListFailed: 获取用户列表失败
+  View:
+    Short: 查看用户详情
+    Error:
+      GetFailed: 获取用户失败
+  Create:
+    Short: 创建用户
+    Long: 以管理员权限创建用户。
+    Success:
+      Created: 已创建用户 {{.Username}}（{{.ID}}）
+    Error:
+      UsernameRequired: 必须提供 `--username`
+      EmailRequired: 必须提供 `--email`
+      CreateFailed: 创建用户失败
+  Update:
+    Short: 更新用户
+    Long: 以管理员权限更新用户字段。
+    Flag:
+      Password: 密码；传入空字符串可清空
+      ClearSocials: 清空所有社交账号
+    Success:
+      Updated: 已更新用户 {{.Username}}（{{.ID}}）
+    Error:
+      NoFields: 没有可更新的字段；请至少传入一个参数
+      UpdateFailed: 更新用户失败
+  Delete:
+    Short: 删除用户
+    Flag:
+      Yes: 跳过确认
+    Prompt: 确认删除用户 {{.ID}} 吗？该操作不可撤销，请使用 `--yes` 确认。
+    Success:
+      Deleted: 已删除用户 {{.ID}}
+    Error:
+      DeleteFailed: 删除用户失败
+  Error:
+    InvalidSocial: 无效的 `--social` 值 {{.Value}}，应为 key=value
+APIClient:
+  Error:
+    Unauthorized: 未授权，请先运行 `niubility login`
+    Forbidden: 无权限执行该操作
+    NotFound: 资源不存在
+    Server: 服务端错误
+    UploadFailed: 上传失败
+    APIErrorStatus: API 错误：状态码 {{.Status}}
+    InvalidServerURL: 无效的服务器地址
+    InvalidURLPath: 无效的 URL 路径
+    EncodeRequestBody: 编码请求体失败
+    CreateRequest: 创建请求失败
+    RequestFailed: 请求失败
+    ReadResponseBody: 读取响应体失败
+    DecodeResponse: 解析响应失败
+    CreateUploadRequest: 创建上传请求失败
+    UploadRequestFailed: 上传请求失败
+    NotAuthenticated: 当前未认证
+Auth:
+  Error:
+    NoSession: 当前没有有效会话，请先运行 `niubility login`
+    InvalidServerURL: 无效的服务器地址
+    CreateCookieJar: 创建 Cookie Jar 失败
+    InvalidJWTFormat: 无效的 JWT 格式
+    DecodeJWTPayload: 解码 JWT 载荷失败
+    ParseJWTPayload: 解析 JWT 载荷失败
+    JWTExpMissing: JWT 缺少 exp 字段
+SSO:
+  Message:
+    StartingFlow: 正在启动 SSO 登录流程...
+    CallbackServerStarted: 本地回调服务器已启动
+    OpeningBrowser: 正在打开浏览器...
+    ManualVisit: 如果浏览器没有自动打开，请手动访问以下 URL
+    Waiting: 正在等待登录完成...
+  Error:
+    StartCallbackServer: 启动本地回调服务器失败
+    CallbackServer: 本地回调服务器错误
+    CreateSession: 创建 CLI SSO 登录会话失败
+    OpenBrowser: 无法自动打开浏览器，请手动访问上方 URL
+    NoTicket: 未从本地回调中收到 ticket
+    ExchangeTicket: 交换 CLI SSO ticket 失败
+    InvalidBrowserURL: 无效的浏览器 URL
+  Page:
+    Success: |-
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>登录完成</title>
+        <style>
+          body { font-family: sans-serif; background: #f5f5f5; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
+          .card { background: white; padding: 32px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); max-width: 420px; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h1>登录已完成</h1>
+          <p>你可以回到终端继续使用 Niubility CLI。</p>
+        </div>
+      </body>
+      </html>
+    Error: <html><body><h1>登录失败</h1><p>请返回终端查看错误信息。</p></body></html>
+ContentParse:
+  Error:
+    EmptyTitle: front-matter 中必须提供 title
+    EmptyCategory: front-matter 中必须提供 category
+    ReadFile: 读取文件失败
+    CoverNotFound: 未找到封面文件
+    AttachmentNotFound: 未找到附件文件
+    ImageNotFound: 未找到图片文件
+    InvalidStatus: 无效状态 `{{.Status}}`，必须为 `draft` 或 `published`
+    ParseFrontMatter: 解析 front-matter 失败
+ContentUpload:
+  Error:
+    OpenFile: 打开文件失败
+    DetectMIME: 检测 MIME 类型失败
+    SeekFile: 重置文件游标失败
+    GetPresignedURL: 获取预签名 URL 失败
+    UploadFile: 上传文件失败
+    UploadCover: 上传封面失败
+    UploadImage: 上传图片失败
+    UploadAttachment: 上传附件失败
+Config:
+  Command:
+    Short: 管理本地 CLI 配置
+    Long: |-
+      管理当前机器上的本地 CLI 配置。
+
+      可以用这个命令持久化默认 CLI 语言等偏好设置。
+    Show:
+      Short: 显示本地 CLI 配置
+      Long: |-
+        显示当前 profile 使用的本地 CLI 配置。
+
+        Token 等敏感值不会被直接输出。
+    SetLanguage:
+      Short: 持久化默认 CLI 语言
+      Long: |-
+        将默认 CLI 语言写入本地配置文件。
+
+        支持的值：
+          en
+          zh-CN
+
+        示例：
+          niubility config set-language zh-CN
+          niubility --profile prod config set-language en
+      Success:
+        Saved: 已将 CLI 语言保存为 {{.Language}}
+      Error:
+        InvalidLanguage: language 必须为 `en` 或 `zh-CN`，当前为 `{{.Value}}`
+        SaveFailed: 保存配置失败
+  Error:
+    ReadConfigFile: 读取配置文件失败
+    ParseConfig: 解析配置失败
+    InvalidOutput: output 必须为 `table` 或 `json`，当前为 `{{.Value}}`
+    InvalidDefaultStatus: default_status 必须为 `draft` 或 `published`，当前为 `{{.Value}}`
+    InvalidTimeout: 无效的超时格式 `{{.Value}}`
+    InvalidLanguage: language 必须为 `en` 或 `zh-CN`，当前为 `{{.Value}}`
+    CreateConfigDir: 创建配置目录失败
+    MarshalConfig: 序列化配置失败
+    WriteConfigFile: 写入配置文件失败
+    InvalidProfile: 无效的 profile 名称 `{{.Value}}`

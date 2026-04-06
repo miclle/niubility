@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"time"
 
+	clii18n "github.com/miclle/niubility/cli/internal/i18n"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 )
@@ -30,6 +31,9 @@ type Config struct {
 
 	// Timeout for HTTP requests
 	Timeout string `mapstructure:"timeout"`
+
+	// Language controls human-readable CLI output.
+	Language string `mapstructure:"language"`
 
 	// Token is the persisted CLI bearer token.
 	Token string `mapstructure:"token"`
@@ -83,7 +87,7 @@ func LoadProfile(profile, configPath string) (*Config, error) {
 	if err := v.ReadInConfig(); err != nil {
 		var configFileNotFoundError viper.ConfigFileNotFoundError
 		if !errors.As(err, &configFileNotFoundError) && !os.IsNotExist(err) {
-			return nil, fmt.Errorf("failed to read config file: %w", err)
+			return nil, fmt.Errorf("%s: %w", clii18n.T("Config.Error.ReadConfigFile", "failed to read config file", nil), err)
 		}
 		// Config file doesn't exist, use defaults
 	}
@@ -91,7 +95,7 @@ func LoadProfile(profile, configPath string) (*Config, error) {
 	// Unmarshal config
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse config: %w", err)
+		return nil, fmt.Errorf("%s: %w", clii18n.T("Config.Error.ParseConfig", "failed to parse config", nil), err)
 	}
 
 	// Validate and normalize config
@@ -109,6 +113,7 @@ func setDefaults(v *viper.Viper, profile string) {
 	v.SetDefault("editor", DefaultEditor)
 	v.SetDefault("default_status", DefaultStatus)
 	v.SetDefault("timeout", DefaultTimeout)
+	v.SetDefault("language", "")
 	v.SetDefault("token", "")
 }
 
@@ -116,17 +121,25 @@ func setDefaults(v *viper.Viper, profile string) {
 func validateConfig(cfg *Config) error {
 	// Validate output format
 	if cfg.Output != "table" && cfg.Output != "json" {
-		return fmt.Errorf("%w: output must be 'table' or 'json', got '%s'", ErrConfigInvalid, cfg.Output)
+		return fmt.Errorf("%w: %s", ErrConfigInvalid, clii18n.T("Config.Error.InvalidOutput", "output must be 'table' or 'json', got '{{.Value}}'", map[string]interface{}{"Value": cfg.Output}))
 	}
 
 	// Validate default status
 	if cfg.DefaultStatus != "draft" && cfg.DefaultStatus != "published" {
-		return fmt.Errorf("%w: default_status must be 'draft' or 'published', got '%s'", ErrConfigInvalid, cfg.DefaultStatus)
+		return fmt.Errorf("%w: %s", ErrConfigInvalid, clii18n.T("Config.Error.InvalidDefaultStatus", "default_status must be 'draft' or 'published', got '{{.Value}}'", map[string]interface{}{"Value": cfg.DefaultStatus}))
 	}
 
 	// Validate timeout
 	if _, err := time.ParseDuration(cfg.Timeout); err != nil {
-		return fmt.Errorf("%w: invalid timeout format '%s': %v", ErrConfigInvalid, cfg.Timeout, err)
+		return fmt.Errorf("%w: %s: %v", ErrConfigInvalid, clii18n.T("Config.Error.InvalidTimeout", "invalid timeout format '{{.Value}}'", map[string]interface{}{"Value": cfg.Timeout}), err)
+	}
+
+	if cfg.Language != "" {
+		normalized, ok := clii18n.NormalizeLanguage(cfg.Language)
+		if !ok {
+			return fmt.Errorf("%w: %s", ErrConfigInvalid, clii18n.T("Config.Error.InvalidLanguage", "language must be 'en' or 'zh-CN', got '{{.Value}}'", map[string]interface{}{"Value": cfg.Language}))
+		}
+		cfg.Language = normalized
 	}
 
 	// Expand home directory in paths
@@ -161,7 +174,7 @@ func SaveProfile(profile string, cfg *Config, configPath string) error {
 	configPath = ResolveConfigPath(profile, configPath)
 
 	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
-		return fmt.Errorf("failed to create config directory: %w", err)
+		return fmt.Errorf("%s: %w", clii18n.T("Config.Error.CreateConfigDir", "failed to create config directory", nil), err)
 	}
 
 	// Create a map for YAML output
@@ -171,18 +184,19 @@ func SaveProfile(profile string, cfg *Config, configPath string) error {
 		"editor":         cfg.Editor,
 		"default_status": cfg.DefaultStatus,
 		"timeout":        cfg.Timeout,
+		"language":       cfg.Language,
 		"token":          cfg.Token,
 	}
 
 	// Marshal to YAML
 	yamlData, err := yaml.Marshal(data)
 	if err != nil {
-		return fmt.Errorf("failed to marshal config: %w", err)
+		return fmt.Errorf("%s: %w", clii18n.T("Config.Error.MarshalConfig", "failed to marshal config", nil), err)
 	}
 
 	// Write to file
 	if err := os.WriteFile(configPath, yamlData, 0644); err != nil {
-		return fmt.Errorf("failed to write config file: %w", err)
+		return fmt.Errorf("%s: %w", clii18n.T("Config.Error.WriteConfigFile", "failed to write config file", nil), err)
 	}
 
 	return nil
@@ -238,7 +252,7 @@ func ValidateProfile(profile string) error {
 
 	validProfile := regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 	if !validProfile.MatchString(profile) {
-		return fmt.Errorf("%w: invalid profile name '%s'", ErrConfigInvalid, profile)
+		return fmt.Errorf("%w: %s", ErrConfigInvalid, clii18n.T("Config.Error.InvalidProfile", "invalid profile name '{{.Value}}'", map[string]interface{}{"Value": profile}))
 	}
 
 	return nil

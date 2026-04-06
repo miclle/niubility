@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	clii18n "github.com/miclle/niubility/cli/internal/i18n"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -60,7 +61,7 @@ func (p *Printer) PrintJSON(data interface{}) error {
 
 // PrintError prints an error message to stderr
 func PrintError(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, "Error: "+format+"\n", args...)
+	fmt.Fprintf(os.Stderr, "%s: "+format+"\n", append([]interface{}{clii18n.T("Output.ErrorPrefix", "Error", nil)}, args...)...)
 }
 
 // PrintSuccess prints a success message to stdout
@@ -71,6 +72,16 @@ func PrintSuccess(format string, args ...interface{}) {
 // PrintInfo prints an info message to stdout
 func PrintInfo(format string, args ...interface{}) {
 	fmt.Printf(format+"\n", args...)
+}
+
+// PrintSuccessT prints a translated success message to stdout.
+func PrintSuccessT(id, fallback string, data map[string]interface{}) {
+	fmt.Printf("✓ %s\n", clii18n.T(id, fallback, data))
+}
+
+// PrintInfoT prints a translated info message to stdout.
+func PrintInfoT(id, fallback string, data map[string]interface{}) {
+	fmt.Printf("%s\n", clii18n.T(id, fallback, data))
 }
 
 // Table represents a table for output

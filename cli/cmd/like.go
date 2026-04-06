@@ -2,8 +2,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/miclle/niubility/cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -29,10 +27,10 @@ var likeCmd = &cobra.Command{
   niubility like --type content --id 123`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if likeTargetType == "" {
-			return fmt.Errorf("--type is required (content, comment, attachment)")
+			return localizedError("Like.Error.TypeRequired", "--type is required (content, comment, attachment)")
 		}
 		if likeTargetID == "" {
-			return fmt.Errorf("--id is required")
+			return localizedError("Like.Error.TargetIDRequired", "--id is required")
 		}
 
 		ctx, cancel := getContext()
@@ -40,18 +38,22 @@ var likeCmd = &cobra.Command{
 
 		resp, err := apiClient.ToggleLike(ctx, likeTargetType, likeTargetID)
 		if err != nil {
-			return fmt.Errorf("failed to toggle like: %w", err)
+			return wrapLocalizedError("Like.Error.ToggleFailed", "failed to toggle like", err)
 		}
 
 		if isJSONOutput() {
 			return output.NewPrinter(output.FormatJSON).PrintJSON(resp)
 		}
 
-		state := "unliked"
+		state := localizedText("Like.State.Unliked", "unliked", nil)
 		if resp.Liked {
-			state = "liked"
+			state = localizedText("Like.State.Liked", "liked", nil)
 		}
-		output.PrintSuccess("%s %s %s (total: %d)", state, likeTargetType, likeTargetID, resp.LikeCount)
+		output.PrintSuccessT(
+			"Like.Success",
+			"{{.State}} {{.Type}} {{.ID}} (total: {{.Total}})",
+			map[string]interface{}{"State": state, "Type": likeTargetType, "ID": likeTargetID, "Total": resp.LikeCount},
+		)
 		return nil
 	},
 }
@@ -61,4 +63,17 @@ func init() {
 
 	likeCmd.Flags().StringVarP(&likeTargetType, "type", "t", "", "Target type: content, comment, attachment")
 	likeCmd.Flags().StringVarP(&likeTargetID, "id", "i", "", "Target ID")
+}
+
+func localizeLikeCommands() {
+	likeCmd.Short = localizedText("Like.Short", "Toggle like", nil)
+	likeCmd.Long = localizedText("Like.Long", "Toggle like on a content item, comment, or attachment.", nil)
+	likeCmd.Example = localizedText("Like.Example", likeCmd.Example, nil)
+
+	if flag := likeCmd.Flags().Lookup("type"); flag != nil {
+		flag.Usage = localizedText("Like.Flag.Type", "Target type: content, comment, attachment", nil)
+	}
+	if flag := likeCmd.Flags().Lookup("id"); flag != nil {
+		flag.Usage = localizedText("Like.Flag.TargetID", "Target ID", nil)
+	}
 }

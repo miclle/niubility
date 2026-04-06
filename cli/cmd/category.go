@@ -3,7 +3,6 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/miclle/niubility/cli/internal/api"
 	"github.com/miclle/niubility/cli/internal/output"
@@ -48,7 +47,7 @@ var categoryListCmd = &cobra.Command{
 
 		categories, err := apiClient.ListCategories(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to list categories: %w", err)
+			return wrapLocalizedError("Category.List.Error.ListFailed", "failed to list categories", err)
 		}
 
 		// Output
@@ -57,17 +56,21 @@ var categoryListCmd = &cobra.Command{
 		}
 
 		if len(categories) == 0 {
-			fmt.Println("No categories found")
+			printLocalizedMessage("Category.List.Empty", "No categories found", nil)
 			return nil
 		}
 
 		// Table output
-		table := output.NewTable("ID", "NAME", "SLUG", "COUNT", "VISIBLE", "SORT")
+		table := output.NewTable(
+			localizedText("Common.Label.Identifier", "ID", nil),
+			localizedText("Common.Label.Name", "NAME", nil),
+			localizedText("Common.Label.Slug", "SLUG", nil),
+			localizedText("Common.Label.Count", "COUNT", nil),
+			localizedText("Common.Label.Visible", "VISIBLE", nil),
+			localizedText("Common.Label.Sort", "SORT", nil),
+		)
 		for _, cat := range categories {
-			visible := "yes"
-			if !cat.Visible {
-				visible = "no"
-			}
+			visible := localizedYesNo(cat.Visible)
 			table.AddRow(
 				cat.ID,
 				cat.Name,
@@ -95,10 +98,10 @@ var categoryCreateCmd = &cobra.Command{
   niubility category create --name "Talks" --slug talks --icon microphone --sort-order 1`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if categoryCreateName == "" {
-			return fmt.Errorf("--name is required")
+			return localizedError("Category.Create.Error.NameRequired", "--name is required")
 		}
 		if categoryCreateSlug == "" {
-			return fmt.Errorf("--slug is required")
+			return localizedError("Category.Create.Error.SlugRequired", "--slug is required")
 		}
 
 		ctx, cancel := getContext()
@@ -113,17 +116,17 @@ var categoryCreateCmd = &cobra.Command{
 
 		created, err := apiClient.CreateCategory(ctx, req)
 		if err != nil {
-			return fmt.Errorf("failed to create category: %w", err)
+			return wrapLocalizedError("Category.Create.Error.CreateFailed", "failed to create category", err)
 		}
 
 		if isJSONOutput() {
 			return output.NewPrinter(output.FormatJSON).PrintJSON(created)
 		}
 
-		output.PrintSuccess("Category created")
-		fmt.Printf("ID: %s\n", created.ID)
-		fmt.Printf("Name: %s\n", created.Name)
-		fmt.Printf("Slug: %s\n", created.Slug)
+		output.PrintSuccessT("Category.Create.Success.Created", "Category created", nil)
+		printLocalizedField("Common.Label.Identifier", "ID", created.ID)
+		printLocalizedField("Common.Label.Name", "Name", created.Name)
+		printLocalizedField("Common.Label.Slug", "Slug", created.Slug)
 		return nil
 	},
 }
@@ -168,17 +171,17 @@ var categoryUpdateCmd = &cobra.Command{
 
 		updated, err := apiClient.UpdateCategory(ctx, id, req)
 		if err != nil {
-			return fmt.Errorf("failed to update category: %w", err)
+			return wrapLocalizedError("Category.Update.Error.UpdateFailed", "failed to update category", err)
 		}
 
 		if isJSONOutput() {
 			return output.NewPrinter(output.FormatJSON).PrintJSON(updated)
 		}
 
-		output.PrintSuccess("Category updated")
-		fmt.Printf("ID: %s\n", updated.ID)
-		fmt.Printf("Name: %s\n", updated.Name)
-		fmt.Printf("Slug: %s\n", updated.Slug)
+		output.PrintSuccessT("Category.Update.Success.Updated", "Category updated", nil)
+		printLocalizedField("Common.Label.Identifier", "ID", updated.ID)
+		printLocalizedField("Common.Label.Name", "Name", updated.Name)
+		printLocalizedField("Common.Label.Slug", "Slug", updated.Slug)
 		return nil
 	},
 }
@@ -194,13 +197,8 @@ var categoryDeleteCmd = &cobra.Command{
 		id := args[0]
 
 		if !categoryDeleteYes {
-			fmt.Printf("Are you sure you want to delete category %s? [y/N]: ", id)
-			var response string
-			if _, err := fmt.Scanln(&response); err != nil {
-				response = ""
-			}
-			if strings.ToLower(response) != "y" && strings.ToLower(response) != "yes" {
-				fmt.Println("Cancelled")
+			if !confirmAction("Category.Delete.Prompt", "Are you sure you want to delete category {{.ID}}? [y/N]: ", map[string]interface{}{"ID": id}) {
+				printLocalizedMessage("Common.Message.Cancelled", "Cancelled", nil)
 				return nil
 			}
 		}
@@ -209,10 +207,10 @@ var categoryDeleteCmd = &cobra.Command{
 		defer cancel()
 
 		if err := apiClient.DeleteCategory(ctx, id); err != nil {
-			return fmt.Errorf("failed to delete category: %w", err)
+			return wrapLocalizedError("Category.Delete.Error.DeleteFailed", "failed to delete category", err)
 		}
 
-		output.PrintSuccess("Category %s deleted", id)
+		output.PrintSuccessT("Category.Delete.Success.Deleted", "Category {{.ID}} deleted", map[string]interface{}{"ID": id})
 		return nil
 	},
 }
@@ -239,4 +237,54 @@ func init() {
 
 	// category delete flags
 	categoryDeleteCmd.Flags().BoolVarP(&categoryDeleteYes, "yes", "y", false, "Skip confirmation")
+}
+
+func localizeCategoryCommands() {
+	categoryCmd.Short = localizedText("Category.Short", "Manage categories", nil)
+	categoryCmd.Long = localizedText("Category.Long", "Manage content categories on Niubility platform.", nil)
+
+	categoryListCmd.Short = localizedText("Category.List.Short", "List all categories", nil)
+	categoryListCmd.Long = localizedText("Category.List.Long", "List all available content categories.", nil)
+
+	categoryCreateCmd.Short = localizedText("Category.Create.Short", "Create a category (admin only)", nil)
+	categoryCreateCmd.Long = localizedText("Category.Create.Long", "Create a new content category. Requires admin role.", nil)
+	categoryCreateCmd.Example = localizedText("Category.Create.Example", categoryCreateCmd.Example, nil)
+
+	categoryUpdateCmd.Short = localizedText("Category.Update.Short", "Update a category (admin only)", nil)
+	categoryUpdateCmd.Long = localizedText("Category.Update.Long", "Update an existing content category. Only specified fields will be updated.", nil)
+	categoryUpdateCmd.Example = localizedText("Category.Update.Example", categoryUpdateCmd.Example, nil)
+
+	categoryDeleteCmd.Short = localizedText("Category.Delete.Short", "Delete a category (admin only)", nil)
+	categoryDeleteCmd.Long = localizedText("Category.Delete.Long", "Delete a content category by ID. Requires admin role.", nil)
+
+	if flag := categoryCreateCmd.Flags().Lookup("name"); flag != nil {
+		flag.Usage = localizedText("Category.Flag.NameRequired", "Category name (required)", nil)
+	}
+	if flag := categoryCreateCmd.Flags().Lookup("slug"); flag != nil {
+		flag.Usage = localizedText("Category.Flag.SlugRequired", "Category slug (required)", nil)
+	}
+	if flag := categoryCreateCmd.Flags().Lookup("icon"); flag != nil {
+		flag.Usage = localizedText("Category.Flag.Icon", "Category icon", nil)
+	}
+	if flag := categoryCreateCmd.Flags().Lookup("sort-order"); flag != nil {
+		flag.Usage = localizedText("Category.Flag.SortOrder", "Sort order", nil)
+	}
+	if flag := categoryUpdateCmd.Flags().Lookup("name"); flag != nil {
+		flag.Usage = localizedText("Category.Flag.Name", "Category name", nil)
+	}
+	if flag := categoryUpdateCmd.Flags().Lookup("slug"); flag != nil {
+		flag.Usage = localizedText("Category.Flag.Slug", "Category slug", nil)
+	}
+	if flag := categoryUpdateCmd.Flags().Lookup("icon"); flag != nil {
+		flag.Usage = localizedText("Category.Flag.Icon", "Category icon", nil)
+	}
+	if flag := categoryUpdateCmd.Flags().Lookup("visible"); flag != nil {
+		flag.Usage = localizedText("Category.Flag.Visible", "Visibility (true/false)", nil)
+	}
+	if flag := categoryUpdateCmd.Flags().Lookup("sort-order"); flag != nil {
+		flag.Usage = localizedText("Category.Flag.SortOrder", "Sort order", nil)
+	}
+	if flag := categoryDeleteCmd.Flags().Lookup("yes"); flag != nil {
+		flag.Usage = localizedText("Common.Flag.SkipConfirmation", "Skip confirmation", nil)
+	}
 }

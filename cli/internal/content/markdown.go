@@ -14,6 +14,7 @@ import (
 	"github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
 	"github.com/miclle/niubility/cli/internal/api"
+	clii18n "github.com/miclle/niubility/cli/internal/i18n"
 	"gopkg.in/yaml.v3"
 )
 
@@ -75,8 +76,8 @@ type FrontMatter struct {
 
 // Errors
 var (
-	ErrEmptyTitle    = errors.New("title is required in front-matter")
-	ErrEmptyCategory = errors.New("category is required in front-matter")
+	ErrEmptyTitle    = errors.New(clii18n.T("ContentParse.Error.EmptyTitle", "title is required in front-matter", nil))
+	ErrEmptyCategory = errors.New(clii18n.T("ContentParse.Error.EmptyCategory", "category is required in front-matter", nil))
 )
 
 // ParseMarkdownFile parses a Markdown file with front-matter.
@@ -96,7 +97,7 @@ func parseMarkdownFile(path string, requireFields bool) (*Article, error) {
 	// Read file
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file: %w", err)
+		return nil, fmt.Errorf("%s: %w", clii18n.T("ContentParse.Error.ReadFile", "failed to read file", nil), err)
 	}
 
 	// Parse front-matter and body
@@ -123,7 +124,7 @@ func parseMarkdownFile(path string, requireFields bool) (*Article, error) {
 	if fm.Cover != "" {
 		coverPath = resolvePath(fm.Cover, baseDir)
 		if _, err := os.Stat(coverPath); os.IsNotExist(err) {
-			return nil, fmt.Errorf("cover file not found: %s", coverPath)
+			return nil, fmt.Errorf("%s: %s", clii18n.T("ContentParse.Error.CoverNotFound", "cover file not found", nil), coverPath)
 		}
 	}
 
@@ -131,7 +132,7 @@ func parseMarkdownFile(path string, requireFields bool) (*Article, error) {
 	for _, att := range fm.Attachments {
 		ap := resolvePath(att, baseDir)
 		if _, err := os.Stat(ap); os.IsNotExist(err) {
-			return nil, fmt.Errorf("attachment file not found: %s", ap)
+			return nil, fmt.Errorf("%s: %s", clii18n.T("ContentParse.Error.AttachmentNotFound", "attachment file not found", nil), ap)
 		}
 		attachmentPaths = append(attachmentPaths, ap)
 	}
@@ -146,7 +147,7 @@ func parseMarkdownFile(path string, requireFields bool) (*Article, error) {
 		if !isURL(imgPath) {
 			rp := resolvePath(imgPath, baseDir)
 			if _, err := os.Stat(rp); os.IsNotExist(err) {
-				return nil, fmt.Errorf("image file not found: %s", rp)
+				return nil, fmt.Errorf("%s: %s", clii18n.T("ContentParse.Error.ImageNotFound", "image file not found", nil), rp)
 			}
 			resolvedImagePaths = append(resolvedImagePaths, rp)
 		}
@@ -159,7 +160,7 @@ func parseMarkdownFile(path string, requireFields bool) (*Article, error) {
 	var status api.ContentStatus
 	if fm.Status != "" {
 		if fm.Status != "draft" && fm.Status != "published" {
-			return nil, fmt.Errorf("invalid status '%s', must be 'draft' or 'published'", fm.Status)
+			return nil, fmt.Errorf("%s", clii18n.T("ContentParse.Error.InvalidStatus", "invalid status '{{.Status}}', must be 'draft' or 'published'", map[string]interface{}{"Status": fm.Status}))
 		}
 		status = api.ContentStatus(fm.Status)
 	}
@@ -198,7 +199,7 @@ func parseFrontMatter(data []byte) (*FrontMatter, string, error) {
 	fmData := data[4 : endIndex+4]
 	var fm FrontMatter
 	if err := yaml.Unmarshal(fmData, &fm); err != nil {
-		return nil, "", fmt.Errorf("failed to parse front-matter: %w", err)
+		return nil, "", fmt.Errorf("%s: %w", clii18n.T("ContentParse.Error.ParseFrontMatter", "failed to parse front-matter", nil), err)
 	}
 
 	// Get body (skip the closing --- and newline)

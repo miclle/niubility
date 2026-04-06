@@ -37,7 +37,7 @@ var settingsListCmd = &cobra.Command{
 
 		settings, err := apiClient.ListSettings(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to list settings: %w", err)
+			return wrapLocalizedError("Settings.List.Error.ListFailed", "failed to list settings", err)
 		}
 
 		if isJSONOutput() {
@@ -45,11 +45,15 @@ var settingsListCmd = &cobra.Command{
 		}
 
 		if len(settings) == 0 {
-			fmt.Println("No settings found")
+			printLocalizedMessage("Settings.List.Empty", "No settings found", nil)
 			return nil
 		}
 
-		table := output.NewTable("KEY", "VALUE", "UPDATED")
+		table := output.NewTable(
+			localizedText("Common.Label.Key", "KEY", nil),
+			localizedText("Common.Label.Value", "VALUE", nil),
+			localizedText("Common.Label.Updated", "UPDATED", nil),
+		)
 		for _, s := range settings {
 			value := s.Value
 			// Mask long/sensitive values in table output
@@ -76,14 +80,14 @@ var settingsSetCmd = &cobra.Command{
   niubility settings set site.name="My Platform" registration.enabled=true`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(settingsSetValues) == 0 {
-			return fmt.Errorf("at least one key=value pair is required")
+			return localizedError("Settings.Set.Error.ValuesRequired", "at least one key=value pair is required")
 		}
 
 		settings := make(map[string]string)
 		for _, kv := range settingsSetValues {
 			parts := strings.SplitN(kv, "=", 2)
 			if len(parts) != 2 {
-				return fmt.Errorf("invalid format: %s (expected key=value)", kv)
+				return fmt.Errorf("%s", localizedText("Settings.Set.Error.InvalidFormat", "invalid format: {{.Value}} (expected key=value)", map[string]interface{}{"Value": kv}))
 			}
 			settings[parts[0]] = parts[1]
 		}
@@ -93,14 +97,14 @@ var settingsSetCmd = &cobra.Command{
 
 		updated, err := apiClient.UpdateSettings(ctx, settings)
 		if err != nil {
-			return fmt.Errorf("failed to update settings: %w", err)
+			return wrapLocalizedError("Settings.Set.Error.UpdateFailed", "failed to update settings", err)
 		}
 
 		if isJSONOutput() {
 			return output.NewPrinter(output.FormatJSON).PrintJSON(updated)
 		}
 
-		output.PrintSuccess("Settings updated")
+		output.PrintSuccessT("Settings.Set.Success.Updated", "Settings updated", nil)
 		for _, s := range updated {
 			if _, ok := settings[s.Key]; ok {
 				value := s.Value
@@ -121,4 +125,21 @@ func init() {
 
 	// settings set flags
 	settingsSetCmd.Flags().StringArrayVar(&settingsSetValues, "set", nil, "Setting key=value pair")
+}
+
+func localizeSettingsCommands() {
+	settingsCmd.Short = localizedText("Settings.Short", "Manage system settings (admin only)", nil)
+	settingsCmd.Long = localizedText("Settings.Long", "View and update system settings. Requires admin role.", nil)
+
+	settingsListCmd.Short = localizedText("Settings.List.Short", "List all settings", nil)
+	settingsListCmd.Long = localizedText("Settings.List.Long", "List all system settings. Sensitive values are masked.", nil)
+	settingsListCmd.Example = localizedText("Settings.List.Example", settingsListCmd.Example, nil)
+
+	settingsSetCmd.Short = localizedText("Settings.Set.Short", "Update settings", nil)
+	settingsSetCmd.Long = localizedText("Settings.Set.Long", "Update one or more settings. Provide key=value pairs.", nil)
+	settingsSetCmd.Example = localizedText("Settings.Set.Example", settingsSetCmd.Example, nil)
+
+	if flag := settingsSetCmd.Flags().Lookup("set"); flag != nil {
+		flag.Usage = localizedText("Settings.Flag.Set", "Setting key=value pair", nil)
+	}
 }

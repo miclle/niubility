@@ -60,6 +60,9 @@ niubility content list --keyword "golang"
 
 # JSON 输出
 niubility content list --output json
+
+# 临时切换 CLI 文案语言
+niubility --lang zh-CN content list
 ```
 
 ### 4. 查看内容详情
@@ -195,6 +198,7 @@ output: "table"
 editor: "vim"
 default_status: "draft"
 timeout: "30s"
+language: "zh-CN"
 token: ""
 ```
 
@@ -207,12 +211,37 @@ token: ""
 | `editor` | string | 否 | 编辑器命令 |
 | `default_status` | string | 否 | 默认内容状态 (draft/published) |
 | `timeout` | string | 否 | HTTP 请求超时时间 |
+| `language` | string | 否 | CLI 文案语言，支持 `en`、`zh-CN` |
 
 使用 `--profile <name>` 时，CLI 会改用独立的配置文件：
 
 - 配置文件：`~/.config/niubility/profiles/<name>.yaml`
 
 这样可以同时保持多个不同 Niubility 平台的登录态。
+
+也可以临时使用 `--lang <code>` 覆盖配置和环境变量：
+
+```bash
+niubility --lang en whoami
+niubility --lang zh-CN login --server http://your-server:9000
+```
+
+如果希望以后默认都使用某种语言，可以直接写入配置：
+
+```bash
+niubility config set-language zh-CN
+
+# 配合 profile 只修改某个环境的默认语言
+niubility --profile prod config set-language en
+```
+
+查看当前 profile 的本地 CLI 配置：
+
+```bash
+niubility config show
+niubility --profile prod config show
+niubility config show --output json
+```
 
 ## Front-matter 格式
 
