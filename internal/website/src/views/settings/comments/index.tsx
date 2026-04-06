@@ -1,6 +1,6 @@
 import { useRef, useCallback } from 'react'
 import { NavLink } from 'react-router-dom'
-import { Heart, ArrowDown, Sparkles } from 'lucide-react'
+import { Heart, Sparkles } from 'lucide-react'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
@@ -16,7 +16,7 @@ const limit = 20
 function MyComments() {
   const { t } = useTranslation('settings')
   const { t: tc } = useTranslation('common')
-  const { currentUser, siteConfig } = useAppContext()
+  const { siteConfig } = useAppContext()
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
     useInfiniteQuery({
@@ -24,7 +24,6 @@ function MyComments() {
       queryFn: ({ pageParam }) => listMyComments({ cursor: pageParam, limit }),
       getNextPageParam: (lastPage) => lastPage.data.next_cursor || undefined,
       initialPageParam: undefined as string | undefined,
-      enabled: !!currentUser,
     })
 
   const comments = data?.pages.flatMap((p) => p.data.items) ?? []
@@ -60,55 +59,25 @@ function MyComments() {
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1000px] table-fixed">
-            <colgroup>
-              <col style={{ width: '120px' }} />
-              <col style={{ width: '100%' }} />
-              <col style={{ width: '120px' }} />
-              <col style={{ width: '80px' }} />
-              <col style={{ width: '80px' }} />
-            </colgroup>
-            <thead>
-              <tr className="border-b border-[#ececec]">
-                <th className="px-6 py-6 text-left text-sm font-semibold" style={{ color: '#606060' }}>
-                  {' '}
-                </th>
-                <th className="px-4 py-6 text-left text-sm font-semibold" style={{ color: '#606060' }}>
-                  {t('settings:contentColumn')}
-                </th>
-                <th className="px-4 py-6 text-left text-sm font-semibold" style={{ color: '#0f0f0f' }}>
-                  <span className="inline-flex items-center gap-1">
-                    {t('settings:dateColumn')}
-                    <ArrowDown size={14} />
-                  </span>
-                </th>
-                <th className="px-4 py-6 text-left text-sm font-semibold" style={{ color: '#606060' }}>
-                  {t('settings:likesColumn')}
-                </th>
-                <th className="px-4 py-6 text-left text-sm font-semibold" style={{ color: '#606060' }}>
-                  {t('settings:statusColumn')}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {comments.map((comment) => (
-                <>
-                  <tr key={`${comment.id}-title`} className="border-b border-[#ececec]">
-                    <td className="px-6 py-5 align-top" rowSpan={2}>
-                      {comment.content && (
-                        <div className="h-16 w-[88px] overflow-hidden rounded-xl bg-[#f5f5f5]">
-                          <NavLink to={contentDetailPath(comment.content)} className="block h-full w-full no-underline">
-                            <img
-                              src={getContentCover(comment.content, siteConfig)}
-                              alt={comment.content.title}
-                              className="h-full w-full object-cover"
-                            />
-                          </NavLink>
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-5 align-top">
+        <div className="px-6 pb-8 lg:px-12">
+          <div className="divide-y divide-[#ececec]">
+            {comments.map((comment) => (
+              <div key={comment.id} className="flex gap-5 py-5 first:pt-0">
+                {comment.content && (
+                  <div className="h-24 w-[168px] shrink-0 overflow-hidden rounded-2xl bg-[#f5f5f5]">
+                    <NavLink to={contentDetailPath(comment.content)} className="block h-full w-full no-underline">
+                      <img
+                        src={getContentCover(comment.content, siteConfig)}
+                        alt={comment.content.title}
+                        className="h-full w-full object-cover"
+                      />
+                    </NavLink>
+                  </div>
+                )}
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
                       {comment.content ? (
                         <NavLink
                           to={contentDetailPath(comment.content)}
@@ -122,43 +91,41 @@ function MyComments() {
                           {tc('common:unknownAuthor')}
                         </span>
                       )}
-                    </td>
-                    <td className="px-4 py-5 text-sm" style={{ color: '#606060' }}>
+
+                      <p className="mt-2 text-sm leading-6" style={{ color: '#707070' }}>
+                        {comment.body}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-center gap-4">
+                    <span className="text-sm" style={{ color: '#909090' }}>
                       {new Date(comment.created_at).toLocaleDateString('zh-CN')}
-                    </td>
-                    <td className="px-4 py-5 text-sm" style={{ color: '#606060' }}>
-                      <span className="inline-flex items-center gap-1">
-                        <Heart size={14} />
-                        {comment.like_count}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-sm" style={{ color: '#909090' }}>
+                      <Heart size={14} />
+                      {comment.like_count}
+                    </span>
+                    {comment.pinned_at ? (
+                      <span
+                        className="inline-flex rounded-full px-3 py-0.5 text-xs font-medium"
+                        style={{ background: '#fef3c7', color: '#92400e' }}
+                      >
+                        {t('settings:pinned')}
                       </span>
-                    </td>
-                    <td className="px-4 py-5">
-                      {comment.pinned_at ? (
-                        <span
-                          className="inline-flex rounded-full px-3 py-1 text-xs font-medium"
-                          style={{ background: '#fef3c7', color: '#92400e' }}
-                        >
-                          {t('settings:pinned')}
-                        </span>
-                      ) : (
-                        <span
-                          className="inline-flex rounded-full px-3 py-1 text-xs font-medium"
-                          style={{ background: '#f5f5f5', color: '#606060' }}
-                        >
-                          {comment.parent_id !== '' ? t('settings:reply') : t('settings:topLevel')}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                  <tr key={`${comment.id}-body`}>
-                    <td colSpan={4} className="px-4 py-3 text-sm leading-6" style={{ color: '#707070' }}>
-                      {comment.body}
-                    </td>
-                  </tr>
-                </>
-              ))}
-            </tbody>
-          </table>
+                    ) : (
+                      <span
+                        className="inline-flex rounded-full px-3 py-0.5 text-xs font-medium"
+                        style={{ background: '#f5f5f5', color: '#606060' }}
+                      >
+                        {comment.parent_id !== '' ? t('settings:reply') : t('settings:topLevel')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
