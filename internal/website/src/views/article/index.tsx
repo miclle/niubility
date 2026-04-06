@@ -16,7 +16,7 @@ import type { Content } from 'src/types/content'
 
 // ArticleDetail displays a single article content item in a Medium-style layout.
 function ArticleDetail() {
-  const { t } = useTranslation('content')
+  const { t } = useTranslation(['content', 'common'])
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { currentUser } = useAppContext()
@@ -109,8 +109,8 @@ function ArticleDetail() {
         {/* Author info */}
         <div className="flex items-center gap-3 mb-6">
           <Avatar size="lg">
-            <SiteAvatarImage src={content.speaker?.avatar || content.author?.avatar || ''} alt={content.speaker?.name || content.author?.name || '匿名'} />
-            <AvatarFallback>{content.speaker?.name?.charAt(0) || content.author?.name?.charAt(0) || '匿'}</AvatarFallback>
+            <SiteAvatarImage src={content.speaker?.avatar || content.author?.avatar || ''} alt={content.speaker?.name || content.author?.name || t('common:anonymousUser')} />
+            <AvatarFallback>{content.speaker?.name?.charAt(0) || content.author?.name?.charAt(0) || t('common:anonymousAbbrev')}</AvatarFallback>
           </Avatar>
           <div>
             <div className="text-sm font-medium" style={{ color: '#0f0f0f' }}>

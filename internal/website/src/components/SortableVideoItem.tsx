@@ -3,6 +3,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { GripVertical, Trash2, Loader2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { fileURL } from 'src/api/upload'
 import ImageUpload from 'src/components/ImageUpload'
@@ -33,6 +34,7 @@ export interface SortableVideoItemProps {
 
 // SortableVideoItem renders a single draggable video item in the playlist.
 export default function SortableVideoItem({ item, index, onChange, onRemove }: SortableVideoItemProps) {
+  const { t } = useTranslation('editor')
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.localId })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
 
@@ -43,7 +45,7 @@ export default function SortableVideoItem({ item, index, onChange, onRemove }: S
         <div className="flex-shrink-0 mt-1"><GripVertical size={16} style={{ color: '#d4d4d4' }} /></div>
         <div className="flex-1 flex flex-col items-center gap-2 py-4">
           <Loader2 size={24} className="animate-spin" style={{ color: '#909090' }} />
-          <span className="text-sm" style={{ color: '#909090' }}>上传中 {item.progress}%</span>
+          <span className="text-sm" style={{ color: '#909090' }}>{t('editor:uploadingProgress', { progress: item.progress })}</span>
           <div className="w-full max-w-xs h-1.5 rounded-full overflow-hidden" style={{ background: '#e5e5e5' }}>
             <div className="h-full rounded-full transition-all" style={{ width: `${item.progress}%`, background: '#0f0f0f' }} />
           </div>
@@ -77,13 +79,13 @@ export default function SortableVideoItem({ item, index, onChange, onRemove }: S
 
           {/* Cover image */}
           <div className="flex-shrink-0 w-40">
-            <ImageUpload value={item.coverUrl} onChange={(url) => onChange(item.localId, 'coverUrl', url)} placeholder="上传封面" />
+            <ImageUpload value={item.coverUrl} onChange={(url) => onChange(item.localId, 'coverUrl', url)} placeholder={t('editor:uploadCover')} />
           </div>
 
           {/* Title and description */}
           <div className="flex-1 space-y-2">
-            <Input placeholder="视频标题（可选）" value={item.title} onChange={(e) => onChange(item.localId, 'title', e.target.value)} />
-            <Textarea placeholder="视频描述（可选）" value={item.description} onChange={(e) => onChange(item.localId, 'description', e.target.value)} rows={3} />
+            <Input placeholder={t('editor:videoTitleOptional')} value={item.title} onChange={(e) => onChange(item.localId, 'title', e.target.value)} />
+            <Textarea placeholder={t('editor:videoDescriptionOptional')} value={item.description} onChange={(e) => onChange(item.localId, 'description', e.target.value)} rows={3} />
           </div>
         </div>
       </div>

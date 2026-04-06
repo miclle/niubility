@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 import { useAppContext } from 'src/context/app'
 import { getContent } from 'src/api/content'
@@ -9,6 +10,7 @@ import type { ContentStatus } from 'src/types/content'
 
 // VideoEditor is the user-facing video editor page.
 function VideoEditor() {
+  const { t } = useTranslation(['common', 'editor'])
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { currentUser } = useAppContext()
@@ -39,7 +41,7 @@ function VideoEditor() {
   }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!currentUser) return null
-  if (loading || !verified) return <div className="text-center py-20" style={{ color: '#909090' }}>加载中...</div>
+  if (loading || !verified) return <div className="text-center py-20" style={{ color: '#909090' }}>{t('common:loading')}</div>
 
   const defaultSpeaker = isNew
     ? { id: currentUser.id, name: currentUser.name, avatar: currentUser.avatar }
@@ -58,7 +60,7 @@ function VideoEditor() {
   return (
     <div className="max-w-[1200px] mx-auto p-6">
       <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>
-        {isNew ? '发布视频' : '编辑视频'}
+        {isNew ? t('editor:publish') + ' ' + t('common:video') : t('common:edit') + ' ' + t('common:video')}
       </h1>
       <VideoEditorForm id={id} defaultSpeaker={defaultSpeaker} onSaved={onSaved} onCancel={onCancel} onLoadError={onLoadError} />
     </div>

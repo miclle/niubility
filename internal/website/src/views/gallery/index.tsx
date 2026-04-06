@@ -18,7 +18,7 @@ import type { Content } from 'src/types/content'
 
 // GalleryDetail displays a single gallery (image) content item with justified grid and lightbox.
 function GalleryDetail() {
-  const { t } = useTranslation('content')
+  const { t } = useTranslation(['content', 'common'])
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { currentUser, categories, siteConfig } = useAppContext()
@@ -127,7 +127,7 @@ function GalleryDetail() {
         <div className="flex items-center gap-3">
           <Avatar size="lg">
             <SiteAvatarImage src={getSpeakerAvatar(content, siteConfig)} alt={getSpeakerDisplayName(content)} />
-            <AvatarFallback>{getSpeakerDisplayName(content).charAt(0) || '匿'}</AvatarFallback>
+            <AvatarFallback>{getSpeakerDisplayName(content).charAt(0) || t('common:anonymousAbbrev')}</AvatarFallback>
           </Avatar>
           <div>
             <div className="text-sm font-medium" style={{ color: '#0f0f0f' }}>

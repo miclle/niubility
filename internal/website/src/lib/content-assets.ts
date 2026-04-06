@@ -34,13 +34,14 @@ export function getContentCover(content: Content, siteConfig: SiteConfig | null)
 }
 
 // getSpeakerDisplayName returns the best available speaker label for a content item.
-export function getSpeakerDisplayName(content: Content): string {
-  return content.speaker?.name || content.speaker_name || content.author?.name || '未知作者'
+// Optionally accepts a translator function to return a translated fallback.
+export function getSpeakerDisplayName(content: Content, unknownAuthor?: string): string {
+  return content.speaker?.name || content.speaker_name || content.author?.name || unknownAuthor || 'Unknown Author'
 }
 
 // getVideoSpeakerDisplayName returns the primary speaker label for video contexts.
-export function getVideoSpeakerDisplayName(content: Content): string {
-  return content.speaker?.name || content.speaker_name || '未知主讲人'
+export function getVideoSpeakerDisplayName(content: Content, unknownSpeaker?: string): string {
+  return content.speaker?.name || content.speaker_name || unknownSpeaker || 'Unknown Speaker'
 }
 
 // getSpeakerAvatar returns the best available avatar for speaker display.

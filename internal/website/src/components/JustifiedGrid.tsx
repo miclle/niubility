@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import { fileURL } from 'src/api/upload'
 import { useAppContext } from 'src/context/app'
@@ -91,6 +92,7 @@ function computeLayout(
 
 // JustifiedGrid renders images in a justified (equal-height rows, variable-width) grid layout.
 function JustifiedGrid({ items, targetRowHeight = 220, gap = 4, onImageClick }: JustifiedGridProps) {
+  const { t } = useTranslation('common')
   const { siteConfig } = useAppContext()
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(0)
@@ -132,7 +134,7 @@ function JustifiedGrid({ items, targetRowHeight = 220, gap = 4, onImageClick }: 
             <div className="absolute inset-0 transition-colors group-hover:bg-black/10" />
             {attachment.type === 'video' && (
               <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded text-[10px] font-medium" style={{ background: 'rgba(0,0,0,0.7)', color: 'white' }}>
-                视频
+                {t('common:video')}
               </div>
             )}
           </div>

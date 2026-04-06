@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 import { useAppContext } from 'src/context/app'
 import { getContent } from 'src/api/content'
@@ -9,6 +10,7 @@ import type { ContentStatus } from 'src/types/content'
 
 // GalleryEditor is the user-facing gallery editor page.
 function GalleryEditor() {
+  const { t } = useTranslation(['common', 'editor'])
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { currentUser } = useAppContext()
@@ -37,7 +39,7 @@ function GalleryEditor() {
   }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!currentUser) return null
-  if (loading || !verified) return <div className="text-center py-20" style={{ color: '#909090' }}>加载中...</div>
+  if (loading || !verified) return <div className="text-center py-20" style={{ color: '#909090' }}>{t('common:loading')}</div>
 
   const onSaved = (contentId: string, status: ContentStatus) => {
     if (status === 'draft') {
@@ -52,7 +54,7 @@ function GalleryEditor() {
   return (
     <div className="max-w-[1200px] mx-auto p-6">
       <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>
-        {isNew ? '发布图集' : '编辑图集'}
+        {isNew ? t('editor:publish') + ' ' + t('common:gallery') : t('common:edit') + ' ' + t('common:gallery')}
       </h1>
       <GalleryEditorForm id={id} onSaved={onSaved} onCancel={onCancel} onLoadError={onLoadError} />
     </div>

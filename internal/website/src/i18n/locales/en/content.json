@@ -12,6 +12,7 @@
   "expand": "Show more",
   "videoItem": "Video {{index}}",
   "galleryItem": "Gallery",
+  "photoCount": "{{count}} photos",
   "videoType": "Video",
   "galleryType": "Gallery",
   "articleType": "Article"

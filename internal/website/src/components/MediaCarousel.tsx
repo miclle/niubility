@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, Volume2, VolumeX } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { fileURL } from 'src/api/upload'
 import type { Attachment } from 'src/types/content'
@@ -11,6 +12,7 @@ interface MediaCarouselProps {
 
 // MediaCarousel displays a carousel of images and short videos.
 function MediaCarousel({ items }: MediaCarouselProps) {
+  const { t } = useTranslation('common')
   const [current, setCurrent] = useState(0)
   const [muted, setMuted] = useState(true)
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map())
@@ -59,7 +61,7 @@ function MediaCarousel({ items }: MediaCarouselProps) {
         ) : (
           <img
             src={resolvedUrl}
-            alt={currentItem.title || `图片 ${current + 1}`}
+            alt={currentItem.title || `${t('common:image')} ${current + 1}`}
             className="w-full h-full object-contain"
           />
         )}

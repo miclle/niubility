@@ -12,5 +12,6 @@
   "create": "Create",
   "notInitialized": "System not initialized",
   "contactAdmin": "Please contact an administrator to complete the initial setup",
-  "signIn": "Sign in"
+  "signIn": "Sign in",
+  "search": "Search..."
 }

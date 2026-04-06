@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import { Upload, X, Loader2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { uploadFile, fileURL } from 'src/api/upload'
 import { computeFileChecksum } from 'src/lib/file-checksum'
@@ -33,7 +34,8 @@ export interface FileUploadProps {
 }
 
 // FileUpload is a generic file upload component with drag-and-drop and progress support.
-function FileUpload({ accept, value, onChange, onFileUploaded, onMultipleFiles, multiple, renderPreview, placeholder = '拖拽文件到此处或点击选择' }: FileUploadProps) {
+function FileUpload({ accept, value, onChange, onFileUploaded, onMultipleFiles, multiple, renderPreview, placeholder = 'Drag files here or click to select' }: FileUploadProps) {
+  const { t } = useTranslation('editor')
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [dragOver, setDragOver] = useState(false)
@@ -119,7 +121,7 @@ function FileUpload({ accept, value, onChange, onFileUploaded, onMultipleFiles, 
       {uploading ? (
         <>
           <Loader2 size={24} className="animate-spin" style={{ color: '#909090' }} />
-          <span className="text-sm" style={{ color: '#909090' }}>上传中 {progress}%</span>
+          <span className="text-sm" style={{ color: '#909090' }}>{t('editor:uploadingProgress', { progress })}</span>
           <div className="w-full max-w-xs h-1.5 rounded-full overflow-hidden" style={{ background: '#e5e5e5' }}>
             <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, background: '#0f0f0f' }} />
           </div>

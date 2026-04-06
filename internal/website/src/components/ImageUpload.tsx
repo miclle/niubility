@@ -11,7 +11,7 @@ export interface ImageUploadProps {
 }
 
 // ImageUpload is an image-specific upload component with preview display.
-function ImageUpload({ value, onChange, placeholder = '拖拽图片到此处或点击选择' }: ImageUploadProps) {
+function ImageUpload({ value, onChange, placeholder = 'Drag image here or click to select' }: ImageUploadProps) {
   return (
     <FileUpload
       accept="image/*"

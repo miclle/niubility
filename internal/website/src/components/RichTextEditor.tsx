@@ -4,6 +4,7 @@ import Image from '@tiptap/extension-image'
 import { Node, mergeAttributes } from '@tiptap/core'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Bold, Italic, Heading1, Heading2, List, ListOrdered, Code, ImagePlus, Undo, Redo, Minus, Loader2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { uploadFile, fileURL } from 'src/api/upload'
 
@@ -70,6 +71,7 @@ const ImagePlaceholder = Node.create({
 
 // ImagePlaceholderView renders the upload placeholder UI.
 function ImagePlaceholderView({ node }: NodeViewProps) {
+  const { t } = useTranslation('editor')
   return (
     <NodeViewWrapper>
       <div
@@ -78,7 +80,7 @@ function ImagePlaceholderView({ node }: NodeViewProps) {
       >
         <Loader2 size={18} className="animate-spin" style={{ color: '#909090' }} />
         <span className="text-sm" style={{ color: '#909090' }}>
-          正在上传 {node.attrs.fileName || '图片'}...
+          {t('editor:uploadingImage', { filename: node.attrs.fileName || 'Image' })}
         </span>
       </div>
     </NodeViewWrapper>
@@ -173,6 +175,7 @@ let placeholderIdCounter = 0
 
 // RichTextEditor is a Tiptap-based rich text editor with image upload support.
 function RichTextEditor({ value, onChange }: RichTextEditorProps) {
+  const { t } = useTranslation('editor')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const editor = useEditor({
@@ -296,52 +299,52 @@ function RichTextEditor({ value, onChange }: RichTextEditorProps) {
     <div className="rounded-lg overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
       {/* Toolbar */}
       <div className="flex items-center gap-0.5 flex-wrap px-2 py-1.5" style={{ borderBottom: '1px solid #e5e5e5', background: '#fafafa' }}>
-        <ToolbarButton title="加粗" active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}>
+        <ToolbarButton title="Bold" active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}>
           <Bold size={16} />
         </ToolbarButton>
-        <ToolbarButton title="斜体" active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()}>
+        <ToolbarButton title="Italic" active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()}>
           <Italic size={16} />
         </ToolbarButton>
 
         <div className="w-px h-5 mx-1" style={{ background: '#e5e5e5' }} />
 
-        <ToolbarButton title="标题 1" active={editor.isActive('heading', { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
+        <ToolbarButton title="Heading 1" active={editor.isActive('heading', { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
           <Heading1 size={16} />
         </ToolbarButton>
-        <ToolbarButton title="标题 2" active={editor.isActive('heading', { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
+        <ToolbarButton title="Heading 2" active={editor.isActive('heading', { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
           <Heading2 size={16} />
         </ToolbarButton>
 
         <div className="w-px h-5 mx-1" style={{ background: '#e5e5e5' }} />
 
-        <ToolbarButton title="无序列表" active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()}>
+        <ToolbarButton title="Bullet list" active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()}>
           <List size={16} />
         </ToolbarButton>
-        <ToolbarButton title="有序列表" active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()}>
+        <ToolbarButton title="Numbered list" active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()}>
           <ListOrdered size={16} />
         </ToolbarButton>
 
         <div className="w-px h-5 mx-1" style={{ background: '#e5e5e5' }} />
 
-        <ToolbarButton title="代码块" active={editor.isActive('codeBlock')} onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
+        <ToolbarButton title="Code block" active={editor.isActive('codeBlock')} onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
           <Code size={16} />
         </ToolbarButton>
-        <ToolbarButton title="分割线" onClick={() => editor.chain().focus().setHorizontalRule().run()}>
+        <ToolbarButton title="Divider" onClick={() => editor.chain().focus().setHorizontalRule().run()}>
           <Minus size={16} />
         </ToolbarButton>
 
         <div className="w-px h-5 mx-1" style={{ background: '#e5e5e5' }} />
 
-        <ToolbarButton title="插入图片" onClick={() => fileInputRef.current?.click()}>
+        <ToolbarButton title="Insert image" onClick={() => fileInputRef.current?.click()}>
           <ImagePlus size={16} />
         </ToolbarButton>
 
         <div className="flex-1" />
 
-        <ToolbarButton title="撤销" disabled={!editor.can().undo()} onClick={() => editor.chain().focus().undo().run()}>
+        <ToolbarButton title="Undo" disabled={!editor.can().undo()} onClick={() => editor.chain().focus().undo().run()}>
           <Undo size={16} />
         </ToolbarButton>
-        <ToolbarButton title="重做" disabled={!editor.can().redo()} onClick={() => editor.chain().focus().redo().run()}>
+        <ToolbarButton title="Redo" disabled={!editor.can().redo()} onClick={() => editor.chain().focus().redo().run()}>
           <Redo size={16} />
         </ToolbarButton>
       </div>

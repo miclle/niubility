@@ -4,6 +4,7 @@
   "comments": "评论",
   "reply": "回复",
   "replyTo": "回复 @{{name}}",
+  "replyToUser": "回复",
   "pinned": "置顶",
   "unpin": "取消置顶",
   "delete": "删除",

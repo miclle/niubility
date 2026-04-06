@@ -12,6 +12,7 @@
   "expand": "展开",
   "videoItem": "视频 {{index}}",
   "galleryItem": "图集",
+  "photoCount": "{{count}} 张图片",
   "videoType": "视频",
   "galleryType": "图集",
   "articleType": "文章"

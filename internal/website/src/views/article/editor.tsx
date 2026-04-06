@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 import { useAppContext } from 'src/context/app'
 import { getContent } from 'src/api/content'
@@ -9,6 +10,7 @@ import type { ContentStatus } from 'src/types/content'
 
 // ArticleEditor is the user-facing article editor page.
 function ArticleEditor() {
+  const { t } = useTranslation(['common', 'editor'])
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { currentUser } = useAppContext()
@@ -37,7 +39,7 @@ function ArticleEditor() {
   }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!currentUser) return null
-  if (loading || !verified) return <div className="text-center py-20" style={{ color: '#909090' }}>加载中...</div>
+  if (loading || !verified) return <div className="text-center py-20" style={{ color: '#909090' }}>{t('common:loading')}</div>
 
   const defaultSpeaker = isNew
     ? { id: currentUser.id, name: currentUser.name, avatar: currentUser.avatar }

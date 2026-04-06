@@ -4,6 +4,7 @@
   "comments": "Comments",
   "reply": "Reply",
   "replyTo": "Reply to @{{name}}",
+  "replyToUser": "Reply to",
   "pinned": "Pinned",
   "unpin": "Unpin",
   "delete": "Delete",

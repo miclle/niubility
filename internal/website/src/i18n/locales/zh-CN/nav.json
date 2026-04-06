@@ -12,5 +12,6 @@
   "create": "创建",
   "notInitialized": "系统尚未初始化",
   "contactAdmin": "请联系管理员完成初始设置",
-  "signIn": "登录"
+  "signIn": "登录",
+  "search": "搜索..."
 }

@@ -19,7 +19,7 @@ import type { Content } from 'src/types/content'
 
 // VideoDetail displays a single video content item.
 function VideoDetail() {
-  const { t } = useTranslation('content')
+  const { t } = useTranslation(['content', 'common'])
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -95,7 +95,7 @@ function VideoDetail() {
       <div className="flex items-center gap-3">
         <Avatar size="lg">
           <SiteAvatarImage src={getVideoSpeakerAvatar(content, siteConfig)} alt={speakerDisplayName} />
-          <AvatarFallback>{speakerDisplayName.charAt(0) || '匿'}</AvatarFallback>
+          <AvatarFallback>{speakerDisplayName.charAt(0) || t('common:anonymousAbbrev')}</AvatarFallback>
         </Avatar>
         <div>
           <div className="text-sm font-medium" style={{ color: '#0f0f0f' }}>
@@ -323,7 +323,7 @@ function VideoDetail() {
         <h1 className="text-xl font-medium mt-4 mb-3" style={{ color: '#0f0f0f', lineHeight: 1.4 }}>
           {content.title}
           {videoItems.length > 1 && currentVideo && (
-            <span className="font-normal ml-2" style={{ color: '#606060' }}>— {currentVideo.title || `视频 ${currentVideoIndex + 1}`}</span>
+            <span className="font-normal ml-2" style={{ color: '#606060' }}>— {currentVideo.title || `${t('common:video')} ${currentVideoIndex + 1}`}</span>
           )}
         </h1>
         {renderActions()}

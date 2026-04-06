@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { ArrowLeft, ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut, Share2, Info, Heart, X } from 'lucide-react'
 import dayjs from 'dayjs'
+import { useTranslation } from 'react-i18next'
 
 import { fileDownloadURL, fileURL } from 'src/api/upload'
 import { toggleLike } from 'src/api/content'
@@ -47,6 +48,7 @@ interface InfoPanelProps {
 
 // InfoPanel renders the slide-in details panel for the lightbox.
 function InfoPanel({ attachment, isVideo, downloadURL, filename, contentId, commentCount, onCommentCountChange, onClose, open, width }: InfoPanelProps) {
+  const { t } = useTranslation('common')
   return (
     <div
       className="fixed top-0 bottom-0 overflow-y-auto overflow-x-hidden transition-[right] duration-300 ease-in-out"
@@ -60,8 +62,8 @@ function InfoPanel({ attachment, isVideo, downloadURL, filename, contentId, comm
     >
       {/* Panel header */}
       <div className="sticky top-0 flex items-center justify-between px-4 h-12 border-b border-gray-200 bg-white">
-        <h3 className="text-sm font-medium text-gray-900">信息</h3>
-        <button onClick={onClose} className="p-1.5 rounded-full cursor-pointer transition-colors hover:bg-gray-100 focus:outline-none" title="关闭">
+        <h3 className="text-sm font-medium text-gray-900">{t('common:info')}</h3>
+        <button onClick={onClose} className="p-1.5 rounded-full cursor-pointer transition-colors hover:bg-gray-100 focus:outline-none" title={t('common:close')}>
           <X size={18} className="text-gray-500" />
         </button>
       </div>
@@ -75,23 +77,23 @@ function InfoPanel({ attachment, isVideo, downloadURL, filename, contentId, comm
             <div className="mb-3 text-xs text-gray-500">{attachment.description}</div>
           )}
           <div className="flex justify-between">
-            <span>类型</span>
-            <span className="text-gray-900">{isVideo ? '视频' : '图片'}</span>
+            <span>{t('common:type')}</span>
+            <span className="text-gray-900">{isVideo ? t('common:video') : t('common:image')}</span>
           </div>
           {attachment.width > 0 && attachment.height > 0 && (
             <div className="flex justify-between">
-              <span>尺寸</span>
+              <span>{t('common:dimensions')}</span>
               <span className="text-gray-900">{attachment.width} × {attachment.height}</span>
             </div>
           )}
           {attachment.file_size > 0 && (
             <div className="flex justify-between">
-              <span>大小</span>
+              <span>{t('common:size')}</span>
               <span className="text-gray-900">{formatFileSize(attachment.file_size)}</span>
             </div>
           )}
           <div className="flex justify-between gap-4">
-            <span>文件名</span>
+            <span>{t('common:filename')}</span>
             <a
               href={downloadURL}
               download={filename}
@@ -102,17 +104,17 @@ function InfoPanel({ attachment, isVideo, downloadURL, filename, contentId, comm
           </div>
           {isVideo && attachment.duration > 0 && (
             <div className="flex justify-between">
-              <span>时长</span>
+              <span>{t('common:duration')}</span>
               <span className="text-gray-900">{Math.round(attachment.duration)}s</span>
             </div>
           )}
           <div className="flex justify-between">
-            <span>上传时间</span>
+            <span>{t('common:uploadTime')}</span>
             <span className="text-gray-900">{dayjs(attachment.created_at).format('YYYY-MM-DD HH:mm')}</span>
           </div>
           {attachment.like_count > 0 && (
             <div className="flex justify-between">
-              <span>收藏数</span>
+              <span>{t('common:favoriteCount')}</span>
               <span className="text-gray-900">{attachment.like_count}</span>
             </div>
           )}
@@ -148,6 +150,7 @@ interface ThumbnailStripProps {
 
 // ThumbnailStrip renders the bottom scrollable thumbnail navigation.
 function ThumbnailStrip({ items, current, siteImageStyle, onThumbClick, onMouseDown, stripRef, infoPanelOpen, infoPanelWidth }: ThumbnailStripProps) {
+  const { t } = useTranslation('common')
   return (
     <div className="fixed bottom-0 left-0 py-3 px-4 overflow-hidden transition-[right] duration-300 ease-in-out" style={{ zIndex: 101, height: 80, right: infoPanelOpen ? infoPanelWidth : 0 }}>
       <div ref={stripRef} className="flex gap-1 overflow-x-auto select-none" style={{ scrollbarWidth: 'none', cursor: 'grab' }} onMouseDown={onMouseDown}>
@@ -176,7 +179,7 @@ function ThumbnailStrip({ items, current, siteImageStyle, onThumbClick, onMouseD
               )}
               {item.type === 'video' && (
                 <div className="absolute bottom-0.5 right-0.5 px-1 rounded text-[9px]" style={{ background: 'rgba(0,0,0,0.7)', color: 'white' }}>
-                  视频
+                  {t('common:video')}
                 </div>
               )}
             </button>
@@ -193,6 +196,7 @@ function Lightbox({
   contentId, commentCount, onCommentCountChange,
   likedAttachmentIds, onAttachmentLikeChange,
 }: LightboxProps) {
+  const { t } = useTranslation('common')
   const { siteConfig } = useAppContext()
   const [current, setCurrent] = useState(initialIndex)
   const [zoom, setZoom] = useState(1)
@@ -357,7 +361,7 @@ function Lightbox({
       {/* Top bar */}
       <div className="fixed top-0 left-0 flex items-center justify-between px-3 h-12 transition-[right] duration-300 ease-in-out" style={{ zIndex: 102, right: infoPanelOpen ? INFO_PANEL_W : 0, background: 'linear-gradient(rgba(0,0,0,0.6), transparent)' }}>
         <div className="flex items-center gap-2">
-          {iconBtn(onClose, <ArrowLeft size={20} className="text-white" />, '返回')}
+          {iconBtn(onClose, <ArrowLeft size={20} className="text-white" />, t('common:back'))}
           <span className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.8)' }}>
             {current + 1} / {items.length}
           </span>
@@ -365,18 +369,18 @@ function Lightbox({
         <div className="flex items-center gap-1">
           {!isVideo && (
             <>
-              {iconBtn(handleZoomOut, <ZoomOut size={20} className="text-white" />, '缩小')}
+              {iconBtn(handleZoomOut, <ZoomOut size={20} className="text-white" />, t('common:zoomOut'))}
               {zoom !== 1 && <span className="text-xs text-white/60 min-w-[32px] text-center">{zoom}x</span>}
-              {iconBtn(handleZoomIn, <ZoomIn size={20} className="text-white" />, '放大')}
+              {iconBtn(handleZoomIn, <ZoomIn size={20} className="text-white" />, t('common:zoomIn'))}
             </>
           )}
-          {iconBtn(handleDownload, <Download size={20} className="text-white" />, isVideo ? '下载原文件' : '下载原图')}
-          {iconBtn(handleShare, <Share2 size={20} className="text-white" />, '分享')}
+          {iconBtn(handleDownload, <Download size={20} className="text-white" />, t('common:download'))}
+          {iconBtn(handleShare, <Share2 size={20} className="text-white" />, t('common:share'))}
           {iconBtn(() => setInfoPanelOpen((v) => !v),
-            <Info size={20} className={infoPanelOpen ? 'text-white' : 'text-white/70'} />, '详情'
+            <Info size={20} className={infoPanelOpen ? 'text-white' : 'text-white/70'} />, t('common:detail')
           )}
           {iconBtn(handleFavorite,
-            <Heart size={20} className={isFavorited ? 'text-red-500' : 'text-white'} fill={isFavorited ? 'currentColor' : 'none'} />, '收藏'
+            <Heart size={20} className={isFavorited ? 'text-red-500' : 'text-white'} fill={isFavorited ? 'currentColor' : 'none'} />, t('common:favorite')
           )}
         </div>
       </div>

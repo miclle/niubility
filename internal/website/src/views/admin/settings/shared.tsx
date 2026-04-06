@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, XCircle, Loader2, Save } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import { listSettings, updateSettings } from 'src/api/setting'
 
@@ -59,7 +60,7 @@ export function useSaveSettings(reload: () => Promise<void>) {
       await reload()
       return true
     } catch (err) {
-      setError('保存失败，请稍后重试')
+      setError('Failed to save, please try again later')
       console.error('Save settings error:', err)
       return false
     } finally {
@@ -86,7 +87,7 @@ export function SettingsFeedback({ success, error }: { success: boolean; error: 
       {success && (
         <div className="p-3 rounded-lg flex items-center gap-2" style={{ background: '#dcfce7' }}>
           <CheckCircle size={16} style={{ color: '#166534' }} />
-          <span className="text-sm" style={{ color: '#166534' }}>配置已保存</span>
+          <span className="text-sm" style={{ color: '#166534' }}>Settings saved</span>
         </div>
       )}
       {error && (
@@ -108,9 +109,9 @@ export function SaveButton({ saving, onClick }: { saving: boolean; onClick: () =
       style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}
     >
       {saving ? (
-        <><Loader2 size={16} className="animate-spin" /> 保存中...</>
+        <><Loader2 size={16} className="animate-spin" /> Saving...</>
       ) : (
-        <><Save size={16} /> 保存配置</>
+        <><Save size={16} /> Save settings</>
       )}
     </Button>
   )

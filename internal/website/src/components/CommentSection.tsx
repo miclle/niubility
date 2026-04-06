@@ -279,8 +279,8 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
       <div key={comment.id} className={`flex gap-3 ${isReply ? 'ml-12' : ''}`}>
         {/* Avatar */}
         <Avatar className="size-9">
-          <SiteAvatarImage src={comment.user?.avatar || ''} alt={comment.user?.name || '匿名'} />
-          <AvatarFallback>{comment.user?.name?.charAt(0) || '匿'}</AvatarFallback>
+          <SiteAvatarImage src={comment.user?.avatar || ''} alt={comment.user?.name || t('common:anonymousUser')} />
+          <AvatarFallback>{comment.user?.name?.charAt(0) || t('common:anonymousAbbrev')}</AvatarFallback>
         </Avatar>
 
         <div className="flex-1 min-w-0">
@@ -303,7 +303,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
           {/* Reply indicator */}
           {isReply && comment.reply_to?.user && comment.reply_to_id !== comment.parent_id && (
             <div className="text-xs mt-0.5" style={{ color: '#606060' }}>
-              回复 <span className="font-medium">{comment.reply_to.user.name}</span>
+              {t('comments:replyToUser')} <span className="font-medium">{comment.reply_to.user.name}</span>
             </div>
           )}
 
@@ -325,7 +325,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
             <button
               className="flex items-center gap-1 text-xs transition-colors"
               style={{ color: '#606060' }}
-              onClick={() => startReply(comment.id, parentID, comment.user?.name || '匿名用户')}
+              onClick={() => startReply(comment.id, parentID, comment.user?.name || t('common:anonymousUser'))}
             >
               <MessageCircle size={14} />
               <span>{t('comments:reply')}</span>
@@ -356,8 +356,8 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
                   <div className="rounded-md bg-muted/50 px-3 py-2 space-y-1.5">
                     <div className="flex items-center gap-2">
                       <Avatar className="size-5">
-                        <SiteAvatarImage src={comment.user?.avatar || ''} alt={comment.user?.name || '匿名'} />
-                        <AvatarFallback className="text-[10px]">{comment.user?.name?.charAt(0) || '匿'}</AvatarFallback>
+                        <SiteAvatarImage src={comment.user?.avatar || ''} alt={comment.user?.name || t('common:anonymousUser')} />
+                        <AvatarFallback className="text-[10px]">{comment.user?.name?.charAt(0) || t('common:anonymousAbbrev')}</AvatarFallback>
                       </Avatar>
                       <span className="text-xs font-medium text-foreground">{comment.user?.name || t('comments:anonymousUser')}</span>
                     </div>
@@ -434,7 +434,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
         <div className="flex gap-3 mb-6">
           <Avatar className="size-9">
             <SiteAvatarImage src={currentUser.avatar} alt={currentUser.name || currentUser.username} />
-            <AvatarFallback>{currentUser.name?.charAt(0) || '我'}</AvatarFallback>
+            <AvatarFallback>{currentUser.name?.charAt(0) || t('common:meAbbrev')}</AvatarFallback>
           </Avatar>
           <div className="flex-1">
             <textarea

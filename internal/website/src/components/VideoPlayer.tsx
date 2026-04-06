@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, RectangleHorizontal, RectangleVertical, RotateCcw, RotateCw, PictureInPicture2, Gauge, SkipBack, SkipForward } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 interface VideoPlayerProps {
   src: string
@@ -21,6 +22,7 @@ const PLAYBACK_PROGRESS_KEY = 'video_playback_progress'
 
 // VideoPlayer uses native HTML5 video with custom controls.
 function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = false, theaterMode = false, onToggleTheater, contentId, hasPlaylist = false, onPrev, onNext, hasPrev = false, hasNext = false }: VideoPlayerProps) {
+  const { t } = useTranslation('common')
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [playing, setPlaying] = useState(false)
@@ -314,27 +316,27 @@ function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = fals
             <div className="flex items-center gap-1">
               {/* Previous video */}
               {hasPlaylist && (
-                <button onClick={onPrev} disabled={!hasPrev} className={`rounded-full p-1.5 transition-colors cursor-pointer ${hasPrev ? 'text-white hover:bg-white/20' : 'text-white/30 cursor-not-allowed'}`} title="上一个视频">
+                <button onClick={onPrev} disabled={!hasPrev} className={`rounded-full p-1.5 transition-colors cursor-pointer ${hasPrev ? 'text-white hover:bg-white/20' : 'text-white/30 cursor-not-allowed'}`} title={t('common:prevVideo')}>
                   <SkipBack size={20} />
                 </button>
               )}
               {/* Play/Pause */}
-              <button onClick={togglePlay} className="text-white hover:bg-white/20 rounded-full p-1.5 transition-colors cursor-pointer" title={playing ? '暂停' : '播放'}>
+              <button onClick={togglePlay} className="text-white hover:bg-white/20 rounded-full p-1.5 transition-colors cursor-pointer" title={playing ? t('common:pause') : t('common:play')}>
                 {playing ? <Pause size={22} /> : <Play size={22} />}
               </button>
               {/* Next video */}
               {hasPlaylist && (
-                <button onClick={onNext} disabled={!hasNext} className={`rounded-full p-1.5 transition-colors cursor-pointer ${hasNext ? 'text-white hover:bg-white/20' : 'text-white/30 cursor-not-allowed'}`} title="下一个视频">
+                <button onClick={onNext} disabled={!hasNext} className={`rounded-full p-1.5 transition-colors cursor-pointer ${hasNext ? 'text-white hover:bg-white/20' : 'text-white/30 cursor-not-allowed'}`} title={t('common:nextVideo')}>
                   <SkipForward size={20} />
                 </button>
               )}
               {/* Seek backward 15s */}
-              <button onClick={seekBackward} className="text-white hover:bg-white/20 rounded-full p-1.5 transition-colors cursor-pointer relative" title="后退 15 秒">
+              <button onClick={seekBackward} className="text-white hover:bg-white/20 rounded-full p-1.5 transition-colors cursor-pointer relative" title={t('common:seekBackward')}>
                 <RotateCcw size={20} />
                 <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[8px] font-bold">15</span>
               </button>
               {/* Seek forward 15s */}
-              <button onClick={seekForward} className="text-white hover:bg-white/20 rounded-full p-1.5 transition-colors cursor-pointer relative" title="前进 15 秒">
+              <button onClick={seekForward} className="text-white hover:bg-white/20 rounded-full p-1.5 transition-colors cursor-pointer relative" title={t('common:seekForward')}>
                 <RotateCw size={20} />
                 <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[8px] font-bold">15</span>
               </button>
@@ -352,7 +354,7 @@ function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = fals
                 onMouseEnter={() => setShowVolumeSlider(true)}
                 onMouseLeave={() => setShowVolumeSlider(false)}
               >
-                <button onClick={toggleMute} className="text-white hover:bg-white/20 rounded-full p-1.5 transition-colors cursor-pointer" title={mutedState ? '取消静音' : '静音'}>
+                <button onClick={toggleMute} className="text-white hover:bg-white/20 rounded-full p-1.5 transition-colors cursor-pointer" title={mutedState ? t('common:cancelMute') : t('common:mute')}>
                   {mutedState || volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}
                 </button>
                 {/* Volume slider - appears on hover */}
@@ -383,7 +385,7 @@ function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = fals
                     setShowSpeedMenu(!showSpeedMenu)
                   }}
                   className="text-white hover:bg-white/20 rounded-full p-1.5 transition-colors cursor-pointer flex items-center gap-1"
-                  title="播放速度"
+                  title={t('common:speed')}
                 >
                   <Gauge size={20} />
                   <span className="text-xs font-medium">{playbackRate === 1 ? '1x' : `${playbackRate}x`}</span>
@@ -403,7 +405,7 @@ function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = fals
                         }`}
                       >
                         <span className={`w-1 h-1 rounded-full flex-shrink-0 ${playbackRate === rate ? 'bg-white' : 'bg-transparent'}`} />
-                        {rate === 1 ? '正常' : `${rate}x`}
+                        {rate === 1 ? t('common:normal') : `${rate}x`}
                       </button>
                     ))}
                   </div>
@@ -411,16 +413,16 @@ function VideoPlayer({ src, poster, autoplay = false, loop = false, muted = fals
               </div>
               {/* Theater mode */}
               {onToggleTheater && (
-                <button onClick={onToggleTheater} className="text-white hover:bg-white/20 rounded-full p-1.5 transition-colors cursor-pointer" title={theaterMode ? '退出影院模式' : '影院模式'}>
+                <button onClick={onToggleTheater} className="text-white hover:bg-white/20 rounded-full p-1.5 transition-colors cursor-pointer" title={theaterMode ? t('common:exitTheaterMode') : t('common:theaterMode')}>
                   {theaterMode ? <RectangleVertical size={20} /> : <RectangleHorizontal size={20} />}
                 </button>
               )}
               {/* Picture-in-Picture */}
-              <button onClick={togglePiP} className="text-white hover:bg-white/20 rounded-full p-1.5 transition-colors cursor-pointer" title="画中画">
+              <button onClick={togglePiP} className="text-white hover:bg-white/20 rounded-full p-1.5 transition-colors cursor-pointer" title={t('common:pip')}>
                 <PictureInPicture2 size={20} />
               </button>
               {/* Fullscreen */}
-              <button onClick={toggleFullscreen} className="text-white hover:bg-white/20 rounded-full p-1.5 transition-colors cursor-pointer" title={fullscreen ? '退出全屏' : '全屏'}>
+              <button onClick={toggleFullscreen} className="text-white hover:bg-white/20 rounded-full p-1.5 transition-colors cursor-pointer" title={fullscreen ? t('common:exitFullscreen') : t('common:fullscreen')}>
                 {fullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
               </button>
             </div>
