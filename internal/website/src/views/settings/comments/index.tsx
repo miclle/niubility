@@ -64,7 +64,7 @@ function MyComments() {
             {comments.map((comment) => (
               <div key={comment.id} className="flex gap-5 py-5 first:pt-0">
                 {comment.content && (
-                  <div className="h-[86px] w-[120px] shrink-0 overflow-hidden rounded-2xl bg-[#f5f5f5]">
+                  <div className="h-[68px] w-[120px] shrink-0 overflow-hidden rounded-lg bg-[#f5f5f5]">
                     <NavLink to={contentDetailPath(comment.content)} className="block h-full w-full no-underline">
                       <img
                         src={getContentCover(comment.content, siteConfig)}
