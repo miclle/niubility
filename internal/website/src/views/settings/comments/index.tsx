@@ -37,7 +37,7 @@ function MyComments() {
 
   return (
     <div className="min-h-full bg-white">
-      <div className="px-6 pt-8 pb-0 lg:px-12">
+      <div className="border-b border-[#ececec] px-6 py-8 lg:px-12">
         <h1 className="text-[2rem] font-semibold tracking-tight" style={{ color: '#0f0f0f' }}>
           {t('settings:myCommentsTitle')}
         </h1>
@@ -59,12 +59,12 @@ function MyComments() {
           </p>
         </div>
       ) : (
-        <div className="px-6 pb-8 lg:px-12">
+        <div className="px-6 py-8 lg:px-12">
           <div className="divide-y divide-[#ececec]">
             {comments.map((comment) => (
               <div key={comment.id} className="flex gap-5 py-5 first:pt-0">
                 {comment.content && (
-                  <div className="h-24 w-[168px] shrink-0 overflow-hidden rounded-2xl bg-[#f5f5f5]">
+                  <div className="h-[86px] w-[120px] shrink-0 overflow-hidden rounded-2xl bg-[#f5f5f5]">
                     <NavLink to={contentDetailPath(comment.content)} className="block h-full w-full no-underline">
                       <img
                         src={getContentCover(comment.content, siteConfig)}
