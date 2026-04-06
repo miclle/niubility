@@ -1,6 +1,6 @@
 import { useRef, useCallback } from 'react'
 import { NavLink } from 'react-router-dom'
-import { Heart, Sparkles, ArrowUpRight } from 'lucide-react'
+import { Heart, Sparkles } from 'lucide-react'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
@@ -80,7 +80,7 @@ function MyComments() {
                     <div className="min-w-0 flex-1">
                       {comment.content ? (
                         <NavLink
-                          to={contentDetailPath(comment.content, `comment-${comment.id}`)}
+                          to={contentDetailPath(comment.content)}
                           className="block truncate text-[15px] font-medium no-underline hover:underline"
                           style={{ color: '#0f0f0f' }}
                         >
@@ -92,20 +92,20 @@ function MyComments() {
                         </span>
                       )}
 
-                      <p className="mt-2 text-sm" style={{ color: '#707070', lineHeight: 1.5 }}>
-                        {comment.body}
-                      </p>
+                      {comment.content ? (
+                        <NavLink
+                          to={contentDetailPath(comment.content, `comment-${comment.id}`)}
+                          className="mt-2 block text-sm no-underline hover:underline"
+                          style={{ color: '#707070', lineHeight: 1.5 }}
+                        >
+                          {comment.body}
+                        </NavLink>
+                      ) : (
+                        <p className="mt-2 text-sm" style={{ color: '#707070', lineHeight: 1.5 }}>
+                          {comment.body}
+                        </p>
+                      )}
                     </div>
-                    {comment.content && (
-                      <NavLink
-                        to={contentDetailPath(comment.content, `comment-${comment.id}`)}
-                        className="shrink-0 rounded-lg p-2 no-underline transition-colors hover:bg-black/5"
-                        style={{ color: '#909090' }}
-                        title={t('settings:jumpToComment')}
-                      >
-                        <ArrowUpRight size={16} />
-                      </NavLink>
-                    )}
                   </div>
 
                   <div className="mt-3 flex items-center gap-4">

@@ -15,5 +15,7 @@
   "submit": "评论",
   "repliesCount": "{{count}} 条回复",
   "loadMore": "加载更多评论",
-  "noComments": "暂无评论，来说两句吧"
+  "noComments": "暂无评论，来说两句吧",
+  "copyLink": "复制链接",
+  "copied": "已复制！"
 }

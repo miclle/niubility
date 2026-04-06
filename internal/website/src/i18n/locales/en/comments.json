@@ -15,5 +15,7 @@
   "submit": "Comment",
   "repliesCount": "{{count}} replies",
   "loadMore": "Load more comments",
-  "noComments": "No comments yet, say something!"
+  "noComments": "No comments yet, say something!",
+  "copyLink": "Copy link",
+  "copied": "Copied!"
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { ThumbsUp, MessageCircle, ChevronDown, ChevronUp, Smile, Pin, Trash2 } from 'lucide-react'
+import { ThumbsUp, MessageCircle, ChevronDown, ChevronUp, Smile, Pin, Trash2, Link2, Check } from 'lucide-react'
 import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
@@ -21,6 +21,31 @@ const COMMON_EMOJIS = [
   '👍', '👎', '👏', '🙌', '🎉', '🔥', '❤️', '💯',
   '✅', '⭐', '💪', '🙏', '😄', '😁', '🤩', '😇',
 ]
+
+// CopyLinkButton renders a copy button that copies the comment anchor URL to clipboard.
+function CopyLinkButton({ commentID }: { commentID: string }) {
+  const { t } = useTranslation('comments')
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = async () => {
+    const url = `${window.location.origin}${window.location.pathname}#comment-${commentID}`
+    await navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <button
+      className="flex items-center gap-1 text-xs transition-colors"
+      style={{ color: copied ? '#065fd4' : '#606060' }}
+      onClick={handleCopy}
+      title={copied ? t('copied') : t('copyLink')}
+    >
+      {copied ? <Check size={14} /> : <Link2 size={14} />}
+      <span>{copied ? t('copied') : t('copyLink')}</span>
+    </button>
+  )
+}
 
 interface EmojiPickerProps {
   active: boolean
@@ -372,6 +397,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
                 </AlertDialogContent>
               </AlertDialog>
             )}
+            <CopyLinkButton commentID={comment.id} />
           </div>
 
           {/* Reply input for this comment */}
