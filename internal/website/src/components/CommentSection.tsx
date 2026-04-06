@@ -29,9 +29,22 @@ function CopyLinkButton({ commentID }: { commentID: string }) {
 
   const handleCopy = async () => {
     const url = `${window.location.origin}${window.location.pathname}#comment-${commentID}`
-    await navigator.clipboard.writeText(url)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url)
+      } else {
+        const input = document.createElement('input')
+        input.value = url
+        document.body.appendChild(input)
+        input.select()
+        document.execCommand('copy')
+        document.body.removeChild(input)
+      }
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Silently fail
+    }
   }
 
   return (
@@ -42,7 +55,6 @@ function CopyLinkButton({ commentID }: { commentID: string }) {
       title={copied ? t('copied') : t('copyLink')}
     >
       {copied ? <Check size={14} /> : <Link2 size={14} />}
-      <span>{copied ? t('copied') : t('copyLink')}</span>
     </button>
   )
 }
