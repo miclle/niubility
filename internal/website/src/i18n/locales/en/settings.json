@@ -88,5 +88,11 @@
   "joinedAtLabel": "Joined",
   "emptyContentsTitle": "No content to display yet",
   "emptyContentsDescription": "Start uploading and organizing your content here. Published items will appear in this list.",
-  "noFavoritesForType": "No favorites in this category yet"
+  "noFavoritesForType": "No favorites in this category yet",
+  "myComments": "My Comments",
+  "myCommentsTitle": "My Comments",
+  "noComments": "You haven't posted any comments yet",
+  "pinned": "Pinned",
+  "reply": "Reply",
+  "topLevel": "Comment"
 }

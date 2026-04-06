@@ -19,6 +19,7 @@ import FollowingFeed from 'src/views/following'
 import AccountSettings from 'src/views/settings/account'
 import MyContents from 'src/views/settings/contents'
 import Favorites from 'src/views/settings/favorites'
+import MyComments from 'src/views/settings/comments'
 import SecuritySettings from 'src/views/settings/security'
 import NotificationSettings from 'src/views/settings/notifications'
 import AdminVideoContents from 'src/views/admin/contents/videos'
@@ -96,6 +97,7 @@ const routes: RouteObject[] = [
           { path: 'account', element: <AccountSettings /> },
           { path: 'contents', element: <MyContents /> },
           { path: 'favorites', element: <Favorites /> },
+          { path: 'comments', element: <MyComments /> },
           { path: 'security', element: <SecuritySettings /> },
           { path: 'notifications', element: <NotificationSettings /> },
         ],

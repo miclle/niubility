@@ -180,6 +180,18 @@ export interface CreateCommentArgs {
   attachment_id?: string
 }
 
+// CommentWithContent extends Comment with the associated content it belongs to.
+export interface CommentWithContent extends Comment {
+  content?: Content
+}
+
+// ListMyCommentsResponse represents the response for listing the current user's comments.
+export interface ListMyCommentsResponse {
+  items: CommentWithContent[]
+  next_cursor?: string
+  total: number
+}
+
 // LikeResponse represents the response after toggling a like.
 export interface LikeResponse {
   liked: boolean

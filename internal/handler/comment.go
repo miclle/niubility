@@ -5,6 +5,7 @@ import (
 	"github.com/fox-gonic/fox/httperrors"
 
 	"github.com/miclle/niubility/internal/entity"
+	"github.com/miclle/niubility/internal/service"
 )
 
 // ListCommentsResponse represents the response for listing comments.
@@ -149,6 +150,34 @@ func (ctrl *Ctrl) DeleteComment(c *fox.Context) (*struct{}, error) {
 	}
 
 	return nil, nil
+}
+
+// ListMyCommentsResponse represents the response for listing the current user's comments.
+type ListMyCommentsResponse struct {
+	Items      []service.CommentWithContent `json:"items"`
+	NextCursor string                       `json:"next_cursor,omitempty"`
+	Total      int64                        `json:"total"`
+}
+
+// ListMyComments returns all comments made by the current user.
+// GET /api/v1/comments/mine
+func (ctrl *Ctrl) ListMyComments(c *fox.Context, args entity.Pagination) (*ListMyCommentsResponse, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+	user := CurrentUser(c)
+	if user == nil {
+		return nil, httperrors.ErrUnauthorized
+	}
+
+	comments, total, nextCursor, err := ctrl.service.ListMyComments(ctx, user.ID, args)
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+
+	return &ListMyCommentsResponse{
+		Items:      comments,
+		NextCursor: nextCursor,
+		Total:      total,
+	}, nil
 }
 
 // PinCommentRequest represents the request body for pinning a comment.

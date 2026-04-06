@@ -178,6 +178,62 @@ func (s *Service) DeleteComment(ctx context.Context, id string) error {
 	})
 }
 
+// CommentWithContent holds a comment enriched with its associated content for "my comments" listings.
+type CommentWithContent struct {
+	entity.Comment
+	Content *entity.Content `json:"content,omitempty" gorm:"foreignKey:ContentID"`
+}
+
+// ListMyComments retrieves all comments (top-level and replies) by a given user, enriched with content info,
+// ordered by creation date descending.
+func (s *Service) ListMyComments(ctx context.Context, userID string, pagination entity.Pagination) ([]CommentWithContent, int64, string, error) {
+	log := logger.NewWithContext(ctx)
+
+	var total int64
+	if err := s.db.WithContext(ctx).Model(&entity.Comment{}).Where("user_id = ?", userID).Count(&total).Error; err != nil {
+		log.Errorf("ListMyComments: count: %v", err)
+		return nil, 0, "", fmt.Errorf("count my comments: %w", err)
+	}
+
+	query := s.db.WithContext(ctx).
+		Model(&entity.Comment{}).
+		Where("user_id = ?", userID).
+		Preload("User").
+		Preload("Content")
+
+	if pagination.Cursor != "" {
+		parts, err := entity.DecodeCursor(pagination.Cursor, 2)
+		if err != nil {
+			return nil, 0, "", fmt.Errorf("decode cursor: %w", err)
+		}
+		cursorTime, err := time.Parse(time.RFC3339Nano, parts[0])
+		if err != nil {
+			return nil, 0, "", fmt.Errorf("parse cursor created_at: %w", err)
+		}
+		cursorID := parts[1]
+		query = query.Where("(comments.created_at, comments.id) < (?, ?)", cursorTime, cursorID)
+	}
+
+	var comments []CommentWithContent
+	findQuery := query.Order("comments.created_at DESC, comments.id DESC").Limit(pagination.GetLimit())
+	if err := findQuery.Find(&comments).Error; err != nil {
+		log.Errorf("ListMyComments: find: %v", err)
+		return nil, 0, "", fmt.Errorf("list my comments: %w", err)
+	}
+
+	for i := range comments {
+		comments[i].ResolveAssetURLs()
+	}
+
+	var nextCursor string
+	if len(comments) == pagination.GetLimit() {
+		last := comments[len(comments)-1]
+		nextCursor = entity.EncodeCursor(last.CreatedAt.Format(time.RFC3339Nano), last.ID)
+	}
+
+	return comments, total, nextCursor, nil
+}
+
 // PinComment pins or unpins a comment. Only top-level comments can be pinned.
 func (s *Service) PinComment(ctx context.Context, id string, pinned bool) (*entity.Comment, error) {
 	log := logger.NewWithContext(ctx)

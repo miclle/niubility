@@ -88,5 +88,11 @@
   "joinedAtLabel": "加入时间",
   "emptyContentsTitle": "还没有可显示的内容",
   "emptyContentsDescription": "从这里开始上传和整理你的内容，发布后会出现在这里。",
-  "noFavoritesForType": "当前分类下暂无收藏内容"
+  "noFavoritesForType": "当前分类下暂无收藏内容",
+  "myComments": "我的评论",
+  "myCommentsTitle": "我的评论",
+  "noComments": "你还没有发表过任何评论",
+  "pinned": "置顶",
+  "reply": "回复",
+  "topLevel": "评论"
 }
