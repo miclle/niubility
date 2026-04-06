@@ -92,7 +92,7 @@ function MyComments() {
                         </span>
                       )}
 
-                      <p className="mt-2 text-sm leading-6" style={{ color: '#707070' }}>
+                      <p className="mt-2 text-sm" style={{ color: '#707070', lineHeight: 1.5 }}>
                         {comment.body}
                       </p>
                     </div>
