@@ -68,9 +68,10 @@
   "galleryVideoDurationExceeded": "File {{filename}} duration exceeds {{duration}} seconds, removed",
   "currentCover": "Current cover",
   "setAsCover": "Set as cover",
-  "cover": "Cover",
   "video": "Video",
   "saveDraft": "Save draft",
   "convertToDraft": "Convert to draft",
-  "cancel": "Cancel"
+  "cancel": "Cancel",
+  "uploadingProgress": "Uploading {{progress}}%",
+  "uploadingImage": "Uploading {{filename}}..."
 }

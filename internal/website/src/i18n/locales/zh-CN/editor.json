@@ -68,9 +68,10 @@
   "galleryVideoDurationExceeded": "文件 {{filename}} 时长超过 {{duration}} 秒，已移除",
   "currentCover": "当前封面",
   "setAsCover": "设为封面",
-  "cover": "封面",
   "video": "视频",
   "saveDraft": "保存草稿",
   "convertToDraft": "转为草稿",
-  "cancel": "取消"
+  "cancel": "取消",
+  "uploadingProgress": "上传中 {{progress}}%",
+  "uploadingImage": "正在上传 {{filename}}..."
 }
