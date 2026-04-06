@@ -276,7 +276,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
     const isPinned = !!displayPinnedAt
 
     return (
-      <div key={comment.id} className={`flex gap-3 ${isReply ? 'ml-12' : ''}`}>
+      <div key={comment.id} id={`comment-${comment.id}`} className={`flex gap-3 ${isReply ? 'ml-12' : ''}`}>
         {/* Avatar */}
         <Avatar className="size-9">
           <SiteAvatarImage src={comment.user?.avatar || ''} alt={comment.user?.name || t('common:anonymousUser')} />

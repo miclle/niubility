@@ -94,5 +94,6 @@
   "noComments": "You haven't posted any comments yet",
   "pinned": "Pinned",
   "reply": "Reply",
-  "topLevel": "Comment"
+  "topLevel": "Comment",
+  "jumpToComment": "Jump to comment"
 }

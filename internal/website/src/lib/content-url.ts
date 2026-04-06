@@ -7,8 +7,8 @@ const typePrefix: Record<ContentType, string> = {
 }
 
 // contentDetailPath returns the detail page path for a content item.
-export function contentDetailPath(content: { id: string; type: ContentType }): string {
-  return `/${typePrefix[content.type]}/${content.id}`
+export function contentDetailPath(content: { id: string; type: ContentType }, hash?: string): string {
+  return `/${typePrefix[content.type]}/${content.id}${hash ? `#${hash}` : ''}`
 }
 
 // contentEditPath returns the edit page path for a content item.

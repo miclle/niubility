@@ -94,5 +94,6 @@
   "noComments": "你还没有发表过任何评论",
   "pinned": "置顶",
   "reply": "回复",
-  "topLevel": "评论"
+  "topLevel": "评论",
+  "jumpToComment": "跳转到评论"
 }
