@@ -20,7 +20,6 @@ export function AudioPlayer({ src, coverUrl, title, theaterMode = false, onToggl
   const [volume, setVolume] = useState(1)
   const [muted, setMuted] = useState(false)
   const [playbackRate, setPlaybackRate] = useState(1)
-  const [showControls] = useState(true)
   const [showSpeedMenu, setShowSpeedMenu] = useState(false)
   const [showVolumeSlider, setShowVolumeSlider] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
