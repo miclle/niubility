@@ -20,11 +20,10 @@ export function AudioPlayer({ src, coverUrl, title, theaterMode = false, onToggl
   const [volume, setVolume] = useState(1)
   const [muted, setMuted] = useState(false)
   const [playbackRate, setPlaybackRate] = useState(1)
-  const [showControls, setShowControls] = useState(true)
+  const [showControls] = useState(true)
   const [showSpeedMenu, setShowSpeedMenu] = useState(false)
   const [showVolumeSlider, setShowVolumeSlider] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
-  const controlsTimeoutRef = useRef<number | null>(null)
 
   useEffect(() => {
     const audio = audioRef.current
@@ -82,14 +81,6 @@ export function AudioPlayer({ src, coverUrl, title, theaterMode = false, onToggl
     } else {
       document.exitFullscreen()
     }
-  }
-
-  const showControlsTemporarily = () => {
-    setShowControls(true)
-    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
-    controlsTimeoutRef.current = window.setTimeout(() => {
-      if (isPlaying) setShowControls(false)
-    }, 3000)
   }
 
   const togglePlay = () => {
@@ -157,11 +148,9 @@ export function AudioPlayer({ src, coverUrl, title, theaterMode = false, onToggl
   return (
     <div
       ref={containerRef}
-      className="relative w-full bg-black overflow-hidden group"
+      className="relative w-full bg-black overflow-hidden"
       style={{ aspectRatio: '16/9', borderRadius: theaterMode ? 0 : '0.75rem' }}
-      onMouseMove={showControlsTemporarily}
-      onMouseLeave={() => isPlaying && setShowControls(false)}
-      onClick={() => !isPlaying && togglePlay()}
+      onClick={togglePlay}
     >
       <audio ref={audioRef} src={src} preload="metadata" />
 
@@ -183,10 +172,8 @@ export function AudioPlayer({ src, coverUrl, title, theaterMode = false, onToggl
       {/* Dim overlay so controls are always readable */}
       <div className="absolute inset-0 bg-black/20 pointer-events-none" />
 
-      {/* Controls overlay — auto-hide when playing */}
-      <div
-        className={`absolute inset-0 flex flex-col justify-end transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-      >
+      {/* Controls overlay — always visible */}
+      <div className="absolute inset-0 flex flex-col justify-end">
         {/* Gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
 
