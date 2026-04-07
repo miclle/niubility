@@ -132,14 +132,58 @@ tasks:
       - gofmt -w .
       - go vet ./...
       - staticcheck ./...
+      - cd cli && go mod tidy
       - cd {{.WEBSITE_DIR}} && npm run lint
 
   check:
     desc: Run all checks without modifying files (CI-friendly)
     cmds:
-      - task: lint
+      - task: check-backend
+      - task: check-cli-mod-tidy
+      - task: check-cli
       - task: check-frontend-types
       - task: check-mod-tidy
+
+  check-backend:
+    internal: true
+    cmds:
+      - gofmt -l .
+      - go vet -tags development ./...
+      - |
+        LINT_BIN="$(go env GOPATH)/bin/golangci-lint"
+        if [ ! -x "$LINT_BIN" ]; then
+          LINT_BIN=golangci-lint
+        fi
+        "$LINT_BIN" run --build-tags=development ./...
+
+  check-cli-mod-tidy:
+    internal: true
+    cmds:
+      - |
+        cd cli
+        cp go.mod go.mod.bak
+        cp go.sum go.sum.bak
+        go mod tidy
+        MOD_CHANGES=$(diff go.mod go.mod.bak | wc -l)
+        SUM_CHANGES=$(diff go.sum go.sum.bak | wc -l)
+        mv go.mod.bak go.mod
+        mv go.sum.bak go.sum
+        if [ $MOD_CHANGES -ne 0 ] || [ $SUM_CHANGES -ne 0 ]; then
+          echo "cli/go.mod or cli/go.sum is not tidy. Run 'task lint' to fix."
+          exit 1
+        fi
+
+  check-cli:
+    internal: true
+    cmds:
+      - |
+        cd cli
+        LINT_BIN="$(go env GOPATH)/bin/golangci-lint"
+        if [ ! -x "$LINT_BIN" ]; then
+          LINT_BIN=golangci-lint
+        fi
+        "$LINT_BIN" run ./...
+      - cd cli && go build -trimpath .
 
   check-frontend-types:
     internal: true
@@ -179,8 +223,14 @@ tasks:
         sleep 1
 
   update-tools:
-    desc: Install/update development tools (reflex, staticcheck)
+    desc: Install/update development tools (reflex, staticcheck, golangci-lint)
     run: once
     cmds:
       - which reflex > /dev/null 2>&1 || go install github.com/cespare/reflex@latest
       - which staticcheck > /dev/null 2>&1 || go install honnef.co/go/tools/cmd/staticcheck@latest
+      - |
+        GOBIN="$(go env GOPATH)/bin"
+        mkdir -p "$GOBIN"
+        if [ ! -x "$GOBIN/golangci-lint" ]; then
+          GOBIN="$GOBIN" GO111MODULE=on go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.0
+        fi

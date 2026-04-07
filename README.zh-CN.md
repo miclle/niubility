@@ -80,7 +80,7 @@ task build          # 构建生产二进制（含前端）
 task build-all      # 多平台构建
 task run            # 生产模式运行
 task lint           # 代码检查（gofmt、vet、staticcheck）
-task check          # 完整检查（lint + 前端类型检查 + mod tidy）
+task check          # CI 对齐检查（后端、CLI、前端类型、mod tidy）
 task test           # 运行测试（race 检测 + 覆盖率）
 task clean          # 清理构建产物
 task update-tools   # 更新开发工具

@@ -80,7 +80,7 @@ task build          # Build production binary (includes frontend)
 task build-all      # Build for all platforms
 task run            # Run in production mode
 task lint           # Code linting (gofmt, vet, staticcheck)
-task check          # Full check (lint + frontend types + mod tidy)
+task check          # Full CI-aligned check (backend, CLI, frontend types, mod tidy)
 task test           # Run tests with race detection
 task clean          # Clean build artifacts
 task update-tools   # Update development tools

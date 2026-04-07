@@ -26,7 +26,7 @@ go.work.sum
 
 # Build output
 bin/
-/niubility-cli/niubility
+cli/cli
 
 # Task runner cache
 .task/

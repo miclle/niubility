@@ -160,10 +160,6 @@ func initLocalization() {
 	prepareRootCommand(nil)
 }
 
-func resolveLanguageOption() string {
-	return resolveLanguagePreference(languageOption, profileName, cfgFile)
-}
-
 func resolveLanguagePreference(explicitLanguage, profile, configPath string) string {
 	if explicitLanguage != "" {
 		return explicitLanguage
