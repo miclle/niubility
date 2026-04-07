@@ -29,6 +29,7 @@ function PodcastDetail() {
   const [relatedContents, setRelatedContents] = useState<Content[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [theaterMode, setTheaterMode] = useState(false)
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
   const [favorited, setFavorited] = useState(false)
@@ -121,8 +122,8 @@ function PodcastDetail() {
   }
 
   return (
-    <div className="flex justify-center px-4 py-6">
-      <div style={{ width: '100%', maxWidth: 840 }}>
+    <div className={`flex gap-6 p-6 ${theaterMode ? '' : 'justify-center'}`}>
+      <div style={{ width: theaterMode ? '100%' : 'max(640px, min(calc((100vh - 180px) * 16 / 9), calc(100vw - 48px)))' }}>
 
         {/* Draft banner */}
         {isDraft && (
@@ -138,8 +139,8 @@ function PodcastDetail() {
               src={fileURL(currentAudio.url)}
               coverUrl={coverUrl || undefined}
               title={content.title}
-              downloadUrl={fileURL(currentAudio.url)}
-              downloadFilename={currentAudio.filename}
+              theaterMode={theaterMode}
+              onToggleTheater={() => setTheaterMode(!theaterMode)}
             />
           </div>
         )}

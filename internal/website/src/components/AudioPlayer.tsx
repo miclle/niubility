@@ -1,17 +1,17 @@
 import { useRef, useEffect, useState } from 'react'
-import { Play, Pause, Volume2, VolumeX, Download, RotateCcw, RotateCw, Gauge, Music } from 'lucide-react'
+import { Play, Pause, Volume2, VolumeX, RotateCcw, RotateCw, Gauge, Music, Maximize, Minimize, RectangleHorizontal, RectangleVertical } from 'lucide-react'
 
 interface AudioPlayerProps {
   src: string
   coverUrl?: string
   title?: string
-  downloadUrl?: string
-  downloadFilename?: string
+  theaterMode?: boolean
+  onToggleTheater?: () => void
 }
 
 const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
 
-export function AudioPlayer({ src, coverUrl, title, downloadUrl, downloadFilename }: AudioPlayerProps) {
+export function AudioPlayer({ src, coverUrl, title, theaterMode = false, onToggleTheater }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -23,6 +23,7 @@ export function AudioPlayer({ src, coverUrl, title, downloadUrl, downloadFilenam
   const [showControls, setShowControls] = useState(true)
   const [showSpeedMenu, setShowSpeedMenu] = useState(false)
   const [showVolumeSlider, setShowVolumeSlider] = useState(false)
+  const [fullscreen, setFullscreen] = useState(false)
   const controlsTimeoutRef = useRef<number | null>(null)
 
   useEffect(() => {
@@ -65,6 +66,23 @@ export function AudioPlayer({ src, coverUrl, title, downloadUrl, downloadFilenam
       return () => document.removeEventListener('click', handleClickOutside)
     }
   }, [showSpeedMenu])
+
+  // Fullscreen change sync
+  useEffect(() => {
+    const handleFSChange = () => setFullscreen(!!document.fullscreenElement)
+    document.addEventListener('fullscreenchange', handleFSChange)
+    return () => document.removeEventListener('fullscreenchange', handleFSChange)
+  }, [])
+
+  const toggleFullscreen = () => {
+    const container = containerRef.current
+    if (!container) return
+    if (!document.fullscreenElement) {
+      container.requestFullscreen()
+    } else {
+      document.exitFullscreen()
+    }
+  }
 
   const showControlsTemporarily = () => {
     setShowControls(true)
@@ -139,59 +157,45 @@ export function AudioPlayer({ src, coverUrl, title, downloadUrl, downloadFilenam
   return (
     <div
       ref={containerRef}
-      className="relative w-full bg-black rounded-xl overflow-hidden group"
-      style={{ aspectRatio: '16/9' }}
+      className="relative w-full bg-black overflow-hidden group"
+      style={{ aspectRatio: '16/9', borderRadius: theaterMode ? 0 : '0.75rem' }}
       onMouseMove={showControlsTemporarily}
       onMouseLeave={() => isPlaying && setShowControls(false)}
       onClick={() => !isPlaying && togglePlay()}
     >
       <audio ref={audioRef} src={src} preload="metadata" />
 
-      {/* Blurred cover as background */}
+      {/* Cover — fills entire container like a video poster */}
       {coverUrl ? (
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `url(${coverUrl})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            filter: 'blur(24px) brightness(0.35)',
-            transform: 'scale(1.1)',
-          }}
+        <img
+          src={coverUrl}
+          alt={title || ''}
+          className="absolute inset-0 w-full h-full"
+          style={{ objectFit: 'cover' }}
+          draggable={false}
         />
       ) : (
-        <div className="absolute inset-0 bg-zinc-900" />
+        <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
+          <Music size={64} className="text-white/20" />
+        </div>
       )}
 
-      {/* Center: album art */}
-      <div className="absolute inset-0 flex items-center justify-center" style={{ paddingBottom: 80 }}>
-        {coverUrl ? (
-          <img
-            src={coverUrl}
-            alt={title || ''}
-            className="rounded-xl shadow-2xl object-cover"
-            style={{ height: '70%', aspectRatio: '1/1', maxHeight: 220 }}
-          />
-        ) : (
-          <div className="w-28 h-28 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.08)' }}>
-            <Music size={48} className="text-white/30" />
-          </div>
-        )}
-      </div>
+      {/* Dim overlay so controls are always readable */}
+      <div className="absolute inset-0 bg-black/20 pointer-events-none" />
 
       {/* Controls overlay — auto-hide when playing */}
       <div
         className={`absolute inset-0 flex flex-col justify-end transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
       >
         {/* Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
 
         {/* Big play button (center) when paused */}
         {!isPlaying && (
           <button
             onClick={(e) => { e.stopPropagation(); togglePlay() }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full flex items-center justify-center transition-colors"
-            style={{ background: 'rgba(0,0,0,0.65)', paddingBottom: 80 }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full flex items-center justify-center transition-colors hover:bg-black/85"
+            style={{ background: 'rgba(0,0,0,0.7)' }}
           >
             <Play size={32} fill="white" className="text-white ml-1" />
           </button>
@@ -209,7 +213,7 @@ export function AudioPlayer({ src, coverUrl, title, downloadUrl, downloadFilenam
             onChange={handleSeek}
             className="w-full h-1 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:cursor-pointer"
             style={{
-              background: `linear-gradient(to right, #fff ${duration > 0 ? (currentTime / duration) * 100 : 0}%, rgba(255,255,255,0.3) ${duration > 0 ? (currentTime / duration) * 100 : 0}%)`,
+              background: `linear-gradient(to right, #dc2626 ${duration > 0 ? (currentTime / duration) * 100 : 0}%, rgba(255,255,255,0.3) ${duration > 0 ? (currentTime / duration) * 100 : 0}%)`,
             }}
           />
 
@@ -240,7 +244,7 @@ export function AudioPlayer({ src, coverUrl, title, downloadUrl, downloadFilenam
             <div className="flex items-center gap-1">
               {/* Volume */}
               <div
-                className="flex items-center group/volume"
+                className="flex items-center"
                 onMouseEnter={() => setShowVolumeSlider(true)}
                 onMouseLeave={() => setShowVolumeSlider(false)}
               >
@@ -286,18 +290,17 @@ export function AudioPlayer({ src, coverUrl, title, downloadUrl, downloadFilenam
                 )}
               </div>
 
-              {/* Download */}
-              {(downloadUrl || src) && (
-                <a
-                  href={downloadUrl || src}
-                  download={downloadFilename || true}
-                  className="text-white hover:bg-white/20 rounded-full p-1.5 transition-colors"
-                  title="Download"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Download size={20} />
-                </a>
+              {/* Theater mode */}
+              {onToggleTheater && (
+                <button onClick={onToggleTheater} className="text-white hover:bg-white/20 rounded-full p-1.5 transition-colors cursor-pointer">
+                  {theaterMode ? <RectangleVertical size={20} /> : <RectangleHorizontal size={20} />}
+                </button>
               )}
+
+              {/* Fullscreen */}
+              <button onClick={toggleFullscreen} className="text-white hover:bg-white/20 rounded-full p-1.5 transition-colors cursor-pointer">
+                {fullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+              </button>
             </div>
           </div>
         </div>
