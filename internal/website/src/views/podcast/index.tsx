@@ -92,8 +92,7 @@ function PodcastDetail() {
 
   const isDraft = content.status === 'draft'
   const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin' || currentUser.id === content.author_id)
-  const category = categories ? categories.find((c) => c.id === content.category) : null
-  const categoryLabel = category?.name || content.category
+  const categoryLabel = categories?.find((c) => c.slug === content.category)?.name || content.category
   const coverUrl = getContentCover(content, siteConfig)
   const audioAttachments = (content.attachments || []).filter((a) => a.type === 'audio')
   const currentAudio = audioAttachments[currentPodcastIndex] || audioAttachments[0]
