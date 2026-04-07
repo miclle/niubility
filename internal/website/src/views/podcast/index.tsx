@@ -131,17 +131,17 @@ function PodcastDetail() {
           </div>
         )}
 
-        {/* Cover — full width, fixed height, background-image to avoid stretching */}
-        {coverUrl && (
-          <div
-            className="w-full mb-6 rounded-xl"
-            style={{
-              height: 350,
-              backgroundImage: `url(${coverUrl})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }}
-          />
+        {/* Audio Player — video-style, cover inside */}
+        {currentAudio && (
+          <div className="mb-6">
+            <AudioPlayer
+              src={fileURL(currentAudio.url)}
+              coverUrl={coverUrl || undefined}
+              title={content.title}
+              downloadUrl={fileURL(currentAudio.url)}
+              downloadFilename={currentAudio.filename}
+            />
+          </div>
         )}
 
         {/* Title */}
@@ -216,20 +216,9 @@ function PodcastDetail() {
           </div>
         </div>
 
-        {/* Audio Player */}
-        {currentAudio && (
-          <div className="mb-6">
-            <AudioPlayer
-              src={fileURL(currentAudio.url)}
-              downloadUrl={fileURL(currentAudio.url)}
-              downloadFilename={currentAudio.filename}
-            />
-          </div>
-        )}
-
         {/* Episode list (multiple audio files) */}
         {audioAttachments.length > 1 && (
-          <div className="mb-8 rounded-xl overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
+          <div className="mb-6 rounded-xl overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
             <div className="px-4 py-2.5 text-sm font-medium" style={{ background: '#f9f9f9', color: '#0f0f0f', borderBottom: '1px solid #e5e5e5' }}>
               {t('content:episodes')}
             </div>
