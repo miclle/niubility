@@ -15,5 +15,6 @@
   "photoCount": "{{count}} photos",
   "videoType": "Video",
   "galleryType": "Gallery",
-  "articleType": "Article"
+  "articleType": "Article",
+  "aboutThisEpisode": "About this Episode"
 }

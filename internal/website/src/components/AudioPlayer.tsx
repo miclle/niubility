@@ -1,15 +1,21 @@
 import { useRef, useEffect, useState } from 'react'
-import { Play, Pause } from 'lucide-react'
+import { Play, Pause, Volume2, VolumeX, Download } from 'lucide-react'
 
 interface AudioPlayerProps {
   src: string
+  downloadUrl?: string
+  downloadFilename?: string
 }
 
-export function AudioPlayer({ src }: AudioPlayerProps) {
+const RATES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
+
+export function AudioPlayer({ src, downloadUrl, downloadFilename }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [duration, setDuration] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
+  const [volume, setVolume] = useState(1)
+  const [muted, setMuted] = useState(false)
   const [playbackRate, setPlaybackRate] = useState(1)
 
   useEffect(() => {
@@ -20,97 +26,163 @@ export function AudioPlayer({ src }: AudioPlayerProps) {
       setDuration(audio.duration)
       const savedTime = localStorage.getItem(`audio-${src}`)
       if (savedTime) {
-        audio.currentTime = parseFloat(savedTime)
+        const t = parseFloat(savedTime)
+        audio.currentTime = t
+        setCurrentTime(t)
       }
     }
-
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime)
       localStorage.setItem(`audio-${src}`, audio.currentTime.toString())
     }
+    const onPlay = () => setIsPlaying(true)
+    const onPause = () => setIsPlaying(false)
 
     audio.addEventListener('loadedmetadata', handleLoadedMetadata)
     audio.addEventListener('timeupdate', handleTimeUpdate)
-    audio.addEventListener('play', () => setIsPlaying(true))
-    audio.addEventListener('pause', () => setIsPlaying(false))
-
+    audio.addEventListener('play', onPlay)
+    audio.addEventListener('pause', onPause)
     return () => {
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
       audio.removeEventListener('timeupdate', handleTimeUpdate)
+      audio.removeEventListener('play', onPlay)
+      audio.removeEventListener('pause', onPause)
     }
   }, [src])
 
   const togglePlay = () => {
-    if (audioRef.current?.paused) {
-      audioRef.current.play()
-    } else {
-      audioRef.current?.pause()
-    }
+    const audio = audioRef.current
+    if (!audio) return
+    if (audio.paused) { audio.play() } else { audio.pause() }
   }
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(e.target.value)
+    if (audioRef.current) audioRef.current.currentTime = val
+  }
+
+  const handleVolume = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(e.target.value)
+    setVolume(val)
+    setMuted(val === 0)
     if (audioRef.current) {
-      audioRef.current.currentTime = parseFloat(e.target.value)
+      audioRef.current.volume = val
+      audioRef.current.muted = val === 0
     }
   }
 
-  const formatTime = (seconds: number) => {
-    if (isNaN(seconds)) return '0:00'
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins}:${secs.toString().padStart(2, '0')}`
+  const toggleMute = () => {
+    const next = !muted
+    setMuted(next)
+    if (audioRef.current) {
+      audioRef.current.muted = next
+      if (!next && volume === 0) {
+        setVolume(0.5)
+        audioRef.current.volume = 0.5
+      }
+    }
   }
 
+  const cycleRate = () => {
+    const idx = RATES.indexOf(playbackRate)
+    const next = RATES[(idx + 1) % RATES.length]
+    setPlaybackRate(next)
+    if (audioRef.current) audioRef.current.playbackRate = next
+  }
+
+  const formatTime = (s: number) => {
+    if (!s || isNaN(s)) return '0:00'
+    const h = Math.floor(s / 3600)
+    const m = Math.floor((s % 3600) / 60)
+    const sec = Math.floor(s % 60)
+    if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`
+    return `${m}:${sec.toString().padStart(2, '0')}`
+  }
+
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
+  const effectiveVolume = muted ? 0 : volume
+
   return (
-    <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-4">
-      <audio ref={audioRef} src={src} />
-      <div className="flex items-center gap-4">
-        <button
-          onClick={togglePlay}
-          className="flex-shrink-0 p-2 hover:bg-gray-200 rounded-full"
-        >
-          {isPlaying ? (
-            <Pause className="w-6 h-6" />
-          ) : (
-            <Play className="w-6 h-6" />
-          )}
-        </button>
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-600 w-10">
-              {formatTime(currentTime)}
-            </span>
-            <input
-              type="range"
-              min="0"
-              max={duration}
-              value={currentTime}
-              onChange={handleSeek}
-              className="w-full"
-            />
-            <span className="text-xs text-gray-600 w-10">
-              {formatTime(duration)}
-            </span>
-          </div>
-        </div>
-        <select
-          value={playbackRate}
-          onChange={(e) => {
-            const rate = parseFloat(e.target.value)
-            setPlaybackRate(rate)
-            if (audioRef.current) {
-              audioRef.current.playbackRate = rate
-            }
-          }}
-          className="px-2 py-1 border border-gray-300 rounded text-sm"
-        >
-          <option value={0.75}>0.75x</option>
-          <option value={1}>1x</option>
-          <option value={1.25}>1.25x</option>
-          <option value={1.5}>1.5x</option>
-          <option value={2}>2x</option>
-        </select>
+    <div className="w-full flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: '#f3f4f6', border: '1px solid #e5e7eb' }}>
+      <audio ref={audioRef} src={src} preload="metadata" />
+
+      {/* Play / Pause */}
+      <button
+        onClick={togglePlay}
+        className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full transition-colors"
+        style={{ background: '#0f0f0f', color: '#fff' }}
+      >
+        {isPlaying
+          ? <Pause size={16} fill="currentColor" />
+          : <Play size={16} fill="currentColor" className="ml-0.5" />}
+      </button>
+
+      {/* Current time */}
+      <span className="flex-shrink-0 text-xs tabular-nums" style={{ color: '#606060', minWidth: 36 }}>
+        {formatTime(currentTime)}
+      </span>
+
+      {/* Progress bar */}
+      <div className="relative flex-1 h-1.5 rounded-full cursor-pointer" style={{ background: '#d1d5db', minWidth: 60 }}>
+        <div className="absolute left-0 top-0 h-full rounded-full" style={{ width: `${progress}%`, background: '#0f0f0f' }} />
+        <input
+          type="range"
+          min={0}
+          max={duration || 0}
+          step={0.1}
+          value={currentTime}
+          onChange={handleSeek}
+          className="absolute inset-0 w-full opacity-0 cursor-pointer"
+          style={{ height: '100%', margin: 0 }}
+        />
       </div>
+
+      {/* Duration */}
+      <span className="flex-shrink-0 text-xs tabular-nums" style={{ color: '#606060', minWidth: 36 }}>
+        {formatTime(duration)}
+      </span>
+
+      {/* Volume */}
+      <div className="flex-shrink-0 flex items-center gap-1.5">
+        <button onClick={toggleMute} style={{ color: '#606060' }}>
+          {muted || effectiveVolume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
+        </button>
+        <div className="relative h-1 rounded-full hidden sm:block" style={{ background: '#d1d5db', width: 60 }}>
+          <div className="absolute left-0 top-0 h-full rounded-full" style={{ width: `${effectiveVolume * 100}%`, background: '#0f0f0f' }} />
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={effectiveVolume}
+            onChange={handleVolume}
+            className="absolute inset-0 w-full opacity-0 cursor-pointer"
+            style={{ height: '100%', margin: 0 }}
+          />
+        </div>
+      </div>
+
+      {/* Speed */}
+      <button
+        onClick={cycleRate}
+        className="flex-shrink-0 px-2 py-0.5 rounded text-xs font-semibold transition-colors hover:bg-black/8"
+        style={{ color: '#606060', minWidth: 32, textAlign: 'center' }}
+      >
+        {playbackRate === 1 ? '1×' : `${playbackRate}×`}
+      </button>
+
+      {/* Download */}
+      {(downloadUrl || src) && (
+        <a
+          href={downloadUrl || src}
+          download={downloadFilename || true}
+          className="flex-shrink-0 transition-colors hover:opacity-70"
+          style={{ color: '#606060' }}
+          title="Download"
+        >
+          <Download size={16} />
+        </a>
+      )}
     </div>
   )
 }

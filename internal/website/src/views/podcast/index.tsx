@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ThumbsUp, Pencil, Bookmark, Mic } from 'lucide-react'
+import { ThumbsUp, MessageCircle, Pencil, Bookmark, Mic } from 'lucide-react'
 import dayjs from 'dayjs'
+import { marked } from 'marked'
 import { useTranslation } from 'react-i18next'
 
 import { getContent, listContents, toggleLike, favoriteContent } from 'src/api/content'
@@ -28,7 +29,6 @@ function PodcastDetail() {
   const [relatedContents, setRelatedContents] = useState<Content[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-  const [descExpanded, setDescExpanded] = useState(false)
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
   const [favorited, setFavorited] = useState(false)
@@ -42,7 +42,7 @@ function PodcastDetail() {
   const setCurrentPodcastIndex = useCallback((index: number) => {
     const params: Record<string, string> = index === 0 ? {} : { p: String(index) }
     setSearchParams(params, { replace: true })
-  }, [setSearchParams]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [setSearchParams])
 
   // Load content
   useEffect(() => {
@@ -67,39 +67,13 @@ function PodcastDetail() {
       .finally(() => setLoading(false))
   }, [id, navigate])
 
-  // Load related podcasts
+  // Load related podcasts (exclude current)
   useEffect(() => {
     if (!content || !content.category) return
-    listContents({
-      type: 'podcast',
-      category: content.category,
-      limit: 12,
-    })
-      .then((res) => setRelatedContents(res.data.items))
+    listContents({ type: 'podcast', category: content.category, limit: 12 })
+      .then((res) => setRelatedContents((res.data.items || []).filter((c) => c.id !== content.id)))
       .catch(() => {})
   }, [content])
-
-  const handleLike = async () => {
-    if (!content || !currentUser) return
-    try {
-      const res = await toggleLike('content', content.id)
-      setLiked(res.data.liked ?? false)
-      setLikeCount(res.data.like_count ?? 0)
-    } catch (err) {
-      console.error('Failed to toggle like:', err)
-    }
-  }
-
-  const handleFavorite = async () => {
-    if (!content || !currentUser) return
-    try {
-      const res = await favoriteContent(content.id)
-      setFavorited(res.data.favorited ?? false)
-      setFavoriteCount(res.data.favorite_count ?? 0)
-    } catch (err) {
-      console.error('Failed to toggle favorite:', err)
-    }
-  }
 
   if (loading) {
     return <div className="text-center py-20" style={{ color: '#909090' }}>{t('common:loading')}</div>
@@ -114,182 +88,232 @@ function PodcastDetail() {
     )
   }
 
+  const isDraft = content.status === 'draft'
+  const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin' || currentUser.id === content.author_id)
   const category = categories ? categories.find((c) => c.id === content.category) : null
   const coverUrl = getContentCover(content, siteConfig)
-  const attachments = content.attachments || []
-  const audioAttachments = attachments.filter((a) => a.type === 'audio')
+  const audioAttachments = (content.attachments || []).filter((a) => a.type === 'audio')
   const currentAudio = audioAttachments[currentPodcastIndex] || audioAttachments[0]
 
+  // Speaker takes priority over author for display
+  const speakerName = content.speaker?.name || content.speaker_name || content.author?.name || ''
+  const speakerAvatar = content.speaker?.avatar || content.author?.avatar || ''
+  const speakerUsername = content.speaker?.username || content.author?.username || ''
+
+  const summaryHtml = content.summary
+    ? marked.parse(content.summary, { async: false }) as string
+    : ''
+
+  const handleLike = () => {
+    if (!currentUser) return
+    toggleLike('content', content.id).then((res) => {
+      setLiked(res.data.liked ?? false)
+      setLikeCount(res.data.like_count ?? 0)
+    })
+  }
+
+  const handleFavorite = () => {
+    if (!currentUser) return
+    favoriteContent(content.id).then((res) => {
+      setFavorited(res.data.favorited ?? false)
+      setFavoriteCount(res.data.favorite_count ?? 0)
+    })
+  }
+
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6">
-      {/* Header */}
-      <div className="flex items-start gap-6 mb-6">
-        <div className="flex-shrink-0">
-          <img
-            src={coverUrl}
-            alt={content.title}
-            className="w-32 h-32 rounded-lg object-cover"
+    <div className="flex justify-center px-4 py-6">
+      <div style={{ width: '100%', maxWidth: 840 }}>
+
+        {/* Draft banner */}
+        {isDraft && (
+          <div className="mb-4 px-4 py-3 rounded-xl text-sm font-medium" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
+            {t('common:draftBanner')}
+          </div>
+        )}
+
+        {/* Cover — full width, fixed height, background-image to avoid stretching */}
+        {coverUrl && (
+          <div
+            className="w-full mb-6 rounded-xl"
+            style={{
+              height: 350,
+              backgroundImage: `url(${coverUrl})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
           />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold mb-2" style={{ color: '#0f0f0f' }}>{content.title}</h1>
-          <div className="flex items-center gap-4 mb-4 text-sm" style={{ color: '#909090' }}>
-              <Link
-                to={`/@${content.author?.username}`}
-                className="flex items-center gap-2 hover:underline"
-                style={{ color: '#0f0f0f' }}
-              >
-                <Avatar className="w-6 h-6">
-                  <SiteAvatarImage src={content.author?.avatar} alt={content.author?.name} />
-                  <AvatarFallback>{content.author?.name?.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <span>{content.author?.name}</span>
-              </Link>
-            <span>{dayjs(content.created_at).format('YYYY-MM-DD')}</span>
-            {category && (
-              <Link
-                to={`/${category.slug}`}
-                className="hover:underline"
-                style={{ color: '#0f0f0f' }}
-              >
-                {category.name}
-              </Link>
-            )}
+        )}
+
+        {/* Title */}
+        <h1 className="text-2xl font-bold mb-4" style={{ color: '#0f0f0f', lineHeight: 1.4 }}>{content.title}</h1>
+
+        {/* Speaker + actions row */}
+        <div className="flex items-center justify-between pb-4 mb-6" style={{ borderBottom: '1px solid #e5e5e5' }}>
+          <div className="flex items-center gap-3">
+            <Avatar size="lg">
+              <SiteAvatarImage src={speakerAvatar} alt={speakerName} />
+              <AvatarFallback>{speakerName.charAt(0) || t('common:anonymousAbbrev')}</AvatarFallback>
+            </Avatar>
+            <div>
+              {speakerUsername ? (
+                <Link to={`/@${speakerUsername}`} className="no-underline">
+                  <div className="text-sm font-medium hover:underline" style={{ color: '#0f0f0f' }}>{speakerName}</div>
+                </Link>
+              ) : (
+                <div className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{speakerName}</div>
+              )}
+              <div className="text-xs flex items-center gap-1.5" style={{ color: '#606060' }}>
+                <span>{dayjs(content.created_at).fromNow()}</span>
+                {category && (
+                  <>
+                    <span>·</span>
+                    <Link to={`/${category.slug}`} className="no-underline hover:underline" style={{ color: '#606060' }}>{category.name}</Link>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Audio Player */}
-          {currentAudio && (
-            <div className="mb-4">
-              <AudioPlayer src={fileURL(currentAudio.url)} />
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center gap-2">
             <button
               onClick={handleLike}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                liked ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
+              style={{ background: liked ? 'rgba(6,95,212,0.1)' : 'rgba(0,0,0,0.05)', color: liked ? '#065fd4' : '#0f0f0f' }}
               disabled={!currentUser}
             >
-              <ThumbsUp size={16} />
+              <ThumbsUp size={16} fill={liked ? 'currentColor' : 'none'} />
               <span>{likeCount}</span>
             </button>
             <button
               onClick={handleFavorite}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                favorited ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
+              style={{ background: favorited ? 'rgba(234,179,8,0.1)' : 'rgba(0,0,0,0.05)', color: favorited ? '#b45309' : '#0f0f0f' }}
               disabled={!currentUser}
             >
-              <Bookmark size={16} />
+              <Bookmark size={16} fill={favorited ? 'currentColor' : 'none'} />
               <span>{favoriteCount}</span>
             </button>
-            <ShareButton title={content.title} text={content.summary} url={window.location.href} />
-            {currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin' || currentUser.id === content.author_id) && (
+            <a href="#comments" className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors no-underline" style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}>
+              <MessageCircle size={16} />
+              <span>{commentCount}</span>
+            </a>
+            <ShareButton
+              title={content.title}
+              text={content.summary || undefined}
+              className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
+              style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}
+            />
+            {canEdit && (
               <Link
                 to={contentEditPath(content)}
-                className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200"
+                className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors no-underline"
+                style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}
               >
                 <Pencil size={16} />
-                <span>{t('content:edit')}</span>
+                <span>{t('common:edit')}</span>
               </Link>
             )}
           </div>
         </div>
-      </div>
 
-      {/* Description */}
-      <div className="mb-8">
-        <div
-          className={`prose prose-sm max-w-none ${descExpanded ? '' : 'line-clamp-3'}`}
-          style={{ color: '#0f0f0f' }}
-          dangerouslySetInnerHTML={{ __html: content.summary || '' }}
-        />
-        {content.summary && content.summary.length > 200 && (
-          <button
-            onClick={() => setDescExpanded(!descExpanded)}
-            className="text-sm mt-2 hover:underline"
-            style={{ color: '#0f0f0f' }}
-          >
-            {descExpanded ? t('content:showLess') : t('content:showMore')}
-          </button>
-        )}
-      </div>
-
-      {/* Audio Files List */}
-      {audioAttachments.length > 1 && (
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold mb-4" style={{ color: '#0f0f0f' }}>{t('content:episodes')}</h3>
-          <div className="space-y-2">
-            {audioAttachments.map((audio, index) => (
-              <div
-                key={audio.id}
-                className={`flex items-center gap-4 p-3 rounded-lg cursor-pointer transition-colors ${
-                  index === currentPodcastIndex ? 'bg-gray-100' : 'hover:bg-gray-50'
-                }`}
-                onClick={() => setCurrentPodcastIndex(index)}
-              >
-                <Mic size={20} style={{ color: '#909090' }} />
-                <div className="flex-1">
-                  <div className="font-medium" style={{ color: '#0f0f0f' }}>{audio.filename}</div>
-                  <div className="text-sm" style={{ color: '#909090' }}>{formatFileSize(audio.file_size)}</div>
-                </div>
-                {index === currentPodcastIndex && (
-                  <div className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('content:playing')}</div>
-                )}
-              </div>
-            ))}
+        {/* Audio Player */}
+        {currentAudio && (
+          <div className="mb-6">
+            <AudioPlayer
+              src={fileURL(currentAudio.url)}
+              downloadUrl={fileURL(currentAudio.url)}
+              downloadFilename={currentAudio.filename}
+            />
           </div>
+        )}
+
+        {/* Episode list (multiple audio files) */}
+        {audioAttachments.length > 1 && (
+          <div className="mb-8 rounded-xl overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
+            <div className="px-4 py-2.5 text-sm font-medium" style={{ background: '#f9f9f9', color: '#0f0f0f', borderBottom: '1px solid #e5e5e5' }}>
+              {t('content:episodes')}
+            </div>
+            <div>
+              {audioAttachments.map((audio, index) => (
+                <button
+                  key={audio.id}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors cursor-pointer"
+                  style={{
+                    background: index === currentPodcastIndex ? 'rgba(0,0,0,0.04)' : 'transparent',
+                    borderTop: index > 0 ? '1px solid #f2f2f2' : 'none',
+                  }}
+                  onClick={() => setCurrentPodcastIndex(index)}
+                >
+                  <Mic size={16} style={{ color: index === currentPodcastIndex ? '#065fd4' : '#909090', flexShrink: 0 }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm truncate" style={{ color: '#0f0f0f', fontWeight: index === currentPodcastIndex ? 600 : 400 }}>
+                      {audio.title || audio.filename}
+                    </div>
+                    {audio.file_size > 0 && (
+                      <div className="text-xs" style={{ color: '#909090' }}>{formatFileSize(audio.file_size)}</div>
+                    )}
+                  </div>
+                  {index === currentPodcastIndex && (
+                    <span className="text-xs font-medium" style={{ color: '#065fd4' }}>{t('content:playing')}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Description — Markdown rendered, fully visible, followed by a divider */}
+        {summaryHtml && (
+          <div className="mb-8">
+            <div
+              className="rich-content prose prose-sm max-w-none"
+              style={{ color: '#292929', lineHeight: 1.75 }}
+              dangerouslySetInnerHTML={{ __html: summaryHtml }}
+            />
+            <div className="mt-6" style={{ borderTop: '1px solid #e5e5e5' }} />
+          </div>
+        )}
+
+        {/* Comments */}
+        <div id="comments">
+          <CommentSection contentID={content.id} commentCount={commentCount} onCommentCountChange={setCommentCount} />
         </div>
-      )}
 
-      {/* Comments */}
-      <CommentSection contentID={content.id} commentCount={commentCount} onCommentCountChange={setCommentCount} />
-
-      {/* Related Podcasts */}
-      {relatedContents.length > 0 && (
-        <div className="mt-12">
-          <h3 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>{t('content:relatedPodcasts')}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {relatedContents.map((related) => (
-              <Link
-                key={related.id}
-                to={contentDetailPath(related)}
-                className="block group"
-              >
-                <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                  <div className="aspect-video bg-gray-100 relative">
+        {/* Related Podcasts — only shown when results exist */}
+        {relatedContents.length > 0 && (
+          <div className="mt-12">
+            <h3 className="text-lg font-semibold mb-5" style={{ color: '#0f0f0f' }}>{t('content:relatedPodcasts')}</h3>
+            <div className="space-y-3">
+              {relatedContents.map((related) => (
+                <Link
+                  key={related.id}
+                  to={contentDetailPath(related)}
+                  className="flex gap-3 no-underline group"
+                  style={{ color: 'inherit' }}
+                >
+                  <div className="flex-shrink-0 rounded-xl overflow-hidden bg-zinc-100" style={{ width: 64, height: 64 }}>
                     <img
                       src={getContentCover(related, siteConfig) || ''}
                       alt={related.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Mic size={48} className="text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0 py-0.5">
+                    <h4 className="text-sm font-medium line-clamp-2 mb-1" style={{ color: '#0f0f0f' }}>{related.title}</h4>
+                    <div className="text-xs" style={{ color: '#606060' }}>
+                      {(related.speaker?.name || related.speaker_name || related.author?.name) && (
+                        <span>{related.speaker?.name || related.speaker_name || related.author?.name} · </span>
+                      )}
+                      <span>{dayjs(related.created_at).format('YYYY-MM-DD')}</span>
                     </div>
                   </div>
-                  <div className="p-4">
-                    <h4 className="font-semibold mb-2 line-clamp-2" style={{ color: '#0f0f0f' }}>{related.title}</h4>
-                    {related.author && (
-                      <div className="flex items-center gap-2 text-sm" style={{ color: '#909090' }}>
-                        <Avatar className="w-5 h-5">
-                          <SiteAvatarImage src={related.author.avatar} alt={related.author.name} />
-                          <AvatarFallback>{related.author.name?.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <span>{related.author.name}</span>
-                        <span>•</span>
-                        <span>{dayjs(related.created_at).format('MM-DD')}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+      </div>
     </div>
   )
 }
