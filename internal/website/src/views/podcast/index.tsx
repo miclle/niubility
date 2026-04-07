@@ -30,6 +30,7 @@ function PodcastDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [theaterMode, setTheaterMode] = useState(false)
+  const [descExpanded, setDescExpanded] = useState(false)
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
   const [favorited, setFavorited] = useState(false)
@@ -92,6 +93,7 @@ function PodcastDetail() {
   const isDraft = content.status === 'draft'
   const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin' || currentUser.id === content.author_id)
   const category = categories ? categories.find((c) => c.id === content.category) : null
+  const categoryLabel = category?.name || content.category
   const coverUrl = getContentCover(content, siteConfig)
   const audioAttachments = (content.attachments || []).filter((a) => a.type === 'audio')
   const currentAudio = audioAttachments[currentPodcastIndex] || audioAttachments[0]
@@ -149,7 +151,7 @@ function PodcastDetail() {
         <h1 className="text-2xl font-bold mb-4" style={{ color: '#0f0f0f', lineHeight: 1.4 }}>{content.title}</h1>
 
         {/* Speaker + actions row */}
-        <div className="flex items-center justify-between pb-4 mb-6" style={{ borderBottom: '1px solid #e5e5e5' }}>
+        <div className="flex items-center justify-between pb-4 mb-0" style={{ borderBottom: '1px solid #e5e5e5' }}>
           <div className="flex items-center gap-3">
             <Avatar size="lg">
               <SiteAvatarImage src={speakerAvatar} alt={speakerName} />
@@ -163,14 +165,8 @@ function PodcastDetail() {
               ) : (
                 <div className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{speakerName}</div>
               )}
-              <div className="text-xs flex items-center gap-1.5" style={{ color: '#606060' }}>
-                <span>{dayjs(content.created_at).fromNow()}</span>
-                {category && (
-                  <>
-                    <span>·</span>
-                    <Link to={`/${category.slug}`} className="no-underline hover:underline" style={{ color: '#606060' }}>{category.name}</Link>
-                  </>
-                )}
+              <div className="text-xs" style={{ color: '#606060' }}>
+                {dayjs(content.created_at).fromNow()}
               </div>
             </div>
           </div>
@@ -182,7 +178,7 @@ function PodcastDetail() {
               style={{ background: liked ? 'rgba(6,95,212,0.1)' : 'rgba(0,0,0,0.05)', color: liked ? '#065fd4' : '#0f0f0f' }}
               disabled={!currentUser}
             >
-              <ThumbsUp size={16} fill={liked ? 'currentColor' : 'none'} />
+              <ThumbsUp size={18} fill={liked ? 'currentColor' : 'none'} />
               <span>{likeCount}</span>
             </button>
             <button
@@ -191,11 +187,11 @@ function PodcastDetail() {
               style={{ background: favorited ? 'rgba(234,179,8,0.1)' : 'rgba(0,0,0,0.05)', color: favorited ? '#b45309' : '#0f0f0f' }}
               disabled={!currentUser}
             >
-              <Bookmark size={16} fill={favorited ? 'currentColor' : 'none'} />
+              <Bookmark size={18} fill={favorited ? 'currentColor' : 'none'} />
               <span>{favoriteCount}</span>
             </button>
             <a href="#comments" className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors no-underline" style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}>
-              <MessageCircle size={16} />
+              <MessageCircle size={18} />
               <span>{commentCount}</span>
             </a>
             <ShareButton
@@ -217,6 +213,38 @@ function PodcastDetail() {
           </div>
         </div>
 
+        {/* Description — same style as video page */}
+        <div className="mt-4 mb-6 p-3 rounded-xl text-sm" style={{ background: 'rgba(0,0,0,0.03)', color: '#0f0f0f' }}>
+          <div className="flex items-center gap-2 mb-2 text-xs" style={{ color: '#606060' }}>
+            <span>{categoryLabel}</span>
+            {content.tags?.length > 0 && (
+              <>
+                <span>•</span>
+                <span>{content.tags.join(', ')}</span>
+              </>
+            )}
+          </div>
+          {summaryHtml && (
+            <div
+              className={`rich-content prose prose-sm max-w-none ${descExpanded ? '' : 'line-clamp-3'}`}
+              style={{ color: '#292929', lineHeight: 1.75, cursor: 'pointer' }}
+              onClick={() => setDescExpanded(!descExpanded)}
+              dangerouslySetInnerHTML={{ __html: summaryHtml }}
+            />
+          )}
+          {(speakerName || content.speaker_bio) && (
+            <div className="mt-3 pt-3 text-sm" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+              <span className="font-medium">{t('content:speaker')}</span>
+              {speakerName}
+              {content.speaker_bio && <span className="ml-2" style={{ color: '#606060' }}>- {content.speaker_bio}</span>}
+            </div>
+          )}
+          {(summaryHtml || content.speaker_bio) && (
+            <button className="mt-2 text-sm font-medium" style={{ color: '#065fd4' }} onClick={() => setDescExpanded(!descExpanded)}>
+              {descExpanded ? t('content:collapse') : t('content:expand')}
+            </button>
+          )}
+        </div>
         {/* Episode list (multiple audio files) */}
         {audioAttachments.length > 1 && (
           <div className="mb-6 rounded-xl overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
@@ -249,18 +277,6 @@ function PodcastDetail() {
                 </button>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Description — Markdown rendered, fully visible, followed by a divider */}
-        {summaryHtml && (
-          <div className="mb-8">
-            <div
-              className="rich-content prose prose-sm max-w-none"
-              style={{ color: '#292929', lineHeight: 1.75 }}
-              dangerouslySetInnerHTML={{ __html: summaryHtml }}
-            />
-            <div className="mt-6" style={{ borderTop: '1px solid #e5e5e5' }} />
           </div>
         )}
 
