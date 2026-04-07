@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Plus, Play, FileText, ImageIcon } from 'lucide-react'
+import { Plus, Play, FileText, ImageIcon, Mic } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { contentNewPath } from 'src/lib/content-url'
@@ -33,6 +33,10 @@ export default function CreateMenu() {
         <DropdownMenuItem render={<Link to={contentNewPath('article')} />}>
           <FileText size={16} />
           {t('nav:article')}
+        </DropdownMenuItem>
+        <DropdownMenuItem render={<Link to={contentNewPath('podcast')} />}>
+          <Mic size={16} />
+          {t('nav:podcast')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

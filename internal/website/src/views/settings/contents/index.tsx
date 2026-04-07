@@ -29,6 +29,7 @@ function MyContents() {
     { key: 'video', label: t('settings:videos') },
     { key: 'gallery', label: t('settings:galleries') },
     { key: 'article', label: t('settings:articles') },
+    { key: 'podcast', label: t('settings:podcasts') || 'Podcasts' },
   ]
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =

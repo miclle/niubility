@@ -133,6 +133,7 @@ const (
 	ContentTypeArticle ContentType = "article"
 	ContentTypeGallery ContentType = "gallery"
 	ContentTypeVideo   ContentType = "video"
+	ContentTypePodcast ContentType = "podcast"
 )
 
 // Content represents a content item

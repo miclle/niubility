@@ -15,5 +15,13 @@
   "photoCount": "{{count}} 张图片",
   "videoType": "视频",
   "galleryType": "图集",
-  "articleType": "文章"
+  "articleType": "文章",
+  "podcastType": "播客",
+  "episodes": "集数",
+  "playing": "播放中",
+  "relatedPodcasts": "其他相关播客",
+  "showMore": "显示更多",
+  "showLess": "收起",
+  "edit": "编辑",
+  "backToHome": "返回首页"
 }

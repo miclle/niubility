@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Play, FileText, BookOpen, GraduationCap, Heart, Star, Lightbulb, Trophy, Coffee, Briefcase, Globe, Flame, UserCheck, ImageIcon, type LucideIcon } from 'lucide-react'
+import { Home, Play, FileText, BookOpen, GraduationCap, Heart, Star, Lightbulb, Trophy, Coffee, Briefcase, Globe, Flame, UserCheck, ImageIcon, Mic, type LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import type { Category } from 'src/types/content'
@@ -101,6 +101,14 @@ export default function SidebarNav({ category, typeFilter, isHome, currentUser, 
       >
         <FileText size={24} />
         <span className="text-sm">{t('nav:article')}</span>
+      </NavLink>
+      <NavLink
+        to="/podcasts"
+        className={`flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${typeFilter === 'podcast' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'}`}
+        style={{ color: '#0f0f0f' }}
+      >
+        <Mic size={24} />
+        <span className="text-sm">{t('nav:podcast')}</span>
       </NavLink>
     </div>
   )

@@ -2,7 +2,7 @@ import { useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Trash2, Heart, MessageSquare, Play, Image, FileText, Bookmark } from 'lucide-react'
+import { Pencil, Trash2, Heart, MessageSquare, Play, Image, FileText, Bookmark, Mic } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -22,6 +22,7 @@ const typeIcons: Record<ContentType, React.ReactNode> = {
   video: <Play size={12} />,
   gallery: <Image size={12} />,
   article: <FileText size={12} />,
+  podcast: <Mic size={12} />,
 }
 const limit = 20
 

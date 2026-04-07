@@ -111,6 +111,7 @@ export default function ProfileLayout() {
     { label: t('common:video'), path: 'videos', icon: <Video size={16} /> },
     { label: t('common:gallery'), path: 'galleries', icon: <Images size={16} /> },
     { label: t('common:article'), path: 'articles', icon: <BookOpen size={16} /> },
+    { label: t('common:podcast') || 'Podcast', path: 'podcasts', icon: <Mic size={16} /> },
     { label: t('profile:speakers'), path: 'speakers', icon: <Mic size={16} /> },
     { label: t('profile:tabFollowing'), path: 'following', icon: <UserCheck size={16} /> },
     { label: t('profile:tabFollowers'), path: 'followers', icon: <Users size={16} /> },

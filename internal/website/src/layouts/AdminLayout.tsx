@@ -3,7 +3,7 @@ import { Outlet, NavLink, Link, Navigate, useLocation } from 'react-router-dom'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { FileText, Users, ArrowLeft, LogOut, Settings, Menu, FolderOpen, ChevronDown, UserPlus, HardDrive, MessageSquare, CircleUserRound, User, Plus, Play, ImageIcon, Globe2, type LucideIcon } from 'lucide-react'
+import { FileText, Users, ArrowLeft, LogOut, Settings, Menu, FolderOpen, ChevronDown, UserPlus, HardDrive, MessageSquare, CircleUserRound, User, Plus, Play, ImageIcon, Globe2, Mic, type LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { useAppContext } from 'src/context/app'
@@ -60,6 +60,7 @@ function AdminLayout() {
         { to: '/admin/contents/videos', icon: Play, label: t('admin:video') },
         { to: '/admin/contents/galleries', icon: ImageIcon, label: t('admin:gallery') },
         { to: '/admin/contents/articles', icon: FileText, label: t('admin:article') },
+        { to: '/admin/contents/podcasts', icon: Mic, label: t('admin:podcast') },
       ],
     },
     { to: '/admin/categories', icon: FolderOpen, label: t('admin:categoryManagement') },

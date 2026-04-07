@@ -15,6 +15,8 @@ import GalleryDetail from 'src/views/gallery'
 import GalleryEditor from 'src/views/gallery/editor'
 import ArticleDetail from 'src/views/article'
 import ArticleEditor from 'src/views/article/editor'
+import PodcastDetail from 'src/views/podcast'
+import PodcastEditor from 'src/views/podcast/editor'
 import FollowingFeed from 'src/views/following'
 import AccountSettings from 'src/views/settings/account'
 import MyContents from 'src/views/settings/contents'
@@ -25,6 +27,7 @@ import NotificationSettings from 'src/views/settings/notifications'
 import AdminVideoContents from 'src/views/admin/contents/videos'
 import AdminGalleryContents from 'src/views/admin/contents/galleries'
 import AdminArticleContents from 'src/views/admin/contents/articles'
+import AdminPodcastContents from 'src/views/admin/contents/podcasts'
 import AdminUsers from 'src/views/admin/users'
 import SettingsAuth from 'src/views/admin/settings/auth'
 import SettingsStorage from 'src/views/admin/settings/storage'
@@ -62,6 +65,7 @@ const routes: RouteObject[] = [
       { path: 'videos', element: <Home /> },
       { path: 'galleries', element: <Home /> },
       { path: 'articles', element: <Home /> },
+      { path: 'podcasts', element: <Home /> },
       { path: 'following', element: <FollowingFeed /> },
       {
         path: ':slug',
@@ -71,6 +75,7 @@ const routes: RouteObject[] = [
           { path: 'videos', element: <ProfileContents /> },
           { path: 'galleries', element: <ProfileContents /> },
           { path: 'articles', element: <ProfileContents /> },
+          { path: 'podcasts', element: <ProfileContents /> },
           { path: 'speakers', element: <ProfileContents /> },
           { path: 'following', element: <ProfileFollowing /> },
           { path: 'followers', element: <ProfileFollowers /> },
@@ -89,6 +94,10 @@ const routes: RouteObject[] = [
       { path: 'article/new', element: <ArticleEditor /> },
       { path: 'article/:id/edit', element: <ArticleEditor /> },
       { path: 'article/:id', element: <ArticleDetail /> },
+      // Podcast routes
+      { path: 'podcast/new', element: <PodcastEditor /> },
+      { path: 'podcast/:id/edit', element: <PodcastEditor /> },
+      { path: 'podcast/:id', element: <PodcastDetail /> },
       {
         path: 'settings',
         element: <SettingsLayout />,
@@ -114,6 +123,7 @@ const routes: RouteObject[] = [
       { path: 'contents/videos', element: <AdminVideoContents /> },
       { path: 'contents/galleries', element: <AdminGalleryContents /> },
       { path: 'contents/articles', element: <AdminArticleContents /> },
+      { path: 'contents/podcasts', element: <AdminPodcastContents /> },
       { path: 'users', element: <AdminUsers /> },
       { path: 'categories', element: <AdminCategories /> },
       { path: 'sync', element: <Navigate to="/admin/settings/wechat" replace /> },

@@ -12,6 +12,8 @@ const (
 	AttachmentTypeImage AttachmentType = "image"
 	// AttachmentTypeDocument indicates a document attachment (PDF, PPT, DOC, etc.).
 	AttachmentTypeDocument AttachmentType = "document"
+	// AttachmentTypeAudio indicates an audio attachment.
+	AttachmentTypeAudio AttachmentType = "audio"
 )
 
 // Attachment represents a file (video, image, etc.) attached to a content.
@@ -47,11 +49,11 @@ type CreateAttachmentArgs struct {
 	Title       string         `json:"title"`
 	Description string         `json:"description"`
 	Filename    string         `json:"filename"`
-	URL         string         `json:"url"        binding:"required"`
+	URL         string         `json:"url"         binding:"required"`
 	CoverURL    string         `json:"cover_url"`
 	MimeType    string         `json:"mime_type"`
 	Checksum    string         `json:"checksum"`
-	Type        AttachmentType `json:"type"       binding:"required"`
+	Type        AttachmentType `json:"type"        binding:"required"`
 	SortOrder   int            `json:"sort_order"`
 	IsCover     bool           `json:"is_cover"`
 	Width       int            `json:"width"`

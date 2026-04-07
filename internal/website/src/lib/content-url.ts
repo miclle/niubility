@@ -4,6 +4,7 @@ const typePrefix: Record<ContentType, string> = {
   video: 'video',
   gallery: 'gallery',
   article: 'article',
+  podcast: 'podcast',
 }
 
 // contentDetailPath returns the detail page path for a content item.

@@ -12,6 +12,8 @@ const (
 	ContentTypeGallery ContentType = "gallery"
 	// ContentTypeArticle indicates a long-form article.
 	ContentTypeArticle ContentType = "article"
+	// ContentTypePodcast indicates podcast audio content.
+	ContentTypePodcast ContentType = "podcast"
 )
 
 // ReservedSlugs contains slugs reserved for content type routes that cannot be used as category slugs.
@@ -19,6 +21,7 @@ var ReservedSlugs = map[string]bool{
 	"videos":    true,
 	"galleries": true,
 	"articles":  true,
+	"podcasts":  true,
 }
 
 // ContentStatus represents the publication status of content.
@@ -33,19 +36,19 @@ const (
 
 // Content represents a piece of content in the system.
 type Content struct {
-	ID            string        `json:"id"            gorm:"column:id;primaryKey;size:36"`
-	AuthorID      string        `json:"author_id"     gorm:"column:author_id;size:36;index:idx_contents_author_id"`
-	Title         string        `json:"title"         gorm:"column:title"`
-	Summary       string        `json:"summary"       gorm:"column:summary"`
-	Body          string        `json:"body"          gorm:"column:body;type:text"`
-	CoverURL      string        `json:"cover_url"     gorm:"column:cover_url"`
-	Type          ContentType   `json:"type"          gorm:"column:type"`
-	Status        ContentStatus `json:"status"        gorm:"column:status;size:32;default:draft;index:idx_contents_status"`
-	Category      string        `json:"category"      gorm:"column:category;size:64;index:idx_contents_category"`
-	Tags          []string      `json:"tags"          gorm:"column:tags;serializer:json"`
-	SpeakerID     string        `json:"speaker_id"    gorm:"column:speaker_id;size:36;index:idx_contents_speaker_id"`
-	SpeakerName   string        `json:"speaker_name"  gorm:"column:speaker_name"`
-	SpeakerBio    string        `json:"speaker_bio"   gorm:"column:speaker_bio"`
+	ID            string        `json:"id"             gorm:"column:id;primaryKey;size:36"`
+	AuthorID      string        `json:"author_id"      gorm:"column:author_id;size:36;index:idx_contents_author_id"`
+	Title         string        `json:"title"          gorm:"column:title"`
+	Summary       string        `json:"summary"        gorm:"column:summary"`
+	Body          string        `json:"body"           gorm:"column:body;type:text"`
+	CoverURL      string        `json:"cover_url"      gorm:"column:cover_url"`
+	Type          ContentType   `json:"type"           gorm:"column:type"`
+	Status        ContentStatus `json:"status"         gorm:"column:status;size:32;default:draft;index:idx_contents_status"`
+	Category      string        `json:"category"       gorm:"column:category;size:64;index:idx_contents_category"`
+	Tags          []string      `json:"tags"           gorm:"column:tags;serializer:json"`
+	SpeakerID     string        `json:"speaker_id"     gorm:"column:speaker_id;size:36;index:idx_contents_speaker_id"`
+	SpeakerName   string        `json:"speaker_name"   gorm:"column:speaker_name"`
+	SpeakerBio    string        `json:"speaker_bio"    gorm:"column:speaker_bio"`
 	LikeCount     int64         `json:"like_count"     gorm:"column:like_count;default:0"`
 	FavoriteCount int64         `json:"favorite_count" gorm:"column:favorite_count;default:0"`
 	CommentCount  int64         `json:"comment_count"  gorm:"column:comment_count;default:0"`

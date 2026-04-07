@@ -1,7 +1,7 @@
 import type { User, PaginatedList } from './user'
 
 // ContentType represents the type of content.
-export type ContentType = 'video' | 'gallery' | 'article'
+export type ContentType = 'video' | 'gallery' | 'article' | 'podcast'
 
 // ContentStatus represents the publication status of content.
 export type ContentStatus = 'draft' | 'published'
@@ -26,7 +26,7 @@ export interface Category {
 export type SortField = 'created_at' | 'like_count'
 
 // AttachmentType represents the type of an attachment.
-export type AttachmentType = 'video' | 'image' | 'document'
+export type AttachmentType = 'video' | 'image' | 'document' | 'audio'
 
 // Attachment represents a file (video, image, etc.) attached to a content.
 export interface Attachment {

@@ -20,6 +20,7 @@
   "uploadVideo": "上传视频",
   "uploadImage": "上传图片",
   "uploadDocument": "上传文档",
+  "uploadAudio": "上传音频",
   "dragOrClick": "拖拽或点击上传文件",
   "maxSize": "最大支持 {{size}}",
   "videos": "视频",
@@ -73,5 +74,19 @@
   "convertToDraft": "转为草稿",
   "cancel": "取消",
   "uploadingProgress": "上传中 {{progress}}%",
-  "uploadingImage": "正在上传 {{filename}}..."
+  "uploadingImage": "正在上传 {{filename}}...",
+  "createPodcast": "创建播客",
+  "editPodcast": "编辑播客",
+  "createPodcastDesc": "创建音频内容，与听众分享你的见解",
+  "editPodcastDesc": "编辑你的播客内容",
+  "audioEpisodes": "音频集数",
+  "addAudio": "添加音频",
+  "noAudioYet": "还没有音频文件",
+  "uploadFirstAudio": "上传第一个音频文件",
+  "audioTitleOptional": "音频标题（可选）",
+  "audioDescriptionOptional": "音频描述（可选）",
+  "uploadAudioHint": "拖拽音频到此处或点击选择，支持多个文件",
+  "audioList": "音频列表",
+  "audioExistsSkipped": "音频 {{filename}} 与已有音频 \"{{existing}}\" 内容相同，已跳过",
+  "audioUploadFailed": "音频 {{filename}} 上传失败: {{error}}"
 }

@@ -38,8 +38,8 @@ function MainLayout() {
     const userSidebarStateRef = useRef(false)
 
     // Detect if on detail page, editor page, or settings page (sidebar should be hidden)
-    const isDetailPage = /^\/(video|gallery|article)\/[^/]+$/.test(location.pathname)
-    const isEditorPage = /^\/(video|gallery|article)\/(new|[^/]+\/edit)$/.test(location.pathname)
+    const isDetailPage = /^\/(video|gallery|article|podcast)\/[^/]+$/.test(location.pathname)
+    const isEditorPage = /^\/(video|gallery|article|podcast)\/(new|[^/]+\/edit)$/.test(location.pathname)
     const isSettingsPage = location.pathname.startsWith('/settings')
     const shouldHideSidebar = isDetailPage || isEditorPage || isSettingsPage
 

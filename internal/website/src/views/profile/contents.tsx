@@ -9,7 +9,7 @@ import { useIntersection } from 'src/hooks/use-intersection'
 import type { ContentType, ListContentsArgs } from 'src/types/content'
 import type { ProfileContext } from './index'
 
-type ContentTab = 'all' | 'video' | 'gallery' | 'article' | 'speaker'
+type ContentTab = 'all' | 'video' | 'gallery' | 'article' | 'speaker' | 'podcast'
 
 // tabFromPath derives the content tab from the current URL pathname suffix.
 function tabFromPath(pathname: string): ContentTab {
@@ -17,6 +17,7 @@ function tabFromPath(pathname: string): ContentTab {
   if (segment === 'videos') return 'video'
   if (segment === 'galleries') return 'gallery'
   if (segment === 'articles') return 'article'
+  if (segment === 'podcasts') return 'podcast'
   if (segment === 'speakers') return 'speaker'
   return 'all'
 }
@@ -41,6 +42,7 @@ export default function ProfileContents() {
           if (tab === 'video') params.type = 'video' as ContentType
           if (tab === 'gallery') params.type = 'gallery' as ContentType
           if (tab === 'article') params.type = 'article' as ContentType
+          if (tab === 'podcast') params.type = 'podcast' as ContentType
         }
         return listContents(params)
       },
