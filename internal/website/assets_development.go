@@ -71,9 +71,14 @@ func EmbedAssets(router *fox.Engine) {
 
 	for _, path := range proxyRoutes {
 		router.GET(path, proxyHandler)
+		router.HEAD(path, proxyHandler)
 	}
 
 	router.NotFound(func(c *fox.Context) any {
+		if c.Request.Method != http.MethodGet && c.Request.Method != http.MethodHead {
+			return httperrors.ErrNotFound
+		}
+
 		if strings.HasPrefix(c.Request.URL.Path, "/api") {
 			return httperrors.ErrNotFound
 		}

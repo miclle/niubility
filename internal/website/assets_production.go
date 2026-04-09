@@ -49,10 +49,7 @@ func EmbedAssets(router *fox.Engine) {
 		Data:     map[string]string{},
 	}
 
-	// handle home page
-	router.GET("/", func(c *fox.Context) any {
-		return homepage
-	})
+	registerPageRoute(router, "/", homepage)
 
 	// handle the assets files
 	router.StaticFS("/assets", StaticFS("build/assets"))
@@ -62,7 +59,7 @@ func EmbedAssets(router *fox.Engine) {
 	}
 
 	router.NotFound(func(c *fox.Context) any {
-		if c.Request.Method != http.MethodGet {
+		if c.Request.Method != http.MethodGet && c.Request.Method != http.MethodHead {
 			return http.StatusNotFound
 		}
 
@@ -87,6 +84,15 @@ func EmbedAssets(router *fox.Engine) {
 			Reader:        file,
 		}
 	})
+}
+
+func registerPageRoute(router *fox.Engine, route string, response any) {
+	handler := func(c *fox.Context) any {
+		return response
+	}
+
+	router.GET(route, handler)
+	router.HEAD(route, handler)
 }
 
 // resource is an interface that provides static file.
