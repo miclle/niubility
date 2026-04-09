@@ -187,6 +187,83 @@ func TestService_UpdateContent(t *testing.T) {
 	}
 }
 
+func TestService_UpdateContent_UpdatesSpeakerFields(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	author := &entity.User{
+		ID:       entity.ID(),
+		Username: "speakercontentauthor",
+		Name:     "Author",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	if err := s.db.Create(author).Error; err != nil {
+		t.Fatalf("Failed to create author: %v", err)
+	}
+
+	speaker := &entity.User{
+		ID:       entity.ID(),
+		Username: "newspeaker",
+		Name:     "New Speaker",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	if err := s.db.Create(speaker).Error; err != nil {
+		t.Fatalf("Failed to create speaker: %v", err)
+	}
+
+	content := &entity.Content{
+		ID:          entity.ID(),
+		AuthorID:    author.ID,
+		Title:       "Speaker Update",
+		Type:        entity.ContentTypePodcast,
+		Category:    "test",
+		Status:      entity.ContentStatusDraft,
+		SpeakerName: "Legacy Speaker",
+		SpeakerBio:  "Legacy Bio",
+	}
+	if err := s.db.Create(content).Error; err != nil {
+		t.Fatalf("Failed to create test content: %v", err)
+	}
+
+	speakerID := speaker.ID
+	speakerBio := "Updated Bio"
+	updated, err := s.UpdateContent(ctx, content.ID, entity.UpdateContentArgs{
+		SpeakerID:  &speakerID,
+		SpeakerBio: &speakerBio,
+	})
+	if err != nil {
+		t.Fatalf("UpdateContent() error = %v", err)
+	}
+	if updated.SpeakerID != speaker.ID {
+		t.Fatalf("SpeakerID = %q, want %q", updated.SpeakerID, speaker.ID)
+	}
+	if updated.SpeakerName != "" {
+		t.Fatalf("SpeakerName = %q, want empty when SpeakerID is set", updated.SpeakerName)
+	}
+	if updated.Speaker == nil || updated.Speaker.ID != speaker.ID {
+		t.Fatalf("Speaker preload missing or incorrect: %+v", updated.Speaker)
+	}
+	if updated.SpeakerBio != speakerBio {
+		t.Fatalf("SpeakerBio = %q, want %q", updated.SpeakerBio, speakerBio)
+	}
+
+	manualSpeakerName := "Manual Speaker"
+	updated, err = s.UpdateContent(ctx, content.ID, entity.UpdateContentArgs{
+		SpeakerName: &manualSpeakerName,
+	})
+	if err != nil {
+		t.Fatalf("UpdateContent() manual speaker error = %v", err)
+	}
+	if updated.SpeakerID != "" {
+		t.Fatalf("SpeakerID = %q, want empty when SpeakerName is set", updated.SpeakerID)
+	}
+	if updated.SpeakerName != manualSpeakerName {
+		t.Fatalf("SpeakerName = %q, want %q", updated.SpeakerName, manualSpeakerName)
+	}
+}
+
 func TestService_UpdateContent_RefreshesGalleryCoverFromAttachments(t *testing.T) {
 	s := setupTestService(t)
 	ctx := context.Background()

@@ -47,7 +47,13 @@ export default function SpeakerSelector({ defaultSpeaker, onChange, label = '作
     if (defaultSpeaker) {
       setSpeakerId(defaultSpeaker.id)
       setSelectedSpeaker(defaultSpeaker)
+      return
     }
+    setSpeakerId('')
+    setSelectedSpeaker(null)
+    setSpeakerInput('')
+    setSpeakerResults([])
+    setShowSpeakerDropdown(false)
   }, [defaultSpeaker])
 
   const handleSpeakerInputChange = (value: string) => {

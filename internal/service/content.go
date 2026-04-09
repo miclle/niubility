@@ -330,7 +330,11 @@ func (s *Service) UpdateContent(ctx context.Context, id string, args entity.Upda
 
 	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if len(updates) > 0 {
-			if err := tx.Model(content).Updates(updates).Error; err != nil {
+			updateColumns := make([]string, 0, len(updates))
+			for column := range updates {
+				updateColumns = append(updateColumns, column)
+			}
+			if err := tx.Model(content).Select(updateColumns).Updates(updates).Error; err != nil {
 				log.Errorf("UpdateContent: %v", err)
 				return fmt.Errorf("update content: %w", err)
 			}

@@ -37,6 +37,7 @@ function Home() {
     { value: 'video', label: t('common:video') },
     { value: 'gallery', label: t('common:gallery') },
     { value: 'article', label: t('common:article') },
+    { value: 'podcast', label: t('common:podcast') },
   ]
 
   // On category pages show type chips; otherwise show category chips

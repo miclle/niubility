@@ -150,9 +150,13 @@ function PodcastEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
       loadDocuments(c.attachments)
     }
 
-    if (c.speaker_id && c.speaker) {
-      setSpeakerId(c.speaker_id)
+    setSpeakerId(c.speaker_id || '')
+    if (c.speaker) {
       setSelectedSpeaker({ id: c.speaker.id, name: c.speaker.name, avatar: c.speaker.avatar })
+    } else if (c.speaker_name) {
+      setSelectedSpeaker({ id: '', name: c.speaker_name, avatar: '' })
+    } else {
+      setSelectedSpeaker(null)
     }
     setSpeakerBio(c.speaker_bio || '')
   }, [loadDocuments])

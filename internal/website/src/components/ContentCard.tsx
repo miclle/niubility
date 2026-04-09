@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import { contentDetailPath } from 'src/lib/content-url'
 import { appendImageStyle } from 'src/api/upload'
-import { getContentCover, getVideoSpeakerAvatar, getVideoSpeakerDisplayName } from 'src/lib/content-assets'
+import { getContentCover, getSpeakerAvatar, getSpeakerDisplayName, getVideoSpeakerAvatar, getVideoSpeakerDisplayName } from 'src/lib/content-assets'
 import { useAppContext } from 'src/context/app'
 import type { Content } from 'src/types/content'
 import { useTranslation } from 'react-i18next'
@@ -19,9 +19,19 @@ function ContentCard({ content, hideAuthor = false }: { content: Content; hideAu
   const { t } = useTranslation('common')
   const navigate = useNavigate()
   const { siteConfig } = useAppContext()
-  const displayUser = content.type === 'video' ? content.speaker : content.author
-  const displayName = content.type === 'video' ? getVideoSpeakerDisplayName(content) : (content.author?.name || t('common:unknownAuthor'))
-  const displayAvatar = content.type === 'video' ? getVideoSpeakerAvatar(content, siteConfig) : (content.author?.avatar || '')
+  const isVideo = content.type === 'video'
+  const isPodcast = content.type === 'podcast'
+  const displayUser = isVideo ? content.speaker : isPodcast ? (content.speaker || content.author) : content.author
+  const displayName = isVideo
+    ? getVideoSpeakerDisplayName(content)
+    : isPodcast
+      ? getSpeakerDisplayName(content, t('common:unknownAuthor'))
+      : (content.author?.name || t('common:unknownAuthor'))
+  const displayAvatar = isVideo
+    ? getVideoSpeakerAvatar(content, siteConfig)
+    : isPodcast
+      ? getSpeakerAvatar(content, siteConfig)
+      : (content.author?.avatar || '')
   const profilePath = displayUser?.username ? `/@${displayUser.username}` : ''
   const mediaItems = content.attachments || []
 
