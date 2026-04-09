@@ -10,6 +10,7 @@ import { useAppContext } from 'src/context/app'
 import { listContents, updateContent, deleteContent } from 'src/api/content'
 import { getContentCover } from 'src/lib/content-assets'
 import { contentDetailPath, contentEditPath, contentNewPath } from 'src/lib/content-url'
+import { toPlainTextPreview } from 'src/lib/utils'
 import { useIntersection } from 'src/hooks/use-intersection'
 import type { Content, ContentStatus, ContentType } from 'src/types/content'
 
@@ -202,7 +203,7 @@ function MyContents() {
                           </NavLink>
                           {content.summary && (
                             <p className="mt-3 line-clamp-2 text-sm leading-6" style={{ color: '#707070' }}>
-                              {content.summary}
+                              {toPlainTextPreview(content.summary)}
                             </p>
                           )}
                         </div>

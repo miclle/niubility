@@ -13,6 +13,7 @@ import { listContents, deleteContent } from 'src/api/content'
 import { appendImageStyle } from 'src/api/upload'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
 import { getContentCover, getSpeakerAvatar, getSpeakerDisplayName } from 'src/lib/content-assets'
+import { toPlainTextPreview } from 'src/lib/utils'
 import { useAppContext } from 'src/context/app'
 import { useIntersection } from 'src/hooks/use-intersection'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
@@ -141,7 +142,7 @@ function ContentTable({ type, title }: ContentTableProps) {
                           </div>
                           <div className="min-w-0 flex-1 overflow-hidden">
                             <div className="font-medium line-clamp-1">{content.title}</div>
-                            {content.summary && <div className="text-xs line-clamp-1" style={{ color: '#909090' }}>{content.summary}</div>}
+                            {content.summary && <div className="text-xs line-clamp-1" style={{ color: '#909090' }}>{toPlainTextPreview(content.summary)}</div>}
                           </div>
                         </Link>
                       </td>

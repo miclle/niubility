@@ -503,6 +503,171 @@ func TestService_ListContents_OmitsAttachmentsButKeepsGalleryCover(t *testing.T)
 	}
 }
 
+func TestService_ListContents_IncludesPodcastAttachmentsForPodcastLists(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	user := &entity.User{
+		ID:       entity.ID(),
+		Username: "listcontentpodcastattachments",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	if err := s.db.Create(user).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	podcast := &entity.Content{
+		ID:       entity.ID(),
+		AuthorID: user.ID,
+		Title:    "Podcast content",
+		Type:     entity.ContentTypePodcast,
+		Category: "podcast",
+		Status:   entity.ContentStatusPublished,
+	}
+	if err := s.db.Create(podcast).Error; err != nil {
+		t.Fatalf("Failed to create test podcast: %v", err)
+	}
+
+	attachments := []*entity.Attachment{
+		{
+			ID:        entity.ID(),
+			ContentID: podcast.ID,
+			Type:      entity.AttachmentTypeAudio,
+			URL:       "podcasts/ep1.mp3",
+			Title:     "Episode 1",
+			Filename:  "ep1.mp3",
+			FileSize:  1024,
+			SortOrder: 1,
+		},
+		{
+			ID:        entity.ID(),
+			ContentID: podcast.ID,
+			Type:      entity.AttachmentTypeAudio,
+			URL:       "podcasts/ep2.mp3",
+			Title:     "Episode 2",
+			Filename:  "ep2.mp3",
+			FileSize:  2048,
+			SortOrder: 2,
+		},
+	}
+	for _, attachment := range attachments {
+		if err := s.db.Create(attachment).Error; err != nil {
+			t.Fatalf("Failed to create podcast attachment: %v", err)
+		}
+	}
+
+	got, _, err := s.ListContents(ctx, entity.ListContentsArgs{
+		Type:       entity.ContentTypePodcast,
+		AuthorID:   user.ID,
+		Pagination: entity.Pagination{Limit: 10},
+	})
+	if err != nil {
+		t.Fatalf("ListContents() error = %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("len(got) = %d, want 1", len(got))
+	}
+	if len(got[0].Attachments) != 2 {
+		t.Fatalf("len(Attachments) = %d, want 2", len(got[0].Attachments))
+	}
+	if got[0].Attachments[0].Title != "Episode 1" || got[0].Attachments[1].Title != "Episode 2" {
+		t.Fatalf("unexpected attachment ordering: %+v", got[0].Attachments)
+	}
+}
+
+func TestService_ListContents_FiltersProfileContentsBySpeakerThenFallbackAuthor(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	profileUser := &entity.User{
+		ID:       entity.ID(),
+		Username: "profilefilteruser",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	otherUser := &entity.User{
+		ID:       entity.ID(),
+		Username: "profilefilterother",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	if err := s.db.Create(profileUser).Error; err != nil {
+		t.Fatalf("Failed to create profile user: %v", err)
+	}
+	if err := s.db.Create(otherUser).Error; err != nil {
+		t.Fatalf("Failed to create other user: %v", err)
+	}
+
+	contents := []*entity.Content{
+		{
+			ID:        entity.ID(),
+			AuthorID:  otherUser.ID,
+			SpeakerID: profileUser.ID,
+			Title:     "Match by speaker",
+			Type:      entity.ContentTypeArticle,
+			Category:  "test",
+			Status:    entity.ContentStatusPublished,
+		},
+		{
+			ID:       entity.ID(),
+			AuthorID: profileUser.ID,
+			Title:    "Match by fallback author",
+			Type:     entity.ContentTypeArticle,
+			Category: "test",
+			Status:   entity.ContentStatusPublished,
+		},
+		{
+			ID:          entity.ID(),
+			AuthorID:    profileUser.ID,
+			SpeakerName: "Manual Speaker",
+			Title:       "Do not match manual speaker",
+			Type:        entity.ContentTypeArticle,
+			Category:    "test",
+			Status:      entity.ContentStatusPublished,
+		},
+		{
+			ID:       entity.ID(),
+			AuthorID: otherUser.ID,
+			Title:    "Do not match unrelated",
+			Type:     entity.ContentTypeArticle,
+			Category: "test",
+			Status:   entity.ContentStatusPublished,
+		},
+	}
+	for _, content := range contents {
+		if err := s.db.Create(content).Error; err != nil {
+			t.Fatalf("Failed to create test content: %v", err)
+		}
+	}
+
+	got, _, err := s.ListContents(ctx, entity.ListContentsArgs{
+		ProfileUserID: profileUser.ID,
+		Pagination:    entity.Pagination{Limit: 10},
+		Status:        "all",
+	})
+	if err != nil {
+		t.Fatalf("ListContents() error = %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("len(got) = %d, want 2", len(got))
+	}
+
+	gotTitles := map[string]bool{}
+	for _, item := range got {
+		gotTitles[item.Title] = true
+	}
+	if !gotTitles["Match by speaker"] {
+		t.Fatalf("expected content matched by speaker to be included: %+v", gotTitles)
+	}
+	if !gotTitles["Match by fallback author"] {
+		t.Fatalf("expected content matched by fallback author to be included: %+v", gotTitles)
+	}
+	if gotTitles["Do not match manual speaker"] || gotTitles["Do not match unrelated"] {
+		t.Fatalf("unexpected contents returned: %+v", gotTitles)
+	}
+}
+
 func TestGalleryVideoMaxFileSize(t *testing.T) {
 	expected := int64(200 * 1024 * 1024) // 200 MB
 	if GalleryVideoMaxFileSize != expected {

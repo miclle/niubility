@@ -109,6 +109,7 @@ export interface ListContentsArgs {
   sort?: SortField
   author_id?: string
   speaker_id?: string
+  profile_user_id?: string
   followed_by_user_id?: string
 }
 

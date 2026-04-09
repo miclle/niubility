@@ -8,6 +8,7 @@ import { useAppContext } from 'src/context/app'
 import { listFavorites } from 'src/api/content'
 import { getContentCover } from 'src/lib/content-assets'
 import { contentDetailPath } from 'src/lib/content-url'
+import { toPlainTextPreview } from 'src/lib/utils'
 import { useIntersection } from 'src/hooks/use-intersection'
 import type { ContentType } from 'src/types/content'
 
@@ -129,7 +130,7 @@ function Favorites() {
                               </NavLink>
                               {content.summary && (
                                 <p className="mt-3 line-clamp-2 text-sm leading-6" style={{ color: '#707070' }}>
-                                  {content.summary}
+                                  {toPlainTextPreview(content.summary)}
                                 </p>
                               )}
                               <p className="mt-3 text-sm" style={{ color: '#909090' }}>

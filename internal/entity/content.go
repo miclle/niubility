@@ -86,6 +86,7 @@ type ListContentsArgs struct {
 	Sort             SortField     `json:"sort"                form:"sort"`
 	AuthorID         string        `json:"author_id"           form:"author_id"`
 	SpeakerID        string        `json:"speaker_id"          form:"speaker_id"`
+	ProfileUserID    string        `json:"profile_user_id"     form:"profile_user_id"`
 	FollowedByUserID string        `json:"followed_by_user_id" form:"followed_by_user_id"`
 }
 

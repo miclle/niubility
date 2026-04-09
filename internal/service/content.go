@@ -84,6 +84,13 @@ func (s *Service) ListContents(ctx context.Context, args entity.ListContentsArgs
 	if args.SpeakerID != "" {
 		query = query.Where("speaker_id = ?", args.SpeakerID)
 	}
+	if args.ProfileUserID != "" {
+		query = query.Where(
+			"(speaker_id = ?) OR ((speaker_id = '' OR speaker_id IS NULL) AND (speaker_name = '' OR speaker_name IS NULL) AND author_id = ?)",
+			args.ProfileUserID,
+			args.ProfileUserID,
+		)
+	}
 	if args.FollowedByUserID != "" {
 		query = query.Where("author_id IN (SELECT following_id FROM follows WHERE follower_id = ?)", args.FollowedByUserID)
 	}
@@ -144,6 +151,12 @@ func (s *Service) ListContents(ctx context.Context, args entity.ListContentsArgs
 	}
 
 	if err := query.Preload("Author").Preload("Speaker").
+		Preload("Attachments", func(db *gorm.DB) *gorm.DB {
+			if args.Type != entity.ContentTypePodcast {
+				return db.Where("1 = 0")
+			}
+			return db.Order("sort_order ASC")
+		}).
 		Limit(args.GetLimit()).
 		Order(orderClause).
 		Find(&contents).Error; err != nil {
