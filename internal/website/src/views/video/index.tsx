@@ -214,39 +214,44 @@ function VideoDetail() {
     )
   }
 
-  const renderSidebar = () => (
-    <div className="hidden xl:block flex-shrink-0 w-[400px]">
-      {renderPlaylist()}
-      {relatedContents.length > 0 && (
-        <div className="text-sm font-medium mb-3" style={{ color: '#0f0f0f' }}>{t('content:relatedVideos')}</div>
-      )}
-      <div className="space-y-3">
-        {relatedContents.map((item) => (
-          <Link key={item.id} to={contentDetailPath(item)} className="flex gap-2 no-underline group" style={{ color: 'inherit' }}>
-            <div className="relative flex-shrink-0 rounded-lg overflow-hidden bg-zinc-100" style={{ width: 168, aspectRatio: '16/9' }}>
-              <img src={getContentCover(item, siteConfig)} alt={item.title} className="w-full h-full object-cover" />
-              {item.type === 'video' && (
-                <div className="absolute bottom-1 right-1 px-1 rounded text-xs" style={{ background: 'rgba(0,0,0,0.7)', color: 'white' }}>{t('common:video')}</div>
-              )}
-              {item.type === 'gallery' && (
-                <div className="absolute bottom-1 right-1 px-1 rounded text-xs" style={{ background: 'rgba(0,0,0,0.7)', color: 'white' }}>
-                  {t('content:photoCount', { count: (item.attachments || []).length })}
-                </div>
-              )}
+  const renderSidebar = () => {
+    const hasPlaylist = videoItems.length > 1
+    const hasRelatedContents = relatedContents.length > 0
+    if (!hasPlaylist && !hasRelatedContents) return null
+
+    return (
+      <div className="hidden xl:block flex-shrink-0 w-[400px]">
+        {renderPlaylist()}
+        {hasRelatedContents && (
+          <>
+            <div className="text-sm font-medium mb-3" style={{ color: '#0f0f0f' }}>{t('content:relatedVideos')}</div>
+            <div className="space-y-3">
+              {relatedContents.map((item) => (
+                <Link key={item.id} to={contentDetailPath(item)} className="flex gap-2 no-underline group" style={{ color: 'inherit' }}>
+                  <div className="relative flex-shrink-0 rounded-lg overflow-hidden bg-zinc-100" style={{ width: 168, aspectRatio: '16/9' }}>
+                    <img src={getContentCover(item, siteConfig)} alt={item.title} className="w-full h-full object-cover" />
+                    {item.type === 'video' && (
+                      <div className="absolute bottom-1 right-1 px-1 rounded text-xs" style={{ background: 'rgba(0,0,0,0.7)', color: 'white' }}>{t('common:video')}</div>
+                    )}
+                    {item.type === 'gallery' && (
+                      <div className="absolute bottom-1 right-1 px-1 rounded text-xs" style={{ background: 'rgba(0,0,0,0.7)', color: 'white' }}>
+                        {t('content:photoCount', { count: (item.attachments || []).length })}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-medium line-clamp-2 mb-1" style={{ color: '#0f0f0f' }}>{item.title}</h4>
+                    <div className="text-xs" style={{ color: '#606060' }}>{getVideoSpeakerDisplayName(item)}</div>
+                    <div className="text-xs" style={{ color: '#606060' }}>{dayjs(item.created_at).fromNow()}</div>
+                  </div>
+                </Link>
+              ))}
             </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-medium line-clamp-2 mb-1" style={{ color: '#0f0f0f' }}>{item.title}</h4>
-              <div className="text-xs" style={{ color: '#606060' }}>{getVideoSpeakerDisplayName(item)}</div>
-              <div className="text-xs" style={{ color: '#606060' }}>{dayjs(item.created_at).fromNow()}</div>
-            </div>
-          </Link>
-        ))}
-        {relatedContents.length === 0 && (
-          <div className="text-center py-8 text-sm" style={{ color: '#606060' }}>{t('content:noRelated')}</div>
+          </>
         )}
       </div>
-    </div>
-  )
+    )
+  }
 
   const renderDocuments = () => {
     const docs = (content.attachments || []).filter((a) => a.type === 'document')
