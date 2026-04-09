@@ -14,6 +14,21 @@ import (
 	"github.com/miclle/niubility/internal/entity"
 )
 
+func normalizeAttachmentArgs(items []entity.CreateAttachmentArgs) []entity.CreateAttachmentArgs {
+	if len(items) == 0 {
+		return items
+	}
+
+	normalized := make([]entity.CreateAttachmentArgs, len(items))
+	for i, item := range items {
+		item.URL = entity.NormalizeAttachmentStorageURL(item.URL)
+		item.CoverURL = entity.NormalizeAttachmentStorageURL(item.CoverURL)
+		normalized[i] = item
+	}
+
+	return normalized
+}
+
 // GalleryVideoMaxFileSize is the maximum file size for videos in gallery content (200 MB).
 const GalleryVideoMaxFileSize int64 = 200 * 1024 * 1024
 
@@ -247,6 +262,8 @@ func (s *Service) CreateContent(ctx context.Context, content *entity.Content, at
 	log := logger.NewWithContext(ctx)
 
 	content.ID = entity.ID()
+	content.CoverURL = entity.NormalizeAttachmentStorageURL(content.CoverURL)
+	attachments = normalizeAttachmentArgs(attachments)
 	if content.Status == "" {
 		content.Status = entity.ContentStatusDraft
 	}
@@ -291,7 +308,7 @@ func (s *Service) UpdateContent(ctx context.Context, id string, args entity.Upda
 		updates["body"] = *args.Body
 	}
 	if args.CoverURL != nil {
-		updates["cover_url"] = *args.CoverURL
+		updates["cover_url"] = entity.NormalizeAttachmentStorageURL(*args.CoverURL)
 	}
 	if args.Type != nil {
 		updates["type"] = *args.Type
@@ -336,6 +353,9 @@ func (s *Service) UpdateContent(ctx context.Context, id string, args entity.Upda
 	contentType := content.Type
 	if args.Type != nil {
 		contentType = *args.Type
+	}
+	if args.Attachments != nil {
+		args.Attachments = normalizeAttachmentArgs(args.Attachments)
 	}
 	if args.Attachments != nil && contentType == entity.ContentTypeGallery {
 		updates["cover_url"] = galleryCoverURL(args.Attachments)

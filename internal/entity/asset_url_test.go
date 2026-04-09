@@ -12,6 +12,7 @@ func TestAvatarURL(t *testing.T) {
 	}{
 		{"empty key", "", ""},
 		{"full URL unchanged", "https://example.com/avatar.png", "https://example.com/avatar.png"},
+		{"legacy avatar route URL normalized", "https://example.com/avatars/users/123/avatar.png", "/avatars/users/123/avatar.png"},
 		{"http URL unchanged", "http://example.com/avatar.png", "http://example.com/avatar.png"},
 		{"absolute path unchanged", "/static/avatar.png", "/static/avatar.png"},
 		{"S3 key converted", "users/123/avatar.png", "/avatars/users/123/avatar.png"},
@@ -34,6 +35,7 @@ func TestAttachmentURL(t *testing.T) {
 	}{
 		{"empty key", "", ""},
 		{"full URL unchanged", "https://example.com/file.mp4", "https://example.com/file.mp4"},
+		{"legacy attachment route URL normalized", "https://example.com/attachments/contents/123/file.mp4", "/attachments/contents/123/file.mp4"},
 		{"http URL unchanged", "http://example.com/file.mp4", "http://example.com/file.mp4"},
 		{"absolute path unchanged", "/static/file.mp4", "/static/file.mp4"},
 		{"S3 key converted", "contents/123/file.mp4", "/attachments/contents/123/file.mp4"},
@@ -43,6 +45,27 @@ func TestAttachmentURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := AttachmentURL(tt.key); got != tt.want {
 				t.Errorf("AttachmentURL(%q) = %q, want %q", tt.key, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNormalizeAttachmentStorageURL(t *testing.T) {
+	tests := []struct {
+		name  string
+		value string
+		want  string
+	}{
+		{"empty value", "", ""},
+		{"raw key", "contents/123/file.mp4", "/attachments/contents/123/file.mp4"},
+		{"legacy route url", "https://example.com/attachments/contents/123/file.mp4", "/attachments/contents/123/file.mp4"},
+		{"already relative", "/attachments/contents/123/file.mp4", "/attachments/contents/123/file.mp4"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := NormalizeAttachmentStorageURL(tt.value); got != tt.want {
+				t.Errorf("NormalizeAttachmentStorageURL(%q) = %q, want %q", tt.value, got, tt.want)
 			}
 		})
 	}

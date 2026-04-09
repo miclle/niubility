@@ -74,8 +74,61 @@ func TestService_CreateContent_SetsGalleryCoverFromAttachments(t *testing.T) {
 		t.Fatalf("CreateContent() error = %v", err)
 	}
 
-	if content.CoverURL != "gallery/cover.jpg" {
-		t.Errorf("CoverURL = %q, want %q", content.CoverURL, "gallery/cover.jpg")
+	if content.CoverURL != "/attachments/gallery/cover.jpg" {
+		t.Errorf("CoverURL = %q, want %q", content.CoverURL, "/attachments/gallery/cover.jpg")
+	}
+}
+
+func TestService_CreateContent_NormalizesAttachmentURLs(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	user := &entity.User{
+		ID:       entity.ID(),
+		Username: "normalizecreateauthor",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	if err := s.db.Create(user).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	content := &entity.Content{
+		AuthorID: user.ID,
+		Title:    "Normalized Content",
+		Type:     entity.ContentTypeVideo,
+		Category: "test",
+		CoverURL: "https://example.com/attachments/contents/123/cover.png",
+	}
+
+	attachments := []entity.CreateAttachmentArgs{
+		{
+			URL:      "https://example.com/attachments/contents/123/video.mp4",
+			CoverURL: "https://example.com/attachments/contents/123/video-cover.png",
+			Type:     entity.AttachmentTypeVideo,
+		},
+	}
+
+	if err := s.CreateContent(ctx, content, attachments); err != nil {
+		t.Fatalf("CreateContent() error = %v", err)
+	}
+
+	var saved entity.Content
+	if err := s.db.Preload("Attachments").Where("id = ?", content.ID).First(&saved).Error; err != nil {
+		t.Fatalf("load saved content: %v", err)
+	}
+
+	if saved.CoverURL != "/attachments/contents/123/cover.png" {
+		t.Fatalf("saved CoverURL = %q, want %q", saved.CoverURL, "/attachments/contents/123/cover.png")
+	}
+	if len(saved.Attachments) != 1 {
+		t.Fatalf("saved Attachments length = %d, want 1", len(saved.Attachments))
+	}
+	if saved.Attachments[0].URL != "/attachments/contents/123/video.mp4" {
+		t.Fatalf("saved attachment URL = %q, want %q", saved.Attachments[0].URL, "/attachments/contents/123/video.mp4")
+	}
+	if saved.Attachments[0].CoverURL != "/attachments/contents/123/video-cover.png" {
+		t.Fatalf("saved attachment CoverURL = %q, want %q", saved.Attachments[0].CoverURL, "/attachments/contents/123/video-cover.png")
 	}
 }
 
@@ -313,8 +366,8 @@ func TestService_UpdateContent_RefreshesGalleryCoverFromAttachments(t *testing.T
 		t.Fatalf("UpdateContent() error = %v", err)
 	}
 
-	if updated.CoverURL != "gallery/new-cover.jpg" {
-		t.Errorf("CoverURL = %q, want %q", updated.CoverURL, "gallery/new-cover.jpg")
+	if updated.CoverURL != "/attachments/gallery/new-cover.jpg" {
+		t.Errorf("CoverURL = %q, want %q", updated.CoverURL, "/attachments/gallery/new-cover.jpg")
 	}
 
 	listed, _, err := s.ListContents(ctx, entity.ListContentsArgs{Pagination: entity.Pagination{Limit: 10}})
@@ -324,8 +377,8 @@ func TestService_UpdateContent_RefreshesGalleryCoverFromAttachments(t *testing.T
 	if len(listed) != 1 {
 		t.Fatalf("len(listed) = %d, want 1", len(listed))
 	}
-	if listed[0].CoverURL != "gallery/new-cover.jpg" {
-		t.Errorf("listed CoverURL = %q, want %q", listed[0].CoverURL, "gallery/new-cover.jpg")
+	if listed[0].CoverURL != "/attachments/gallery/new-cover.jpg" {
+		t.Errorf("listed CoverURL = %q, want %q", listed[0].CoverURL, "/attachments/gallery/new-cover.jpg")
 	}
 }
 

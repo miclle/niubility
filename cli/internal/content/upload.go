@@ -81,22 +81,22 @@ func UploadAttachments(ctx context.Context, client *api.Client, article *Article
 
 	// Upload cover image
 	if article.CoverPath != "" {
-		key, _, err := uploader.UploadFile(ctx, article.CoverPath)
+		_, accessURL, err := uploader.UploadFile(ctx, article.CoverPath)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", clii18n.T("ContentUpload.Error.UploadCover", "failed to upload cover", nil), err)
 		}
-		coverURL = key
+		coverURL = accessURL
 		attachments = append(attachments, api.Attachment{
 			Type:     "image",
 			Filename: filepath.Base(article.CoverPath),
-			URL:      key,
+			URL:      accessURL,
 			IsCover:  true,
 		})
 	}
 
 	// Upload body images and track URL mapping
 	for _, imgPath := range article.ImagePaths {
-		key, accessURL, err := uploader.UploadFile(ctx, imgPath)
+		_, accessURL, err := uploader.UploadFile(ctx, imgPath)
 		if err != nil {
 			return nil, fmt.Errorf("%s %s: %w", clii18n.T("ContentUpload.Error.UploadImage", "failed to upload image", nil), imgPath, err)
 		}
@@ -104,20 +104,20 @@ func UploadAttachments(ctx context.Context, client *api.Client, article *Article
 		attachments = append(attachments, api.Attachment{
 			Type:     "image",
 			Filename: filepath.Base(imgPath),
-			URL:      key,
+			URL:      accessURL,
 		})
 	}
 
 	// Upload document attachments
 	for _, attPath := range article.Attachments {
-		key, _, err := uploader.UploadFile(ctx, attPath)
+		_, accessURL, err := uploader.UploadFile(ctx, attPath)
 		if err != nil {
 			return nil, fmt.Errorf("%s %s: %w", clii18n.T("ContentUpload.Error.UploadAttachment", "failed to upload attachment", nil), attPath, err)
 		}
 		attachments = append(attachments, api.Attachment{
 			Type:     "document",
 			Filename: filepath.Base(attPath),
-			URL:      key,
+			URL:      accessURL,
 		})
 	}
 

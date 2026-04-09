@@ -77,6 +77,11 @@ func TestContent_ResolveAssetURLs(t *testing.T) {
 			wantCoverURL: "https://example.com/cover.png",
 		},
 		{
+			name:         "legacy attachment route URL normalized",
+			content:      &Content{CoverURL: "https://example.com/attachments/contents/123/cover.png"},
+			wantCoverURL: "/attachments/contents/123/cover.png",
+		},
+		{
 			name:         "S3 key converted",
 			content:      &Content{CoverURL: "contents/123/cover.png"},
 			wantCoverURL: "/attachments/contents/123/cover.png",
