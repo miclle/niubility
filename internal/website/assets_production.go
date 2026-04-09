@@ -23,6 +23,11 @@ var embedFS embed.FS
 
 var assets []string
 
+const (
+	htmlCacheControl  = "no-cache"
+	assetCacheControl = "public, max-age=31536000, immutable"
+)
+
 func init() {
 	entries, err := embedFS.ReadDir("build")
 	if err != nil {
@@ -49,10 +54,10 @@ func EmbedAssets(router *fox.Engine) {
 		Data:     map[string]string{},
 	}
 
-	registerPageRoute(router, "/", homepage)
+	registerPageRoute(router, "/", homepage, htmlCacheControl)
 
 	// handle the assets files
-	router.StaticFS("/assets", StaticFS("build/assets"))
+	registerAssetRoutes(router)
 
 	for _, asset := range assets {
 		router.StaticFileFS(asset, path.Join("build", asset), http.FS(embedFS))
@@ -71,6 +76,7 @@ func EmbedAssets(router *fox.Engine) {
 
 		file, err := embedFS.Open(filepath)
 		if errors.Is(err, fs.ErrNotExist) {
+			c.Header("Cache-Control", htmlCacheControl)
 			return homepage
 		}
 
@@ -86,13 +92,29 @@ func EmbedAssets(router *fox.Engine) {
 	})
 }
 
-func registerPageRoute(router *fox.Engine, route string, response any) {
+func registerPageRoute(router *fox.Engine, route string, response any, cacheControl string) {
 	handler := func(c *fox.Context) any {
+		if cacheControl != "" {
+			c.Header("Cache-Control", cacheControl)
+		}
 		return response
 	}
 
 	router.GET(route, handler)
 	router.HEAD(route, handler)
+}
+
+func registerAssetRoutes(router *fox.Engine) {
+	fs := StaticFS("build/assets")
+	fileServer := http.StripPrefix("/assets", http.FileServer(fs))
+
+	handler := func(c *fox.Context) {
+		c.Header("Cache-Control", assetCacheControl)
+		fileServer.ServeHTTP(c.Writer, c.Request)
+	}
+
+	router.GET("/assets/*filepath", handler)
+	router.HEAD("/assets/*filepath", handler)
 }
 
 // resource is an interface that provides static file.

@@ -40,6 +40,10 @@ func TestEmbedAssetsSupportsHeadForPages(t *testing.T) {
 			if !strings.HasPrefix(contentType, "text/html") {
 				t.Fatalf("HEAD %s content-type = %q, want text/html", tt.path, contentType)
 			}
+
+			if cacheControl := rec.Header().Get("Cache-Control"); cacheControl != htmlCacheControl {
+				t.Fatalf("HEAD %s cache-control = %q, want %q", tt.path, cacheControl, htmlCacheControl)
+			}
 		})
 	}
 }
@@ -107,6 +111,10 @@ func TestEmbedAssetsSupportsHeadForStaticAssets(t *testing.T) {
 			contentType := rec.Header().Get("Content-Type")
 			if !strings.HasPrefix(contentType, tt.wantContentPrefix) {
 				t.Fatalf("HEAD %s content-type = %q, want prefix %q", tt.path, contentType, tt.wantContentPrefix)
+			}
+
+			if cacheControl := rec.Header().Get("Cache-Control"); cacheControl != assetCacheControl {
+				t.Fatalf("HEAD %s cache-control = %q, want %q", tt.path, cacheControl, assetCacheControl)
 			}
 		})
 	}
