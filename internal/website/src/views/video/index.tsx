@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, type MouseEvent } from 'react'
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ThumbsUp, MessageCircle, Pencil, Bookmark, Download, FileText } from 'lucide-react'
 import dayjs from 'dayjs'
@@ -90,6 +90,12 @@ function VideoDetail() {
   const currentVideo = videoItems[currentVideoIndex]
   const speakerDisplayName = getVideoSpeakerDisplayName(content)
 
+  const handleDescriptionClick = (event: MouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement | null
+    if (descExpanded || target?.closest('a')) return
+    setDescExpanded(true)
+  }
+
   const renderActions = () => (
     <div className="flex items-center justify-between pb-4" style={{ borderBottom: '1px solid #e5e5e5' }}>
       <div className="flex items-center gap-3">
@@ -159,7 +165,7 @@ function VideoDetail() {
         )}
       </div>
       {content.summary && (
-        <div className={`whitespace-pre-wrap ${descExpanded ? '' : 'line-clamp-2'}`} style={{ cursor: 'pointer' }} onClick={() => setDescExpanded(!descExpanded)}>
+        <div className={`whitespace-pre-wrap ${descExpanded ? '' : 'line-clamp-2'}`} style={{ cursor: descExpanded ? 'auto' : 'pointer' }} onClick={handleDescriptionClick}>
           {content.summary}
         </div>
       )}

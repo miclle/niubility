@@ -30,3 +30,40 @@ export function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
+
+export function isExternalLink(href: string): boolean {
+  if (!href) return false
+
+  if (href.startsWith('//')) return true
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(href)) return false
+
+  if (typeof window === 'undefined') return /^https?:/i.test(href)
+
+  try {
+    const url = new URL(href, window.location.origin)
+    return url.origin !== window.location.origin
+  } catch {
+    return false
+  }
+}
+
+export function enhanceExternalLinks(html: string): string {
+  if (!html || typeof window === 'undefined') return html
+
+  try {
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(html, 'text/html')
+
+    doc.querySelectorAll('a[href]').forEach((anchor) => {
+      const href = anchor.getAttribute('href') || ''
+      if (!isExternalLink(href)) return
+
+      anchor.setAttribute('target', '_blank')
+      anchor.setAttribute('rel', 'noopener noreferrer')
+    })
+
+    return doc.body.innerHTML
+  } catch {
+    return html
+  }
+}

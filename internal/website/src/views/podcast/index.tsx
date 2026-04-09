@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, type MouseEvent } from 'react'
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ThumbsUp, MessageCircle, Pencil, Bookmark, Mic } from 'lucide-react'
 import dayjs from 'dayjs'
@@ -9,7 +9,7 @@ import { getContent, listContents, toggleLike, favoriteContent } from 'src/api/c
 import { fileURL } from 'src/api/upload'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
 import { getContentCover } from 'src/lib/content-assets'
-import { formatFileSize } from 'src/lib/utils'
+import { enhanceExternalLinks, formatFileSize } from 'src/lib/utils'
 import { useAppContext } from 'src/context/app'
 import { AudioPlayer } from 'src/components/AudioPlayer'
 import CommentSection from 'src/components/CommentSection'
@@ -103,7 +103,7 @@ function PodcastDetail() {
   const speakerUsername = content.speaker?.username || content.author?.username || ''
 
   const summaryHtml = content.summary
-    ? marked.parse(content.summary, { async: false }) as string
+    ? enhanceExternalLinks(marked.parse(content.summary, { async: false }) as string)
     : ''
 
   const handleLike = () => {
@@ -120,6 +120,12 @@ function PodcastDetail() {
       setFavorited(res.data.favorited ?? false)
       setFavoriteCount(res.data.favorite_count ?? 0)
     })
+  }
+
+  const handleDescriptionClick = (event: MouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement | null
+    if (descExpanded || target?.closest('a')) return
+    setDescExpanded(true)
   }
 
   const renderRelatedPodcasts = () => {
@@ -274,8 +280,8 @@ function PodcastDetail() {
           {summaryHtml && (
             <div
               className={`rich-content prose prose-sm max-w-none ${descExpanded ? '' : 'line-clamp-3'}`}
-              style={{ color: '#292929', lineHeight: 1.75, cursor: 'pointer' }}
-              onClick={() => setDescExpanded(!descExpanded)}
+              style={{ color: '#292929', lineHeight: 1.75, cursor: descExpanded ? 'auto' : 'pointer' }}
+              onClick={handleDescriptionClick}
               dangerouslySetInnerHTML={{ __html: summaryHtml }}
             />
           )}
