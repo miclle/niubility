@@ -33,6 +33,7 @@ func TestService_GetUserByUsername(t *testing.T) {
 	}
 	if got == nil {
 		t.Fatal("GetUserByUsername() returned nil")
+		return
 	}
 	if got.Username != "testuser" {
 		t.Errorf("Username = %q, want %q", got.Username, "testuser")
@@ -71,6 +72,7 @@ func TestService_GetUserByID(t *testing.T) {
 	}
 	if got == nil {
 		t.Fatal("GetUserByID() returned nil")
+		return
 	}
 	if got.ID != user.ID {
 		t.Errorf("ID = %q, want %q", got.ID, user.ID)
@@ -113,6 +115,7 @@ func TestService_CreateUser(t *testing.T) {
 	}
 	if got == nil {
 		t.Fatal("User was not created")
+		return
 	}
 }
 
@@ -139,6 +142,7 @@ func TestService_CreateManagedUser(t *testing.T) {
 
 	if user == nil {
 		t.Fatal("CreateManagedUser() returned nil")
+		return
 	}
 	if user.ID == "" {
 		t.Error("CreateManagedUser() should set user.ID")

@@ -19,6 +19,7 @@ func TestService_InitSuperAdmin(t *testing.T) {
 	}
 	if user == nil {
 		t.Fatal("InitSuperAdmin() returned nil user")
+		return
 	}
 	if user.Username != "admin" {
 		t.Errorf("Username = %q, want %q", user.Username, "admin")
@@ -60,6 +61,7 @@ func TestService_RegisterUser(t *testing.T) {
 	}
 	if user == nil {
 		t.Fatal("RegisterUser() returned nil user")
+		return
 	}
 	if user.Username != "testuser" {
 		t.Errorf("Username = %q, want %q", user.Username, "testuser")

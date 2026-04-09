@@ -32,6 +32,7 @@ func TestService_CreateCategory(t *testing.T) {
 	}
 	if got == nil {
 		t.Fatal("Category was not created")
+		return
 	}
 	if got.Name != "Technology" {
 		t.Errorf("Name = %q, want %q", got.Name, "Technology")
@@ -75,6 +76,7 @@ func TestService_GetCategoryBySlug(t *testing.T) {
 	}
 	if got == nil {
 		t.Fatal("GetCategoryBySlug() returned nil")
+		return
 	}
 	if got.Slug != "test-cat" {
 		t.Errorf("Slug = %q, want %q", got.Slug, "test-cat")
@@ -111,6 +113,7 @@ func TestService_GetCategoryByID(t *testing.T) {
 	}
 	if got == nil {
 		t.Fatal("GetCategoryByID() returned nil")
+		return
 	}
 	if got.ID != category.ID {
 		t.Errorf("ID = %q, want %q", got.ID, category.ID)

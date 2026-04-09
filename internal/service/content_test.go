@@ -114,6 +114,7 @@ func TestService_GetContentByID(t *testing.T) {
 	}
 	if got == nil {
 		t.Fatal("GetContentByID() returned nil")
+		return
 	}
 	if got.ID != content.ID {
 		t.Errorf("ID = %q, want %q", got.ID, content.ID)

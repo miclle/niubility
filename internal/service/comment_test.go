@@ -76,6 +76,7 @@ func TestService_GetCommentByID(t *testing.T) {
 	}
 	if got == nil {
 		t.Fatal("GetCommentByID() returned nil")
+		return
 	}
 	if got.ID != comment.ID {
 		t.Errorf("ID = %q, want %q", got.ID, comment.ID)
