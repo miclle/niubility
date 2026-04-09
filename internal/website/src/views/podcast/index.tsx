@@ -122,6 +122,54 @@ function PodcastDetail() {
     })
   }
 
+  const renderRelatedPodcasts = () => {
+    if (relatedContents.length === 0) return null
+
+    return (
+      <>
+        <div className="text-sm font-medium mb-3" style={{ color: '#0f0f0f' }}>{t('content:relatedPodcasts')}</div>
+        <div className="space-y-3">
+          {relatedContents.map((related) => (
+            <Link
+              key={related.id}
+              to={contentDetailPath(related)}
+              className="flex gap-2 no-underline group"
+              style={{ color: 'inherit' }}
+            >
+              <div className="relative flex-shrink-0 rounded-lg overflow-hidden bg-zinc-100" style={{ width: 168, aspectRatio: '16/9' }}>
+                <img
+                  src={getContentCover(related, siteConfig) || ''}
+                  alt={related.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute bottom-1 right-1 px-1 rounded text-xs" style={{ background: 'rgba(0,0,0,0.7)', color: 'white' }}>
+                  {t('common:podcast')}
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-medium line-clamp-2 mb-1" style={{ color: '#0f0f0f' }}>{related.title}</h4>
+                <div className="text-xs" style={{ color: '#606060' }}>
+                  {related.speaker?.name || related.speaker_name || related.author?.name || t('common:unknownAuthor')}
+                </div>
+                <div className="text-xs" style={{ color: '#606060' }}>{dayjs(related.created_at).fromNow()}</div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </>
+    )
+  }
+
+  const renderSidebar = () => {
+    if (relatedContents.length === 0) return null
+
+    return (
+      <div className="hidden xl:block flex-shrink-0 w-[400px]">
+        {renderRelatedPodcasts()}
+      </div>
+    )
+  }
+
   return (
     <div className={`flex gap-6 p-6 ${theaterMode ? '' : 'justify-center'}`}>
       <div style={{ width: theaterMode ? '100%' : 'max(640px, min(calc((100vh - 180px) * 16 / 9), calc(100vw - 48px)))' }}>
@@ -284,41 +332,12 @@ function PodcastDetail() {
           <CommentSection contentID={content.id} commentCount={commentCount} onCommentCountChange={setCommentCount} />
         </div>
 
-        {/* Related Podcasts — only shown when results exist */}
-        {relatedContents.length > 0 && (
-          <div className="mt-12">
-            <h3 className="text-lg font-semibold mb-5" style={{ color: '#0f0f0f' }}>{t('content:relatedPodcasts')}</h3>
-            <div className="space-y-3">
-              {relatedContents.map((related) => (
-                <Link
-                  key={related.id}
-                  to={contentDetailPath(related)}
-                  className="flex gap-3 no-underline group"
-                  style={{ color: 'inherit' }}
-                >
-                  <div className="flex-shrink-0 rounded-xl overflow-hidden bg-zinc-100" style={{ width: 64, height: 64 }}>
-                    <img
-                      src={getContentCover(related, siteConfig) || ''}
-                      alt={related.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0 py-0.5">
-                    <h4 className="text-sm font-medium line-clamp-2 mb-1" style={{ color: '#0f0f0f' }}>{related.title}</h4>
-                    <div className="text-xs" style={{ color: '#606060' }}>
-                      {(related.speaker?.name || related.speaker_name || related.author?.name) && (
-                        <span>{related.speaker?.name || related.speaker_name || related.author?.name} · </span>
-                      )}
-                      <span>{dayjs(related.created_at).format('YYYY-MM-DD')}</span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
+        <div className="xl:hidden mt-12">
+          {renderRelatedPodcasts()}
+        </div>
 
       </div>
+      {!theaterMode && renderSidebar()}
     </div>
   )
 }
