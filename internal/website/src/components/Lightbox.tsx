@@ -326,7 +326,11 @@ function Lightbox({
   const handleDownload = useCallback(() => {
     const attachment = items[current]
     if (!attachment) return
-    const downloadURL = fileDownloadURL(stripImageStyle(attachment.url), attachment.filename || attachment.title || '')
+    const originalSourceURL = stripImageStyle(attachment.url)
+    const previewSourceURL = attachment.type === 'video'
+      ? fileURL(originalSourceURL)
+      : fileURL(originalSourceURL, siteConfig?.gallery_original_image_style)
+    const downloadURL = fileDownloadURL(previewSourceURL, attachment.filename || attachment.title || '')
     const name = attachment.filename || attachment.title || attachment.url.split('/').pop() || 'download'
     if (!downloadURL) return
     fetch(downloadURL)
@@ -345,7 +349,7 @@ function Lightbox({
       .catch(() => {
         window.location.assign(downloadURL)
       })
-  }, [current, items])
+  }, [current, items, siteConfig?.gallery_original_image_style])
 
   if (!open || items.length === 0) return null
 
