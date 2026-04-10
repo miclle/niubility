@@ -105,6 +105,7 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	admin.GET("/backups/database", ctrl.ListDatabaseBackups)
 	admin.POST("/backups/database", ctrl.StartDatabaseBackup)
 	admin.GET("/backups/database/:id/download", ctrl.GetDatabaseBackupDownloadURL)
+	admin.GET("/nodes", ctrl.ListServiceNodes)
 	admin.POST("/upload/site-resource", ctrl.GetSiteResourcePresignedURL)
 	admin.POST("/sync-wechat", ctrl.SyncFromWechat)
 	admin.GET("/departments", ctrl.ListDepartments)

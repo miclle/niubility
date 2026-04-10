@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/fox-gonic/fox/logger"
 	"gorm.io/driver/mysql"
@@ -28,14 +29,16 @@ type Service struct {
 	Wechat    *workwx.WorkwxApp
 	Encryptor *textencrypt.Encryptor
 
-	dialect        string // "postgres" or "mysql"
-	dsn            string
-	jwtSecret      string
-	wechatMutex    sync.RWMutex
-	backupMutex    sync.Mutex
-	commandRunner  func(ctx context.Context, name string, args []string, env []string, stdout, stderr io.Writer) error
-	backupUploader func(ctx context.Context, localPath, objectKey string) error
-	asyncRunner    func(fn func())
+	dialect              string // "postgres" or "mysql"
+	dsn                  string
+	jwtSecret            string
+	nodeHeartbeatTimeout time.Duration
+	wechatMutex          sync.RWMutex
+	backupMutex          sync.Mutex
+	commandRunner        func(ctx context.Context, name string, args []string, env []string, stdout, stderr io.Writer) error
+	backupUploader       func(ctx context.Context, localPath, objectKey string) error
+	asyncRunner          func(fn func())
+	now                  func() time.Time
 }
 
 // New creates a new Service instance with the given driver and DSN.
@@ -60,7 +63,7 @@ func New(ctx context.Context, driver, dsn string) (*Service, error) {
 		return nil, fmt.Errorf("connect to database: %w", err)
 	}
 
-	if err := db.WithContext(ctx).AutoMigrate(&entity.User{}, &entity.UserSession{}, &entity.Content{}, &entity.Attachment{}, &entity.Setting{}, &entity.Department{}, &entity.Comment{}, &entity.Like{}, &entity.Category{}, &entity.Follow{}, &entity.Favorite{}, &entity.BackupRecord{}); err != nil {
+	if err := db.WithContext(ctx).AutoMigrate(&entity.User{}, &entity.UserSession{}, &entity.Content{}, &entity.Attachment{}, &entity.Setting{}, &entity.Department{}, &entity.Comment{}, &entity.Like{}, &entity.Category{}, &entity.Follow{}, &entity.Favorite{}, &entity.BackupRecord{}, &entity.ServiceNode{}); err != nil {
 		return nil, fmt.Errorf("auto migrate: %w", err)
 	}
 
@@ -72,9 +75,10 @@ func New(ctx context.Context, driver, dsn string) (*Service, error) {
 	}
 
 	svc := &Service{
-		db:      db,
-		dialect: driver,
-		dsn:     dsn,
+		db:                   db,
+		dialect:              driver,
+		dsn:                  dsn,
+		nodeHeartbeatTimeout: 90 * time.Second,
 		commandRunner: func(ctx context.Context, name string, args []string, env []string, stdout, stderr io.Writer) error {
 			cmd := exec.CommandContext(ctx, name, args...)
 			cmd.Env = append(cmd.Environ(), env...)
@@ -85,6 +89,7 @@ func New(ctx context.Context, driver, dsn string) (*Service, error) {
 		asyncRunner: func(fn func()) {
 			go fn()
 		},
+		now: time.Now,
 	}
 	svc.backupUploader = svc.uploadBackupFile
 

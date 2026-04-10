@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/miclle/niubility/internal/entity"
 	"gorm.io/driver/sqlite"
@@ -32,6 +33,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		&entity.Follow{},
 		&entity.Favorite{},
 		&entity.BackupRecord{},
+		&entity.ServiceNode{},
 	); err != nil {
 		t.Fatalf("Failed to migrate test database: %v", err)
 	}
@@ -44,8 +46,10 @@ func setupTestService(t *testing.T) *Service {
 	t.Helper()
 	db := setupTestDB(t)
 	return &Service{
-		db:      db,
-		dialect: "sqlite",
+		db:                   db,
+		dialect:              "sqlite",
+		nodeHeartbeatTimeout: 90 * time.Second,
+		now:                  time.Now,
 		commandRunner: func(ctx context.Context, name string, args []string, env []string, stdout, stderr io.Writer) error {
 			return nil
 		},
