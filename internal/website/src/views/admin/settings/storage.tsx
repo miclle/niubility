@@ -22,6 +22,7 @@ function SettingsStorage() {
   const [deliveryForm, setDeliveryForm] = useState({ provider: 'disabled', domain: '', private_enabled: 'true', url_ttl_seconds: '3600', style_mode: 'auto' })
   const [videoCardImageStyle, setVideoCardImageStyle] = useState('')
   const [galleryCardImageStyle, setGalleryCardImageStyle] = useState('')
+  const [galleryOriginalImageStyle, setGalleryOriginalImageStyle] = useState('')
   const [galleryDetailImageStyle, setGalleryDetailImageStyle] = useState('')
   const [avatarImageStyle, setAvatarImageStyle] = useState('')
 
@@ -53,6 +54,7 @@ function SettingsStorage() {
     setDeliveryForm(delivery)
     setVideoCardImageStyle(settingsMap['delivery.video_card_image_style'] || '')
     setGalleryCardImageStyle(settingsMap['delivery.gallery_card_image_style'] || settingsMap['site.gallery_card_image_style'] || '')
+    setGalleryOriginalImageStyle(settingsMap['delivery.gallery_original_image_style'] || '')
     setGalleryDetailImageStyle(settingsMap['delivery.gallery_detail_image_style'] || settingsMap['site.gallery_detail_image_style'] || '')
     setAvatarImageStyle(settingsMap['delivery.avatar_image_style'] || settingsMap['site.avatar_image_style'] || '')
   }, [loading, settingsMap])
@@ -86,6 +88,7 @@ function SettingsStorage() {
     imageStyleSave.save({
       'delivery.video_card_image_style': videoCardImageStyle,
       'delivery.gallery_card_image_style': galleryCardImageStyle,
+      'delivery.gallery_original_image_style': galleryOriginalImageStyle,
       'delivery.gallery_detail_image_style': galleryDetailImageStyle,
       'delivery.avatar_image_style': avatarImageStyle,
     }).then((saved) => {
@@ -94,6 +97,7 @@ function SettingsStorage() {
         ...siteConfig,
         video_card_image_style: videoCardImageStyle.trim(),
         gallery_card_image_style: galleryCardImageStyle.trim(),
+        gallery_original_image_style: galleryOriginalImageStyle.trim(),
         gallery_detail_image_style: galleryDetailImageStyle.trim(),
         avatar_image_style: avatarImageStyle.trim(),
       } : null)
@@ -324,6 +328,17 @@ function SettingsStorage() {
               onChange={(e) => setGalleryCardImageStyle(e.target.value)}
             />
             <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:galleryCardImageStyleExample')}</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+              {t('admin:galleryOriginalImageStyle')}
+            </label>
+            <Input
+              placeholder={t('admin:galleryOriginalImageStylePlaceholder')}
+              value={galleryOriginalImageStyle}
+              onChange={(e) => setGalleryOriginalImageStyle(e.target.value)}
+            />
+            <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:galleryOriginalImageStyleExample')}</p>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>

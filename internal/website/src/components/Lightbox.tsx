@@ -4,7 +4,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut, Share2
 import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'
 
-import { fileDownloadURL, fileURL } from 'src/api/upload'
+import { fileDownloadURL, fileURL, stripImageStyle } from 'src/api/upload'
 import { toggleLike } from 'src/api/content'
 import CommentSection from 'src/components/CommentSection'
 import { useAppContext } from 'src/context/app'
@@ -36,8 +36,8 @@ const ZOOM_LEVELS = [1, 1.5, 2, 3]
 interface InfoPanelProps {
   attachment: Attachment
   isVideo: boolean
-  downloadURL: string
   filename: string
+  onDownload: () => void
   contentId?: string
   commentCount: number
   onCommentCountChange?: (count: number) => void
@@ -47,7 +47,7 @@ interface InfoPanelProps {
 }
 
 // InfoPanel renders the slide-in details panel for the lightbox.
-function InfoPanel({ attachment, isVideo, downloadURL, filename, contentId, commentCount, onCommentCountChange, onClose, open, width }: InfoPanelProps) {
+function InfoPanel({ attachment, isVideo, filename, onDownload, contentId, commentCount, onCommentCountChange, onClose, open, width }: InfoPanelProps) {
   const { t } = useTranslation('common')
   return (
     <div
@@ -94,13 +94,13 @@ function InfoPanel({ attachment, isVideo, downloadURL, filename, contentId, comm
           )}
           <div className="flex justify-between gap-4">
             <span>{t('common:filename')}</span>
-            <a
-              href={downloadURL}
-              download={filename}
+            <button
+              type="button"
+              onClick={onDownload}
               className="text-right text-gray-900 break-all underline underline-offset-4 transition-opacity hover:opacity-80"
             >
               {filename}
-            </a>
+            </button>
           </div>
           {isVideo && attachment.duration > 0 && (
             <div className="flex justify-between">
@@ -326,24 +326,34 @@ function Lightbox({
   const handleDownload = useCallback(() => {
     const attachment = items[current]
     if (!attachment) return
-    const downloadURL = fileDownloadURL(attachment.url, attachment.filename || attachment.title || '')
+    const downloadURL = fileDownloadURL(stripImageStyle(attachment.url), attachment.filename || attachment.title || '')
     const name = attachment.filename || attachment.title || attachment.url.split('/').pop() || 'download'
     if (!downloadURL) return
-    const link = document.createElement('a')
-    link.href = downloadURL
-    link.download = name
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    fetch(downloadURL)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Download failed: ${res.status}`)
+        const blob = await res.blob()
+        const objectURL = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = objectURL
+        link.download = name
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(objectURL)
+      })
+      .catch(() => {
+        window.location.assign(downloadURL)
+      })
   }, [current, items])
 
   if (!open || items.length === 0) return null
 
   const attachment = items[current]
-  const src = fileURL(attachment.url)
-  const originalDownloadURL = fileDownloadURL(attachment.url, attachment.filename || attachment.title || '')
-  const filename = attachment.filename || attachment.title || attachment.url.split('/').pop() || 'download'
+  const originalSourceURL = stripImageStyle(attachment.url)
   const isVideo = attachment.type === 'video'
+  const src = isVideo ? fileURL(originalSourceURL) : fileURL(originalSourceURL, siteConfig?.gallery_original_image_style)
+  const filename = attachment.filename || attachment.title || attachment.url.split('/').pop() || 'download'
   const isFavorited = likedAttachmentIds?.has(attachment.id) || false
 
   const THUMB_STRIP_H = items.length > 1 ? 80 : 0
@@ -444,8 +454,8 @@ function Lightbox({
       <InfoPanel
         attachment={attachment}
         isVideo={isVideo}
-        downloadURL={originalDownloadURL}
         filename={filename}
+        onDownload={handleDownload}
         contentId={contentId}
         commentCount={commentCount || 0}
         onCommentCountChange={onCommentCountChange}

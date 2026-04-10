@@ -29,9 +29,45 @@ function supportsImageStyle(url: string): boolean {
   return !(normalized.endsWith('.svg') || normalized.endsWith('.svgz'))
 }
 
+function stripNamedStyleSuffix(pathname: string): string {
+  return pathname.replace(/(\.(?:avif|bmp|gif|heic|heif|jpeg|jpg|png|svg|svgz|tif|tiff|webp))-[^/?#]+$/i, '$1')
+}
+
+function stripRawStyleQuery(queryString: string): string {
+  const normalized = queryString.trim()
+  if (!normalized) return ''
+
+  if (!normalized.includes('=')) {
+    return ''
+  }
+
+  const params = new URLSearchParams(normalized)
+  params.delete('style')
+
+  for (const key of Array.from(params.keys())) {
+    if (/^(imageView2|imageMogr2|watermark|format|thumb|crop|gravity)$/i.test(key)) {
+      params.delete(key)
+    }
+  }
+
+  return params.toString()
+}
+
+// stripImageStyle removes the style query parameter while preserving other query items.
+export function stripImageStyle(url: string): string {
+  if (!url) return ''
+
+  const [base, hash = ''] = url.split('#', 2)
+  const [pathname, queryString = ''] = base.split('?', 2)
+  const cleanPathname = stripNamedStyleSuffix(pathname)
+  const query = stripRawStyleQuery(queryString)
+  return `${cleanPathname}${query ? `?${query}` : ''}${hash ? `#${hash}` : ''}`
+}
+
 // appendImageStyle appends a normalized style parameter to a URL.
 export function appendImageStyle(url: string, styleFragment?: string): string {
   if (!url) return ''
+  url = stripImageStyle(url)
   const normalized = styleFragment?.trim().replace(/^[?&]+/, '') || ''
   if (!normalized) return url
   if (!supportsImageStyle(url)) return url

@@ -159,21 +159,22 @@ func TestService_GetSiteConfig(t *testing.T) {
 	ctx := context.Background()
 
 	if err := s.UpdateSettingsBatch(ctx, map[string]string{
-		entity.SettingSiteTitle:                        "Acme Learning",
-		entity.SettingSiteDescription:                  "内部学习平台",
-		entity.SettingSiteKeywords:                     "学习,知识库",
-		entity.SettingSiteVersion:                      "v2.3.1",
-		entity.SettingSiteFaviconURL:                   "favicon.png",
-		entity.SettingSiteLogoURL:                      "logo.svg",
-		entity.SettingSiteCopyright:                    "Acme",
-		entity.SettingSiteForceHTTPS:                   "true",
-		entity.SettingSiteFooter:                       "<span>footer</span>",
-		entity.SettingSiteVideoDefaultCoverURL:         "video-default.png",
-		entity.SettingSiteVideoSpeakerDefaultAvatarURL: "speaker-default.png",
-		entity.SettingDeliveryVideoCardImageStyle:      "imageView2/1/w/640/h/360",
-		entity.SettingDeliveryGalleryCardImageStyle:    "imageView2/1/w/480/h/270",
-		entity.SettingDeliveryGalleryDetailImageStyle:  "imageView2/2/w/720",
-		entity.SettingDeliveryAvatarImageStyle:         "imageView2/1/w/96/h/96",
+		entity.SettingSiteTitle:                         "Acme Learning",
+		entity.SettingSiteDescription:                   "内部学习平台",
+		entity.SettingSiteKeywords:                      "学习,知识库",
+		entity.SettingSiteVersion:                       "v2.3.1",
+		entity.SettingSiteFaviconURL:                    "favicon.png",
+		entity.SettingSiteLogoURL:                       "logo.svg",
+		entity.SettingSiteCopyright:                     "Acme",
+		entity.SettingSiteForceHTTPS:                    "true",
+		entity.SettingSiteFooter:                        "<span>footer</span>",
+		entity.SettingSiteVideoDefaultCoverURL:          "video-default.png",
+		entity.SettingSiteVideoSpeakerDefaultAvatarURL:  "speaker-default.png",
+		entity.SettingDeliveryVideoCardImageStyle:       "imageView2/1/w/640/h/360",
+		entity.SettingDeliveryGalleryCardImageStyle:     "imageView2/1/w/480/h/270",
+		entity.SettingDeliveryGalleryOriginalImageStyle: "imageView2/2/w/1920",
+		entity.SettingDeliveryGalleryDetailImageStyle:   "imageView2/2/w/720",
+		entity.SettingDeliveryAvatarImageStyle:          "imageView2/1/w/96/h/96",
 	}); err != nil {
 		t.Fatalf("UpdateSettingsBatch() error = %v", err)
 	}
@@ -203,6 +204,9 @@ func TestService_GetSiteConfig(t *testing.T) {
 	}
 	if cfg.GalleryCardImageStyle != "imageView2/1/w/480/h/270" {
 		t.Errorf("GalleryCardImageStyle = %q, want %q", cfg.GalleryCardImageStyle, "imageView2/1/w/480/h/270")
+	}
+	if cfg.GalleryOriginalImageStyle != "imageView2/2/w/1920" {
+		t.Errorf("GalleryOriginalImageStyle = %q, want %q", cfg.GalleryOriginalImageStyle, "imageView2/2/w/1920")
 	}
 	if cfg.GalleryDetailImageStyle != "imageView2/2/w/720" {
 		t.Errorf("GalleryDetailImageStyle = %q, want %q", cfg.GalleryDetailImageStyle, "imageView2/2/w/720")

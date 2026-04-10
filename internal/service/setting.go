@@ -305,6 +305,7 @@ func (s *Service) GetSiteConfig(ctx context.Context) (*entity.SiteConfig, error)
 	videoSpeakerDefaultAvatarURL, _ := s.GetSetting(ctx, entity.SettingSiteVideoSpeakerDefaultAvatarURL)
 	videoCardImageStyle, _ := s.GetSetting(ctx, entity.SettingDeliveryVideoCardImageStyle)
 	galleryCardImageStyle := s.getSettingWithFallback(ctx, entity.SettingDeliveryGalleryCardImageStyle, entity.SettingSiteGalleryCardImageStyle)
+	galleryOriginalImageStyle, _ := s.GetSetting(ctx, entity.SettingDeliveryGalleryOriginalImageStyle)
 	galleryDetailImageStyle := s.getSettingWithFallback(ctx, entity.SettingDeliveryGalleryDetailImageStyle, entity.SettingSiteGalleryDetailImageStyle)
 	avatarImageStyle := s.getSettingWithFallback(ctx, entity.SettingDeliveryAvatarImageStyle, entity.SettingSiteAvatarImageStyle)
 
@@ -322,6 +323,7 @@ func (s *Service) GetSiteConfig(ctx context.Context) (*entity.SiteConfig, error)
 		VideoSpeakerDefaultAvatarURL: videoSpeakerDefaultAvatarURL,
 		VideoCardImageStyle:          videoCardImageStyle,
 		GalleryCardImageStyle:        galleryCardImageStyle,
+		GalleryOriginalImageStyle:    galleryOriginalImageStyle,
 		GalleryDetailImageStyle:      galleryDetailImageStyle,
 		AvatarImageStyle:             avatarImageStyle,
 	}, nil

@@ -129,6 +129,8 @@ const (
 	SettingDeliveryVideoCardImageStyle = "delivery.video_card_image_style"
 	// SettingDeliveryGalleryCardImageStyle is the image style fragment for gallery cover cards.
 	SettingDeliveryGalleryCardImageStyle = "delivery.gallery_card_image_style"
+	// SettingDeliveryGalleryOriginalImageStyle is the image style fragment for gallery lightbox originals.
+	SettingDeliveryGalleryOriginalImageStyle = "delivery.gallery_original_image_style"
 	// SettingDeliveryGalleryDetailImageStyle is the image style fragment for gallery detail image lists.
 	SettingDeliveryGalleryDetailImageStyle = "delivery.gallery_detail_image_style"
 	// SettingDeliveryAvatarImageStyle is the image style fragment for avatar rendering.
@@ -158,6 +160,7 @@ type SiteConfig struct {
 	VideoSpeakerDefaultAvatarURL string `json:"video_speaker_default_avatar_url"`
 	VideoCardImageStyle          string `json:"video_card_image_style"`
 	GalleryCardImageStyle        string `json:"gallery_card_image_style"`
+	GalleryOriginalImageStyle    string `json:"gallery_original_image_style"`
 	GalleryDetailImageStyle      string `json:"gallery_detail_image_style"`
 	AvatarImageStyle             string `json:"avatar_image_style"`
 }
