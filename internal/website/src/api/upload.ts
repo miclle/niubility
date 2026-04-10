@@ -22,11 +22,19 @@ export function getSiteResourcePresignedURL(filename: string, contentType: strin
   return client.post<PresignResponse>('/admin/upload/site-resource', { filename, content_type: contentType })
 }
 
+function supportsImageStyle(url: string): boolean {
+  const [base] = url.split('#', 1)
+  const [pathname] = base.split('?', 1)
+  const normalized = pathname.toLowerCase()
+  return !(normalized.endsWith('.svg') || normalized.endsWith('.svgz'))
+}
+
 // appendImageStyle appends a normalized style parameter to a URL.
 export function appendImageStyle(url: string, styleFragment?: string): string {
   if (!url) return ''
   const normalized = styleFragment?.trim().replace(/^[?&]+/, '') || ''
   if (!normalized) return url
+  if (!supportsImageStyle(url)) return url
 
   const [base, hash = ''] = url.split('#', 2)
   const [pathname, queryString = ''] = base.split('?', 2)

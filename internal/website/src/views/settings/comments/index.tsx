@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 
 import { useAppContext } from 'src/context/app'
 import { listMyComments } from 'src/api/content'
-import { getContentCover } from 'src/lib/content-assets'
+import { getStyledContentCardCover } from 'src/lib/content-assets'
 import { contentDetailPath } from 'src/lib/content-url'
 import { useIntersection } from 'src/hooks/use-intersection'
 
@@ -67,9 +67,10 @@ function MyComments() {
                   <div className="h-[68px] w-[120px] shrink-0 overflow-hidden rounded-lg bg-[#f5f5f5]">
                     <NavLink to={contentDetailPath(comment.content)} className="block h-full w-full no-underline">
                       <img
-                        src={getContentCover(comment.content, siteConfig)}
+                        src={getStyledContentCardCover(comment.content, siteConfig)}
                         alt={comment.content.title}
                         className="h-full w-full object-cover"
+                        loading="lazy"
                       />
                     </NavLink>
                   </div>

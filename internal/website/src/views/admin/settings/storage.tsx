@@ -19,7 +19,8 @@ function SettingsStorage() {
 
   const [hasExistingS3Secret, setHasExistingS3Secret] = useState(false)
   const [s3Form, setS3Form] = useState({ endpoint: '', region: '', bucket: '', access_key: '', secret_key: '', public_url: '', cors_origin: '' })
-  const [deliveryForm, setDeliveryForm] = useState({ provider: 'disabled', domain: '', private_enabled: 'true', url_ttl_seconds: '3600' })
+  const [deliveryForm, setDeliveryForm] = useState({ provider: 'disabled', domain: '', private_enabled: 'true', url_ttl_seconds: '3600', style_mode: 'auto' })
+  const [videoCardImageStyle, setVideoCardImageStyle] = useState('')
   const [galleryCardImageStyle, setGalleryCardImageStyle] = useState('')
   const [galleryDetailImageStyle, setGalleryDetailImageStyle] = useState('')
   const [avatarImageStyle, setAvatarImageStyle] = useState('')
@@ -47,8 +48,10 @@ function SettingsStorage() {
       domain: settingsMap['delivery.domain'] || '',
       private_enabled: settingsMap['delivery.private_enabled'] || 'true',
       url_ttl_seconds: settingsMap['delivery.url_ttl_seconds'] || '3600',
+      style_mode: settingsMap['delivery.style_mode'] || 'auto',
     }
     setDeliveryForm(delivery)
+    setVideoCardImageStyle(settingsMap['delivery.video_card_image_style'] || '')
     setGalleryCardImageStyle(settingsMap['delivery.gallery_card_image_style'] || settingsMap['site.gallery_card_image_style'] || '')
     setGalleryDetailImageStyle(settingsMap['delivery.gallery_detail_image_style'] || settingsMap['site.gallery_detail_image_style'] || '')
     setAvatarImageStyle(settingsMap['delivery.avatar_image_style'] || settingsMap['site.avatar_image_style'] || '')
@@ -75,11 +78,13 @@ function SettingsStorage() {
       'delivery.domain': deliveryForm.domain,
       'delivery.private_enabled': deliveryForm.private_enabled,
       'delivery.url_ttl_seconds': deliveryForm.url_ttl_seconds,
+      'delivery.style_mode': deliveryForm.style_mode,
     })
   }
 
   const handleSaveImageStyles = () => {
     imageStyleSave.save({
+      'delivery.video_card_image_style': videoCardImageStyle,
       'delivery.gallery_card_image_style': galleryCardImageStyle,
       'delivery.gallery_detail_image_style': galleryDetailImageStyle,
       'delivery.avatar_image_style': avatarImageStyle,
@@ -87,6 +92,7 @@ function SettingsStorage() {
       if (!saved) return
       setSiteConfig(siteConfig ? {
         ...siteConfig,
+        video_card_image_style: videoCardImageStyle.trim(),
         gallery_card_image_style: galleryCardImageStyle.trim(),
         gallery_detail_image_style: galleryDetailImageStyle.trim(),
         avatar_image_style: avatarImageStyle.trim(),
@@ -253,6 +259,31 @@ function SettingsStorage() {
               <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:urlTTLSecondsHelp')}</p>
             </div>
           </div>
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:styleMode')}</label>
+            <Select
+              value={deliveryForm.style_mode}
+              onValueChange={(value) => value && setDeliveryForm({ ...deliveryForm, style_mode: value })}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue>
+                  <span>
+                    {deliveryForm.style_mode === 'path_suffix'
+                      ? t('admin:styleModePathSuffix')
+                      : deliveryForm.style_mode === 'query'
+                        ? t('admin:styleModeQuery')
+                        : t('admin:styleModeAuto')}
+                  </span>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">{t('admin:styleModeAuto')}</SelectItem>
+                <SelectItem value="query">{t('admin:styleModeQuery')}</SelectItem>
+                <SelectItem value="path_suffix">{t('admin:styleModePathSuffix')}</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:styleModeHelp')}</p>
+          </div>
         </div>
         <p className="mt-4 text-xs" style={{ color: '#606060' }}>
           {t('admin:privateDistributionNote')}
@@ -272,6 +303,17 @@ function SettingsStorage() {
         <SettingsFeedback success={imageStyleSave.success} error={imageStyleSave.error} />
 
         <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+              {t('admin:videoCardImageStyle')}
+            </label>
+            <Input
+              placeholder={t('admin:videoCardImageStylePlaceholder')}
+              value={videoCardImageStyle}
+              onChange={(e) => setVideoCardImageStyle(e.target.value)}
+            />
+            <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:videoCardImageStyleExample')}</p>
+          </div>
           <div>
             <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
               {t('admin:galleryCardImageStyle')}

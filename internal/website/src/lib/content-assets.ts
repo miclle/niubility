@@ -33,6 +33,14 @@ export function getContentCover(content: Content, siteConfig: SiteConfig | null)
   return getDefaultContentCover(content.type, siteConfig)
 }
 
+// getStyledContentCardCover applies the configured list/card image style to content covers.
+export function getStyledContentCardCover(content: Content, siteConfig: SiteConfig | null): string {
+  const styleFragment = content.type === 'video'
+    ? siteConfig?.video_card_image_style
+    : siteConfig?.gallery_card_image_style
+  return appendImageStyle(getContentCover(content, siteConfig), styleFragment)
+}
+
 // getSpeakerDisplayName returns the best available speaker label for a content item.
 // Optionally accepts a translator function to return a translated fallback.
 export function getSpeakerDisplayName(content: Content, unknownAuthor?: string): string {

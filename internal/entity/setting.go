@@ -86,6 +86,8 @@ const (
 	SettingDeliveryPrivateEnabled = "delivery.private_enabled"
 	// SettingDeliveryURLTTLSeconds controls generated delivery URL validity in seconds.
 	SettingDeliveryURLTTLSeconds = "delivery.url_ttl_seconds"
+	// SettingDeliveryStyleMode controls how image styles are appended to delivery URLs.
+	SettingDeliveryStyleMode = "delivery.style_mode"
 )
 
 // Setting key constants for site configuration.
@@ -123,6 +125,8 @@ const (
 
 // Setting key constants for asset style configuration.
 const (
+	// SettingDeliveryVideoCardImageStyle is the image style fragment for video cover cards.
+	SettingDeliveryVideoCardImageStyle = "delivery.video_card_image_style"
 	// SettingDeliveryGalleryCardImageStyle is the image style fragment for gallery cover cards.
 	SettingDeliveryGalleryCardImageStyle = "delivery.gallery_card_image_style"
 	// SettingDeliveryGalleryDetailImageStyle is the image style fragment for gallery detail image lists.
@@ -152,6 +156,7 @@ type SiteConfig struct {
 	Footer                       string `json:"footer"`
 	VideoDefaultCoverURL         string `json:"video_default_cover_url"`
 	VideoSpeakerDefaultAvatarURL string `json:"video_speaker_default_avatar_url"`
+	VideoCardImageStyle          string `json:"video_card_image_style"`
 	GalleryCardImageStyle        string `json:"gallery_card_image_style"`
 	GalleryDetailImageStyle      string `json:"gallery_detail_image_style"`
 	AvatarImageStyle             string `json:"avatar_image_style"`
@@ -203,6 +208,7 @@ type DeliveryConfig struct {
 	Domain         string
 	PrivateEnabled bool
 	URLTTLSeconds  int
+	StyleMode      string
 }
 
 // BackupConfig represents the database backup behavior configuration extracted from settings.

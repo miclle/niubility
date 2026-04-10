@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 
 import { useAppContext } from 'src/context/app'
 import { listContents, updateContent, deleteContent } from 'src/api/content'
-import { getContentCover } from 'src/lib/content-assets'
+import { getStyledContentCardCover } from 'src/lib/content-assets'
 import { contentDetailPath, contentEditPath, contentNewPath } from 'src/lib/content-url'
 import { toPlainTextPreview } from 'src/lib/utils'
 import { useIntersection } from 'src/hooks/use-intersection'
@@ -187,9 +187,10 @@ function MyContents() {
                       <div className="flex items-start gap-5">
                         <div className="mt-0.5 h-24 w-[168px] shrink-0 overflow-hidden rounded-2xl bg-[#f5f5f5]">
                           <img
-                            src={getContentCover(content, siteConfig)}
+                            src={getStyledContentCardCover(content, siteConfig)}
                             alt={content.title}
                             className="h-full w-full object-cover"
+                            loading="lazy"
                           />
                         </div>
 

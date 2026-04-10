@@ -127,6 +127,7 @@ func TestService_GetDeliveryConfig(t *testing.T) {
 		entity.SettingDeliveryDomain:         "https://img.example.com",
 		entity.SettingDeliveryPrivateEnabled: "true",
 		entity.SettingDeliveryURLTTLSeconds:  "7200",
+		entity.SettingDeliveryStyleMode:      "path_suffix",
 	}); err != nil {
 		t.Fatalf("UpdateSettingsBatch() error = %v", err)
 	}
@@ -148,6 +149,9 @@ func TestService_GetDeliveryConfig(t *testing.T) {
 	if cfg.URLTTLSeconds != 7200 {
 		t.Fatalf("URLTTLSeconds = %d, want %d", cfg.URLTTLSeconds, 7200)
 	}
+	if cfg.StyleMode != "path_suffix" {
+		t.Fatalf("StyleMode = %q, want %q", cfg.StyleMode, "path_suffix")
+	}
 }
 
 func TestService_GetSiteConfig(t *testing.T) {
@@ -166,6 +170,7 @@ func TestService_GetSiteConfig(t *testing.T) {
 		entity.SettingSiteFooter:                       "<span>footer</span>",
 		entity.SettingSiteVideoDefaultCoverURL:         "video-default.png",
 		entity.SettingSiteVideoSpeakerDefaultAvatarURL: "speaker-default.png",
+		entity.SettingDeliveryVideoCardImageStyle:      "imageView2/1/w/640/h/360",
 		entity.SettingDeliveryGalleryCardImageStyle:    "imageView2/1/w/480/h/270",
 		entity.SettingDeliveryGalleryDetailImageStyle:  "imageView2/2/w/720",
 		entity.SettingDeliveryAvatarImageStyle:         "imageView2/1/w/96/h/96",
@@ -192,6 +197,9 @@ func TestService_GetSiteConfig(t *testing.T) {
 	}
 	if cfg.VideoSpeakerDefaultAvatarURL != "speaker-default.png" {
 		t.Errorf("VideoSpeakerDefaultAvatarURL = %q, want %q", cfg.VideoSpeakerDefaultAvatarURL, "speaker-default.png")
+	}
+	if cfg.VideoCardImageStyle != "imageView2/1/w/640/h/360" {
+		t.Errorf("VideoCardImageStyle = %q, want %q", cfg.VideoCardImageStyle, "imageView2/1/w/640/h/360")
 	}
 	if cfg.GalleryCardImageStyle != "imageView2/1/w/480/h/270" {
 		t.Errorf("GalleryCardImageStyle = %q, want %q", cfg.GalleryCardImageStyle, "imageView2/1/w/480/h/270")

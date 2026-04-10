@@ -8,7 +8,7 @@ import { listContents } from 'src/api/content'
 import ContentCard from 'src/components/ContentCard'
 import { useIntersection } from 'src/hooks/use-intersection'
 import type { ContentType, ListContentsArgs } from 'src/types/content'
-import { getContentCover } from 'src/lib/content-assets'
+import { getStyledContentCardCover } from 'src/lib/content-assets'
 import { contentDetailPath } from 'src/lib/content-url'
 import { formatFileSize, toPlainTextPreview } from 'src/lib/utils'
 import { useAppContext } from 'src/context/app'
@@ -77,7 +77,7 @@ export default function ProfileContents() {
             <div className="flex flex-col gap-4 p-5 lg:flex-row">
               <Link to={contentDetailPath(content)} className="flex-shrink-0 no-underline" style={{ color: 'inherit' }}>
                 <div className="w-full rounded-2xl overflow-hidden bg-zinc-100 lg:w-56" style={{ aspectRatio: '16/9' }}>
-                  <img src={getContentCover(content, siteConfig)} alt={content.title} className="w-full h-full object-cover" />
+                  <img src={getStyledContentCardCover(content, siteConfig)} alt={content.title} className="w-full h-full object-cover" loading="lazy" />
                 </div>
               </Link>
               <div className="flex-1 min-w-0">

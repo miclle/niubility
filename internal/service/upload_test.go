@@ -86,44 +86,81 @@ func TestExtractStyleRequest(t *testing.T) {
 
 func TestBuildGenericAssetURL(t *testing.T) {
 	tests := []struct {
-		name     string
-		baseURL  string
-		rawQuery string
-		want     string
+		name      string
+		baseURL   string
+		rawQuery  string
+		styleMode string
+		want      string
 	}{
 		{
-			name:     "style parameter with raw query is expanded",
-			baseURL:  "https://cdn.example.com/attachments/demo.png",
-			rawQuery: "style=imageView2%2F1%2Fw%2F320%2Fh%2F180",
-			want:     "https://cdn.example.com/attachments/demo.png?imageView2/1/w/320/h/180",
+			name:      "style parameter with raw query is expanded",
+			baseURL:   "https://cdn.example.com/attachments/demo.png",
+			rawQuery:  "style=imageView2%2F1%2Fw%2F320%2Fh%2F180",
+			styleMode: "auto",
+			want:      "https://cdn.example.com/attachments/demo.png?imageView2/1/w/320/h/180",
 		},
 		{
-			name:     "named style is preserved as style parameter in generic mode",
-			baseURL:  "https://cdn.example.com/attachments/demo.png",
-			rawQuery: "style=gallery-card",
-			want:     "https://cdn.example.com/attachments/demo.png?style=gallery-card",
+			name:      "named style is preserved as style parameter in generic mode",
+			baseURL:   "https://cdn.example.com/attachments/demo.png",
+			rawQuery:  "style=gallery-card",
+			styleMode: "auto",
+			want:      "https://cdn.example.com/attachments/demo.png?style=gallery-card",
 		},
 		{
-			name:     "passthrough query is kept",
-			baseURL:  "https://cdn.example.com/attachments/demo.png",
-			rawQuery: "style=imageView2%2F2%2Fw%2F960&download=1",
-			want:     "https://cdn.example.com/attachments/demo.png?attname=download&imageView2/2/w/960",
+			name:      "passthrough query is kept",
+			baseURL:   "https://cdn.example.com/attachments/demo.png",
+			rawQuery:  "style=imageView2%2F2%2Fw%2F960&download=1",
+			styleMode: "auto",
+			want:      "https://cdn.example.com/attachments/demo.png?attname=download&imageView2/2/w/960",
 		},
 		{
-			name:     "download filename is translated to attname",
-			baseURL:  "https://cdn.example.com/attachments/demo.png",
-			rawQuery: "download=demo.png",
-			want:     "https://cdn.example.com/attachments/demo.png?attname=demo.png",
+			name:      "download filename is translated to attname",
+			baseURL:   "https://cdn.example.com/attachments/demo.png",
+			rawQuery:  "download=demo.png",
+			styleMode: "auto",
+			want:      "https://cdn.example.com/attachments/demo.png?attname=demo.png",
+		},
+		{
+			name:      "named style can use path suffix mode",
+			baseURL:   "https://cdn.example.com/attachments/demo.png",
+			rawQuery:  "style=gallery-card",
+			styleMode: "path_suffix",
+			want:      "https://cdn.example.com/attachments/demo.png-gallery-card",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := buildGenericAssetURL(tt.baseURL, tt.rawQuery)
+			got := buildGenericAssetURL(tt.baseURL, tt.rawQuery, tt.styleMode)
 			if got != tt.want {
 				t.Fatalf("buildGenericAssetURL() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestSupportsImageStyleForKey(t *testing.T) {
+	tests := []struct {
+		key  string
+		want bool
+	}{
+		{key: "attachments/demo.png", want: true},
+		{key: "site-resources/logo.svg", want: false},
+		{key: "site-resources/logo.SVG", want: false},
+		{key: "site-resources/logo.svgz", want: false},
+	}
+
+	for _, tt := range tests {
+		if got := supportsImageStyleForKey(tt.key); got != tt.want {
+			t.Fatalf("supportsImageStyleForKey(%q) = %v, want %v", tt.key, got, tt.want)
+		}
+	}
+}
+
+func TestStripStyleRequest(t *testing.T) {
+	got := stripStyleRequest("style=gallery-card&download=demo.png")
+	if got != "download=demo.png" {
+		t.Fatalf("stripStyleRequest() = %q, want %q", got, "download=demo.png")
 	}
 }
 
@@ -133,6 +170,7 @@ func TestBuildQiniuDeliveryURL(t *testing.T) {
 		Domain:         "https://img.example.com",
 		PrivateEnabled: true,
 		URLTTLSeconds:  3600,
+		StyleMode:      "auto",
 	}
 	s3Cfg := &entity.S3Config{
 		AccessKey: "test-ak",
@@ -160,6 +198,7 @@ func TestBuildQiniuDeliveryURL_WithNamedStyle(t *testing.T) {
 		Domain:         "https://img.example.com",
 		PrivateEnabled: false,
 		URLTTLSeconds:  3600,
+		StyleMode:      "auto",
 	}
 	s3Cfg := &entity.S3Config{
 		AccessKey: "test-ak",
@@ -171,6 +210,50 @@ func TestBuildQiniuDeliveryURL_WithNamedStyle(t *testing.T) {
 		t.Fatalf("buildQiniuDeliveryURL() error = %v", err)
 	}
 	if got != "https://img.example.com/attachments/demo.png-gallery-card" {
+		t.Fatalf("buildQiniuDeliveryURL() = %q", got)
+	}
+}
+
+func TestBuildQiniuDeliveryURL_WithNamedStyleAndQueryMode(t *testing.T) {
+	deliveryCfg := &entity.DeliveryConfig{
+		Provider:       "qiniu",
+		Domain:         "https://img.example.com",
+		PrivateEnabled: false,
+		URLTTLSeconds:  3600,
+		StyleMode:      "query",
+	}
+	s3Cfg := &entity.S3Config{
+		AccessKey: "test-ak",
+		SecretKey: "test-sk",
+	}
+
+	got, err := buildQiniuDeliveryURL(deliveryCfg, s3Cfg, "attachments/demo.png", "style=gallery-card")
+	if err != nil {
+		t.Fatalf("buildQiniuDeliveryURL() error = %v", err)
+	}
+	if got != "https://img.example.com/attachments/demo.png?style=gallery-card" {
+		t.Fatalf("buildQiniuDeliveryURL() = %q", got)
+	}
+}
+
+func TestBuildQiniuDeliveryURL_IgnoresStyleForSVG(t *testing.T) {
+	deliveryCfg := &entity.DeliveryConfig{
+		Provider:       "qiniu",
+		Domain:         "https://img.example.com",
+		PrivateEnabled: false,
+		URLTTLSeconds:  3600,
+		StyleMode:      "path_suffix",
+	}
+	s3Cfg := &entity.S3Config{
+		AccessKey: "test-ak",
+		SecretKey: "test-sk",
+	}
+
+	got, err := buildQiniuDeliveryURL(deliveryCfg, s3Cfg, "site-resources/logo.svg", "style=video-card&download=logo.svg")
+	if err != nil {
+		t.Fatalf("buildQiniuDeliveryURL() error = %v", err)
+	}
+	if got != "https://img.example.com/site-resources/logo.svg?attname=logo.svg" {
 		t.Fatalf("buildQiniuDeliveryURL() = %q", got)
 	}
 }

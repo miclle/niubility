@@ -121,7 +121,10 @@ func (s *Service) GetFileURL(ctx context.Context, key, rawQuery string) (string,
 	}
 
 	if cfg.PublicURL != "" {
-		return buildGenericAssetURL(strings.TrimRight(cfg.PublicURL, "/")+"/"+key, rawQuery), nil
+		if !supportsImageStyleForKey(key) {
+			rawQuery = stripStyleRequest(rawQuery)
+		}
+		return buildGenericAssetURL(strings.TrimRight(cfg.PublicURL, "/")+"/"+key, rawQuery, "auto"), nil
 	}
 
 	client := s.newS3Client(cfg)
@@ -218,6 +221,16 @@ func extractStyleRequest(rawQuery string) (style string, passthrough string) {
 	return style, passthrough
 }
 
+func supportsImageStyleForKey(key string) bool {
+	ext := strings.ToLower(strings.TrimSpace(filepath.Ext(strings.TrimSpace(key))))
+	return ext != ".svg" && ext != ".svgz"
+}
+
+func stripStyleRequest(rawQuery string) string {
+	_, passthrough := extractStyleRequest(rawQuery)
+	return passthrough
+}
+
 func normalizeDownloadQuery(rawQuery string) string {
 	normalized := strings.TrimLeft(strings.TrimSpace(rawQuery), "?&")
 	if normalized == "" {
@@ -248,13 +261,27 @@ func isNamedStyle(style string) bool {
 	return !strings.ContainsAny(style, "/|&=?")
 }
 
-func buildGenericAssetURL(baseURL, rawQuery string) string {
+func normalizeStyleMode(styleMode string) string {
+	switch strings.ToLower(strings.TrimSpace(styleMode)) {
+	case "path_suffix":
+		return "path_suffix"
+	case "query":
+		return "query"
+	default:
+		return "auto"
+	}
+}
+
+func buildGenericAssetURL(baseURL, rawQuery, styleMode string) string {
 	style, passthrough := extractStyleRequest(rawQuery)
 	finalURL := appendRawQuery(baseURL, normalizeDownloadQuery(passthrough))
 	if style == "" {
 		return finalURL
 	}
-	if isNamedStyle(style) {
+	if normalizeStyleMode(styleMode) == "path_suffix" && isNamedStyle(style) {
+		return finalURL + "-" + style
+	}
+	if isNamedStyle(style) && normalizeStyleMode(styleMode) != "query" {
 		return appendRawQuery(finalURL, "style="+url.QueryEscape(style))
 	}
 	return appendRawQuery(finalURL, style)
@@ -264,15 +291,19 @@ func buildQiniuDeliveryURL(cfg *entity.DeliveryConfig, s3Cfg *entity.S3Config, k
 	if cfg == nil || strings.TrimSpace(cfg.Domain) == "" {
 		return "", fmt.Errorf("delivery domain is empty")
 	}
+	if !supportsImageStyleForKey(key) {
+		rawQuery = stripStyleRequest(rawQuery)
+	}
 
 	style, passthrough := extractStyleRequest(rawQuery)
 	baseURL := strings.TrimRight(cfg.Domain, "/") + "/" + strings.TrimLeft(key, "/")
-	if isNamedStyle(style) {
+	styleMode := normalizeStyleMode(cfg.StyleMode)
+	if (styleMode == "path_suffix" || styleMode == "auto") && isNamedStyle(style) {
 		baseURL += "-" + style
 		style = ""
 	}
 
-	finalURL := buildGenericAssetURL(baseURL, passthrough)
+	finalURL := buildGenericAssetURL(baseURL, passthrough, styleMode)
 	finalURL = appendRawQuery(finalURL, style)
 	if !cfg.PrivateEnabled {
 		return finalURL, nil

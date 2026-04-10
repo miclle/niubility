@@ -6,8 +6,7 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import { contentDetailPath } from 'src/lib/content-url'
-import { appendImageStyle } from 'src/api/upload'
-import { getContentCover, getSpeakerAvatar, getSpeakerDisplayName, getVideoSpeakerAvatar, getVideoSpeakerDisplayName } from 'src/lib/content-assets'
+import { getSpeakerAvatar, getSpeakerDisplayName, getStyledContentCardCover, getVideoSpeakerAvatar, getVideoSpeakerDisplayName } from 'src/lib/content-assets'
 import { useAppContext } from 'src/context/app'
 import type { Content } from 'src/types/content'
 import { useTranslation } from 'react-i18next'
@@ -44,9 +43,7 @@ function ContentCard({ content, hideAuthor = false }: { content: Content; hideAu
     if (profilePath) navigate(profilePath)
   }
 
-  const coverUrl = content.type === 'gallery'
-    ? appendImageStyle(getContentCover(content, siteConfig), siteConfig?.gallery_card_image_style)
-    : getContentCover(content, siteConfig)
+  const coverUrl = getStyledContentCardCover(content, siteConfig)
 
   return (
     <div
@@ -61,6 +58,7 @@ function ContentCard({ content, hideAuthor = false }: { content: Content; hideAu
             src={coverUrl}
             alt={content.title}
             className="w-full h-full object-cover"
+            loading="lazy"
             style={{ transition: 'transform 0.3s' }}
           />
 

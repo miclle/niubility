@@ -105,6 +105,7 @@ function SettingsSite() {
         footer: footer,
         video_default_cover_url: videoDefaultCoverURL.trim(),
         video_speaker_default_avatar_url: videoSpeakerDefaultAvatarURL.trim(),
+        video_card_image_style: siteConfig?.video_card_image_style?.trim() || '',
         gallery_card_image_style: siteConfig?.gallery_card_image_style?.trim() || '',
         gallery_detail_image_style: siteConfig?.gallery_detail_image_style?.trim() || '',
         avatar_image_style: siteConfig?.avatar_image_style?.trim() || '',

@@ -224,9 +224,13 @@ func (s *Service) GetDeliveryConfig(ctx context.Context) (*entity.DeliveryConfig
 	privateEnabled, _ := s.GetSetting(ctx, entity.SettingDeliveryPrivateEnabled)
 	privateEnabledBool, _ := strconv.ParseBool(privateEnabled)
 	urlTTLSeconds, _ := s.GetSetting(ctx, entity.SettingDeliveryURLTTLSeconds)
+	styleMode, _ := s.GetSetting(ctx, entity.SettingDeliveryStyleMode)
 	urlTTLSecondsInt, _ := strconv.Atoi(urlTTLSeconds)
 	if urlTTLSecondsInt <= 0 {
 		urlTTLSecondsInt = 3600
+	}
+	if styleMode == "" {
+		styleMode = "auto"
 	}
 
 	return &entity.DeliveryConfig{
@@ -234,6 +238,7 @@ func (s *Service) GetDeliveryConfig(ctx context.Context) (*entity.DeliveryConfig
 		Domain:         domain,
 		PrivateEnabled: privateEnabledBool,
 		URLTTLSeconds:  urlTTLSecondsInt,
+		StyleMode:      styleMode,
 	}, nil
 }
 
@@ -298,6 +303,7 @@ func (s *Service) GetSiteConfig(ctx context.Context) (*entity.SiteConfig, error)
 	footer, _ := s.GetSetting(ctx, entity.SettingSiteFooter)
 	videoDefaultCoverURL, _ := s.GetSetting(ctx, entity.SettingSiteVideoDefaultCoverURL)
 	videoSpeakerDefaultAvatarURL, _ := s.GetSetting(ctx, entity.SettingSiteVideoSpeakerDefaultAvatarURL)
+	videoCardImageStyle, _ := s.GetSetting(ctx, entity.SettingDeliveryVideoCardImageStyle)
 	galleryCardImageStyle := s.getSettingWithFallback(ctx, entity.SettingDeliveryGalleryCardImageStyle, entity.SettingSiteGalleryCardImageStyle)
 	galleryDetailImageStyle := s.getSettingWithFallback(ctx, entity.SettingDeliveryGalleryDetailImageStyle, entity.SettingSiteGalleryDetailImageStyle)
 	avatarImageStyle := s.getSettingWithFallback(ctx, entity.SettingDeliveryAvatarImageStyle, entity.SettingSiteAvatarImageStyle)
@@ -314,6 +320,7 @@ func (s *Service) GetSiteConfig(ctx context.Context) (*entity.SiteConfig, error)
 		Footer:                       footer,
 		VideoDefaultCoverURL:         videoDefaultCoverURL,
 		VideoSpeakerDefaultAvatarURL: videoSpeakerDefaultAvatarURL,
+		VideoCardImageStyle:          videoCardImageStyle,
 		GalleryCardImageStyle:        galleryCardImageStyle,
 		GalleryDetailImageStyle:      galleryDetailImageStyle,
 		AvatarImageStyle:             avatarImageStyle,

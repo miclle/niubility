@@ -10,9 +10,8 @@ import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 
 import { listContents, deleteContent } from 'src/api/content'
-import { appendImageStyle } from 'src/api/upload'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
-import { getContentCover, getSpeakerAvatar, getSpeakerDisplayName } from 'src/lib/content-assets'
+import { getSpeakerAvatar, getSpeakerDisplayName, getStyledContentCardCover } from 'src/lib/content-assets'
 import { toPlainTextPreview } from 'src/lib/utils'
 import { useAppContext } from 'src/context/app'
 import { useIntersection } from 'src/hooks/use-intersection'
@@ -125,9 +124,7 @@ function ContentTable({ type, title }: ContentTableProps) {
                 </tr>
               ) : (
                 contents.map((content) => {
-                  const coverUrl = content.type === 'gallery'
-                    ? appendImageStyle(getContentCover(content, siteConfig), siteConfig?.gallery_card_image_style)
-                    : getContentCover(content, siteConfig)
+                  const coverUrl = getStyledContentCardCover(content, siteConfig)
                   const hasSpeakerInfo = Boolean(content.speaker || content.speaker_name)
                   return (
                     <tr key={content.id} style={{ borderTop: '1px solid #e5e5e5' }}>
@@ -135,7 +132,7 @@ function ContentTable({ type, title }: ContentTableProps) {
                         <Link to={contentDetailPath(content)} target="_blank" className="flex items-center gap-3 hover:underline" style={{ color: '#0f0f0f' }}>
                           <div className="w-[72px] h-[40px] rounded overflow-hidden flex-shrink-0" style={{ background: '#f2f2f2' }}>
                             {coverUrl ? (
-                              <img src={coverUrl} alt="" className="w-full h-full object-cover" />
+                              <img src={coverUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-xs" style={{ color: '#909090' }}>{t('admin:noCover')}</div>
                             )}
