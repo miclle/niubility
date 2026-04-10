@@ -20,6 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	mysqlDriver "github.com/go-sql-driver/mysql"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 
 	"github.com/miclle/niubility/internal/entity"
@@ -38,37 +39,9 @@ type dbConnectionInfo struct {
 
 // StartDatabaseBackup creates a running record and starts the backup task asynchronously.
 func (s *Service) StartDatabaseBackup(ctx context.Context, operator *entity.User) (*entity.BackupRecord, error) {
-	s.backupMutex.Lock()
-	defer s.backupMutex.Unlock()
-
-	if operator == nil {
-		return nil, fmt.Errorf("operator is required")
-	}
-
-	running, err := s.hasRunningBackup(ctx, entity.BackupTypeDatabase)
+	record, err := s.createRunningBackupRecord(ctx, operator)
 	if err != nil {
 		return nil, err
-	}
-	if running {
-		return nil, ErrDatabaseBackupRunning
-	}
-
-	record := &entity.BackupRecord{
-		ID:              entity.ID(),
-		Type:            entity.BackupTypeDatabase,
-		Status:          entity.BackupStatusRunning,
-		Driver:          s.dialect,
-		Compressed:      true,
-		StartedByUserID: operator.ID,
-		StartedByName:   strings.TrimSpace(operator.Name),
-		StartedAt:       time.Now(),
-	}
-	if record.StartedByName == "" {
-		record.StartedByName = strings.TrimSpace(operator.Username)
-	}
-
-	if err := s.db.WithContext(ctx).Create(record).Error; err != nil {
-		return nil, fmt.Errorf("create backup record: %w", err)
 	}
 
 	s.asyncRunner(func() {
@@ -198,6 +171,7 @@ func (s *Service) runDatabaseBackup(ctx context.Context, recordID string) {
 	finishedAt := time.Now()
 	updates := map[string]any{
 		"status":          entity.BackupStatusSuccess,
+		"lock_key":        nil,
 		"object_key":      objectKey,
 		"file_name":       filepath.Base(archivePath),
 		"file_size":       size,
@@ -207,6 +181,40 @@ func (s *Service) runDatabaseBackup(ctx context.Context, recordID string) {
 		"error_message":   "",
 	}
 	_ = s.db.WithContext(ctx).Model(&entity.BackupRecord{}).Where("id = ?", record.ID).Updates(updates).Error
+}
+
+func (s *Service) createRunningBackupRecord(ctx context.Context, operator *entity.User) (*entity.BackupRecord, error) {
+	s.backupMutex.Lock()
+	defer s.backupMutex.Unlock()
+
+	if operator == nil {
+		return nil, fmt.Errorf("operator is required")
+	}
+
+	lockKey := entity.BackupTypeDatabase
+	record := &entity.BackupRecord{
+		ID:              entity.ID(),
+		Type:            entity.BackupTypeDatabase,
+		Status:          entity.BackupStatusRunning,
+		LockKey:         &lockKey,
+		Driver:          s.dialect,
+		Compressed:      true,
+		StartedByUserID: operator.ID,
+		StartedByName:   strings.TrimSpace(operator.Name),
+		StartedAt:       time.Now(),
+	}
+	if record.StartedByName == "" {
+		record.StartedByName = strings.TrimSpace(operator.Username)
+	}
+
+	if err := s.db.WithContext(ctx).Create(record).Error; err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) || isDuplicateConstraintError(err) {
+			return nil, ErrDatabaseBackupRunning
+		}
+		return nil, fmt.Errorf("create backup record: %w", err)
+	}
+
+	return record, nil
 }
 
 func (s *Service) dumpDatabaseToFile(ctx context.Context, info *dbConnectionInfo, outputPath string) error {
@@ -325,16 +333,6 @@ func (s *Service) uploadBackupFile(ctx context.Context, localPath, objectKey str
 	return nil
 }
 
-func (s *Service) hasRunningBackup(ctx context.Context, backupType string) (bool, error) {
-	var count int64
-	if err := s.db.WithContext(ctx).Model(&entity.BackupRecord{}).
-		Where("type = ? AND status = ?", backupType, entity.BackupStatusRunning).
-		Count(&count).Error; err != nil {
-		return false, fmt.Errorf("count running backups: %w", err)
-	}
-	return count > 0, nil
-}
-
 func (s *Service) getBackupRecordByID(ctx context.Context, id string) (*entity.BackupRecord, error) {
 	var record entity.BackupRecord
 	if err := s.db.WithContext(ctx).Where("id = ?", id).Limit(1).First(&record).Error; err != nil {
@@ -350,6 +348,7 @@ func (s *Service) failBackup(ctx context.Context, record *entity.BackupRecord, s
 	finishedAt := time.Now()
 	_ = s.db.WithContext(ctx).Model(&entity.BackupRecord{}).Where("id = ?", record.ID).Updates(map[string]any{
 		"status":        entity.BackupStatusFailed,
+		"lock_key":      nil,
 		"finished_at":   &finishedAt,
 		"duration_ms":   finishedAt.Sub(startedAt).Milliseconds(),
 		"error_message": sanitizeBackupError(err.Error()),
@@ -436,52 +435,23 @@ func parseMySQLConnectionInfo(dsn string) (*dbConnectionInfo, error) {
 }
 
 func parsePostgresConnectionInfo(dsn string) (*dbConnectionInfo, error) {
-	if strings.HasPrefix(dsn, "postgres://") || strings.HasPrefix(dsn, "postgresql://") {
-		cfg, err := pgx.ParseConfig(dsn)
-		if err != nil {
-			return nil, fmt.Errorf("parse postgres url dsn: %w", err)
-		}
-		port := "5432"
-		if cfg.Port != 0 {
-			port = strconv.FormatUint(uint64(cfg.Port), 10)
-		}
-		return &dbConnectionInfo{
-			Host:     cfg.Host,
-			Port:     port,
-			User:     cfg.User,
-			Password: cfg.Password,
-			Database: cfg.Database,
-			SSLMode:  cfg.RuntimeParams["sslmode"],
-		}, nil
+	cfg, err := pgx.ParseConfig(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("parse postgres dsn: %w", err)
 	}
 
-	values, err := parsePostgresKeywordDSN(dsn)
-	if err != nil {
-		return nil, err
+	port := "5432"
+	if cfg.Port != 0 {
+		port = strconv.FormatUint(uint64(cfg.Port), 10)
 	}
 	return &dbConnectionInfo{
-		Host:     values["host"],
-		Port:     firstNonEmpty(values["port"], "5432"),
-		User:     values["user"],
-		Password: values["password"],
-		Database: firstNonEmpty(values["dbname"], values["database"]),
-		SSLMode:  values["sslmode"],
+		Host:     cfg.Host,
+		Port:     port,
+		User:     cfg.User,
+		Password: cfg.Password,
+		Database: cfg.Database,
+		SSLMode:  firstNonEmpty(cfg.RuntimeParams["sslmode"], extractPostgresSSLMode(cfg.ConnString())),
 	}, nil
-}
-
-func parsePostgresKeywordDSN(dsn string) (map[string]string, error) {
-	values := make(map[string]string)
-	for _, field := range strings.Fields(dsn) {
-		parts := strings.SplitN(field, "=", 2)
-		if len(parts) != 2 {
-			continue
-		}
-		values[parts[0]] = strings.Trim(parts[1], `'"`)
-	}
-	if len(values) == 0 {
-		return nil, fmt.Errorf("unsupported postgres dsn format")
-	}
-	return values, nil
 }
 
 func sanitizeBackupError(message string) string {
@@ -505,6 +475,16 @@ func sanitizeContentDispositionFilename(fileName string) string {
 	return strings.NewReplacer(`"`, "", "\n", "", "\r", "").Replace(fileName)
 }
 
+func extractPostgresSSLMode(dsn string) string {
+	for _, field := range strings.Fields(dsn) {
+		if !strings.HasPrefix(field, "sslmode=") {
+			continue
+		}
+		return strings.Trim(strings.TrimPrefix(field, "sslmode="), `'"`)
+	}
+	return ""
+}
+
 func firstNonEmpty(values ...string) string {
 	for _, value := range values {
 		if strings.TrimSpace(value) != "" {
@@ -512,4 +492,16 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func isDuplicateConstraintError(err error) bool {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code == "23505"
+	}
+
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "duplicate key") ||
+		strings.Contains(msg, "unique constraint") ||
+		strings.Contains(msg, "unique failed")
 }

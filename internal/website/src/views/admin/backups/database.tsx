@@ -4,6 +4,7 @@ import { Database, Download, Loader2, RefreshCw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
 
+import Pagination from 'src/components/Pagination'
 import { getDatabaseBackupDownloadURL, listDatabaseBackups, startDatabaseBackup } from 'src/api/backup'
 import type { BackupRecord } from 'src/types/backup'
 
@@ -23,13 +24,17 @@ function statusColor(status: string) {
 
 function DatabaseBackups() {
   const { t } = useTranslation('admin')
+  const pageSize = 20
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState('')
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
   const [items, setItems] = useState<BackupRecord[]>([])
+  const [latestItems, setLatestItems] = useState<BackupRecord[]>([])
 
-  const load = useCallback(async (silent = false) => {
+  const load = useCallback(async (targetPage = 1, silent = false) => {
     if (silent) {
       setRefreshing(true)
     } else {
@@ -37,8 +42,12 @@ function DatabaseBackups() {
     }
     setError('')
     try {
-      const res = await listDatabaseBackups()
-      setItems(res.data.items)
+      const currentPagePromise = listDatabaseBackups(targetPage, pageSize)
+      const latestPagePromise = targetPage === 1 ? currentPagePromise : listDatabaseBackups(1, pageSize)
+      const [currentPageRes, latestPageRes] = await Promise.all([currentPagePromise, latestPagePromise])
+      setItems(currentPageRes.data.items)
+      setTotal(currentPageRes.data.total)
+      setLatestItems(latestPageRes.data.items)
     } catch (err) {
       console.error('Load database backups error:', err)
       setError(t('admin:databaseBackupLoadFailed'))
@@ -46,14 +55,14 @@ function DatabaseBackups() {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [t])
+  }, [pageSize, t])
 
   useEffect(() => {
-    load()
-  }, [load])
+    load(page)
+  }, [load, page])
 
-  const runningBackup = useMemo(() => items.find((item) => item.status === 'running'), [items])
-  const latestSuccess = useMemo(() => items.find((item) => item.status === 'success'), [items])
+  const runningBackup = useMemo(() => latestItems.find((item) => item.status === 'running'), [latestItems])
+  const latestSuccess = useMemo(() => latestItems.find((item) => item.status === 'success'), [latestItems])
 
   const handleStartBackup = async () => {
     if (!window.confirm(t('admin:databaseBackupConfirm'))) {
@@ -63,7 +72,11 @@ function DatabaseBackups() {
     setError('')
     try {
       await startDatabaseBackup()
-      await load(true)
+      if (page !== 1) {
+        setPage(1)
+      } else {
+        await load(1, true)
+      }
     } catch (err: any) {
       console.error('Start database backup error:', err)
       setError(err?.response?.data?.message || t('admin:databaseBackupStartFailed'))
@@ -105,7 +118,7 @@ function DatabaseBackups() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => load(true)}
+              onClick={() => load(page, true)}
               disabled={refreshing}
             >
               {refreshing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
@@ -152,7 +165,7 @@ function DatabaseBackups() {
       <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
         <div className="flex items-center justify-between gap-3 mb-4">
           <h2 className="text-base font-medium" style={{ color: '#0f0f0f' }}>{t('admin:databaseBackupHistory')}</h2>
-          <span className="text-sm" style={{ color: '#606060' }}>{t('admin:backupRecordCount', { count: items.length })}</span>
+          <span className="text-sm" style={{ color: '#606060' }}>{t('admin:backupRecordCount', { count: total })}</span>
         </div>
 
         {items.length === 0 ? (
@@ -209,6 +222,13 @@ function DatabaseBackups() {
             </table>
           </div>
         )}
+
+        <Pagination
+          page={page}
+          limit={pageSize}
+          total={total}
+          onChange={setPage}
+        />
       </div>
     </div>
   )

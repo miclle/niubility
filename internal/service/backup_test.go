@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -56,6 +57,16 @@ func TestParseDatabaseConnectionInfo(t *testing.T) {
 		}
 		if info.Host != "db.example.com" || info.Port != "3307" || info.User != "tester" || info.Password != "secret" || info.Database != "niubility" {
 			t.Fatalf("unexpected mysql info: %+v", info)
+		}
+	})
+
+	t.Run("postgres keyword dsn with spaces", func(t *testing.T) {
+		info, err := parseDatabaseConnectionInfo("postgres", "host=localhost port=5433 user=tester password='sec ret' dbname='niu bility' sslmode=disable")
+		if err != nil {
+			t.Fatalf("parseDatabaseConnectionInfo() error = %v", err)
+		}
+		if info.Host != "localhost" || info.Port != "5433" || info.User != "tester" || info.Password != "sec ret" || info.Database != "niu bility" || info.SSLMode != "disable" {
+			t.Fatalf("unexpected postgres keyword info: %+v", info)
 		}
 	})
 }
@@ -138,10 +149,12 @@ func TestService_StartDatabaseBackup_Success(t *testing.T) {
 func TestService_StartDatabaseBackup_ConflictWhenRunning(t *testing.T) {
 	s := setupTestService(t)
 	ctx := context.Background()
+	lockKey := entity.BackupTypeDatabase
 	existing := &entity.BackupRecord{
 		ID:        entity.ID(),
 		Type:      entity.BackupTypeDatabase,
 		Status:    entity.BackupStatusRunning,
+		LockKey:   &lockKey,
 		StartedAt: time.Now(),
 	}
 	if err := s.db.WithContext(ctx).Create(existing).Error; err != nil {
@@ -154,5 +167,34 @@ func TestService_StartDatabaseBackup_ConflictWhenRunning(t *testing.T) {
 	}
 	if err != ErrDatabaseBackupRunning {
 		t.Fatalf("StartDatabaseBackup() error = %v, want %v", err, ErrDatabaseBackupRunning)
+	}
+}
+
+func TestService_CreateRunningBackupRecord_ConflictOnDuplicateLock(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	lockKey := entity.BackupTypeDatabase
+	existing := &entity.BackupRecord{
+		ID:              entity.ID(),
+		Type:            entity.BackupTypeDatabase,
+		Status:          entity.BackupStatusRunning,
+		Driver:          "postgres",
+		Compressed:      true,
+		LockKey:         &lockKey,
+		StartedByUserID: "admin-1",
+		StartedByName:   "管理员",
+		StartedAt:       time.Now(),
+	}
+	if err := s.db.WithContext(ctx).Create(existing).Error; err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+
+	_, err := s.createRunningBackupRecord(ctx, &entity.User{ID: "admin-2", Username: "admin2", Name: "管理员 2"})
+	if err == nil {
+		t.Fatal("createRunningBackupRecord() error = nil, want conflict")
+	}
+	if !errors.Is(err, ErrDatabaseBackupRunning) {
+		t.Fatalf("createRunningBackupRecord() error = %v, want %v", err, ErrDatabaseBackupRunning)
 	}
 }

@@ -15,6 +15,7 @@ type BackupRecord struct {
 	ID              string     `json:"id"                 gorm:"column:id;primaryKey;size:36"`
 	Type            string     `json:"type"               gorm:"column:type;size:32;index"`
 	Status          string     `json:"status"             gorm:"column:status;size:32;index"`
+	LockKey         *string    `json:"lock_key"           gorm:"column:lock_key;size:64;uniqueIndex:uniq_backup_records_lock_key"`
 	Driver          string     `json:"driver"             gorm:"column:driver;size:16"`
 	ObjectKey       string     `json:"object_key"         gorm:"column:object_key;type:text"`
 	FileName        string     `json:"file_name"          gorm:"column:file_name;type:text"`
