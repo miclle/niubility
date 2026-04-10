@@ -3,7 +3,7 @@ import { Outlet, NavLink, Link, Navigate, useLocation } from 'react-router-dom'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { FileText, Users, ArrowLeft, LogOut, Settings, Menu, FolderOpen, ChevronDown, UserPlus, HardDrive, MessageSquare, CircleUserRound, User, Plus, Play, ImageIcon, Globe2, Mic, type LucideIcon } from 'lucide-react'
+import { FileText, Users, ArrowLeft, LogOut, Settings, Menu, FolderOpen, ChevronDown, UserPlus, HardDrive, MessageSquare, CircleUserRound, User, Plus, Play, ImageIcon, Globe2, Mic, Database, type LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { useAppContext } from 'src/context/app'
@@ -73,6 +73,7 @@ function AdminLayout() {
         { to: '/admin/settings/site', icon: Globe2, label: t('admin:siteConfig') },
         { to: '/admin/settings/auth', icon: UserPlus, label: t('admin:authConfig') },
         { to: '/admin/settings/storage', icon: HardDrive, label: t('admin:storageConfig') },
+        { to: '/admin/settings/database-backup', icon: Database, label: t('admin:databaseBackup') },
         { to: '/admin/settings/wechat', icon: MessageSquare, label: t('admin:wechat') },
       ],
     },

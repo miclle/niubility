@@ -237,6 +237,32 @@ func (s *Service) GetDeliveryConfig(ctx context.Context) (*entity.DeliveryConfig
 	}, nil
 }
 
+// GetBackupConfig retrieves the database backup behavior configuration from settings.
+// Returns defaults when values are missing.
+func (s *Service) GetBackupConfig(ctx context.Context) (*entity.BackupConfig, error) {
+	s3Prefix, err := s.GetSetting(ctx, entity.SettingBackupDatabaseS3Prefix)
+	if err != nil {
+		return nil, err
+	}
+	if s3Prefix == "" {
+		s3Prefix = "backups/database"
+	}
+
+	ttlSeconds, err := s.GetSetting(ctx, entity.SettingBackupDatabaseDownloadURLTTLSeconds)
+	if err != nil {
+		return nil, err
+	}
+	downloadURLTTLSeconds, parseErr := strconv.Atoi(ttlSeconds)
+	if parseErr != nil || downloadURLTTLSeconds <= 0 {
+		downloadURLTTLSeconds = 900
+	}
+
+	return &entity.BackupConfig{
+		S3Prefix:              s3Prefix,
+		DownloadURLTTLSeconds: downloadURLTTLSeconds,
+	}, nil
+}
+
 func (s *Service) getSettingWithFallback(ctx context.Context, key string, fallbackKeys ...string) string {
 	value, _ := s.GetSetting(ctx, key)
 	if value != "" {

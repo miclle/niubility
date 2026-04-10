@@ -131,6 +131,14 @@ const (
 	SettingDeliveryAvatarImageStyle = "delivery.avatar_image_style"
 )
 
+// Setting key constants for database backup behavior.
+const (
+	// SettingBackupDatabaseS3Prefix is the object storage prefix used for database backups.
+	SettingBackupDatabaseS3Prefix = "backup.database.s3_prefix"
+	// SettingBackupDatabaseDownloadURLTTLSeconds controls the backup download URL validity in seconds.
+	SettingBackupDatabaseDownloadURLTTLSeconds = "backup.database.download_url_ttl_seconds"
+)
+
 // SiteConfig represents the site-level configuration extracted from settings.
 type SiteConfig struct {
 	Title                        string `json:"title"`
@@ -195,4 +203,10 @@ type DeliveryConfig struct {
 	Domain         string
 	PrivateEnabled bool
 	URLTTLSeconds  int
+}
+
+// BackupConfig represents the database backup behavior configuration extracted from settings.
+type BackupConfig struct {
+	S3Prefix              string `json:"s3_prefix"`
+	DownloadURLTTLSeconds int    `json:"download_url_ttl_seconds"`
 }

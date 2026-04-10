@@ -33,6 +33,7 @@ import SettingsAuth from 'src/views/admin/settings/auth'
 import SettingsStorage from 'src/views/admin/settings/storage'
 import SettingsWechat from 'src/views/admin/settings/wechat'
 import SettingsSite from 'src/views/admin/settings/site'
+import DatabaseBackups from 'src/views/admin/backups/database'
 import AdminCategories from 'src/views/admin/categories'
 import Init from 'src/views/init'
 import Login from 'src/views/login'
@@ -131,6 +132,7 @@ const routes: RouteObject[] = [
       { path: 'settings/site', element: <SettingsSite /> },
       { path: 'settings/auth', element: <SettingsAuth /> },
       { path: 'settings/storage', element: <SettingsStorage /> },
+      { path: 'settings/database-backup', element: <DatabaseBackups /> },
       { path: 'settings/wechat', element: <SettingsWechat /> },
     ],
   },

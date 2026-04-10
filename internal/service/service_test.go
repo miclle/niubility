@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"io"
 	"testing"
 
 	"github.com/miclle/niubility/internal/entity"
@@ -30,6 +31,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		&entity.Category{},
 		&entity.Follow{},
 		&entity.Favorite{},
+		&entity.BackupRecord{},
 	); err != nil {
 		t.Fatalf("Failed to migrate test database: %v", err)
 	}
@@ -44,6 +46,15 @@ func setupTestService(t *testing.T) *Service {
 	return &Service{
 		db:      db,
 		dialect: "sqlite",
+		commandRunner: func(ctx context.Context, name string, args []string, env []string, stdout, stderr io.Writer) error {
+			return nil
+		},
+		backupUploader: func(ctx context.Context, localPath, objectKey string) error {
+			return nil
+		},
+		asyncRunner: func(fn func()) {
+			fn()
+		},
 	}
 }
 
