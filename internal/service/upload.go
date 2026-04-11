@@ -32,13 +32,6 @@ type PresignResult struct {
 	Key          string `json:"key"`
 }
 
-// FileDownloadResult contains the streamed file body and response metadata for direct downloads.
-type FileDownloadResult struct {
-	Body          io.ReadCloser
-	ContentType   string
-	ContentLength int64
-}
-
 // GetPresignedURL generates an S3 presigned PUT URL for attachment upload.
 // S3 key: attachments/{uuid}.{ext}, returned key: {uuid}.{ext}
 func (s *Service) GetPresignedURL(ctx context.Context, filename, contentType string) (*PresignResult, error) {
@@ -140,36 +133,6 @@ func (s *Service) GetFileURL(ctx context.Context, key, rawQuery string) (string,
 	}
 
 	return req.URL, nil
-}
-
-// GetFileDownload streams the original object from S3-compatible storage for direct downloads.
-func (s *Service) GetFileDownload(ctx context.Context, key string) (*FileDownloadResult, error) {
-	log := logger.NewWithContext(ctx)
-
-	cfg, err := s.GetS3Config(ctx)
-	if err != nil {
-		log.Errorf("GetFileDownload: get s3 config: %v", err)
-		return nil, fmt.Errorf("get s3 config: %w", err)
-	}
-	if cfg == nil {
-		return nil, fmt.Errorf("s3 storage not configured")
-	}
-
-	client := s.newS3Client(cfg)
-	resp, err := client.GetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(cfg.Bucket),
-		Key:    aws.String(key),
-	})
-	if err != nil {
-		log.Errorf("GetFileDownload: get object: %v", err)
-		return nil, fmt.Errorf("get object: %w", err)
-	}
-
-	return &FileDownloadResult{
-		Body:          resp.Body,
-		ContentType:   aws.ToString(resp.ContentType),
-		ContentLength: aws.ToInt64(resp.ContentLength),
-	}, nil
 }
 
 func (s *Service) getDeliveryURL(ctx context.Context, cfg *entity.DeliveryConfig, key, rawQuery string) (string, bool, error) {

@@ -82,24 +82,6 @@ func (s *Service) IsFavorited(ctx context.Context, userID, contentID string) (bo
 	return count > 0, nil
 }
 
-// GetFavoritedIDs returns the subset of contentIDs that the user has favorited.
-func (s *Service) GetFavoritedIDs(ctx context.Context, userID string, contentIDs []string) ([]string, error) {
-	log := logger.NewWithContext(ctx)
-
-	if len(contentIDs) == 0 {
-		return nil, nil
-	}
-	var ids []string
-	err := s.db.WithContext(ctx).Model(&entity.Favorite{}).
-		Where("user_id = ? AND content_id IN ?", userID, contentIDs).
-		Pluck("content_id", &ids).Error
-	if err != nil {
-		log.Errorf("GetFavoritedIDs: %v", err)
-		return nil, fmt.Errorf("get favorited ids: %w", err)
-	}
-	return ids, nil
-}
-
 // ListFavorites returns a paginated list of contents that the given user has favorited.
 func (s *Service) ListFavorites(ctx context.Context, userID string, pagination entity.Pagination) ([]entity.Content, string, error) {
 	log := logger.NewWithContext(ctx)

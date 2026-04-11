@@ -66,35 +66,6 @@ func (s *Service) SyncUserFromWechat(ctx context.Context, username string) (*ent
 	return s.GetUserByUsername(ctx, username)
 }
 
-// SyncAllUsersFromWechat syncs all users' info from WeChat.
-// Returns the count of successfully synced users and any errors encountered.
-func (s *Service) SyncAllUsersFromWechat(ctx context.Context) (synced int, failed int, err error) {
-	log := logger.NewWithContext(ctx)
-
-	if s.Wechat == nil {
-		log.Errorf("wechat client not configured")
-		return 0, 0, fmt.Errorf("wechat client not configured")
-	}
-
-	var users []entity.User
-	if err := s.db.WithContext(ctx).Find(&users).Error; err != nil {
-		log.Errorf("list users: %v", err)
-		return 0, 0, fmt.Errorf("list users: %w", err)
-	}
-
-	for _, user := range users {
-		_, err := s.SyncUserFromWechat(ctx, user.Username)
-		if err != nil {
-			log.Errorf("[WeChat Sync] Failed to sync user %s: %v", user.Username, err)
-			failed++
-		} else {
-			synced++
-		}
-	}
-
-	return synced, failed, nil
-}
-
 // SyncAllWechatUsers fetches all users from WeChat Work and syncs them to database.
 // This will create new users and update existing ones.
 func (s *Service) SyncAllWechatUsers(ctx context.Context) (synced int, failed int, err error) {

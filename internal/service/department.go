@@ -50,18 +50,6 @@ func (s *Service) SyncDepartmentsFromWechat(ctx context.Context) (int, error) {
 	return len(deptList), nil
 }
 
-// GetDepartmentByID retrieves a department by ID.
-func (s *Service) GetDepartmentByID(ctx context.Context, id int64) (*entity.Department, error) {
-	log := logger.NewWithContext(ctx)
-
-	var dept entity.Department
-	if err := s.db.WithContext(ctx).Where("id = ?", id).First(&dept).Error; err != nil {
-		log.Errorf("GetDepartmentByID: %v", err)
-		return nil, err
-	}
-	return &dept, nil
-}
-
 // ListDepartments retrieves all departments.
 func (s *Service) ListDepartments(ctx context.Context) ([]entity.Department, error) {
 	log := logger.NewWithContext(ctx)
@@ -122,18 +110,4 @@ func splitIDs(s string) []string {
 		}
 	}
 	return result
-}
-
-// GetDepartmentNamesMap returns a map of department ID to name.
-func (s *Service) GetDepartmentNamesMap(ctx context.Context) (map[int64]string, error) {
-	departments, err := s.ListDepartments(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	result := make(map[int64]string)
-	for _, dept := range departments {
-		result[dept.ID] = dept.Name
-	}
-	return result, nil
 }

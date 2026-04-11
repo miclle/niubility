@@ -54,59 +54,6 @@ func TestService_IsFavorited(t *testing.T) {
 	}
 }
 
-func TestService_GetFavoritedIDs(t *testing.T) {
-	s := setupTestService(t)
-	ctx := context.Background()
-
-	// Create author
-	user := &entity.User{ID: entity.ID(), Username: "getfavoritedidsuser", Role: entity.RoleUser, Status: entity.UserStatusActivated}
-	if err := s.db.Create(user).Error; err != nil {
-		t.Fatalf("Failed to create test user: %v", err)
-	}
-
-	// Create contents
-	content1 := &entity.Content{ID: entity.ID(), AuthorID: user.ID, Title: "Test 1", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished}
-	content2 := &entity.Content{ID: entity.ID(), AuthorID: user.ID, Title: "Test 2", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished}
-	content3 := &entity.Content{ID: entity.ID(), AuthorID: user.ID, Title: "Test 3", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished}
-	if err := s.db.Create(content1).Error; err != nil {
-		t.Fatalf("Failed to create test content: %v", err)
-	}
-	if err := s.db.Create(content2).Error; err != nil {
-		t.Fatalf("Failed to create test content: %v", err)
-	}
-	if err := s.db.Create(content3).Error; err != nil {
-		t.Fatalf("Failed to create test content: %v", err)
-	}
-
-	// Create favorites directly (bypass ToggleFavorite which uses GREATEST)
-	fav1 := &entity.Favorite{ID: entity.ID(), UserID: user.ID, ContentID: content1.ID}
-	fav3 := &entity.Favorite{ID: entity.ID(), UserID: user.ID, ContentID: content3.ID}
-	if err := s.db.Create(fav1).Error; err != nil {
-		t.Fatalf("Failed to create favorite: %v", err)
-	}
-	if err := s.db.Create(fav3).Error; err != nil {
-		t.Fatalf("Failed to create favorite: %v", err)
-	}
-
-	// Get favorited IDs
-	ids, err := s.GetFavoritedIDs(ctx, user.ID, []string{content1.ID, content2.ID, content3.ID})
-	if err != nil {
-		t.Fatalf("GetFavoritedIDs() error = %v", err)
-	}
-	if len(ids) != 2 {
-		t.Errorf("len(ids) = %d, want 2", len(ids))
-	}
-
-	// Test with empty input
-	ids, err = s.GetFavoritedIDs(ctx, user.ID, []string{})
-	if err != nil {
-		t.Fatalf("GetFavoritedIDs() error = %v", err)
-	}
-	if ids != nil {
-		t.Errorf("GetFavoritedIDs() = %v, want nil", ids)
-	}
-}
-
 func TestService_ListFavorites(t *testing.T) {
 	s := setupTestService(t)
 	ctx := context.Background()

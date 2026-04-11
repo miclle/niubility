@@ -25,10 +25,10 @@ func TestService_CreateCategory(t *testing.T) {
 		t.Error("CreateCategory() should set category.ID")
 	}
 
-	// Verify category was created
-	got, err := s.GetCategoryBySlug(ctx, "tech")
+	// Verify category was created by retrieving it by ID
+	got, err := s.GetCategoryByID(ctx, category.ID)
 	if err != nil {
-		t.Fatalf("GetCategoryBySlug() error = %v", err)
+		t.Fatalf("GetCategoryByID() error = %v", err)
 	}
 	if got == nil {
 		t.Fatal("Category was not created")
@@ -52,43 +52,6 @@ func TestService_CreateCategory_ReservedSlug(t *testing.T) {
 		if err == nil {
 			t.Errorf("CreateCategory() with reserved slug %q should fail", slug)
 		}
-	}
-}
-
-func TestService_GetCategoryBySlug(t *testing.T) {
-	s := setupTestService(t)
-	ctx := context.Background()
-
-	// Create test category
-	category := &entity.Category{
-		ID:   entity.ID(),
-		Name: "Test Category",
-		Slug: "test-cat",
-	}
-	if err := s.db.Create(category).Error; err != nil {
-		t.Fatalf("Failed to create test category: %v", err)
-	}
-
-	// Test getting existing category
-	got, err := s.GetCategoryBySlug(ctx, "test-cat")
-	if err != nil {
-		t.Fatalf("GetCategoryBySlug() error = %v", err)
-	}
-	if got == nil {
-		t.Fatal("GetCategoryBySlug() returned nil")
-		return
-	}
-	if got.Slug != "test-cat" {
-		t.Errorf("Slug = %q, want %q", got.Slug, "test-cat")
-	}
-
-	// Test getting non-existent category
-	got, err = s.GetCategoryBySlug(ctx, "nonexistent")
-	if err != nil {
-		t.Fatalf("GetCategoryBySlug() error = %v", err)
-	}
-	if got != nil {
-		t.Errorf("GetCategoryBySlug() = %v, want nil", got)
 	}
 }
 

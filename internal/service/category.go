@@ -51,21 +51,6 @@ func (s *Service) GetCategoryContentCounts(ctx context.Context) (map[string]int6
 	return counts, nil
 }
 
-// GetCategoryBySlug retrieves a category by its slug.
-func (s *Service) GetCategoryBySlug(ctx context.Context, slug string) (*entity.Category, error) {
-	log := logger.NewWithContext(ctx)
-
-	var category entity.Category
-	if err := s.db.WithContext(ctx).Where("slug = ?", slug).First(&category).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		log.Errorf("GetCategoryBySlug: %v", err)
-		return nil, fmt.Errorf("get category by slug: %w", err)
-	}
-	return &category, nil
-}
-
 // GetCategoryByID retrieves a category by its ID.
 func (s *Service) GetCategoryByID(ctx context.Context, id string) (*entity.Category, error) {
 	log := logger.NewWithContext(ctx)
