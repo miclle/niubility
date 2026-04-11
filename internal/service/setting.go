@@ -181,16 +181,12 @@ func (s *Service) GetWechatConfig(ctx context.Context) (*entity.WechatConfig, er
 	if err != nil || corpID == "" {
 		return nil, err
 	}
-
-	appSecret, _ := s.GetSetting(ctx, entity.SettingWechatAppSecret)
-
-	appAgentIDStr, _ := s.GetSetting(ctx, entity.SettingWechatAppAgentID)
-	appAgentID, _ := strconv.ParseInt(appAgentIDStr, 10, 64)
-
+	m := s.loadSettings(ctx, entity.SettingWechatAppSecret, entity.SettingWechatAppAgentID)
+	appAgentID, _ := strconv.ParseInt(m[entity.SettingWechatAppAgentID], 10, 64)
 	return &entity.WechatConfig{
 		CorpID:     corpID,
 		AppAgentID: appAgentID,
-		AppSecret:  appSecret,
+		AppSecret:  m[entity.SettingWechatAppSecret],
 	}, nil
 }
 
@@ -201,14 +197,11 @@ func (s *Service) GetOIDCConfig(ctx context.Context) (*entity.OIDCConfig, error)
 	if err != nil || issuer == "" {
 		return nil, err
 	}
-
-	clientID, _ := s.GetSetting(ctx, entity.SettingSSOOIDCClientID)
-	clientSecret, _ := s.GetSetting(ctx, entity.SettingSSOOIDCClientSecret)
-
+	m := s.loadSettings(ctx, entity.SettingSSOOIDCClientID, entity.SettingSSOOIDCClientSecret)
 	return &entity.OIDCConfig{
 		Issuer:       issuer,
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
+		ClientID:     m[entity.SettingSSOOIDCClientID],
+		ClientSecret: m[entity.SettingSSOOIDCClientSecret],
 	}, nil
 }
 
@@ -220,18 +213,17 @@ func (s *Service) GetSAMLConfig(ctx context.Context) (*entity.SAMLConfig, error)
 	if err != nil || metadataURL == "" {
 		return nil, err
 	}
-
-	cfg := &entity.SAMLConfig{
-		IDPMetadataURL: metadataURL,
-	}
-
-	// Load optional advanced configuration
-	cfg.SPCertificate, _ = s.GetSetting(ctx, entity.SettingSSOSAMLSPCertificate)
-	cfg.SPPrivateKey, _ = s.GetSetting(ctx, entity.SettingSSOSAMLSPPrivateKey)
-	cfg.NameIDFormat, _ = s.GetSetting(ctx, entity.SettingSSOSAMLNameIDFormat)
-	cfg.AttributeMapping, _ = s.GetSetting(ctx, entity.SettingSSOSAMLAttributeMapping)
-
-	return cfg, nil
+	m := s.loadSettings(ctx,
+		entity.SettingSSOSAMLSPCertificate, entity.SettingSSOSAMLSPPrivateKey,
+		entity.SettingSSOSAMLNameIDFormat, entity.SettingSSOSAMLAttributeMapping,
+	)
+	return &entity.SAMLConfig{
+		IDPMetadataURL:   metadataURL,
+		SPCertificate:    m[entity.SettingSSOSAMLSPCertificate],
+		SPPrivateKey:     m[entity.SettingSSOSAMLSPPrivateKey],
+		NameIDFormat:     m[entity.SettingSSOSAMLNameIDFormat],
+		AttributeMapping: m[entity.SettingSSOSAMLAttributeMapping],
+	}, nil
 }
 
 // GetS3Config retrieves the S3 storage configuration from settings.
@@ -241,22 +233,19 @@ func (s *Service) GetS3Config(ctx context.Context) (*entity.S3Config, error) {
 	if err != nil || endpoint == "" {
 		return nil, err
 	}
-
-	region, _ := s.GetSetting(ctx, entity.SettingS3Region)
-	bucket, _ := s.GetSetting(ctx, entity.SettingS3Bucket)
-	accessKey, _ := s.GetSetting(ctx, entity.SettingS3AccessKey)
-	secretKey, _ := s.GetSetting(ctx, entity.SettingS3SecretKey)
-	publicURL, _ := s.GetSetting(ctx, entity.SettingS3PublicURL)
-	corsOrigin, _ := s.GetSetting(ctx, entity.SettingS3CORSOrigin)
-
+	m := s.loadSettings(ctx,
+		entity.SettingS3Region, entity.SettingS3Bucket,
+		entity.SettingS3AccessKey, entity.SettingS3SecretKey,
+		entity.SettingS3PublicURL, entity.SettingS3CORSOrigin,
+	)
 	return &entity.S3Config{
 		Endpoint:   endpoint,
-		Region:     region,
-		Bucket:     bucket,
-		AccessKey:  accessKey,
-		SecretKey:  secretKey,
-		PublicURL:  publicURL,
-		CORSOrigin: corsOrigin,
+		Region:     m[entity.SettingS3Region],
+		Bucket:     m[entity.SettingS3Bucket],
+		AccessKey:  m[entity.SettingS3AccessKey],
+		SecretKey:  m[entity.SettingS3SecretKey],
+		PublicURL:  m[entity.SettingS3PublicURL],
+		CORSOrigin: m[entity.SettingS3CORSOrigin],
 	}, nil
 }
 
@@ -267,23 +256,22 @@ func (s *Service) GetDeliveryConfig(ctx context.Context) (*entity.DeliveryConfig
 	if err != nil || provider == "" || provider == "disabled" {
 		return nil, err
 	}
-
-	domain, _ := s.GetSetting(ctx, entity.SettingDeliveryDomain)
-	privateEnabled, _ := s.GetSetting(ctx, entity.SettingDeliveryPrivateEnabled)
-	privateEnabledBool, _ := strconv.ParseBool(privateEnabled)
-	urlTTLSeconds, _ := s.GetSetting(ctx, entity.SettingDeliveryURLTTLSeconds)
-	styleMode, _ := s.GetSetting(ctx, entity.SettingDeliveryStyleMode)
-	urlTTLSecondsInt, _ := strconv.Atoi(urlTTLSeconds)
+	m := s.loadSettings(ctx,
+		entity.SettingDeliveryDomain, entity.SettingDeliveryPrivateEnabled,
+		entity.SettingDeliveryURLTTLSeconds, entity.SettingDeliveryStyleMode,
+	)
+	privateEnabledBool, _ := strconv.ParseBool(m[entity.SettingDeliveryPrivateEnabled])
+	urlTTLSecondsInt, _ := strconv.Atoi(m[entity.SettingDeliveryURLTTLSeconds])
 	if urlTTLSecondsInt <= 0 {
 		urlTTLSecondsInt = 3600
 	}
+	styleMode := m[entity.SettingDeliveryStyleMode]
 	if styleMode == "" {
 		styleMode = "auto"
 	}
-
 	return &entity.DeliveryConfig{
 		Provider:       provider,
-		Domain:         domain,
+		Domain:         m[entity.SettingDeliveryDomain],
 		PrivateEnabled: privateEnabledBool,
 		URLTTLSeconds:  urlTTLSecondsInt,
 		StyleMode:      styleMode,
@@ -328,6 +316,15 @@ func (s *Service) getSettingWithFallback(ctx context.Context, key string, fallba
 		}
 	}
 	return ""
+}
+
+// loadSettings reads multiple setting keys and returns them as a map.
+func (s *Service) loadSettings(ctx context.Context, keys ...string) map[string]string {
+	m := make(map[string]string, len(keys))
+	for _, key := range keys {
+		m[key], _ = s.GetSetting(ctx, key)
+	}
+	return m
 }
 
 // GetSiteConfig retrieves the site-level configuration from settings.

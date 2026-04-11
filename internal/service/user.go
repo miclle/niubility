@@ -313,6 +313,22 @@ func (s *Service) UpdateUser(ctx context.Context, id string, args entity.UpdateU
 		}
 	}
 
+	updates, err := buildUserUpdates(args)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return applyUserUpdates(log, tx, user, args, updates)
+	}); err != nil {
+		return nil, err
+	}
+
+	return s.GetUserByID(ctx, id)
+}
+
+// buildUserUpdates constructs the column updates map from non-nil args.
+func buildUserUpdates(args entity.UpdateUserArgs) (map[string]any, error) {
 	updates := map[string]any{}
 	if args.Username != nil {
 		updates["username"] = strings.TrimSpace(*args.Username)
@@ -354,54 +370,52 @@ func (s *Service) UpdateUser(ctx context.Context, id string, args entity.UpdateU
 	if args.UpdatedAt != nil {
 		updates["updated_at"] = *args.UpdatedAt
 	}
+	return updates, nil
+}
 
-	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if len(updates) > 0 {
-			if err := tx.Model(user).Updates(updates).Error; err != nil {
-				log.Errorf("update user: %v", err)
-				return fmt.Errorf("update user: %w", err)
-			}
+// applyUserUpdates applies all user changes within a transaction.
+func applyUserUpdates(log logger.Logger, tx *gorm.DB, user *entity.User, args entity.UpdateUserArgs, updates map[string]any) error {
+	if len(updates) > 0 {
+		if err := tx.Model(user).Updates(updates).Error; err != nil {
+			log.Errorf("update user: %v", err)
+			return fmt.Errorf("update user: %w", err)
 		}
-
-		if args.SocialAccounts != nil {
-			user.SocialAccounts = args.SocialAccounts
-			if err := tx.Model(user).Select("social_accounts").Updates(user).Error; err != nil {
-				log.Errorf("update user social_accounts: %v", err)
-				return fmt.Errorf("update user social_accounts: %w", err)
-			}
-		}
-
-		if args.Password != nil {
-			hashed, err := hashOptionalPassword(args.Password)
-			if err != nil {
-				return err
-			}
-			if err := tx.Model(user).Update("password", hashed).Error; err != nil {
-				log.Errorf("update user password: %v", err)
-				return fmt.Errorf("update user password: %w", err)
-			}
-		}
-
-		if args.CreatedAt != nil {
-			if err := tx.Model(user).UpdateColumn("created_at", *args.CreatedAt).Error; err != nil {
-				log.Errorf("update user created_at: %v", err)
-				return fmt.Errorf("update user created_at: %w", err)
-			}
-		}
-
-		if args.UpdatedAt != nil {
-			if err := tx.Model(user).UpdateColumn("updated_at", *args.UpdatedAt).Error; err != nil {
-				log.Errorf("update user updated_at: %v", err)
-				return fmt.Errorf("update user updated_at: %w", err)
-			}
-		}
-
-		return nil
-	}); err != nil {
-		return nil, err
 	}
 
-	return s.GetUserByID(ctx, id)
+	if args.SocialAccounts != nil {
+		user.SocialAccounts = args.SocialAccounts
+		if err := tx.Model(user).Select("social_accounts").Updates(user).Error; err != nil {
+			log.Errorf("update user social_accounts: %v", err)
+			return fmt.Errorf("update user social_accounts: %w", err)
+		}
+	}
+
+	if args.Password != nil {
+		hashed, err := hashOptionalPassword(args.Password)
+		if err != nil {
+			return err
+		}
+		if err := tx.Model(user).Update("password", hashed).Error; err != nil {
+			log.Errorf("update user password: %v", err)
+			return fmt.Errorf("update user password: %w", err)
+		}
+	}
+
+	if args.CreatedAt != nil {
+		if err := tx.Model(user).UpdateColumn("created_at", *args.CreatedAt).Error; err != nil {
+			log.Errorf("update user created_at: %v", err)
+			return fmt.Errorf("update user created_at: %w", err)
+		}
+	}
+
+	if args.UpdatedAt != nil {
+		if err := tx.Model(user).UpdateColumn("updated_at", *args.UpdatedAt).Error; err != nil {
+			log.Errorf("update user updated_at: %v", err)
+			return fmt.Errorf("update user updated_at: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // DeleteUser deletes a user by ID.

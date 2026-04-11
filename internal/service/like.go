@@ -135,14 +135,7 @@ type myLikeContentAggregate struct {
 	RecentAttachmentID   string
 }
 
-type myContentLikeRow struct {
-	LikeID    string    `gorm:"column:like_id"`
-	LikedAt   time.Time `gorm:"column:liked_at"`
-	TargetID  string    `gorm:"column:target_id"`
-	ContentID string    `gorm:"column:content_id"`
-}
-
-type myCommentLikeRow struct {
+type myLikeRow struct {
 	LikeID       string    `gorm:"column:like_id"`
 	LikedAt      time.Time `gorm:"column:liked_at"`
 	TargetID     string    `gorm:"column:target_id"`
@@ -150,111 +143,64 @@ type myCommentLikeRow struct {
 	AttachmentID string    `gorm:"column:attachment_id"`
 }
 
-type myAttachmentLikeRow struct {
-	LikeID       string    `gorm:"column:like_id"`
-	LikedAt      time.Time `gorm:"column:liked_at"`
-	TargetID     string    `gorm:"column:target_id"`
-	ContentID    string    `gorm:"column:content_id"`
-	AttachmentID string    `gorm:"column:attachment_id"`
+// myLikeQuerySpec defines the SQL shape for loading likes of a specific target type.
+type myLikeQuerySpec struct {
+	targetType entity.TargetType
+	selectCols string
+	joins      []string
 }
 
-func loadMyContentLikeInteractions(ctx context.Context, db *gorm.DB, userID string) ([]myLikeInteraction, error) {
-	var rows []myContentLikeRow
-	err := db.WithContext(ctx).Model(&entity.Like{}).
-		Select("likes.id AS like_id, likes.created_at AS liked_at, likes.target_id AS target_id, contents.id AS content_id").
-		Joins("JOIN contents ON contents.id = likes.target_id").
-		Where("likes.user_id = ? AND likes.target_type = ?", userID, entity.TargetTypeContent).
-		Where("contents.status = ?", entity.ContentStatusPublished).
-		Scan(&rows).Error
-	if err != nil {
+// myLikeQuerySpecs maps each target type to its query shape.
+var myLikeQuerySpecs = []myLikeQuerySpec{
+	{
+		targetType: entity.TargetTypeContent,
+		selectCols: "likes.id AS like_id, likes.created_at AS liked_at, likes.target_id AS target_id, contents.id AS content_id, '' AS attachment_id",
+		joins:      []string{"JOIN contents ON contents.id = likes.target_id"},
+	},
+	{
+		targetType: entity.TargetTypeComment,
+		selectCols: "likes.id AS like_id, likes.created_at AS liked_at, likes.target_id AS target_id, comments.content_id AS content_id, comments.attachment_id AS attachment_id",
+		joins:      []string{"JOIN comments ON comments.id = likes.target_id", "JOIN contents ON contents.id = comments.content_id"},
+	},
+	{
+		targetType: entity.TargetTypeAttachment,
+		selectCols: "likes.id AS like_id, likes.created_at AS liked_at, likes.target_id AS target_id, attachments.content_id AS content_id, attachments.id AS attachment_id",
+		joins:      []string{"JOIN attachments ON attachments.id = likes.target_id", "JOIN contents ON contents.id = attachments.content_id"},
+	},
+}
+
+func loadMyLikeInteractionsByType(ctx context.Context, db *gorm.DB, userID string, spec myLikeQuerySpec) ([]myLikeInteraction, error) {
+	var rows []myLikeRow
+	q := db.WithContext(ctx).Model(&entity.Like{}).
+		Select(spec.selectCols).
+		Where("likes.user_id = ? AND likes.target_type = ?", userID, spec.targetType).
+		Where("contents.status = ?", entity.ContentStatusPublished)
+	for _, join := range spec.joins {
+		q = q.Joins(join)
+	}
+	if err := q.Scan(&rows).Error; err != nil {
 		return nil, err
 	}
-
 	items := make([]myLikeInteraction, 0, len(rows))
 	for _, row := range rows {
 		items = append(items, myLikeInteraction{
-			LikeID:     row.LikeID,
-			LikedAt:    row.LikedAt,
-			TargetType: entity.TargetTypeContent,
-			TargetID:   row.TargetID,
-			ContentID:  row.ContentID,
-		})
-	}
-	return items, nil
-}
-
-func loadMyCommentLikeInteractions(ctx context.Context, db *gorm.DB, userID string) ([]myLikeInteraction, error) {
-	var rows []myCommentLikeRow
-	err := db.WithContext(ctx).Model(&entity.Like{}).
-		Select("likes.id AS like_id, likes.created_at AS liked_at, likes.target_id AS target_id, comments.content_id AS content_id, comments.attachment_id AS attachment_id").
-		Joins("JOIN comments ON comments.id = likes.target_id").
-		Joins("JOIN contents ON contents.id = comments.content_id").
-		Where("likes.user_id = ? AND likes.target_type = ?", userID, entity.TargetTypeComment).
-		Where("contents.status = ?", entity.ContentStatusPublished).
-		Scan(&rows).Error
-	if err != nil {
-		return nil, err
-	}
-
-	items := make([]myLikeInteraction, 0, len(rows))
-	for _, row := range rows {
-		items = append(items, myLikeInteraction{
-			LikeID:       row.LikeID,
-			LikedAt:      row.LikedAt,
-			TargetType:   entity.TargetTypeComment,
-			TargetID:     row.TargetID,
-			ContentID:    row.ContentID,
-			AttachmentID: row.AttachmentID,
-		})
-	}
-	return items, nil
-}
-
-func loadMyAttachmentLikeInteractions(ctx context.Context, db *gorm.DB, userID string) ([]myLikeInteraction, error) {
-	var rows []myAttachmentLikeRow
-	err := db.WithContext(ctx).Model(&entity.Like{}).
-		Select("likes.id AS like_id, likes.created_at AS liked_at, likes.target_id AS target_id, attachments.content_id AS content_id, attachments.id AS attachment_id").
-		Joins("JOIN attachments ON attachments.id = likes.target_id").
-		Joins("JOIN contents ON contents.id = attachments.content_id").
-		Where("likes.user_id = ? AND likes.target_type = ?", userID, entity.TargetTypeAttachment).
-		Where("contents.status = ?", entity.ContentStatusPublished).
-		Scan(&rows).Error
-	if err != nil {
-		return nil, err
-	}
-
-	items := make([]myLikeInteraction, 0, len(rows))
-	for _, row := range rows {
-		items = append(items, myLikeInteraction{
-			LikeID:       row.LikeID,
-			LikedAt:      row.LikedAt,
-			TargetType:   entity.TargetTypeAttachment,
-			TargetID:     row.TargetID,
-			ContentID:    row.ContentID,
-			AttachmentID: row.AttachmentID,
+			LikeID: row.LikeID, LikedAt: row.LikedAt,
+			TargetType: spec.targetType, TargetID: row.TargetID,
+			ContentID: row.ContentID, AttachmentID: row.AttachmentID,
 		})
 	}
 	return items, nil
 }
 
 func loadMyLikeInteractions(ctx context.Context, db *gorm.DB, userID string) ([]myLikeInteraction, error) {
-	contentLikes, err := loadMyContentLikeInteractions(ctx, db, userID)
-	if err != nil {
-		return nil, fmt.Errorf("load content likes: %w", err)
+	var items []myLikeInteraction
+	for _, spec := range myLikeQuerySpecs {
+		result, err := loadMyLikeInteractionsByType(ctx, db, userID, spec)
+		if err != nil {
+			return nil, fmt.Errorf("load %s likes: %w", spec.targetType, err)
+		}
+		items = append(items, result...)
 	}
-	commentLikes, err := loadMyCommentLikeInteractions(ctx, db, userID)
-	if err != nil {
-		return nil, fmt.Errorf("load comment likes: %w", err)
-	}
-	attachmentLikes, err := loadMyAttachmentLikeInteractions(ctx, db, userID)
-	if err != nil {
-		return nil, fmt.Errorf("load attachment likes: %w", err)
-	}
-
-	items := make([]myLikeInteraction, 0, len(contentLikes)+len(commentLikes)+len(attachmentLikes))
-	items = append(items, contentLikes...)
-	items = append(items, commentLikes...)
-	items = append(items, attachmentLikes...)
 	return items, nil
 }
 
