@@ -203,12 +203,12 @@ function MyViews() {
           </p>
         </div>
       ) : (
-        <div className="px-6 py-8 lg:px-12">
+        <div className="px-4 py-8 lg:px-8">
           <div className="space-y-8">
             {groupedItems.map((group) => (
               <section key={group.key} className="relative">
                 <div className="absolute bottom-0 left-0 top-0 hidden md:block">
-                  <div className="grid h-full grid-cols-[72px_32px_minmax(0,1fr)] gap-5">
+                  <div className="grid h-full grid-cols-[52px_26px_minmax(0,1fr)] gap-3">
                     <div />
                     <div className="relative">
                       <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-[linear-gradient(180deg,rgba(232,238,248,0)_0%,rgba(232,238,248,1)_12%,rgba(232,238,248,1)_88%,rgba(232,238,248,0)_100%)]" />
@@ -218,7 +218,7 @@ function MyViews() {
                 </div>
 
                 <div className="sticky top-14 z-10 backdrop-blur-xs">
-                  <div className="relative grid grid-cols-[32px_minmax(0,1fr)] gap-3 md:grid-cols-[72px_32px_minmax(0,1fr)] md:gap-5">
+                  <div className="relative grid grid-cols-[32px_minmax(0,1fr)] gap-3 md:grid-cols-[52px_26px_minmax(0,1fr)] md:gap-3">
                     <div className="hidden md:flex items-center justify-end pr-2">
                       <span className="text-[13px] font-semibold tracking-[0.08em] text-[#52607a]">
                         {group.label}
@@ -238,7 +238,7 @@ function MyViews() {
                   {group.items.map((item) => (
                     <div
                       key={`${item.content.id}-${item.last_viewed_at}`}
-                      className="grid gap-4 md:grid-cols-[72px_32px_minmax(0,1fr)] md:gap-5"
+                      className="grid gap-4 md:grid-cols-[52px_26px_minmax(0,1fr)] md:gap-3"
                     >
                       <div className="hidden md:flex flex-col items-end pt-7">
                         <span className="text-xs font-semibold leading-none tracking-[0.08em] text-[#6c7890]">
