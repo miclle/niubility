@@ -231,7 +231,8 @@ func TestBuildQiniuDeliveryURL_WithNamedStyleAndQueryMode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("buildQiniuDeliveryURL() error = %v", err)
 	}
-	if got != "https://img.example.com/attachments/demo.png?style=gallery-card" {
+	// Qiniu named styles in query mode are appended as raw query fragments.
+	if got != "https://img.example.com/attachments/demo.png?gallery-card" {
 		t.Fatalf("buildQiniuDeliveryURL() = %q", got)
 	}
 }
