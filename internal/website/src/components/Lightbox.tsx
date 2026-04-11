@@ -23,6 +23,9 @@ interface LightboxProps {
   onCommentCountChange?: (count: number) => void
   likedAttachmentIds?: Set<string>
   onAttachmentLikeChange?: (attachmentId: string, liked: boolean, likeCount: number) => void
+  initialInfoPanelOpen?: boolean
+  highlightedCommentID?: string
+  highlightedAttachmentID?: string
 }
 
 // THUMB_SIZE is the thumbnail size in the bottom strip.
@@ -44,10 +47,11 @@ interface InfoPanelProps {
   onClose: () => void
   open: boolean
   width: number
+  highlightedCommentID?: string
 }
 
 // InfoPanel renders the slide-in details panel for the lightbox.
-function InfoPanel({ attachment, isVideo, filename, onDownload, contentId, commentCount, onCommentCountChange, onClose, open, width }: InfoPanelProps) {
+function InfoPanel({ attachment, isVideo, filename, onDownload, contentId, commentCount, onCommentCountChange, onClose, open, width, highlightedCommentID }: InfoPanelProps) {
   const { t } = useTranslation('common')
   return (
     <div
@@ -128,6 +132,7 @@ function InfoPanel({ attachment, isVideo, filename, onDownload, contentId, comme
               attachmentID={attachment.id}
               commentCount={commentCount}
               onCommentCountChange={onCommentCountChange}
+              highlightedCommentID={highlightedCommentID}
             />
           </div>
         )}
@@ -195,6 +200,7 @@ function Lightbox({
   items, initialIndex, open, onClose, onIndexChange,
   contentId, commentCount, onCommentCountChange,
   likedAttachmentIds, onAttachmentLikeChange,
+  initialInfoPanelOpen = false, highlightedCommentID, highlightedAttachmentID,
 }: LightboxProps) {
   const { t } = useTranslation('common')
   const { siteConfig } = useAppContext()
@@ -210,8 +216,9 @@ function Lightbox({
     if (open) {
       setCurrent(initialIndex)
       setZoom(1)
+      setInfoPanelOpen(initialInfoPanelOpen)
     }
-  }, [open, initialIndex])
+  }, [open, initialIndex, initialInfoPanelOpen])
 
   // Reset zoom when switching images
   useEffect(() => { setZoom(1) }, [current])
@@ -359,6 +366,7 @@ function Lightbox({
   const src = isVideo ? fileURL(originalSourceURL) : fileURL(originalSourceURL, siteConfig?.gallery_original_image_style)
   const filename = attachment.filename || attachment.title || attachment.url.split('/').pop() || 'download'
   const isFavorited = likedAttachmentIds?.has(attachment.id) || false
+  const isHighlightedAttachment = attachment.id === highlightedAttachmentID
 
   const THUMB_STRIP_H = items.length > 1 ? 80 : 0
   const INFO_PANEL_W = 360
@@ -421,7 +429,11 @@ function Lightbox({
             src={src}
             alt={attachment.title || `${current + 1}`}
             className="max-h-full object-contain select-none transition-transform duration-200"
-            style={{ transform: `scale(${zoom})`, maxWidth: '100%' }}
+            style={{
+              transform: `scale(${zoom})`,
+              maxWidth: '100%',
+              boxShadow: isHighlightedAttachment ? '0 0 0 4px rgba(255,255,255,0.85)' : undefined,
+            }}
             draggable={false}
           />
         )}
@@ -466,6 +478,7 @@ function Lightbox({
         onClose={() => setInfoPanelOpen(false)}
         open={infoPanelOpen}
         width={INFO_PANEL_W}
+        highlightedCommentID={highlightedCommentID}
       />
 
       {/* Thumbnail strip */}

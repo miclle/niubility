@@ -40,6 +40,8 @@ function PodcastDetail() {
   // Derive currentPodcastIndex from URL search param ?p=N
   const pParam = searchParams.get('p')
   const currentPodcastIndex = pParam !== null ? parseInt(pParam, 10) || 0 : 0
+  const highlightedCommentID = searchParams.get('liked_comment') || undefined
+  const highlightedContent = searchParams.get('liked_content') === '1'
 
   const setCurrentPodcastIndex = useCallback((index: number) => {
     const params: Record<string, string> = index === 0 ? {} : { p: String(index) }
@@ -228,7 +230,11 @@ function PodcastDetail() {
             <button
               onClick={handleLike}
               className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
-              style={{ background: liked ? 'rgba(6,95,212,0.1)' : 'rgba(0,0,0,0.05)', color: liked ? '#065fd4' : '#0f0f0f' }}
+              style={{
+                background: liked ? 'rgba(6,95,212,0.1)' : 'rgba(0,0,0,0.05)',
+                color: liked ? '#065fd4' : '#0f0f0f',
+                boxShadow: highlightedContent ? 'inset 0 0 0 1px rgba(6,95,212,0.28)' : undefined,
+              }}
               disabled={!currentUser}
             >
               <ThumbsUp size={18} fill={liked ? 'currentColor' : 'none'} />
@@ -335,7 +341,7 @@ function PodcastDetail() {
 
         {/* Comments */}
         <div id="comments">
-          <CommentSection contentID={content.id} commentCount={commentCount} onCommentCountChange={setCommentCount} />
+          <CommentSection contentID={content.id} commentCount={commentCount} onCommentCountChange={setCommentCount} highlightedCommentID={highlightedCommentID} />
         </div>
 
         <div className="xl:hidden mt-12">

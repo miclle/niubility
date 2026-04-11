@@ -105,10 +105,11 @@ interface CommentSectionProps {
   attachmentID?: string
   commentCount: number
   onCommentCountChange?: (count: number) => void
+  highlightedCommentID?: string
 }
 
 // CommentSection displays and manages comments for a content item.
-function CommentSection({ contentID, attachmentID, commentCount, onCommentCountChange }: CommentSectionProps) {
+function CommentSection({ contentID, attachmentID, commentCount, onCommentCountChange, highlightedCommentID }: CommentSectionProps) {
   const { t } = useTranslation('comments')
   const { currentUser } = useAppContext()
   const queryClient = useQueryClient()
@@ -125,6 +126,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
   const [localComments, setLocalComments] = useState<Comment[]>([])
   const [likeOverrides, setLikeOverrides] = useState<Map<string, number>>(new Map())
   const [pinOverrides, setPinOverrides] = useState<Map<string, string | null>>(new Map())
+  const [activeHighlightCommentID, setActiveHighlightCommentID] = useState<string | null>(highlightedCommentID || null)
   const localCountDelta = useRef(0)
 
   // Check if current user is admin
@@ -183,6 +185,43 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
   // Build the comment list from pages + local additions
   const serverComments = data?.pages.flatMap((p) => p.data.items) ?? []
   const allComments = [...localComments, ...serverComments]
+
+  useEffect(() => {
+    setActiveHighlightCommentID(highlightedCommentID || null)
+  }, [highlightedCommentID])
+
+  const hasHighlightedComment = useCallback((comments: Comment[], commentID: string): boolean => {
+    for (const comment of comments) {
+      if (comment.id === commentID) {
+        return true
+      }
+      if ((comment.replies || []).some((reply) => reply.id === commentID)) {
+        return true
+      }
+    }
+    return false
+  }, [])
+
+  useEffect(() => {
+    if (!highlightedCommentID) return
+    if (hasHighlightedComment(allComments, highlightedCommentID)) return
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage()
+    }
+  }, [allComments, fetchNextPage, hasHighlightedComment, hasNextPage, highlightedCommentID, isFetchingNextPage])
+
+  useEffect(() => {
+    if (!activeHighlightCommentID) return
+    const timer = window.setTimeout(() => setActiveHighlightCommentID(null), 4000)
+    return () => window.clearTimeout(timer)
+  }, [activeHighlightCommentID])
+
+  useEffect(() => {
+    if (!activeHighlightCommentID) return
+    const element = document.getElementById(`comment-${activeHighlightCommentID}`)
+    if (!element) return
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [activeHighlightCommentID, allComments])
 
   // Apply like count overrides and local reply additions
   const getDisplayLikeCount = (comment: Comment): number => {
@@ -311,9 +350,15 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
     const displayLikeCount = getDisplayLikeCount(comment)
     const displayPinnedAt = getDisplayPinnedAt(comment)
     const isPinned = !!displayPinnedAt
+    const isHighlighted = activeHighlightCommentID === comment.id
 
     return (
-      <div key={comment.id} id={`comment-${comment.id}`} className={`flex gap-3 ${isReply ? 'ml-12' : ''}`}>
+      <div
+        key={comment.id}
+        id={`comment-${comment.id}`}
+        className={`flex gap-3 rounded-2xl px-3 py-2 transition-colors ${isReply ? 'ml-12' : ''}`}
+        style={isHighlighted ? { background: 'rgba(6,95,212,0.08)', boxShadow: 'inset 0 0 0 1px rgba(6,95,212,0.22)' } : undefined}
+      >
         {/* Avatar */}
         <Avatar className="size-9">
           <SiteAvatarImage src={comment.user?.avatar || ''} alt={comment.user?.name || t('common:anonymousUser')} />

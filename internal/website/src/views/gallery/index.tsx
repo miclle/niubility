@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
+import { useParams, useNavigate, Link, useLocation, useSearchParams } from 'react-router-dom'
 import { ThumbsUp, MessageCircle, Pencil, Bookmark } from 'lucide-react'
 import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'
@@ -23,6 +23,7 @@ function GalleryDetail() {
   const navigate = useNavigate()
   const { currentUser, categories, siteConfig } = useAppContext()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const [content, setContent] = useState<Content | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -34,6 +35,9 @@ function GalleryDetail() {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
   const [likedAttachmentIds, setLikedAttachmentIds] = useState<Set<string>>(new Set())
+  const highlightedCommentID = searchParams.get('liked_comment') || undefined
+  const highlightedAttachmentID = searchParams.get('liked_attachment') || undefined
+  const highlightedContent = searchParams.get('liked_content') === '1'
 
   // Parse hash to restore lightbox state on load / hash change
   useEffect(() => {
@@ -66,6 +70,14 @@ function GalleryDetail() {
       .catch(() => setError(true))
       .finally(() => setLoading(false))
   }, [id, navigate])
+
+  useEffect(() => {
+    if (!content || !highlightedAttachmentID) return
+    const index = (content.attachments || []).findIndex((attachment) => attachment.id === highlightedAttachmentID)
+    if (index < 0) return
+    setLightboxIndex(index)
+    setLightboxOpen(true)
+  }, [content, highlightedAttachmentID])
 
   const handleImageClick = useCallback((index: number) => {
     window.location.hash = `photo=${index}`
@@ -141,7 +153,11 @@ function GalleryDetail() {
         <div className="flex items-center gap-2">
           <button
             className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
-            style={{ background: liked ? 'rgba(6,95,212,0.1)' : 'rgba(0,0,0,0.05)', color: liked ? '#065fd4' : '#0f0f0f' }}
+            style={{
+              background: liked ? 'rgba(6,95,212,0.1)' : 'rgba(0,0,0,0.05)',
+              color: liked ? '#065fd4' : '#0f0f0f',
+              boxShadow: highlightedContent ? 'inset 0 0 0 1px rgba(6,95,212,0.28)' : undefined,
+            }}
             onClick={() => {
               toggleLike('content', content.id).then((res) => { setLiked(res.data.liked); setLikeCount(res.data.like_count) })
             }}
@@ -178,7 +194,7 @@ function GalleryDetail() {
         </div>
       </div>
       {galleryItems.length > 0 && (
-        <JustifiedGrid items={galleryItems} onImageClick={handleImageClick} />
+        <JustifiedGrid items={galleryItems} onImageClick={handleImageClick} highlightedAttachmentID={highlightedAttachmentID} />
       )}
 
       {/* Description & tags */}
@@ -199,7 +215,12 @@ function GalleryDetail() {
 
       {/* Comments */}
       <div id="comments">
-        <CommentSection contentID={content.id} commentCount={commentCount} onCommentCountChange={setCommentCount} />
+        <CommentSection
+          contentID={content.id}
+          commentCount={commentCount}
+          onCommentCountChange={setCommentCount}
+          highlightedCommentID={highlightedAttachmentID ? undefined : highlightedCommentID}
+        />
       </div>
 
       {/* Lightbox */}
@@ -214,6 +235,9 @@ function GalleryDetail() {
         onCommentCountChange={setCommentCount}
         likedAttachmentIds={likedAttachmentIds}
         onAttachmentLikeChange={handleAttachmentLikeChange}
+        initialInfoPanelOpen={!!highlightedAttachmentID}
+        highlightedCommentID={highlightedCommentID}
+        highlightedAttachmentID={highlightedAttachmentID}
       />
     </div>
   )

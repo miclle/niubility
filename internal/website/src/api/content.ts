@@ -1,5 +1,5 @@
 import client from './client'
-import type { Content, ListContentsArgs, ListContentsResponse, CreateContentArgs, UpdateContentArgs, ListCommentsResponse, Comment, LikeResponse, FavoriteResponse, ListMyCommentsResponse } from 'src/types/content'
+import type { Content, ListContentsArgs, ListContentsResponse, CreateContentArgs, UpdateContentArgs, ListCommentsResponse, Comment, LikeResponse, FavoriteResponse, ListMyCommentsResponse, ListMyLikesResponse } from 'src/types/content'
 
 // listContents fetches a paginated list of contents with optional filters.
 export function listContents(params?: ListContentsArgs) {
@@ -55,6 +55,11 @@ export function listFavorites(params?: { limit?: number; cursor?: string }) {
 // listMyComments fetches a paginated list of the current user's comments.
 export function listMyComments(params?: { limit?: number; cursor?: string }) {
   return client.get<ListMyCommentsResponse>('/comments/mine', { params })
+}
+
+// listMyLikes fetches a paginated list of the current user's likes grouped by content.
+export function listMyLikes(params?: { limit?: number; cursor?: string }) {
+  return client.get<ListMyLikesResponse>('/likes/mine', { params })
 }
 
 // pinComment pins or unpins a comment (admin only).

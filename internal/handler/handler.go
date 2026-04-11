@@ -82,6 +82,7 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	api.DELETE("/comments/:id", ctrl.DeleteComment)
 
 	// like routes (new unified endpoint)
+	api.GET("/likes/mine", ctrl.ListMyLikes)
 	api.POST("/likes", ctrl.ToggleLike)
 
 	// follow routes (authenticated users)

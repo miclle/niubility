@@ -193,6 +193,25 @@ export interface ListMyCommentsResponse {
   total: number
 }
 
+// MyLikeItem represents the current user's like activity grouped by content.
+export interface MyLikeItem {
+  content: Content
+  last_liked_at: string
+  liked_content: boolean
+  liked_comment_count: number
+  liked_attachment_count: number
+  recent_target_type: 'content' | 'comment' | 'attachment'
+  recent_target_id: string
+  recent_attachment_id: string
+}
+
+// ListMyLikesResponse represents the response for listing the current user's likes.
+export interface ListMyLikesResponse {
+  items: MyLikeItem[]
+  next_cursor?: string
+  total: number
+}
+
 // LikeResponse represents the response after toggling a like.
 export interface LikeResponse {
   liked: boolean

@@ -11,6 +11,7 @@ interface JustifiedGridProps {
   targetRowHeight?: number
   gap?: number
   onImageClick: (index: number) => void
+  highlightedAttachmentID?: string
 }
 
 // DEFAULT_ASPECT_RATIO is used for items missing width/height data (4:3).
@@ -91,7 +92,7 @@ function computeLayout(
 }
 
 // JustifiedGrid renders images in a justified (equal-height rows, variable-width) grid layout.
-function JustifiedGrid({ items, targetRowHeight = 220, gap = 4, onImageClick }: JustifiedGridProps) {
+function JustifiedGrid({ items, targetRowHeight = 220, gap = 4, onImageClick, highlightedAttachmentID }: JustifiedGridProps) {
   const { t } = useTranslation('common')
   const { siteConfig } = useAppContext()
   const containerRef = useRef<HTMLDivElement>(null)
@@ -110,6 +111,13 @@ function JustifiedGrid({ items, targetRowHeight = 220, gap = 4, onImageClick }: 
     return () => observer.disconnect()
   }, [updateWidth])
 
+  useEffect(() => {
+    if (!highlightedAttachmentID) return
+    const element = document.getElementById(`attachment-${highlightedAttachmentID}`)
+    if (!element) return
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [highlightedAttachmentID, items])
+
   const layout = computeLayout(items, containerWidth, targetRowHeight, gap)
 
   return (
@@ -122,8 +130,15 @@ function JustifiedGrid({ items, targetRowHeight = 220, gap = 4, onImageClick }: 
         return (
           <div
             key={attachment.id || item.index}
+            id={attachment.id ? `attachment-${attachment.id}` : undefined}
             className="absolute overflow-hidden rounded-sm cursor-pointer group"
-            style={{ top: item.top, left: item.left, width: item.width, height: item.height }}
+            style={{
+              top: item.top,
+              left: item.left,
+              width: item.width,
+              height: item.height,
+              boxShadow: attachment.id === highlightedAttachmentID ? '0 0 0 3px rgba(6,95,212,0.7)' : undefined,
+            }}
             onClick={() => onImageClick(item.index)}
           >
             {attachment.type === 'video' ? (

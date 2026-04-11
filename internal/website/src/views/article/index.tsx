@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { ThumbsUp, MessageCircle, Pencil, Bookmark, Download, FileText } from 'lucide-react'
 import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'
@@ -19,6 +19,7 @@ function ArticleDetail() {
   const { t } = useTranslation(['content', 'common'])
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { currentUser } = useAppContext()
   const [content, setContent] = useState<Content | null>(null)
   const [loading, setLoading] = useState(true)
@@ -59,6 +60,8 @@ function ArticleDetail() {
 
   const isDraft = content.status === 'draft'
   const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin' || currentUser.id === content.author_id)
+  const highlightedCommentID = searchParams.get('liked_comment') || undefined
+  const highlightedContent = searchParams.get('liked_content') === '1'
 
   const renderDocuments = () => {
     const docs = (content.attachments || []).filter((a) => a.type === 'document')
@@ -156,7 +159,11 @@ function ArticleDetail() {
           <div className="flex items-center gap-3">
             <button
               className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
-              style={{ background: liked ? 'rgba(6,95,212,0.1)' : 'rgba(0,0,0,0.05)', color: liked ? '#065fd4' : '#0f0f0f' }}
+              style={{
+                background: liked ? 'rgba(6,95,212,0.1)' : 'rgba(0,0,0,0.05)',
+                color: liked ? '#065fd4' : '#0f0f0f',
+                boxShadow: highlightedContent ? 'inset 0 0 0 1px rgba(6,95,212,0.28)' : undefined,
+              }}
               onClick={() => {
                 toggleLike('content', content.id).then((res) => { setLiked(res.data.liked); setLikeCount(res.data.like_count) })
               }}
@@ -194,7 +201,7 @@ function ArticleDetail() {
         </div>
 
         <div id="comments">
-          <CommentSection contentID={content.id} commentCount={commentCount} onCommentCountChange={setCommentCount} />
+          <CommentSection contentID={content.id} commentCount={commentCount} onCommentCountChange={setCommentCount} highlightedCommentID={highlightedCommentID} />
         </div>
       </div>
     </div>

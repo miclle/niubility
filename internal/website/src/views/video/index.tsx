@@ -40,6 +40,8 @@ function VideoDetail() {
   // Derive currentVideoIndex from URL search param ?v=N
   const vParam = searchParams.get('v')
   const currentVideoIndex = vParam !== null ? parseInt(vParam, 10) || 0 : 0
+  const highlightedCommentID = searchParams.get('liked_comment') || undefined
+  const highlightedContent = searchParams.get('liked_content') === '1'
 
   const setCurrentVideoIndex = useCallback((index: number, shouldAutoplay = false) => {
     setAutoplay(shouldAutoplay)
@@ -115,7 +117,11 @@ function VideoDetail() {
       <div className="flex items-center gap-2">
         <button
           className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
-          style={{ background: liked ? 'rgba(6,95,212,0.1)' : 'rgba(0,0,0,0.05)', color: liked ? '#065fd4' : '#0f0f0f' }}
+          style={{
+            background: liked ? 'rgba(6,95,212,0.1)' : 'rgba(0,0,0,0.05)',
+            color: liked ? '#065fd4' : '#0f0f0f',
+            boxShadow: highlightedContent ? 'inset 0 0 0 1px rgba(6,95,212,0.28)' : undefined,
+          }}
           onClick={() => {
             toggleLike('content', content.id).then((res) => { setLiked(res.data.liked); setLikeCount(res.data.like_count) })
           }}
@@ -341,7 +347,7 @@ function VideoDetail() {
         {renderDescription()}
         {renderDocuments()}
         <div id="comments">
-          <CommentSection contentID={content.id} commentCount={commentCount} onCommentCountChange={setCommentCount} />
+          <CommentSection contentID={content.id} commentCount={commentCount} onCommentCountChange={setCommentCount} highlightedCommentID={highlightedCommentID} />
         </div>
       </div>
       {!theaterMode && renderSidebar()}
