@@ -6,6 +6,7 @@ import { marked } from 'marked'
 import { useTranslation } from 'react-i18next'
 
 import { getContent, listContents, toggleLike, favoriteContent } from 'src/api/content'
+import { recordContentView } from 'src/api/view'
 import { fileURL } from 'src/api/upload'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
 import { getContentCover } from 'src/lib/content-assets'
@@ -78,6 +79,16 @@ function PodcastDetail() {
       .then((res) => setRelatedContents((res.data.items || []).filter((c) => c.id !== content.id)))
       .catch(() => {})
   }, [content])
+
+  useEffect(() => {
+    if (!currentUser || !content?.id) return
+
+    const timer = window.setTimeout(() => {
+      recordContentView(content.id, { trigger: 'detail' }).catch(() => {})
+    }, 5000)
+
+    return () => window.clearTimeout(timer)
+  }, [content?.id, currentUser])
 
   if (loading) {
     return <div className="text-center py-20" style={{ color: '#909090' }}>{t('common:loading')}</div>

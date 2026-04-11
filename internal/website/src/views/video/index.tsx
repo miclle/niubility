@@ -5,6 +5,7 @@ import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'
 
 import { getContent, listContents, toggleLike, favoriteContent } from 'src/api/content'
+import { recordContentView } from 'src/api/view'
 import { fileURL } from 'src/api/upload'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
 import { getContentCover, getDefaultContentCover, getVideoSpeakerAvatar, getVideoSpeakerDisplayName } from 'src/lib/content-assets'
@@ -76,6 +77,16 @@ function VideoDetail() {
       .catch(() => setError(true))
       .finally(() => setLoading(false))
   }, [id, navigate])
+
+  useEffect(() => {
+    if (!currentUser || !content?.id) return
+
+    const timer = window.setTimeout(() => {
+      recordContentView(content.id, { trigger: 'detail' }).catch(() => {})
+    }, 5000)
+
+    return () => window.clearTimeout(timer)
+  }, [content?.id, currentUser])
 
   if (loading) {
     return <div className="p-6 text-center" style={{ color: '#606060' }}>{t('content:loading')}</div>

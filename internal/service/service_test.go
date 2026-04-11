@@ -32,6 +32,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		&entity.Category{},
 		&entity.Follow{},
 		&entity.Favorite{},
+		&entity.ContentView{},
 		&entity.BackupRecord{},
 		&entity.ServiceNode{},
 	); err != nil {

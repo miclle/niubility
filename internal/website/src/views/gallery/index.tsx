@@ -5,6 +5,7 @@ import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'
 
 import { getContent, toggleLike, favoriteContent } from 'src/api/content'
+import { recordContentView } from 'src/api/view'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
 import { getSpeakerAvatar, getSpeakerDisplayName } from 'src/lib/content-assets'
 import { useAppContext } from 'src/context/app'
@@ -78,6 +79,16 @@ function GalleryDetail() {
     setLightboxIndex(index)
     setLightboxOpen(true)
   }, [content, highlightedAttachmentID])
+
+  useEffect(() => {
+    if (!currentUser || !content?.id) return
+
+    const timer = window.setTimeout(() => {
+      recordContentView(content.id, { trigger: 'detail' }).catch(() => {})
+    }, 5000)
+
+    return () => window.clearTimeout(timer)
+  }, [content?.id, currentUser])
 
   const handleImageClick = useCallback((index: number) => {
     window.location.hash = `photo=${index}`

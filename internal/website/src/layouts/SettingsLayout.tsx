@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { User, FileText, Shield, Bell, ArrowLeft, Bookmark, MessageSquare, Heart, type LucideIcon } from 'lucide-react'
+import { User, FileText, Shield, Bell, ArrowLeft, Bookmark, MessageSquare, Heart, History, type LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -25,6 +25,7 @@ function SettingsLayout() {
     { to: '/settings/account', icon: User, label: t('settings:accountSettingsTitle') },
     { to: '/settings/contents', icon: FileText, label: t('settings:myContents') },
     { to: '/settings/favorites', icon: Bookmark, label: t('settings:myFavorites') },
+    { to: '/settings/views', icon: History, label: t('settings:myViews') },
     { to: '/settings/likes', icon: Heart, label: t('settings:myLikes') },
     { to: '/settings/comments', icon: MessageSquare, label: t('settings:myComments') },
     { to: '/settings/security', icon: Shield, label: t('settings:security') },
