@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/fox-gonic/fox/logger"
@@ -113,10 +114,20 @@ type MyLikeContentSummary struct {
 	RecentAttachmentID   string            `json:"recent_attachment_id"`
 }
 
-type myLikeContentRow struct {
+type myLikeInteraction struct {
+	LikeID       string
+	LikedAt      time.Time
+	TargetType   entity.TargetType
+	TargetID     string
+	ContentID    string
+	AttachmentID string
+}
+
+type myLikeContentAggregate struct {
 	ContentID            string
-	LastLikedAt          string
-	LikedContent         int64
+	LastLikedAt          time.Time
+	LastLikeID           string
+	LikedContent         bool
 	LikedCommentCount    int64
 	LikedAttachmentCount int64
 	RecentTargetType     entity.TargetType
@@ -124,156 +135,222 @@ type myLikeContentRow struct {
 	RecentAttachmentID   string
 }
 
-func myLikeInteractionsSQL() string {
-	return `
-SELECT
-	likes.id AS like_id,
-	likes.created_at AS liked_at,
-	likes.target_type AS target_type,
-	likes.target_id AS target_id,
-	contents.id AS content_id,
-	'' AS attachment_id
-FROM likes
-JOIN contents ON contents.id = likes.target_id
-WHERE likes.user_id = ? AND likes.target_type = ? AND contents.status = ?
-UNION ALL
-SELECT
-	likes.id AS like_id,
-	likes.created_at AS liked_at,
-	likes.target_type AS target_type,
-	likes.target_id AS target_id,
-	contents.id AS content_id,
-	comments.attachment_id AS attachment_id
-FROM likes
-JOIN comments ON comments.id = likes.target_id
-JOIN contents ON contents.id = comments.content_id
-WHERE likes.user_id = ? AND likes.target_type = ? AND contents.status = ?
-UNION ALL
-SELECT
-	likes.id AS like_id,
-	likes.created_at AS liked_at,
-	likes.target_type AS target_type,
-	likes.target_id AS target_id,
-	contents.id AS content_id,
-	attachments.id AS attachment_id
-FROM likes
-JOIN attachments ON attachments.id = likes.target_id
-JOIN contents ON contents.id = attachments.content_id
-WHERE likes.user_id = ? AND likes.target_type = ? AND contents.status = ?
-`
+type myContentLikeRow struct {
+	LikeID    string    `gorm:"column:like_id"`
+	LikedAt   time.Time `gorm:"column:liked_at"`
+	TargetID  string    `gorm:"column:target_id"`
+	ContentID string    `gorm:"column:content_id"`
 }
 
-func myLikeInteractionsArgs(userID string) []any {
-	return []any{
-		userID, entity.TargetTypeContent, entity.ContentStatusPublished,
-		userID, entity.TargetTypeComment, entity.ContentStatusPublished,
-		userID, entity.TargetTypeAttachment, entity.ContentStatusPublished,
-	}
+type myCommentLikeRow struct {
+	LikeID       string    `gorm:"column:like_id"`
+	LikedAt      time.Time `gorm:"column:liked_at"`
+	TargetID     string    `gorm:"column:target_id"`
+	ContentID    string    `gorm:"column:content_id"`
+	AttachmentID string    `gorm:"column:attachment_id"`
 }
 
-func parseLikedAt(value string) (time.Time, error) {
-	layouts := []string{
-		time.RFC3339Nano,
-		"2006-01-02 15:04:05.999999999-07:00",
-		"2006-01-02 15:04:05-07:00",
-		"2006-01-02 15:04:05.999999999",
-		"2006-01-02 15:04:05",
+type myAttachmentLikeRow struct {
+	LikeID       string    `gorm:"column:like_id"`
+	LikedAt      time.Time `gorm:"column:liked_at"`
+	TargetID     string    `gorm:"column:target_id"`
+	ContentID    string    `gorm:"column:content_id"`
+	AttachmentID string    `gorm:"column:attachment_id"`
+}
+
+func loadMyContentLikeInteractions(ctx context.Context, db *gorm.DB, userID string) ([]myLikeInteraction, error) {
+	var rows []myContentLikeRow
+	err := db.WithContext(ctx).Model(&entity.Like{}).
+		Select("likes.id AS like_id, likes.created_at AS liked_at, likes.target_id AS target_id, contents.id AS content_id").
+		Joins("JOIN contents ON contents.id = likes.target_id").
+		Where("likes.user_id = ? AND likes.target_type = ?", userID, entity.TargetTypeContent).
+		Where("contents.status = ?", entity.ContentStatusPublished).
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
 	}
-	for _, layout := range layouts {
-		if parsed, err := time.Parse(layout, value); err == nil {
-			return parsed, nil
+
+	items := make([]myLikeInteraction, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, myLikeInteraction{
+			LikeID:     row.LikeID,
+			LikedAt:    row.LikedAt,
+			TargetType: entity.TargetTypeContent,
+			TargetID:   row.TargetID,
+			ContentID:  row.ContentID,
+		})
+	}
+	return items, nil
+}
+
+func loadMyCommentLikeInteractions(ctx context.Context, db *gorm.DB, userID string) ([]myLikeInteraction, error) {
+	var rows []myCommentLikeRow
+	err := db.WithContext(ctx).Model(&entity.Like{}).
+		Select("likes.id AS like_id, likes.created_at AS liked_at, likes.target_id AS target_id, comments.content_id AS content_id, comments.attachment_id AS attachment_id").
+		Joins("JOIN comments ON comments.id = likes.target_id").
+		Joins("JOIN contents ON contents.id = comments.content_id").
+		Where("likes.user_id = ? AND likes.target_type = ?", userID, entity.TargetTypeComment).
+		Where("contents.status = ?", entity.ContentStatusPublished).
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]myLikeInteraction, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, myLikeInteraction{
+			LikeID:       row.LikeID,
+			LikedAt:      row.LikedAt,
+			TargetType:   entity.TargetTypeComment,
+			TargetID:     row.TargetID,
+			ContentID:    row.ContentID,
+			AttachmentID: row.AttachmentID,
+		})
+	}
+	return items, nil
+}
+
+func loadMyAttachmentLikeInteractions(ctx context.Context, db *gorm.DB, userID string) ([]myLikeInteraction, error) {
+	var rows []myAttachmentLikeRow
+	err := db.WithContext(ctx).Model(&entity.Like{}).
+		Select("likes.id AS like_id, likes.created_at AS liked_at, likes.target_id AS target_id, attachments.content_id AS content_id, attachments.id AS attachment_id").
+		Joins("JOIN attachments ON attachments.id = likes.target_id").
+		Joins("JOIN contents ON contents.id = attachments.content_id").
+		Where("likes.user_id = ? AND likes.target_type = ?", userID, entity.TargetTypeAttachment).
+		Where("contents.status = ?", entity.ContentStatusPublished).
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]myLikeInteraction, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, myLikeInteraction{
+			LikeID:       row.LikeID,
+			LikedAt:      row.LikedAt,
+			TargetType:   entity.TargetTypeAttachment,
+			TargetID:     row.TargetID,
+			ContentID:    row.ContentID,
+			AttachmentID: row.AttachmentID,
+		})
+	}
+	return items, nil
+}
+
+func loadMyLikeInteractions(ctx context.Context, db *gorm.DB, userID string) ([]myLikeInteraction, error) {
+	contentLikes, err := loadMyContentLikeInteractions(ctx, db, userID)
+	if err != nil {
+		return nil, fmt.Errorf("load content likes: %w", err)
+	}
+	commentLikes, err := loadMyCommentLikeInteractions(ctx, db, userID)
+	if err != nil {
+		return nil, fmt.Errorf("load comment likes: %w", err)
+	}
+	attachmentLikes, err := loadMyAttachmentLikeInteractions(ctx, db, userID)
+	if err != nil {
+		return nil, fmt.Errorf("load attachment likes: %w", err)
+	}
+
+	items := make([]myLikeInteraction, 0, len(contentLikes)+len(commentLikes)+len(attachmentLikes))
+	items = append(items, contentLikes...)
+	items = append(items, commentLikes...)
+	items = append(items, attachmentLikes...)
+	return items, nil
+}
+
+func aggregateMyLikesByContent(interactions []myLikeInteraction) []myLikeContentAggregate {
+	grouped := make(map[string]*myLikeContentAggregate, len(interactions))
+	for _, interaction := range interactions {
+		entry, ok := grouped[interaction.ContentID]
+		if !ok {
+			entry = &myLikeContentAggregate{ContentID: interaction.ContentID}
+			grouped[interaction.ContentID] = entry
+		}
+
+		if interaction.LikedAt.After(entry.LastLikedAt) || (interaction.LikedAt.Equal(entry.LastLikedAt) && interaction.LikeID > entry.LastLikeID) {
+			entry.LastLikedAt = interaction.LikedAt
+			entry.LastLikeID = interaction.LikeID
+			entry.RecentTargetType = interaction.TargetType
+			entry.RecentTargetID = interaction.TargetID
+			entry.RecentAttachmentID = interaction.AttachmentID
+		}
+
+		switch interaction.TargetType {
+		case entity.TargetTypeContent:
+			entry.LikedContent = true
+		case entity.TargetTypeComment:
+			entry.LikedCommentCount++
+		case entity.TargetTypeAttachment:
+			entry.LikedAttachmentCount++
 		}
 	}
-	return time.Time{}, fmt.Errorf("unsupported liked_at format: %s", value)
+
+	items := make([]myLikeContentAggregate, 0, len(grouped))
+	for _, item := range grouped {
+		items = append(items, *item)
+	}
+
+	sort.Slice(items, func(i, j int) bool {
+		if items[i].LastLikedAt.Equal(items[j].LastLikedAt) {
+			return items[i].ContentID > items[j].ContentID
+		}
+		return items[i].LastLikedAt.After(items[j].LastLikedAt)
+	})
+
+	return items
+}
+
+func filterMyLikeAggregatesByCursor(items []myLikeContentAggregate, cursor string) ([]myLikeContentAggregate, error) {
+	if cursor == "" {
+		return items, nil
+	}
+
+	parts, err := entity.DecodeCursor(cursor, 2)
+	if err != nil {
+		return nil, fmt.Errorf("decode cursor: %w", err)
+	}
+	cursorTime, err := time.Parse(time.RFC3339Nano, parts[0])
+	if err != nil {
+		return nil, fmt.Errorf("parse cursor last_liked_at: %w", err)
+	}
+	cursorContentID := parts[1]
+
+	filtered := make([]myLikeContentAggregate, 0, len(items))
+	for _, item := range items {
+		if item.LastLikedAt.Before(cursorTime) || (item.LastLikedAt.Equal(cursorTime) && item.ContentID < cursorContentID) {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered, nil
 }
 
 // ListMyLikesGroupedByContent returns a paginated list of the current user's likes grouped by content.
 func (s *Service) ListMyLikesGroupedByContent(ctx context.Context, userID string, pagination entity.Pagination) ([]MyLikeContentSummary, int64, string, error) {
 	log := logger.NewWithContext(ctx)
 
-	interactionsSQL := myLikeInteractionsSQL()
-	interactionArgs := myLikeInteractionsArgs(userID)
-
-	countSQL := fmt.Sprintf(`
-SELECT COUNT(*) AS total
-FROM (
-	SELECT DISTINCT content_id
-	FROM (%s) interactions
-) grouped
-`, interactionsSQL)
-
-	var total int64
-	if err := s.db.WithContext(ctx).Raw(countSQL, interactionArgs...).Scan(&total).Error; err != nil {
-		log.Errorf("ListMyLikesGroupedByContent: count: %v", err)
-		return nil, 0, "", fmt.Errorf("count my likes grouped by content: %w", err)
+	interactions, err := loadMyLikeInteractions(ctx, s.db, userID)
+	if err != nil {
+		log.Errorf("ListMyLikesGroupedByContent: interactions: %v", err)
+		return nil, 0, "", fmt.Errorf("load my likes grouped by content: %w", err)
 	}
 
-	listSQL := fmt.Sprintf(`
-WITH interactions AS (
-	%s
-),
-ranked AS (
-	SELECT
-		content_id,
-		target_type,
-		target_id,
-		attachment_id,
-		liked_at,
-		like_id,
-		ROW_NUMBER() OVER (PARTITION BY content_id ORDER BY liked_at DESC, like_id DESC) AS rn
-	FROM interactions
-),
-grouped AS (
-	SELECT
-		content_id,
-		MAX(liked_at) AS last_liked_at,
-		MAX(CASE WHEN target_type = 'content' THEN 1 ELSE 0 END) AS liked_content,
-		SUM(CASE WHEN target_type = 'comment' THEN 1 ELSE 0 END) AS liked_comment_count,
-		SUM(CASE WHEN target_type = 'attachment' THEN 1 ELSE 0 END) AS liked_attachment_count
-	FROM interactions
-	GROUP BY content_id
-)
-SELECT
-	grouped.content_id,
-	grouped.last_liked_at,
-	grouped.liked_content,
-	grouped.liked_comment_count,
-	grouped.liked_attachment_count,
-	ranked.target_type AS recent_target_type,
-	ranked.target_id AS recent_target_id,
-	ranked.attachment_id AS recent_attachment_id
-FROM grouped
-JOIN ranked ON ranked.content_id = grouped.content_id AND ranked.rn = 1
-`, interactionsSQL)
+	aggregates := aggregateMyLikesByContent(interactions)
+	total := int64(len(aggregates))
 
-	args := append([]any{}, interactionArgs...)
-	if pagination.Cursor != "" {
-		parts, err := entity.DecodeCursor(pagination.Cursor, 2)
-		if err != nil {
-			return nil, 0, "", fmt.Errorf("decode cursor: %w", err)
-		}
-		cursorTime, err := time.Parse(time.RFC3339Nano, parts[0])
-		if err != nil {
-			return nil, 0, "", fmt.Errorf("parse cursor last_liked_at: %w", err)
-		}
-		cursorContentID := parts[1]
-		listSQL += " WHERE (grouped.last_liked_at < ?) OR (grouped.last_liked_at = ? AND grouped.content_id < ?)"
-		args = append(args, cursorTime, cursorTime, cursorContentID)
+	aggregates, err = filterMyLikeAggregatesByCursor(aggregates, pagination.Cursor)
+	if err != nil {
+		return nil, 0, "", err
 	}
-	listSQL += " ORDER BY grouped.last_liked_at DESC, grouped.content_id DESC LIMIT ?"
-	args = append(args, pagination.GetLimit())
-
-	var rows []myLikeContentRow
-	if err := s.db.WithContext(ctx).Raw(listSQL, args...).Scan(&rows).Error; err != nil {
-		log.Errorf("ListMyLikesGroupedByContent: list: %v", err)
-		return nil, 0, "", fmt.Errorf("list my likes grouped by content: %w", err)
-	}
-	if len(rows) == 0 {
+	if len(aggregates) == 0 {
 		return []MyLikeContentSummary{}, total, "", nil
 	}
 
-	contentIDs := make([]string, 0, len(rows))
-	for _, row := range rows {
+	if len(aggregates) > pagination.GetLimit() {
+		aggregates = aggregates[:pagination.GetLimit()]
+	}
+
+	contentIDs := make([]string, 0, len(aggregates))
+	for _, row := range aggregates {
 		contentIDs = append(contentIDs, row.ContentID)
 	}
 
@@ -292,20 +369,16 @@ JOIN ranked ON ranked.content_id = grouped.content_id AND ranked.rn = 1
 		contentMap[content.ID] = content
 	}
 
-	items := make([]MyLikeContentSummary, 0, len(rows))
-	for _, row := range rows {
+	items := make([]MyLikeContentSummary, 0, len(aggregates))
+	for _, row := range aggregates {
 		content, ok := contentMap[row.ContentID]
 		if !ok {
 			continue
 		}
-		lastLikedAt, err := parseLikedAt(row.LastLikedAt)
-		if err != nil {
-			return nil, 0, "", fmt.Errorf("parse last_liked_at: %w", err)
-		}
 		items = append(items, MyLikeContentSummary{
 			Content:              content,
-			LastLikedAt:          lastLikedAt,
-			LikedContent:         row.LikedContent > 0,
+			LastLikedAt:          row.LastLikedAt,
+			LikedContent:         row.LikedContent,
 			LikedCommentCount:    row.LikedCommentCount,
 			LikedAttachmentCount: row.LikedAttachmentCount,
 			RecentTargetType:     row.RecentTargetType,

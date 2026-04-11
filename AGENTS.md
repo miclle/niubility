@@ -86,6 +86,7 @@ pkg/gormlog/              # GORM 日志适配器
 
 - 后端接口与 handler：`.agents/rules/backend-handler.md`
 - 业务逻辑与 service：`.agents/rules/backend-service.md`
+- 复杂查询与 ORM / SQL 取舍：`.agents/rules/query-and-sql.md`
 - settings、SSO、S3、企业微信：`.agents/rules/settings-and-integrations.md`
 - 前端页面、路由、API、类型：`.agents/rules/frontend.md`
 - 测试与验证：`.agents/rules/testing.md`
