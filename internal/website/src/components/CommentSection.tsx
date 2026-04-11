@@ -1,104 +1,14 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { ThumbsUp, MessageCircle, ChevronDown, ChevronUp, Smile, Pin, Trash2, Link2, Check } from 'lucide-react'
-import dayjs from 'dayjs'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 
-import { listCommentsQuery, createCommentBody, toggleLike, pinComment, deleteComment } from 'src/api/content'
+import { listCommentsQuery } from 'src/api/content'
 import { useAppContext } from 'src/context/app'
-import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from 'src/components/ui/alert-dialog'
-import SiteAvatarImage from 'src/components/SiteAvatarImage'
-import type { Comment, CreateCommentArgs } from 'src/types/content'
-
-// COMMON_EMOJIS is the set of emojis available in the picker.
-const COMMON_EMOJIS = [
-  '😀', '😂', '🤣', '😊', '😍', '🥰', '😘', '😎',
-  '🤔', '😮', '😢', '😭', '😡', '🥺', '😱', '🤗',
-  '👍', '👎', '👏', '🙌', '🎉', '🔥', '❤️', '💯',
-  '✅', '⭐', '💪', '🙏', '😄', '😁', '🤩', '😇',
-]
-
-// CopyLinkButton renders a copy button that copies the comment anchor URL to clipboard.
-function CopyLinkButton({ commentID }: { commentID: string }) {
-  const { t } = useTranslation('comments')
-  const [copied, setCopied] = useState(false)
-
-  const handleCopy = async () => {
-    const url = `${window.location.origin}${window.location.pathname}#comment-${commentID}`
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(url)
-      } else {
-        const input = document.createElement('input')
-        input.value = url
-        document.body.appendChild(input)
-        input.select()
-        document.execCommand('copy')
-        document.body.removeChild(input)
-      }
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      // Silently fail
-    }
-  }
-
-  return (
-    <button
-      className="flex items-center gap-1 text-xs transition-colors"
-      style={{ color: copied ? '#065fd4' : '#606060' }}
-      onClick={handleCopy}
-      title={copied ? t('copied') : t('copyLink')}
-    >
-      {copied ? <Check size={14} /> : <Link2 size={14} />}
-    </button>
-  )
-}
-
-interface EmojiPickerProps {
-  active: boolean
-  onToggle: () => void
-  onSelect: (emoji: string) => void
-  pickerRef?: React.RefObject<HTMLDivElement>
-  iconSize?: number
-}
-
-// EmojiPicker renders an emoji selection popup triggered by a smile button.
-function EmojiPicker({ active, onToggle, onSelect, pickerRef, iconSize = 18 }: EmojiPickerProps) {
-  return (
-    <div className="relative" ref={active ? pickerRef : undefined}>
-      <button
-        type="button"
-        className="p-1.5 rounded-full hover:bg-black/5 transition-colors"
-        style={{ color: '#606060' }}
-        onClick={onToggle}
-      >
-        <Smile size={iconSize} />
-      </button>
-      {active && (
-        <div
-          className="absolute left-0 bottom-full mb-1 w-[280px] grid grid-cols-8 gap-0.5 p-2 rounded-lg shadow-lg border z-50"
-          style={{ background: '#fff', borderColor: '#e5e5e5' }}
-        >
-          {COMMON_EMOJIS.map((emoji) => (
-            <button
-              key={emoji}
-              type="button"
-              className="w-8 h-8 flex items-center justify-center rounded hover:bg-black/5 text-lg cursor-pointer"
-              onClick={() => onSelect(emoji)}
-            >
-              {emoji}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
+import { useCommentMutations } from 'src/hooks/useCommentMutations'
+import CommentInput from 'src/components/CommentInput'
+import CommentCard from 'src/components/CommentCard'
+import type { Comment } from 'src/types/content'
 
 interface CommentSectionProps {
   contentID: string
@@ -112,53 +22,20 @@ interface CommentSectionProps {
 function CommentSection({ contentID, attachmentID, commentCount, onCommentCountChange, highlightedCommentID }: CommentSectionProps) {
   const { t } = useTranslation('comments')
   const { currentUser } = useAppContext()
-  const queryClient = useQueryClient()
   const [likedCommentIDs, setLikedCommentIDs] = useState<Set<string>>(new Set())
-  const [newComment, setNewComment] = useState('')
-  const [submitting, setSubmitting] = useState(false)
   const [replyTo, setReplyTo] = useState<{ commentID: string; parentID: string; userName: string } | null>(null)
   const [replyText, setReplyText] = useState('')
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set())
-  const [commentFocused, setCommentFocused] = useState(false)
+  const [newComment, setNewComment] = useState('')
   const [emojiPickerFor, setEmojiPickerFor] = useState<'new' | 'reply' | null>(null)
   const emojiPickerRef = useRef<HTMLDivElement>(null)
-  // Local comment overrides (for newly added comments and like count updates)
-  const [localComments, setLocalComments] = useState<Comment[]>([])
-  const [likeOverrides, setLikeOverrides] = useState<Map<string, number>>(new Map())
-  const [pinOverrides, setPinOverrides] = useState<Map<string, string | null>>(new Map())
   const [activeHighlightCommentID, setActiveHighlightCommentID] = useState<string | null>(highlightedCommentID || null)
-  const localCountDelta = useRef(0)
 
-  // Check if current user is admin
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'super_admin'
 
-  // Close emoji picker on outside click
-  useEffect(() => {
-    if (!emojiPickerFor) return
-    const handleClick = (e: MouseEvent) => {
-      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
-        setEmojiPickerFor(null)
-      }
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [emojiPickerFor])
+  const mutations = useCommentMutations({ contentID, attachmentID, commentCount, onCommentCountChange })
 
-  const insertEmoji = (emoji: string, target: 'new' | 'reply') => {
-    if (target === 'new') {
-      setNewComment((prev) => prev + emoji)
-    } else {
-      setReplyText((prev) => prev + emoji)
-    }
-    setEmojiPickerFor(null)
-  }
-
-  // Auto-resize textarea to fit content
-  const autoResize = (el: HTMLTextAreaElement) => {
-    el.style.height = 'auto'
-    el.style.height = el.scrollHeight + 'px'
-  }
-
+  // Fetch comments with infinite scrolling
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
     useInfiniteQuery({
       queryKey: ['comments', contentID, attachmentID],
@@ -168,7 +45,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
       initialPageParam: undefined as string | undefined,
     })
 
-  const total = (data?.pages[0]?.data.total ?? 0) + localCountDelta.current
+  const total = (data?.pages[0]?.data.total ?? 0) + mutations.localCountDelta.current
 
   // Merge liked IDs from all pages
   useEffect(() => {
@@ -182,22 +59,20 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
     setLikedCommentIDs(ids)
   }, [data])
 
-  // Build the comment list from pages + local additions
-  const serverComments = data?.pages.flatMap((p) => p.data.items) ?? []
-  const allComments = [...localComments, ...serverComments]
+  const allComments = useMemo(() => {
+    const serverComments = data?.pages.flatMap((p) => p.data.items) ?? []
+    return [...mutations.localComments, ...serverComments]
+  }, [data, mutations.localComments])
 
+  // Highlight management
   useEffect(() => {
     setActiveHighlightCommentID(highlightedCommentID || null)
   }, [highlightedCommentID])
 
   const hasHighlightedComment = useCallback((comments: Comment[], commentID: string): boolean => {
     for (const comment of comments) {
-      if (comment.id === commentID) {
-        return true
-      }
-      if ((comment.replies || []).some((reply) => reply.id === commentID)) {
-        return true
-      }
+      if (comment.id === commentID) return true
+      if ((comment.replies || []).some((reply) => reply.id === commentID)) return true
     }
     return false
   }, [])
@@ -223,286 +98,39 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
     element.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }, [activeHighlightCommentID, allComments])
 
-  // Apply like count overrides and local reply additions
-  const getDisplayLikeCount = (comment: Comment): number => {
-    return likeOverrides.get(comment.id) ?? comment.like_count
-  }
-
-  // Submit a top-level comment
-  const handleSubmit = () => {
-    if (!newComment.trim() || submitting) return
-    setSubmitting(true)
-    createCommentBody({ content_id: contentID, body: newComment.trim(), attachment_id: attachmentID })
-      .then((res) => {
-        setLocalComments((prev) => [res.data, ...prev])
-        setNewComment('')
-        localCountDelta.current += 1
-        onCommentCountChange?.(commentCount + localCountDelta.current)
-      })
-      .catch(() => {})
-      .finally(() => setSubmitting(false))
-  }
-
-  // Submit a reply
-  const handleReply = () => {
-    if (!replyTo || !replyText.trim() || submitting) return
-    setSubmitting(true)
-    const replyData: CreateCommentArgs = {
-      body: replyText.trim(),
-      parent_id: replyTo.parentID,
-      reply_to_id: replyTo.commentID,
-      attachment_id: attachmentID,
+  // Emoji helpers
+  const insertEmoji = (emoji: string, target: 'new' | 'reply') => {
+    if (target === 'new') {
+      setNewComment((prev) => prev + emoji)
+    } else {
+      setReplyText((prev) => prev + emoji)
     }
-    createCommentBody({ content_id: contentID, ...replyData })
-      .then((res) => {
-        // Add reply to the parent comment (in local or server comments)
-        const addReply = (comments: Comment[]) =>
-          comments.map((c) =>
-            c.id === replyTo.parentID
-              ? { ...c, replies: [...(c.replies || []), res.data] }
-              : c
-          )
-        setLocalComments(addReply)
-        setReplyTo(null)
-        setReplyText('')
-        localCountDelta.current += 1
-        onCommentCountChange?.(commentCount + localCountDelta.current)
-        setExpandedReplies((prev) => new Set([...prev, replyTo.parentID]))
-      })
-      .catch(() => {})
-      .finally(() => setSubmitting(false))
+    setEmojiPickerFor(null)
   }
 
-  // Toggle like on a comment
-  const handleLikeComment = (commentID: string) => {
-    toggleLike('comment', commentID)
-      .then((res) => {
-        setLikedCommentIDs((prev) => {
-          const next = new Set(prev)
-          if (res.data.liked) {
-            next.add(commentID)
-          } else {
-            next.delete(commentID)
-          }
-          return next
-        })
-        setLikeOverrides((prev) => new Map(prev).set(commentID, res.data.like_count))
-      })
-      .catch(() => {})
-  }
-
-  const toggleReplies = (commentID: string) => {
-    setExpandedReplies((prev) => {
-      const next = new Set(prev)
-      if (next.has(commentID)) {
-        next.delete(commentID)
-      } else {
-        next.add(commentID)
-      }
-      return next
-    })
-  }
-
-  // Start replying to a comment
+  // Reply actions
   const startReply = (commentID: string, parentID: string, userName: string) => {
     setReplyTo({ commentID, parentID, userName })
     setReplyText('')
   }
 
-  // Toggle pin on a comment (admin only)
-  const handlePinComment = (commentID: string, currentlyPinned: boolean) => {
-    pinComment(commentID, !currentlyPinned)
-      .then((res) => {
-        setPinOverrides((prev) => {
-          const next = new Map(prev)
-          next.set(commentID, res.data.pinned_at || null)
-          return next
-        })
-      })
-      .catch(() => {})
+  const handleReplySubmit = () => {
+    if (!replyTo) return
+    mutations.handleReply(replyTo, replyText, () => {
+      const parentID = replyTo.parentID
+      setReplyTo(null)
+      setReplyText('')
+      setExpandedReplies((prev) => new Set([...prev, parentID]))
+    })
   }
 
-  // Delete a comment (own comment or admin)
-  const handleDeleteComment = (commentID: string) => {
-    deleteComment(commentID)
-      .then(() => {
-        // Remove from local comments
-        setLocalComments((prev) => prev.filter((c) => c.id !== commentID && c.parent_id !== commentID))
-        // Remove from server comments by invalidating the query
-        queryClient.invalidateQueries({ queryKey: ['comments', contentID, attachmentID] })
-        localCountDelta.current -= 1
-        onCommentCountChange?.(commentCount + localCountDelta.current)
-      })
-      .catch(() => {})
+  const toggleReplies = (commentID: string) => {
+    setExpandedReplies((prev) => {
+      const next = new Set(prev)
+      if (next.has(commentID)) { next.delete(commentID) } else { next.add(commentID) }
+      return next
+    })
   }
-
-  // Get display pinned_at considering local overrides
-  const getDisplayPinnedAt = (comment: Comment): string | undefined => {
-    if (pinOverrides.has(comment.id)) {
-      return pinOverrides.get(comment.id) ?? undefined
-    }
-    return comment.pinned_at
-  }
-
-  const renderComment = useCallback((comment: Comment, isReply = false) => {
-    const isLiked = likedCommentIDs.has(comment.id)
-    const parentID = isReply ? comment.parent_id : comment.id
-    const displayLikeCount = getDisplayLikeCount(comment)
-    const displayPinnedAt = getDisplayPinnedAt(comment)
-    const isPinned = !!displayPinnedAt
-    const isHighlighted = activeHighlightCommentID === comment.id
-
-    return (
-      <div
-        key={comment.id}
-        id={`comment-${comment.id}`}
-        className={`flex gap-3 rounded-2xl px-3 py-2 transition-colors ${isReply ? 'ml-12' : ''}`}
-        style={isHighlighted ? { background: 'rgba(6,95,212,0.08)', boxShadow: 'inset 0 0 0 1px rgba(6,95,212,0.22)' } : undefined}
-      >
-        {/* Avatar */}
-        <Avatar className="size-9">
-          <SiteAvatarImage src={comment.user?.avatar || ''} alt={comment.user?.name || t('common:anonymousUser')} />
-          <AvatarFallback>{comment.user?.name?.charAt(0) || t('common:anonymousAbbrev')}</AvatarFallback>
-        </Avatar>
-
-        <div className="flex-1 min-w-0">
-          {/* Header */}
-          <div className="flex items-center gap-2">
-            <span className="text-[13px] font-medium" style={{ color: '#0f0f0f' }}>
-              {comment.user?.name || t('comments:anonymousUser')}
-            </span>
-            {isPinned && (
-              <span className="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded" style={{ color: '#065fd4', background: 'rgba(6,95,212,0.1)' }}>
-                <Pin size={10} />
-                {t('comments:pinned')}
-              </span>
-            )}
-            <span className="text-xs" style={{ color: '#606060' }}>
-              {dayjs(comment.created_at).fromNow()}
-            </span>
-          </div>
-
-          {/* Reply indicator */}
-          {isReply && comment.reply_to?.user && comment.reply_to_id !== comment.parent_id && (
-            <div className="text-xs mt-0.5" style={{ color: '#606060' }}>
-              {t('comments:replyToUser')} <span className="font-medium">{comment.reply_to.user.name}</span>
-            </div>
-          )}
-
-          {/* Body */}
-          <div className="text-sm mt-1" style={{ color: '#0f0f0f' }}>
-            {comment.body}
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-3 mt-1.5">
-            <button
-              className="flex items-center gap-1 text-xs transition-colors"
-              style={{ color: isLiked ? '#065fd4' : '#606060' }}
-              onClick={() => handleLikeComment(comment.id)}
-            >
-              <ThumbsUp size={14} fill={isLiked ? 'currentColor' : 'none'} />
-              {displayLikeCount > 0 && <span>{displayLikeCount}</span>}
-            </button>
-            <button
-              className="flex items-center gap-1 text-xs transition-colors"
-              style={{ color: '#606060' }}
-              onClick={() => startReply(comment.id, parentID, comment.user?.name || t('common:anonymousUser'))}
-            >
-              <MessageCircle size={14} />
-              <span>{t('comments:reply')}</span>
-            </button>
-            {isAdmin && !isReply && (
-              <button
-                className="flex items-center gap-1 text-xs transition-colors"
-                style={{ color: isPinned ? '#065fd4' : '#606060' }}
-                onClick={() => handlePinComment(comment.id, isPinned)}
-              >
-                <Pin size={14} fill={isPinned ? 'currentColor' : 'none'} />
-                <span>{isPinned ? t('comments:unpin') : t('comments:pinned')}</span>
-              </button>
-            )}
-            {(comment.user_id === currentUser?.id || isAdmin) && (
-              <AlertDialog>
-                <AlertDialogTrigger className="flex items-center gap-1 text-xs transition-colors cursor-pointer" style={{ color: '#606060' }}>
-                  <Trash2 size={14} />
-                  <span>{t('comments:delete')}</span>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>{t('comments:deleteComment')}</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {t('comments:deleteConfirm')}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <div className="rounded-md bg-muted/50 px-3 py-2 space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="size-5">
-                        <SiteAvatarImage src={comment.user?.avatar || ''} alt={comment.user?.name || t('common:anonymousUser')} />
-                        <AvatarFallback className="text-[10px]">{comment.user?.name?.charAt(0) || t('common:anonymousAbbrev')}</AvatarFallback>
-                      </Avatar>
-                      <span className="text-xs font-medium text-foreground">{comment.user?.name || t('comments:anonymousUser')}</span>
-                    </div>
-                    <div className="text-sm text-muted-foreground line-clamp-3 whitespace-pre-wrap break-all">
-                      {comment.body}
-                    </div>
-                  </div>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>{t('comments:cancel')}</AlertDialogCancel>
-                    <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={() => handleDeleteComment(comment.id)}>{t('comments:delete')}</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-            <CopyLinkButton commentID={comment.id} />
-          </div>
-
-          {/* Reply input for this comment */}
-          {replyTo?.commentID === comment.id && (
-            <div className="mt-3">
-              <textarea
-                rows={1}
-                className="w-full border-b text-sm py-1 outline-none bg-transparent resize-none overflow-hidden"
-                style={{ borderColor: '#065fd4', color: '#0f0f0f' }}
-                placeholder={t('comments:replyTo', { name: replyTo.userName })}
-                value={replyText}
-                onChange={(e) => { setReplyText(e.target.value); autoResize(e.target) }}
-                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReply() } }}
-                autoFocus
-              />
-              <div className="flex items-center justify-between mt-2">
-                <EmojiPicker
-                  active={emojiPickerFor === 'reply'}
-                  onToggle={() => setEmojiPickerFor(emojiPickerFor === 'reply' ? null : 'reply')}
-                  onSelect={(emoji) => insertEmoji(emoji, 'reply')}
-                  pickerRef={emojiPickerRef}
-                  iconSize={16}
-                />
-                <div className="flex gap-2">
-                  <button
-                    className="text-xs px-3 py-1 rounded-full"
-                    style={{ color: '#606060' }}
-                    onClick={() => setReplyTo(null)}
-                  >
-                    {t('comments:cancel')}
-                  </button>
-                  <button
-                    className="text-xs px-3 py-1 rounded-full text-white disabled:opacity-50"
-                    style={{ background: '#065fd4' }}
-                    disabled={!replyText.trim() || submitting}
-                    onClick={handleReply}
-                  >
-                    {t('comments:reply')}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    )
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [likedCommentIDs, likeOverrides, pinOverrides, replyTo, replyText, submitting, emojiPickerFor, isAdmin])
 
   const loading = isLoading || isFetchingNextPage
 
@@ -514,58 +142,46 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
 
       {/* New comment input */}
       {currentUser && (
-        <div className="flex gap-3 mb-6">
-          <Avatar className="size-9">
-            <SiteAvatarImage src={currentUser.avatar} alt={currentUser.name || currentUser.username} />
-            <AvatarFallback>{currentUser.name?.charAt(0) || t('common:meAbbrev')}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <textarea
-              rows={1}
-              className="w-full border-b text-sm py-1 outline-none bg-transparent resize-none overflow-hidden"
-              style={{ borderColor: commentFocused ? '#0f0f0f' : '#e5e5e5', color: '#0f0f0f' }}
-              placeholder={t('comments:addComment')}
-              value={newComment}
-              onChange={(e) => { setNewComment(e.target.value); autoResize(e.target) }}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit() } }}
-              onFocus={() => setCommentFocused(true)}
-            />
-            {commentFocused && (
-              <div className="flex items-center justify-between mt-2">
-                <EmojiPicker
-                  active={emojiPickerFor === 'new'}
-                  onToggle={() => setEmojiPickerFor(emojiPickerFor === 'new' ? null : 'new')}
-                  onSelect={(emoji) => insertEmoji(emoji, 'new')}
-                  pickerRef={emojiPickerRef}
-                />
-                <div className="flex gap-2">
-                  <button
-                    className="text-sm px-3 py-1.5 rounded-full"
-                    style={{ color: '#606060' }}
-                    onClick={() => { setNewComment(''); setCommentFocused(false) }}
-                  >
-                    {t('comments:cancel')}
-                  </button>
-                  <button
-                    className="text-sm px-3 py-1.5 rounded-full text-white disabled:opacity-50"
-                    style={{ background: '#065fd4' }}
-                    disabled={!newComment.trim() || submitting}
-                    onClick={handleSubmit}
-                  >
-                    {t('comments:submit')}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <CommentInput
+          currentUser={currentUser}
+          value={newComment}
+          onChange={setNewComment}
+          onSubmit={() => mutations.handleSubmit(newComment, () => setNewComment(''))}
+          submitting={mutations.submitting}
+          emojiPickerActive={emojiPickerFor === 'new'}
+          onEmojiToggle={() => setEmojiPickerFor(emojiPickerFor === 'new' ? null : 'new')}
+          onEmojiSelect={(emoji) => insertEmoji(emoji, 'new')}
+          emojiPickerRef={emojiPickerRef}
+        />
       )}
 
       {/* Comment list */}
       <div className="space-y-5">
         {allComments.map((comment) => (
           <div key={comment.id}>
-            {renderComment(comment)}
+            <CommentCard
+              comment={comment}
+              isLiked={likedCommentIDs.has(comment.id)}
+              displayLikeCount={mutations.getDisplayLikeCount(comment)}
+              displayPinnedAt={mutations.getDisplayPinnedAt(comment)}
+              isHighlighted={activeHighlightCommentID === comment.id}
+              isAdmin={isAdmin}
+              currentUserID={currentUser?.id}
+              replyTo={replyTo}
+              replyText={replyText}
+              emojiPickerFor={emojiPickerFor}
+              emojiPickerRef={emojiPickerRef}
+              onLike={(id) => mutations.handleLikeComment(id, setLikedCommentIDs)}
+              onStartReply={startReply}
+              onPin={mutations.handlePinComment}
+              onDelete={mutations.handleDeleteComment}
+              onReplyTextChange={setReplyText}
+              onCancelReply={() => setReplyTo(null)}
+              onReplySubmit={handleReplySubmit}
+              onEmojiToggle={() => setEmojiPickerFor(emojiPickerFor === 'reply' ? null : 'reply')}
+              onEmojiSelect={(emoji) => insertEmoji(emoji, 'reply')}
+              submitting={mutations.submitting}
+            />
 
             {/* Replies toggle */}
             {comment.replies && comment.replies.length > 0 && (
@@ -581,7 +197,33 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
 
                 {expandedReplies.has(comment.id) && (
                   <div className="space-y-4 mt-3">
-                    {comment.replies.map((reply) => renderComment(reply, true))}
+                    {comment.replies.map((reply) => (
+                      <CommentCard
+                        key={reply.id}
+                        comment={reply}
+                        isReply
+                        isLiked={likedCommentIDs.has(reply.id)}
+                        displayLikeCount={mutations.getDisplayLikeCount(reply)}
+                        displayPinnedAt={mutations.getDisplayPinnedAt(reply)}
+                        isHighlighted={activeHighlightCommentID === reply.id}
+                        isAdmin={isAdmin}
+                        currentUserID={currentUser?.id}
+                        replyTo={replyTo}
+                        replyText={replyText}
+                        emojiPickerFor={emojiPickerFor}
+                        emojiPickerRef={emojiPickerRef}
+                        onLike={(id) => mutations.handleLikeComment(id, setLikedCommentIDs)}
+                        onStartReply={startReply}
+                        onPin={mutations.handlePinComment}
+                        onDelete={mutations.handleDeleteComment}
+                        onReplyTextChange={setReplyText}
+                        onCancelReply={() => setReplyTo(null)}
+                        onReplySubmit={handleReplySubmit}
+                        onEmojiToggle={() => setEmojiPickerFor(emojiPickerFor === 'reply' ? null : 'reply')}
+                        onEmojiSelect={(emoji) => insertEmoji(emoji, 'reply')}
+                        submitting={mutations.submitting}
+                      />
+                    ))}
                   </div>
                 )}
               </div>

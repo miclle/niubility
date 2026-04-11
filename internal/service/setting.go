@@ -126,6 +126,54 @@ func (s *Service) UpdateSettingsBatch(ctx context.Context, settings map[string]s
 	})
 }
 
+// UpdateSettingsWithSideEffects updates settings and triggers related service refreshes.
+// If WeChat-related keys are updated, it refreshes the WeChat client.
+// If S3-related keys are updated, it re-configures S3 CORS.
+// Side-effect failures are logged but do not cause the method to return an error,
+// because the settings themselves were already persisted.
+func (s *Service) UpdateSettingsWithSideEffects(ctx context.Context, settings map[string]string) error {
+	log := logger.NewWithContext(ctx)
+
+	if err := s.UpdateSettingsBatch(ctx, settings); err != nil {
+		return err
+	}
+
+	// Refresh WeChat client if WeChat keys changed
+	wechatKeys := []string{
+		entity.SettingWechatCorpID,
+		entity.SettingWechatAppAgentID,
+		entity.SettingWechatAppSecret,
+	}
+	for _, key := range wechatKeys {
+		if _, ok := settings[key]; ok {
+			if err := s.RefreshWechatClient(ctx); err != nil {
+				log.Warnf("UpdateSettingsWithSideEffects: refresh wechat client: %v", err)
+			}
+			break
+		}
+	}
+
+	// Configure S3 CORS if S3 keys changed
+	s3Keys := []string{
+		entity.SettingS3Endpoint,
+		entity.SettingS3Region,
+		entity.SettingS3Bucket,
+		entity.SettingS3AccessKey,
+		entity.SettingS3SecretKey,
+		entity.SettingS3CORSOrigin,
+	}
+	for _, key := range s3Keys {
+		if _, ok := settings[key]; ok {
+			if err := s.ConfigureS3CORS(ctx); err != nil {
+				log.Warnf("UpdateSettingsWithSideEffects: configure S3 CORS: %v", err)
+			}
+			break
+		}
+	}
+
+	return nil
+}
+
 // GetWechatConfig retrieves the WeChat Work configuration from settings.
 // Returns nil if CorpID is not configured.
 func (s *Service) GetWechatConfig(ctx context.Context) (*entity.WechatConfig, error) {
