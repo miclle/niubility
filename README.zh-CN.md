@@ -2,46 +2,57 @@
 
 [English](./README.md) | [中文](./README.zh-CN.md)
 
-企业内部学习与文化平台，帮助团队统一管理培训视频、图文内容、知识分享与文化传播内容，并提供适合企业场景的认证、存储和组织同步能力。
+Niubility 是面向企业内部的学习与文化平台，覆盖内容发布、浏览互动、后台管理与企业集成，并提供配套 CLI 支持终端场景下的登录、浏览与发布流程。
 
-## 项目介绍
+## 项目概述
 
-Niubility 面向企业内部知识沉淀与内容传播场景，支持从内容发布、浏览互动到后台管理的一体化流程。项目采用 Go + React 技术栈，内置前后端一体构建能力，适合以单体应用方式快速部署到企业内网或云环境。
+Niubility 适用于企业内部知识沉淀、培训传播与文化内容分发。当前仓库已经包含以下能力：
 
-它不仅覆盖常见的内容平台能力，也提供适合企业环境的扩展能力，例如可选 SSO、S3 兼容对象存储、企业微信组织同步，以及基于后台设置的运行期配置管理。同时提供了配套的 CLI 工具，支持在终端中发布和管理内容。
+- 四种内容类型：`video`、`gallery`、`article`、`podcast`
+- 评论、点赞、收藏、关注、浏览记录等互动能力
+- 用户、分类、内容、站点设置、认证设置、存储与资源分发、企业微信同步、数据库备份、服务节点等后台能力
+- 可选企业集成：OIDC / SAML SSO、S3 兼容对象存储、企业微信部门与用户同步
+- 独立 CLI 子项目，位于 [`cli/`](./cli/)，支持终端登录、浏览、文章发布和常见管理操作
 
-## 功能描述
+后端会将前端构建产物嵌入到服务端二进制中，因此生产部署通常是一份可执行文件加数据库和可选对象存储即可运行。
 
-- 内容发布与浏览：支持视频、图库、文章等企业常见内容形态，配备富文本编辑器（Tiptap）和视频播放器（Video.js）。
-- 社交互动：支持评论、点赞、收藏、关注等互动行为，便于知识传播与内容沉淀。
-- 后台管理：支持内容、分类、用户、系统设置等统一管理。
-- 企业认证集成：支持账号密码登录，并可选接入 OIDC 或 SAML 2.0 SSO。
-- 企业微信同步：可从企业微信同步部门与用户信息。
-- 对象存储支持：可接入 S3 兼容存储，处理上传与资源访问，支持可配置的资源分发。
-- 安全配置管理：运行期配置保存在数据库中，敏感信息支持 AES-256-GCM 加密存储与脱敏返回。
-- 内容分享：支持通过链接和消息卡片分享内容。
-- 多数据库支持：默认使用 PostgreSQL，也支持 MySQL。
-- CLI 工具：支持在终端中发布和管理内容。
+## 当前功能
+
+- `video`、`gallery`、`article`、`podcast` 的发布与浏览
+- 基于 Tiptap 的文章编辑与基于 Video.js 的媒体播放
+- 评论、点赞、收藏、关注、我的浏览记录
+- 用户主页、关注动态、个人内容与收藏展示
+- 管理后台支持用户管理、分类管理、内容管理、站点配置、认证配置、存储与资源分发、企业微信同步、数据库备份、服务节点监控
+- 密码登录与可选 OIDC / SAML 2.0 SSO
+- S3 兼容上传链路，以及可配置的资源分发 URL 与图片样式
+- `settings` 表驱动的运行期配置，敏感值支持加密存储与脱敏返回
+- PostgreSQL（默认）与 MySQL 双数据库支持
+- CLI 支持密码登录、浏览器 SSO、内容浏览、文章发布，以及分类/用户/设置等管理命令
 
 ## 技术栈
 
-- 后端：Go 1.25、`fox-gonic/fox`、GORM、PostgreSQL / MySQL
+- 后端：Go 1.25、`fox-gonic/fox`、GORM
+- 数据库：PostgreSQL（默认）/ MySQL
 - 前端：React 18、TypeScript 5、Vite 6、Tailwind CSS 4、shadcn/ui 4
-  - React Router v7、React Query v5、Tiptap v2、Video.js v8、dnd-kit、Lucide React、dayjs
-- 认证：密码登录、JWT Cookie、可选 OIDC / SAML 2.0
-- 存储：S3 兼容对象存储
-- 集成：企业微信部门与用户同步
+  - React Router v7
+  - React Query v5
+  - Tiptap v2
+  - Video.js v8
+  - dnd-kit v6
+- 集成：OIDC、SAML 2.0、企业微信、S3 兼容对象存储
 - CLI：Go、cobra、viper
 
-## 安装要求
+## 环境要求
 
-- Go 1.25 或更高版本
-- Node.js 22.14 或更高版本
+- Go 1.25+
+- Node.js 22.14+
 - PostgreSQL 或 MySQL
 - [Task](https://taskfile.dev/)
-- [reflex](https://github.com/cespare/reflex)（仅开发环境热重载需要）
+- `reflex`，用于 `task dev` 热重载
+- `golangci-lint`，用于 `task check`
+- 若要使用数据库备份能力，需要宿主机提供 `pg_dump` 或 `mysqldump`
 
-## 安装与本地启动
+## 本地启动
 
 ```bash
 git clone https://github.com/miclle/niubility.git
@@ -49,19 +60,28 @@ cd Niubility
 task install
 ```
 
-复制配置模板并按需修改数据库连接：
+复制本地配置：
 
 ```bash
 cp cmd/niubility/config.example.yaml cmd/niubility/config.local.yaml
 ```
 
-`cmd/niubility/config.local.yaml` 目前只需要配置基础启动项：
+YAML 仅保留基础启动信息：
 
-- `server.address`：服务监听地址
-- `database.driver`：数据库驱动，`postgres`（默认）或 `mysql`
-- `database.dsn`：数据库连接字符串
+- `server.address`：监听地址
+- `database.driver`：`postgres`（默认）或 `mysql`
+- `database.dsn`：数据库连接串
 
-其余运行期配置，例如 JWT 密钥、加密密钥、SSO、S3、企业微信等，首次启动后通过管理后台配置，相关敏感值不会以明文形式直接暴露。
+其余运行期配置会在服务启动后从 `settings` 表读取，包括：
+
+- JWT 签名密钥与加密密钥
+- 注册开关与 Cookie 安全策略
+- SSO 配置
+- S3 存储配置
+- 资源分发配置
+- 站点品牌信息
+- 企业微信同步配置
+- 数据库备份行为配置
 
 启动开发环境：
 
@@ -69,76 +89,86 @@ cp cmd/niubility/config.example.yaml cmd/niubility/config.local.yaml
 task dev
 ```
 
-首次启动后，系统会引导创建超级管理员账号。
+首次启动后，访问 `/init` 创建超级管理员账号。
 
 ## 常用命令
 
 ```bash
-task install        # 安装依赖
-task dev            # 启动开发环境（热重载）
-task build          # 构建生产二进制（含前端）
-task build-all      # 多平台构建
-task run            # 生产模式运行
-task lint           # 代码检查（gofmt、vet、staticcheck）
-task check          # CI 对齐检查（后端、CLI、前端类型、mod tidy）
-task test           # 运行测试（race 检测 + 覆盖率）
+task install        # 安装 Go、CLI 和前端依赖
+task dev            # 启动 Vite + Go 热重载
+task build          # 构建内嵌前端资源的服务端二进制
+task build-all      # 多平台构建服务端
+task run            # 使用本地配置运行服务
+task lint           # 自动整理 Go/CLI 代码并执行前端 lint
+task check          # CI 对齐检查，不改写文件
+task test           # Go 测试（race + coverage）
 task clean          # 清理构建产物
-task update-tools   # 更新开发工具
-task build-cli      # 构建 CLI
+task update-tools   # 安装/更新开发工具
+task build-cli      # 构建独立 CLI
 task build-cli-all  # 多平台构建 CLI
 ```
 
-## 部署说明
+## 构建与部署
 
-### 生产构建
+生产构建：
 
 ```bash
 task build
 ```
 
-构建完成后会生成内嵌前端资源的服务端二进制，可直接用于部署。
-
-### 生产运行
+本地非热重载运行：
 
 ```bash
 task run
 ```
 
-部署时建议重点确认以下内容：
+部署前建议确认：
 
-- PostgreSQL 或 MySQL 已可访问，且连接字符串配置正确。
-- 应用对上传目录或对象存储拥有正确访问权限。
-- 反向代理、负载均衡或网关已正确转发应用地址。
-- 若启用 SSO、S3 或企业微信，需在后台完成对应配置。
-- 生产环境应通过 HTTPS 暴露服务，以保障登录态与回调链路安全。
+- 数据库连通性正确
+- 生产环境已配置 HTTPS 与反向代理
+- 如需使用 S3 / 资源分发 / 企业微信 / SSO，已在后台完成配置
+- 如需使用管理员触发的数据库备份，宿主机提供了 `pg_dump` 或 `mysqldump`
+- 如需在后台查看服务节点状态，已配置节点心跳相关环境变量
 
-### 推荐部署流程
+服务启动后会自动上报当前节点心跳。以下环境变量为可选：
 
-1. 准备数据库（PostgreSQL 或 MySQL）。
-2. 配置 `cmd/niubility/config.local.yaml`。
-3. 执行 `task build` 生成可执行文件。
-4. 以 systemd、Supervisor、容器或其他方式运行服务。
-5. 首次进入系统创建超级管理员。
-6. 在后台补充 SSO、对象存储、企业微信等运行期配置。
+- `NIUBILITY_NODE_ID`
+- `NIUBILITY_NODE_TYPE`（`web`、`worker`、`scheduler`，默认 `web`）
+- `NIUBILITY_NODE_SERVICE_NAME`
+- `NIUBILITY_NODE_DISPLAY_NAME`
+- `NIUBILITY_NODE_VERSION`
+- `NIUBILITY_NODE_ENV`
+- `NIUBILITY_NODE_REGION`
+- `NIUBILITY_NODE_ZONE`
+- `NIUBILITY_NODE_CAPABILITIES`
 
-## CLI 工具
+## CLI
 
-Niubility 提供配套的 CLI 工具，支持在终端中发布和管理内容。完整设计文档参见 [docs/cli-design.md](./docs/cli-design.md)，当前实现进度参见 [docs/roadmap.md](./docs/roadmap.md)。
+仓库包含独立 CLI，位于 [`cli/`](./cli/)。当前已实现的能力包括：
 
-## 可选集成
+- `login`、`logout`、`whoami`
+- `content list`、`content view`、`content create article`、`content edit`、`content delete`
+- 分类管理
+- 用户管理
+- profile、comment、favorite、follow、like、settings 等命令
+- 多 profile 隔离与 CLI 文案国际化
 
-- SSO：适用于统一身份认证场景，支持 OIDC 与 SAML 2.0。
-- S3 兼容存储：适用于上传文件统一存储与访问控制场景。
-- 企业微信同步：适用于自动同步组织架构和用户信息场景。
-- 资源分发：支持签名 URL 和 CDN 集成的可配置资源分发。
+当前限制：CLI 的创建/编辑流程仍以文章为主，平台本身已支持 `gallery`、`video`、`podcast`，但 CLI 侧还没有完整的一等发布链路。
 
-## 项目文档
+相关文档：
 
-- [功能列表](./docs/features.md) — 完整功能清单与状态
-- [路线图](./docs/roadmap.md) — 计划中与进行中的事项
-- [CLI 设计方案](./docs/cli-design.md) — CLI 工具设计与实现计划
-- [CLI SSO 登录设计](./docs/cli-sso-login-design.md) — CLI SSO 认证流程
-- [企业微信 OAuth](./docs/wechat-oauth.md) — 企业微信 OAuth2 自动登录设计
+- [CLI README](./cli/README.md)
+- [CLI 设计](./docs/cli-design.md)
+- [CLI SSO 登录设计](./docs/cli-sso-login-design.md)
+
+## 文档索引
+
+- [功能清单](./docs/features.md)
+- [路线图](./docs/roadmap.md)
+- [CLI 设计](./docs/cli-design.md)
+- [CLI SSO 登录设计](./docs/cli-sso-login-design.md)
+- [数据库备份](./docs/database-backup-design.md)
+- [企业微信 OAuth](./docs/wechat-oauth.md)
 
 ## License
 

@@ -2,46 +2,57 @@
 
 [English](./README.md) | [中文](./README.zh-CN.md)
 
-Niubility is an internal learning and culture platform for enterprises. It helps teams manage training videos, editorial content, knowledge sharing, and culture-focused communication in one place, with enterprise-ready authentication, storage, and organization sync capabilities.
+Niubility is an internal learning and culture platform for enterprises. It combines content publishing, browsing, social interaction, administration, and enterprise integrations in a single Go + React application, with a companion CLI for terminal workflows.
 
 ## Overview
 
-Niubility is designed for internal knowledge sharing and content distribution inside organizations. It provides an integrated workflow covering content publishing, discovery, engagement, and administrative management.
+Niubility is designed for internal knowledge sharing, training delivery, and culture communication inside organizations. The current codebase includes:
 
-The project uses a Go + React stack and supports integrated full-stack builds, making it suitable for fast deployment in private networks or cloud environments. In addition to standard content platform features, it includes enterprise-oriented capabilities such as optional SSO, S3-compatible object storage, WeCom synchronization, and runtime configuration managed through the admin console. A companion CLI tool is also available for content publishing and management from the terminal.
+- Four content types: `video`, `gallery`, `article`, and `podcast`
+- Social features such as comments, likes, favorites, follows, and view history
+- Admin management for users, categories, contents, site settings, storage, authentication, WeCom sync, database backups, and service nodes
+- Optional enterprise integrations including OIDC / SAML SSO, S3-compatible object storage, and WeCom department/user sync
+- A standalone CLI project under [`cli/`](./cli/) for login, browsing, publishing articles, and common management operations
 
-## Features
+The backend embeds the frontend build output into the server binary, so production deployment is typically a single executable plus a database and optional object storage.
 
-- Content publishing and browsing for videos, galleries, and articles, with a rich text editor (Tiptap) and video player (Video.js).
-- Social engagement including comments, likes, favorites, and follows.
-- Admin management for content, categories, users, and system settings.
-- Enterprise authentication with password login and optional OIDC or SAML 2.0 SSO.
-- WeCom synchronization for departments and users.
-- S3-compatible object storage integration for upload and asset access, with configurable asset delivery.
-- Secure runtime configuration with AES-256-GCM encrypted storage and masked output for sensitive values.
-- Share content via copyable links and messages.
-- Multi-database support: PostgreSQL (default) and MySQL.
-- CLI tool for terminal-based content publishing and management.
+## Current Capabilities
+
+- Content publishing and browsing for `video`, `gallery`, `article`, and `podcast`
+- Rich article editing with Tiptap and media playback with Video.js
+- Comments, likes, favorites, follows, and personal history views
+- User profiles, following feed, and profile content/favorite/follower pages
+- Admin pages for users, categories, content moderation, site settings, auth settings, storage and delivery settings, WeCom sync, database backups, and service node monitoring
+- Password login plus optional OIDC / SAML 2.0 SSO
+- S3-compatible upload flow with configurable delivery URLs and image styles
+- Runtime settings stored in the `settings` table, with encrypted storage and masked responses for sensitive values
+- PostgreSQL (default) and MySQL support
+- CLI support for password login and browser-based SSO, content listing/viewing, article publishing, category/user/settings management, and related operations
 
 ## Tech Stack
 
-- Backend: Go 1.25, `fox-gonic/fox`, GORM, PostgreSQL / MySQL
+- Backend: Go 1.25, `fox-gonic/fox`, GORM
+- Database: PostgreSQL (default) / MySQL
 - Frontend: React 18, TypeScript 5, Vite 6, Tailwind CSS 4, shadcn/ui 4
-  - React Router v7, React Query v5, Tiptap v2, Video.js v8, dnd-kit, Lucide React, dayjs
-- Authentication: password login, JWT cookies, optional OIDC / SAML 2.0
-- Storage: S3-compatible object storage
-- Integration: WeCom department and user sync
+  - React Router v7
+  - React Query v5
+  - Tiptap v2
+  - Video.js v8
+  - dnd-kit v6
+- Integrations: OIDC, SAML 2.0, WeCom, S3-compatible object storage
 - CLI: Go, cobra, viper
 
 ## Requirements
 
-- Go 1.25 or later
-- Node.js 22.14 or later
+- Go 1.25+
+- Node.js 22.14+
 - PostgreSQL or MySQL
 - [Task](https://taskfile.dev/)
-- [reflex](https://github.com/cespare/reflex) for hot reload in development
+- `reflex` for `task dev` hot reload
+- `golangci-lint` for `task check`
+- `pg_dump` or `mysqldump` if you plan to use database backup features
 
-## Installation and Local Setup
+## Local Setup
 
 ```bash
 git clone https://github.com/miclle/niubility.git
@@ -49,96 +60,115 @@ cd Niubility
 task install
 ```
 
-Copy the config template and update the database connection:
+Create local config:
 
 ```bash
 cp cmd/niubility/config.example.yaml cmd/niubility/config.local.yaml
 ```
 
-`cmd/niubility/config.local.yaml` only needs the basic startup settings:
+The YAML file only keeps bootstrap configuration:
 
-- `server.address`: server listen address
-- `database.driver`: database driver, `postgres` (default) or `mysql`
+- `server.address`: listen address
+- `database.driver`: `postgres` (default) or `mysql`
 - `database.dsn`: database connection string
 
-All other runtime settings, such as JWT secrets, encryption keys, SSO, S3, and WeCom integration, are configured from the admin console after the first startup. Sensitive values are not exposed in plain text.
+Most runtime settings are loaded from the `settings` table after startup, including:
 
-Start the development environment:
+- JWT signing secret and encryption key
+- registration toggle and cookie security
+- SSO settings
+- S3 storage settings
+- asset delivery settings
+- site branding
+- WeCom sync settings
+- database backup behavior
+
+Start development:
 
 ```bash
 task dev
 ```
 
-On the first launch, the system guides you through creating the initial super admin account.
+On the first launch, visit `/init` to create the initial super admin account.
 
 ## Common Commands
 
 ```bash
-task install        # Install dependencies
-task dev            # Start development environment (hot reload)
-task build          # Build production binary (includes frontend)
-task build-all      # Build for all platforms
-task run            # Run in production mode
-task lint           # Code linting (gofmt, vet, staticcheck)
-task check          # Full CI-aligned check (backend, CLI, frontend types, mod tidy)
-task test           # Run tests with race detection
-task clean          # Clean build artifacts
-task update-tools   # Update development tools
-task build-cli      # Build CLI tool
-task build-cli-all  # Build CLI for all platforms
+task install        # Install Go, CLI, and frontend dependencies
+task dev            # Start Vite + Go hot reload
+task build          # Build the server binary with embedded frontend
+task build-all      # Cross-build server binaries
+task run            # Run the server with local config
+task lint           # Auto-fix Go/CLI style and run frontend lint
+task check          # CI-aligned checks without rewriting files
+task test           # Go tests with race detection and coverage
+task clean          # Remove build artifacts
+task update-tools   # Install/update dev tools
+task build-cli      # Build the standalone CLI
+task build-cli-all  # Cross-build the CLI
 ```
 
-## Deployment
+## Build and Deployment
 
-### Production Build
+Build production binary:
 
 ```bash
 task build
 ```
 
-The build output is a backend binary with the frontend assets embedded, ready for deployment.
-
-### Production Run
+Run locally in non-hot-reload mode:
 
 ```bash
 task run
 ```
 
-Before going live, make sure:
+Before production rollout, confirm:
 
-- PostgreSQL or MySQL is reachable and the connection string is correct.
-- The application has the required access to local upload paths or object storage.
-- Your reverse proxy, load balancer, or gateway forwards traffic correctly.
-- SSO, S3, and WeCom are configured in the admin console if you plan to use them.
-- The service is exposed over HTTPS in production to protect sessions and callback flows.
+- database connectivity is correct
+- HTTPS and reverse proxy settings are in place
+- S3 / delivery / WeCom / SSO settings are configured if needed
+- `pg_dump` or `mysqldump` is available on hosts that need admin-triggered database backups
+- node heartbeat environment variables are configured if you want service node visibility in admin pages
 
-### Recommended Deployment Flow
+The server reports its current node heartbeat automatically. These environment variables are optional:
 
-1. Prepare the database (PostgreSQL or MySQL).
-2. Configure `cmd/niubility/config.local.yaml`.
-3. Run `task build` to generate the executable.
-4. Run the service with systemd, Supervisor, containers, or your preferred process manager.
-5. Create the initial super admin after first access.
-6. Complete runtime configuration such as SSO, object storage, and WeCom in the admin console.
+- `NIUBILITY_NODE_ID`
+- `NIUBILITY_NODE_TYPE` (`web`, `worker`, `scheduler`; default `web`)
+- `NIUBILITY_NODE_SERVICE_NAME`
+- `NIUBILITY_NODE_DISPLAY_NAME`
+- `NIUBILITY_NODE_VERSION`
+- `NIUBILITY_NODE_ENV`
+- `NIUBILITY_NODE_REGION`
+- `NIUBILITY_NODE_ZONE`
+- `NIUBILITY_NODE_CAPABILITIES`
 
-## CLI Tool
+## CLI
 
-Niubility includes a companion CLI tool for terminal-based content publishing and management. See [docs/cli-design.md](./docs/cli-design.md) for the full design document and [docs/roadmap.md](./docs/roadmap.md) for the current implementation status.
+The repository includes a standalone CLI in [`cli/`](./cli/). Current implemented areas include:
 
-## Optional Integrations
+- `login`, `logout`, `whoami`
+- `content list`, `content view`, `content create article`, `content edit`, `content delete`
+- category management
+- user management
+- profile, comment, favorite, follow, like, and settings commands
+- isolated profiles and localized CLI output
 
-- SSO for centralized identity management with OIDC and SAML 2.0 support.
-- S3-compatible storage for uploads and asset delivery.
-- WeCom sync for organization structure and user provisioning.
-- Configurable asset delivery with support for signed URLs and CDN integration.
+Current limitation: content creation/editing in the CLI is article-focused. `gallery`, `video`, and `podcast` exist in the platform but are not yet first-class CLI publish flows.
+
+See:
+
+- [CLI README](./cli/README.md)
+- [CLI Design](./docs/cli-design.md)
+- [CLI SSO Login Design](./docs/cli-sso-login-design.md)
 
 ## Documentation
 
-- [Features](./docs/features.md) — complete feature list and status
-- [Roadmap](./docs/roadmap.md) — planned and in-progress items
-- [CLI Design](./docs/cli-design.md) — CLI tool design and implementation plan
-- [CLI SSO Login Design](./docs/cli-sso-login-design.md) — SSO authentication flow for CLI
-- [WeCom OAuth](./docs/wechat-oauth.md) — WeCom OAuth2 auto-login design
+- [Features](./docs/features.md)
+- [Roadmap](./docs/roadmap.md)
+- [CLI Design](./docs/cli-design.md)
+- [CLI SSO Login Design](./docs/cli-sso-login-design.md)
+- [Database Backup](./docs/database-backup-design.md)
+- [WeCom OAuth](./docs/wechat-oauth.md)
 
 ## License
 

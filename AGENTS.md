@@ -6,7 +6,7 @@ AI 编码助手在 Niubility 仓库中的统一技术规范。
 
 ## 项目概述
 
-Niubility 是企业内部学习与文化平台，支持 `video`、`gallery`、`article` 三种内容类型，提供评论、点赞、收藏、关注等社交功能，并支持可选 SSO、S3 对象存储、企业微信同步。项目包含主站服务（Go + React 嵌入式 SPA）和独立的 CLI 工具（Go + cobra）。
+Niubility 是企业内部学习与文化平台，当前支持 `video`、`gallery`、`article`、`podcast` 四种内容类型，提供评论、点赞、收藏、关注、浏览记录等社交能力，并支持可选 SSO、S3 对象存储、企业微信同步、资源分发、数据库备份与服务节点上报。项目包含主站服务（Go + React 嵌入式 SPA）和独立的 CLI 工具（Go + cobra）。
 
 ## 技术栈
 
@@ -33,8 +33,8 @@ task dev            # 启动开发环境（热重载）
 task build          # 构建生产二进制（含前端）
 task build-all      # 多平台构建
 task run            # 生产模式运行
-task lint           # 代码检查（gofmt、vet、staticcheck）
-task check          # 完整检查（lint + 前端类型检查 + mod tidy）
+task lint           # 自动修复代码风格并执行检查
+task check          # 完整检查（后端 + CLI + 前端类型 + mod tidy）
 task test           # 运行测试（race 检测 + 覆盖率）
 task clean          # 清理构建产物
 task update-tools   # 更新开发工具
@@ -59,12 +59,16 @@ internal/website/src/     # React 前端
   │   ├── video/          #     视频详情与编辑
   │   ├── gallery/        #     图库详情与编辑
   │   ├── article/        #     文章详情与编辑
+  │   ├── podcast/        #     播客详情与编辑
   │   ├── profile/        #     用户主页
-  │   ├── settings/       #     用户设置（账号、内容、收藏、安全、通知）
+  │   ├── following/      #     关注动态
+  │   ├── settings/       #     用户设置（账号、内容、收藏、浏览、点赞、评论、安全、通知）
   │   ├── admin/          #     管理后台
   │   │   ├── contents/   #       内容管理（按类型分页）
   │   │   ├── users/      #       用户管理
   │   │   ├── categories/ #       分类管理
+  │   │   ├── backups/    #       数据库备份
+  │   │   ├── nodes/      #       服务节点
   │   │   └── settings/   #       系统设置
   │   ├── init/           #     系统初始化
   │   ├── login/          #     登录
@@ -87,7 +91,7 @@ pkg/gormlog/              # GORM 日志适配器
 - 后端接口与 handler：`.agents/rules/backend-handler.md`
 - 业务逻辑与 service：`.agents/rules/backend-service.md`
 - 复杂查询与 ORM / SQL 取舍：`.agents/rules/query-and-sql.md`
-- settings、SSO、S3、企业微信：`.agents/rules/settings-and-integrations.md`
+- settings、SSO、S3、资源分发、企业微信、数据库备份：`.agents/rules/settings-and-integrations.md`
 - 前端页面、路由、API、类型：`.agents/rules/frontend.md`
 - 测试与验证：`.agents/rules/testing.md`
 - 提交前联动检查：`.agents/rules/change-checklist.md`
@@ -107,7 +111,8 @@ pkg/gormlog/              # GORM 日志适配器
 - 管理接口统一在 `/api/v1/admin/*` 下，并使用管理员鉴权
 - 支持 PostgreSQL（默认）和 MySQL，通过 YAML 配置 `driver` 切换
 - YAML 仅保留基础启动配置（地址、数据库驱动和连接字符串），其他运行期配置以 `settings` 表为准
-- JWT 密钥、加密密钥、SSO 凭据、企业微信密钥、S3 secret 等敏感值不得明文暴露
+- JWT 密钥、加密密钥、SSO 凭据、企业微信密钥、S3 secret、备份错误明细等敏感值不得明文暴露
+- 服务节点心跳由服务启动后自动上报；涉及节点状态展示时，不要绕开现有 `service_nodes` / heartbeat 逻辑
 
 ### 前端
 
@@ -124,16 +129,17 @@ pkg/gormlog/              # GORM 日志适配器
 
 - 独立 Go 模块，位于 `cli/`，使用 cobra 命令框架和 viper 配置管理
 - 通过 Cookie Jar 复用主站 JWT 会话，不引入独立认证协议
+- 已支持密码登录与浏览器 SSO；涉及 SSO 改动时同步检查 `/api/v1/sso/cli/*`
 - 构建：`task build-cli` 或 `task build-cli-all`
 
 ## 强制规则
 
 - 修改代码前，阅读与任务直接相关的 `.agents/rules/*.md`
 - 遵守现有分层和目录结构，不为局部改动重塑架构
-- 涉及 API、设置项、上传链路、SSO、企业微信时，检查前后端和文档联动
+- 涉及 API、设置项、上传链路、SSO、企业微信、数据库备份、服务节点时，检查前后端和文档联动
 - 涉及敏感信息时，日志、测试数据、文档示例中都必须脱敏
 - 文档中的流程图、时序图、状态流转图统一使用 `Mermaid`，不要再提交 ASCII 图或截图式流程图
-- 没有完成相应验证前，不要宣称"已完成""已修复""测试通过"
+- 没有完成相应验证前，不要宣称“已完成”“已修复”“测试通过”
 
 ## 推荐做法
 
@@ -141,15 +147,17 @@ pkg/gormlog/              # GORM 日志适配器
 - 新增后端逻辑优先补充对应单元测试
 - 优先复用统一接口，不继续扩散已废弃接口模式
 - 小步修改，保持 handler、service、view 文件职责清晰
+- 设计文档要明确区分“已实现”“部分实现”“设计中”，不要让 roadmap 与 README 相互矛盾
 
 ## 本项目常见改动面
 
-- 内容、评论、点赞、收藏、关注：注意计数字段、关联查询和权限
+- 内容、评论、点赞、收藏、关注、浏览记录：注意计数字段、关联查询和权限
 - 分类与路由：注意启用状态、排序、动态 `/:slug` 路由影响
-- 上传与资源访问：注意 presign、对象 key、访问 URL 与权限边界
+- 上传与资源访问：注意 presign、对象 key、访问 URL、资源分发和权限边界
 - 设置管理：注意 `entity.Setting*` 常量、service 读取逻辑、管理端表单和脱敏返回
 - SSO 与企业微信：注意回调地址、协议字段、密钥脱敏和错误日志
-- 资源分发：注意分发签名、域名、图片样式、TTL 等配置项
+- 数据库备份：注意 `pg_dump` / `mysqldump` 依赖、对象存储前缀、下载 TTL、错误脱敏和并发保护
+- 服务节点：注意 node type、心跳超时、环境元信息与后台展示联动
 
 ## 提交前最小检查
 

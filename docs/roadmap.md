@@ -1,58 +1,74 @@
 # Niubility Roadmap
 
-该文档用于记录仍有明确价值、但暂未进入当前迭代的中长期事项。
+本文档记录仍有明确价值、但尚未完整落地的事项。已在代码中完成的能力不再重复列入 roadmap。
 
-## CLI Delivery
+## CLI
 
-- [ ] 将 `cli/` 从"可用原型"推进到"可正式交付"
-  - 对齐 [`docs/cli-design.md`](./cli-design.md) 中的命令范围、输出行为与验收标准
-  - 补齐真实环境端到端验证，至少覆盖 `login -> whoami -> category list -> content list -> content create article -> content view -> content delete`
-  - 补充打包、发布与版本管理流程
-  - 将 CLI 使用说明以稳定入口形式接入仓库主文档
+- [ ] 将 `cli/` 从“可用命令集”推进到“稳定交付入口”
+  - 对齐主 README、`cli/README.md` 与实际命令范围
+  - 增加版本信息、发布流程与打包说明
+  - 补齐更多真实环境端到端验证
 
-- [ ] 补齐 CLI 后续命令与内容类型支持
-  - `content edit <id>`
-  - `favorite list`、`comment list`、`comment create`、`like toggle`
+- [ ] 完成非文章内容的 CLI 发布链路
   - `content create gallery <dir>`
   - `content create video <dir>`
-  - shell completion 与脚本友好输出增强
+  - `content create podcast <dir-or-file>`
+  - 与附件上传、封面、排序、speaker 信息保持一致
+
+- [ ] 补齐 CLI 内容与互动命令的用户体验
+  - 更完整的 `content edit`
+  - 更清晰的 HTML 内容查看体验
+  - shell completion、脚本友好输出增强
 
 - [ ] 完成 CLI SSO 的产品化收尾
-  - 基于现有 `/api/v1/sso/cli/*` 链路完成真实环境验证
-  - 补齐超时、取消、失败跳转、重复消费等异常场景处理
-  - 明确 CLI SSO 的运维要求、限制条件与用户文档
+  - 覆盖超时、取消、失败跳转、重复消费等异常场景
+  - 补齐用户文档与运维要求
 
 ## Notifications
 
 - [ ] 实现通知偏好设置功能
-  - 当前 `settings/notifications` 页面为占位页，显示"即将推出"
-  - 需明确通知类型（评论回复、点赞、关注、系统通知等）
-  - 设计通知投递策略（站内信、邮件、企业微信等）
-
-## Security Backlog
-
-- [ ] 分析 `server.secret` 和 `server.encryptionKey` 是否可以合并
-  - `secret` 用于 JWT 签名
-  - `encryptionKey` 用于敏感配置加密
-  - 需要评估统一密钥管理与职责分离之间的取舍
-
-- [ ] 实现 `encryptionKey` 轮换机制
-  - 支持多版本密钥解密
-  - 提供密钥轮换 API 或 CLI
-  - 支持存量数据自动重加密
+  - 当前 `settings/notifications` 页面仅为占位
+  - 明确通知类型与投递策略
+  - 设计站内、邮件、企业微信等可能通道
 
 ## Integrations
 
-- [ ] 实现"转发企业微信群"能力
-  - 管理后台配置群机器人 Webhook
-  - 内容详情页提供管理员可见的转发入口
-  - 统一消息卡片模板、失败提示与审计信息
-  - 明确支持的内容类型与链接策略
+- [ ] 决定企业微信网页 OAuth 自动登录是否进入实现
+  - 当前仅有设计文档，无对应后端/前端路由
+  - 需评估与现有 SSO、登录页、部署环境的边界
+
+- [ ] 评估企业微信群转发能力
+  - 管理后台配置机器人 Webhook
+  - 内容详情页管理员操作入口
+  - 模板、审计、失败提示统一
+
+## Security
+
+- [ ] 评估密钥治理方案
+  - JWT 签名密钥与敏感配置加密密钥是否需要统一管理
+  - 是否需要显式轮换流程
+
+- [ ] 设计加密密钥轮换能力
+  - 多版本密钥解密
+  - 存量数据重加密
+  - 管理或 CLI 操作入口
 
 ## Asset Delivery
 
-- [ ] 推进资源分发配置的第二阶段能力
-  - 明确当前"关闭分发签名"和"七牛云私有分发"之外的产品边界
-  - 评估是否需要支持更多 delivery provider
-  - 梳理分发域名、私有签名、图片样式、TTL 等配置项的兼容性与默认行为
-  - 对齐功能文档、设置页文案与实际实现，避免产品表述超前于能力边界
+- [ ] 扩展资源分发 provider 的产品边界
+  - 当前重点适配 `disabled` 与 `qiniu`
+  - 评估更多 provider 是否值得支持
+  - 梳理私有分发、样式追加、TTL 与 S3 公网 URL 的组合行为
+
+## Operations
+
+- [ ] 评估数据库备份的后续能力
+  - 自动调度
+  - 生命周期清理
+  - 加密归档
+  - 恢复流程文档或工具支持
+
+- [ ] 评估服务节点能力扩展
+  - 节点告警
+  - 更细粒度健康指标
+  - 与调度型节点的协同展示
