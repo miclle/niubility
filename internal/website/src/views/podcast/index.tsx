@@ -1,94 +1,47 @@
-import { useState, useEffect, useCallback, type MouseEvent } from 'react'
-import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useState, useCallback, type MouseEvent } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { ThumbsUp, MessageCircle, Pencil, Bookmark, Mic } from 'lucide-react'
 import dayjs from 'dayjs'
 import { marked } from 'marked'
 import { useTranslation } from 'react-i18next'
 
-import { getContent, listContents, toggleLike, favoriteContent } from 'src/api/content'
-import { recordContentView } from 'src/api/view'
 import { fileURL } from 'src/api/upload'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
 import { getContentCover } from 'src/lib/content-assets'
 import { enhanceExternalLinks, formatFileSize } from 'src/lib/utils'
 import { useAppContext } from 'src/context/app'
+import useContentDetail from 'src/hooks/useContentDetail'
 import { AudioPlayer } from 'src/components/AudioPlayer'
 import CommentSection from 'src/components/CommentSection'
 import ShareButton from 'src/components/ShareButton'
 import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
-import type { Content } from 'src/types/content'
 
 // PodcastDetail displays a single podcast content item.
 function PodcastDetail() {
   const { t } = useTranslation(['content', 'common'])
-  const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { currentUser, categories, siteConfig } = useAppContext()
-  const [content, setContent] = useState<Content | null>(null)
-  const [relatedContents, setRelatedContents] = useState<Content[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const { siteConfig } = useAppContext()
+
+  const {
+    content, relatedContents, loading, error,
+    liked, likeCount, favorited, favoriteCount, commentCount, setCommentCount,
+    highlightedCommentID, highlightedContent,
+    handleLike, handleFavorite,
+    isDraft, canEdit, categoryLabel,
+  } = useContentDetail({ expectedType: 'podcast', relatedLimit: 12 })
+
   const [theaterMode, setTheaterMode] = useState(false)
   const [descExpanded, setDescExpanded] = useState(false)
-  const [liked, setLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(0)
-  const [favorited, setFavorited] = useState(false)
-  const [favoriteCount, setFavoriteCount] = useState(0)
-  const [commentCount, setCommentCount] = useState(0)
 
   // Derive currentPodcastIndex from URL search param ?p=N
   const pParam = searchParams.get('p')
   const currentPodcastIndex = pParam !== null ? parseInt(pParam, 10) || 0 : 0
-  const highlightedCommentID = searchParams.get('liked_comment') || undefined
-  const highlightedContent = searchParams.get('liked_content') === '1'
 
   const setCurrentPodcastIndex = useCallback((index: number) => {
     const params: Record<string, string> = index === 0 ? {} : { p: String(index) }
     setSearchParams(params, { replace: true })
   }, [setSearchParams])
-
-  // Load content
-  useEffect(() => {
-    if (!id) return
-    setLoading(true)
-    getContent(id)
-      .then((res) => {
-        const data = res.data
-        if (data.type !== 'podcast') {
-          navigate(contentDetailPath(data), { replace: true })
-          return
-        }
-        setContent(data)
-        setLiked(data.liked ?? false)
-        setLikeCount(data.like_count ?? 0)
-        setFavorited(data.favorited ?? false)
-        setFavoriteCount(data.favorite_count ?? 0)
-        setCommentCount(data.comment_count ?? 0)
-        setError(false)
-      })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false))
-  }, [id, navigate])
-
-  // Load related podcasts (exclude current)
-  useEffect(() => {
-    if (!content || !content.category) return
-    listContents({ type: 'podcast', category: content.category, limit: 12 })
-      .then((res) => setRelatedContents((res.data.items || []).filter((c) => c.id !== content.id)))
-      .catch(() => {})
-  }, [content])
-
-  useEffect(() => {
-    if (!currentUser || !content?.id) return
-
-    const timer = window.setTimeout(() => {
-      recordContentView(content.id, { trigger: 'detail' }).catch(() => {})
-    }, 5000)
-
-    return () => window.clearTimeout(timer)
-  }, [content?.id, currentUser])
 
   if (loading) {
     return <div className="text-center py-20" style={{ color: '#909090' }}>{t('common:loading')}</div>
@@ -103,9 +56,6 @@ function PodcastDetail() {
     )
   }
 
-  const isDraft = content.status === 'draft'
-  const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin' || currentUser.id === content.author_id)
-  const categoryLabel = categories?.find((c) => c.slug === content.category)?.name || content.category
   const coverUrl = getContentCover(content, siteConfig)
   const audioAttachments = (content.attachments || []).filter((a) => a.type === 'audio')
   const currentAudio = audioAttachments[currentPodcastIndex] || audioAttachments[0]
@@ -118,22 +68,6 @@ function PodcastDetail() {
   const summaryHtml = content.summary
     ? enhanceExternalLinks(marked.parse(content.summary, { async: false }) as string)
     : ''
-
-  const handleLike = () => {
-    if (!currentUser) return
-    toggleLike('content', content.id).then((res) => {
-      setLiked(res.data.liked ?? false)
-      setLikeCount(res.data.like_count ?? 0)
-    })
-  }
-
-  const handleFavorite = () => {
-    if (!currentUser) return
-    favoriteContent(content.id).then((res) => {
-      setFavorited(res.data.favorited ?? false)
-      setFavoriteCount(res.data.favorite_count ?? 0)
-    })
-  }
 
   const handleDescriptionClick = (event: MouseEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement | null
@@ -246,7 +180,6 @@ function PodcastDetail() {
                 color: liked ? '#065fd4' : '#0f0f0f',
                 boxShadow: highlightedContent ? 'inset 0 0 0 1px rgba(6,95,212,0.28)' : undefined,
               }}
-              disabled={!currentUser}
             >
               <ThumbsUp size={18} fill={liked ? 'currentColor' : 'none'} />
               <span>{likeCount}</span>
@@ -255,7 +188,6 @@ function PodcastDetail() {
               onClick={handleFavorite}
               className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
               style={{ background: favorited ? 'rgba(234,179,8,0.1)' : 'rgba(0,0,0,0.05)', color: favorited ? '#b45309' : '#0f0f0f' }}
-              disabled={!currentUser}
             >
               <Bookmark size={18} fill={favorited ? 'currentColor' : 'none'} />
               <span>{favoriteCount}</span>

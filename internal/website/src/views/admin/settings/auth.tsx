@@ -1,18 +1,13 @@
 import { useState, useEffect } from 'react'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { UserPlus, Globe, Shield, Copy, Download, ChevronDown, ChevronRight } from 'lucide-react'
+import { UserPlus, Globe, Shield } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { MASKED_VALUE, useSettings, useSaveSettings, SettingsLoading, SettingsFeedback, SaveButton } from './shared'
+import OIDCSettingsSection, { type OidcForm } from './OIDCSettingsSection'
+import SAMLSettingsSection, { type SamlForm, type NameIDFormat } from './SAMLSettingsSection'
 
 // SSOType represents the active SSO protocol.
 type SSOType = 'disabled' | 'oidc' | 'saml'
-
-// NameIDFormat represents the NameID format options.
-type NameIDFormat = 'unspecified' | 'email' | 'transient' | 'persistent'
 
 // SettingsAuth provides the authentication and SSO settings page.
 function SettingsAuth() {
@@ -26,13 +21,13 @@ function SettingsAuth() {
 
   // SSO settings
   const [ssoType, setSSOType] = useState<SSOType>('disabled')
-  const [oidcForm, setOidcForm] = useState({ issuer: '', client_id: '', client_secret: '' })
+  const [oidcForm, setOidcForm] = useState<OidcForm>({ issuer: '', client_id: '', client_secret: '' })
   const [hasExistingOidcSecret, setHasExistingOidcSecret] = useState(false)
 
   // SAML settings
   const [samlMetadataURL, setSamlMetadataURL] = useState('')
   const [samlAdvancedExpanded, setSamlAdvancedExpanded] = useState(false)
-  const [samlForm, setSamlForm] = useState({
+  const [samlForm, setSamlForm] = useState<SamlForm>({
     sp_certificate: '',
     sp_private_key: '',
     nameid_format: 'unspecified' as NameIDFormat,
@@ -82,7 +77,7 @@ function SettingsAuth() {
     setSSOType((settingsMap['sso_type'] || 'disabled') as SSOType)
 
     // OIDC
-    const oidc = { issuer: '', client_id: '', client_secret: '' }
+    const oidc: OidcForm = { issuer: '', client_id: '', client_secret: '' }
     oidc.issuer = settingsMap['sso_oidc_issuer'] || ''
     oidc.client_id = settingsMap['sso_oidc_client_id'] || ''
     if (settingsMap['sso_oidc_client_secret'] === MASKED_VALUE) {
@@ -94,7 +89,7 @@ function SettingsAuth() {
 
     // SAML
     setSamlMetadataURL(settingsMap['sso_saml_idp_metadata_url'] || '')
-    const saml = {
+    const saml: SamlForm = {
       sp_certificate: settingsMap['sso_saml_sp_certificate'] || '',
       sp_private_key: '',
       nameid_format: (settingsMap['sso_saml_nameid_format'] || 'unspecified') as NameIDFormat,
@@ -221,177 +216,28 @@ function SettingsAuth() {
 
           {/* OIDC fields */}
           {ssoType === 'oidc' && (
-            <div className="space-y-4 pt-2" style={{ borderTop: '1px solid #f0f0f0' }}>
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:issuerURL')}</label>
-                <Input
-                  placeholder="https://accounts.google.com"
-                  value={oidcForm.issuer}
-                  onChange={(e) => setOidcForm({ ...oidcForm, issuer: e.target.value })}
-                />
-                <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:issuerURLHelp')}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:clientID')}</label>
-                <Input
-                  placeholder={t('admin:clientIDPlaceholder')}
-                  value={oidcForm.client_id}
-                  onChange={(e) => setOidcForm({ ...oidcForm, client_id: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
-                  {t('admin:clientSecret')}
-                  {hasExistingOidcSecret && (
-                    <span className="ml-2 text-xs" style={{ color: '#166534' }}>{t('admin:secretSetHint')}</span>
-                  )}
-                </label>
-                <Input
-                  type="password"
-                  placeholder={hasExistingOidcSecret ? t('admin:clientSecretPlaceholderSet') : t('admin:clientSecretPlaceholderNew')}
-                  value={oidcForm.client_secret}
-                  onChange={(e) => setOidcForm({ ...oidcForm, client_secret: e.target.value })}
-                />
-              </div>
-            </div>
+            <OIDCSettingsSection
+              form={oidcForm}
+              hasExistingSecret={hasExistingOidcSecret}
+              onChange={setOidcForm}
+            />
           )}
 
           {/* SAML fields */}
           {ssoType === 'saml' && (
-            <div className="space-y-4 pt-2" style={{ borderTop: '1px solid #f0f0f0' }}>
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:idpMetadataURL')}</label>
-                <Input
-                  placeholder="https://sso.example.com/saml2/meta"
-                  value={samlMetadataURL}
-                  onChange={(e) => setSamlMetadataURL(e.target.value)}
-                />
-                <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:idpMetadataURLHelp')}</p>
-              </div>
-              <div className="p-3 rounded-lg" style={{ background: '#f0f9ff', border: '1px solid #bae6fd' }}>
-                <p className="text-sm font-medium" style={{ color: '#0369a1' }}>{t('admin:spMetadata')}</p>
-                <p className="text-xs mt-1" style={{ color: '#0369a1' }}>
-                  {t('admin:spMetadataHelp')}
-                </p>
-                <code className="block text-xs mt-1 p-2 rounded" style={{ background: '#e0f2fe', color: '#0c4a6e' }}>
-                  {spMetadataURL}
-                </code>
-                <div className="flex gap-2 mt-2">
-                  <Button variant="outline" size="sm" onClick={handleCopyURL} className="h-7 text-xs">
-                    <Copy size={12} className="mr-1" />
-                    {copied ? t('admin:copied') : t('admin:copyLink')}
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleDownloadXML} className="h-7 text-xs">
-                    <Download size={12} className="mr-1" />
-                    {t('admin:downloadXML')}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Advanced SAML configuration */}
-              <div className="pt-2" style={{ borderTop: '1px solid #f0f0f0' }}>
-                <button
-                  type="button"
-                  onClick={() => setSamlAdvancedExpanded(!samlAdvancedExpanded)}
-                  className="flex items-center gap-2 text-sm font-medium cursor-pointer bg-transparent border-0 p-0"
-                  style={{ color: '#0f0f0f' }}
-                >
-                  {samlAdvancedExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                  {t('admin:advancedConfig')}
-                </button>
-
-                {samlAdvancedExpanded && (
-                  <div className="mt-4 space-y-4 pl-6">
-                    {/* SP Signing */}
-                    <div className="p-3 rounded-lg" style={{ background: '#fafafa' }}>
-                      <p className="text-sm font-medium mb-3" style={{ color: '#0f0f0f' }}>
-                        {t('admin:spSigningConfig')}
-                      </p>
-                      <p className="text-xs mb-3" style={{ color: '#606060' }}>
-                        {t('admin:spSigningConfigHelp')}
-                      </p>
-
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
-                            {t('admin:spCertificate')}
-                          </label>
-                          <Textarea
-                            rows={4}
-                            placeholder={'-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----'}
-                            value={samlForm.sp_certificate}
-                            onChange={(e) => setSamlForm({ ...samlForm, sp_certificate: e.target.value })}
-                            className="font-mono text-xs"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
-                            {t('admin:spPrivateKey')}
-                            {hasExistingSAMLPrivateKey && (
-                              <span className="ml-2 text-xs" style={{ color: '#166534' }}>
-                                {t('admin:secretSetHint')}
-                              </span>
-                            )}
-                          </label>
-                          <Textarea
-                            rows={4}
-                            placeholder={hasExistingSAMLPrivateKey ? t('admin:clientSecretPlaceholderSet') : '-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----'}
-                            value={samlForm.sp_private_key}
-                            onChange={(e) => setSamlForm({ ...samlForm, sp_private_key: e.target.value })}
-                            className="font-mono text-xs"
-                          />
-                          <p className="text-xs mt-1" style={{ color: '#909090' }}>
-                            {t('admin:privateKeyEncryption')}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* NameID Format */}
-                    <div>
-                      <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
-                        {t('admin:nameIDFormat')}
-                      </label>
-                      <Select
-                        value={samlForm.nameid_format}
-                        onValueChange={(v) => setSamlForm({ ...samlForm, nameid_format: v as NameIDFormat })}
-                      >
-                        <SelectTrigger className="w-64">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="unspecified">{t('admin:nameIDFormatUnspecified')}</SelectItem>
-                          <SelectItem value="email">{t('admin:nameIDFormatEmail')}</SelectItem>
-                          <SelectItem value="transient">{t('admin:nameIDFormatTransient')}</SelectItem>
-                          <SelectItem value="persistent">{t('admin:nameIDFormatPersistent')}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs mt-1" style={{ color: '#909090' }}>
-                        {t('admin:nameIDFormatHelp')}
-                      </p>
-                    </div>
-
-                    {/* Attribute Mapping */}
-                    <div>
-                      <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
-                        {t('admin:attributeMapping')}
-                      </label>
-                      <Textarea
-                        rows={4}
-                        placeholder={'{\n  "uid": "username",\n  "mail": "email",\n  "displayName": "name"\n}'}
-                        value={samlForm.attribute_mapping}
-                        onChange={(e) => setSamlForm({ ...samlForm, attribute_mapping: e.target.value })}
-                        className="font-mono text-xs"
-                      />
-                      <p className="text-xs mt-1" style={{ color: '#909090' }}>
-                        {t('admin:attributeMappingHelp')}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+            <SAMLSettingsSection
+              metadataURL={samlMetadataURL}
+              samlForm={samlForm}
+              hasExistingPrivateKey={hasExistingSAMLPrivateKey}
+              advancedExpanded={samlAdvancedExpanded}
+              spMetadataURL={spMetadataURL}
+              copied={copied}
+              onMetadataURLChange={setSamlMetadataURL}
+              onFormChange={setSamlForm}
+              onToggleAdvanced={() => setSamlAdvancedExpanded(!samlAdvancedExpanded)}
+              onCopyURL={handleCopyURL}
+              onDownloadXML={handleDownloadXML}
+            />
           )}
         </div>
       </div>
