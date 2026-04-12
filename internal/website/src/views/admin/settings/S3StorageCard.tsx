@@ -54,36 +54,36 @@ function S3StorageCard({ settingsMap, reload }: S3StorageCardProps) {
   }
 
   return (
-    <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
+    <div className="app-surface-elevated rounded-xl p-6 border app-border">
       <div className="flex items-center gap-2 mb-6">
-        <HardDrive size={20} style={{ color: '#0f0f0f' }} />
-        <h3 className="font-medium" style={{ color: '#0f0f0f' }}>{t('admin:objectStorageConfig')}</h3>
+        <HardDrive size={20} className="text-foreground" />
+        <h3 className="font-medium text-foreground">{t('admin:objectStorageConfig')}</h3>
       </div>
 
       <SettingsFeedback success={success} error={error} />
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:serviceEndpoint')}</label>
+          <label className="block text-sm font-medium mb-1 text-foreground">{t('admin:serviceEndpoint')}</label>
           <Input
             placeholder={t('admin:serviceEndpointPlaceholder')}
             value={s3Form.endpoint}
             onChange={(e) => setS3Form({ ...s3Form, endpoint: e.target.value })}
           />
-          <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:serviceEndpointExample')}</p>
+          <p className="app-text-tertiary text-xs mt-1">{t('admin:serviceEndpointExample')}</p>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:storageRegion')}</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">{t('admin:storageRegion')}</label>
             <Input
               placeholder={t('admin:storageRegionPlaceholder')}
               value={s3Form.region}
               onChange={(e) => setS3Form({ ...s3Form, region: e.target.value })}
             />
-            <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:storageRegionExample')}</p>
+            <p className="app-text-tertiary text-xs mt-1">{t('admin:storageRegionExample')}</p>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:storageBucket')}</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">{t('admin:storageBucket')}</label>
             <Input
               placeholder={t('admin:storageBucketPlaceholder')}
               value={s3Form.bucket}
@@ -92,7 +92,7 @@ function S3StorageCard({ settingsMap, reload }: S3StorageCardProps) {
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:accessKey')}</label>
+          <label className="block text-sm font-medium mb-1 text-foreground">{t('admin:accessKey')}</label>
           <Input
             placeholder={t('admin:accessKeyPlaceholder')}
             value={s3Form.access_key}
@@ -100,10 +100,10 @@ function S3StorageCard({ settingsMap, reload }: S3StorageCardProps) {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+          <label className="block text-sm font-medium mb-1 text-foreground">
             {t('admin:secretKey')}
             {hasExistingS3Secret && (
-              <span className="ml-2 text-xs" style={{ color: '#166534' }}>{t('admin:secretSetHint')}</span>
+              <span className="ml-2 text-xs text-emerald-600 dark:text-emerald-400">{t('admin:secretSetHint')}</span>
             )}
           </label>
           <Input
@@ -114,24 +114,24 @@ function S3StorageCard({ settingsMap, reload }: S3StorageCardProps) {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:publicURL')}</label>
+          <label className="block text-sm font-medium mb-1 text-foreground">{t('admin:publicURL')}</label>
           <Input
             placeholder={t('admin:publicURLPlaceholder')}
             value={s3Form.public_url}
             onChange={(e) => setS3Form({ ...s3Form, public_url: e.target.value })}
           />
-          <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:publicURLExample')}</p>
-          <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:publicURLHelp')}</p>
+          <p className="app-text-tertiary text-xs mt-1">{t('admin:publicURLExample')}</p>
+          <p className="app-text-tertiary text-xs mt-1">{t('admin:publicURLHelp')}</p>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:corsOrigin')}</label>
+          <label className="block text-sm font-medium mb-1 text-foreground">{t('admin:corsOrigin')}</label>
           <Textarea
             rows={3}
             placeholder={"http://localhost:9000\nhttps://example.com"}
             value={s3Form.cors_origin}
             onChange={(e) => setS3Form({ ...s3Form, cors_origin: e.target.value })}
           />
-          <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:corsOriginHelp')}</p>
+          <p className="app-text-tertiary text-xs mt-1">{t('admin:corsOriginHelp')}</p>
         </div>
       </div>
 

@@ -97,32 +97,32 @@ function SortableMediaItem({ item, index, onChange, onRemove, renderContent }: {
   // Still uploading — show progress
   if (item.uploading) {
     return (
-      <div ref={setNodeRef} style={style} className="flex gap-3 p-3 rounded-lg" {...attributes}>
-        <div className="flex-shrink-0 mt-1"><GripVertical size={16} style={{ color: '#d4d4d4' }} /></div>
+      <div ref={setNodeRef} style={style} className="app-surface-muted flex gap-3 p-3 rounded-lg" {...attributes}>
+        <div className="flex-shrink-0 mt-1"><GripVertical size={16} className="text-[var(--surface-border)]" /></div>
         <div className="flex-1 flex flex-col items-center gap-2 py-4">
-          <Loader2 size={24} className="animate-spin" style={{ color: '#909090' }} />
-          <span className="text-sm" style={{ color: '#909090' }}>{t('uploading')} {item.progress}%</span>
-          <div className="w-full max-w-xs h-1.5 rounded-full overflow-hidden" style={{ background: '#e5e5e5' }}>
-            <div className="h-full rounded-full transition-all" style={{ width: `${item.progress}%`, background: '#0f0f0f' }} />
+          <Loader2 size={24} className="app-text-tertiary animate-spin" />
+          <span className="app-text-tertiary text-sm">{t('uploading')} {item.progress}%</span>
+          <div className="w-full max-w-xs h-1.5 rounded-full overflow-hidden bg-[var(--surface-border)]">
+            <div className="h-full rounded-full transition-all bg-foreground" style={{ width: `${item.progress}%` }} />
           </div>
-          <span className="text-xs" style={{ color: '#b0b0b0' }}>{item.filename}</span>
+          <span className="app-text-tertiary text-xs">{item.filename}</span>
         </div>
       </div>
     )
   }
 
   return (
-    <div ref={setNodeRef} style={style} className="flex gap-3 p-3 rounded-lg" {...attributes}>
+    <div ref={setNodeRef} style={style} className="app-surface-muted flex gap-3 p-3 rounded-lg" {...attributes}>
       <button type="button" className="flex-shrink-0 cursor-grab mt-1" {...listeners}>
-        <GripVertical size={16} style={{ color: '#909090' }} />
+        <GripVertical size={16} className="app-text-tertiary" />
       </button>
       <div className="flex-1 space-y-3">
         {/* Header with index and filename */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium px-2 py-0.5 rounded" style={{ background: '#f2f2f2', color: '#606060' }}>#{index + 1}</span>
-          <span className="text-xs flex-1 truncate" style={{ color: '#909090' }}>{item.filename}</span>
-          <button type="button" onClick={() => onRemove(item.localId)} className="p-1.5 rounded hover:bg-red-50 transition-colors">
-            <Trash2 size={14} style={{ color: '#cc0000' }} />
+          <span className="app-chip text-xs font-medium px-2 py-0.5 rounded">#{index + 1}</span>
+          <span className="app-text-tertiary text-xs flex-1 truncate">{item.filename}</span>
+          <button type="button" onClick={() => onRemove(item.localId)} className="p-1.5 rounded hover:bg-red-500/10 transition-colors">
+            <Trash2 size={14} className="text-red-600 dark:text-red-400" />
           </button>
         </div>
 
@@ -310,23 +310,23 @@ function MediaEditorForm({ id, defaultSpeaker, config, renderItemContent, onSave
   }
 
   if (loading) {
-    return <div className="text-center py-20" style={{ color: '#909090' }}>{t('loading')}</div>
+    return <div className="app-text-tertiary text-center py-20">{t('loading')}</div>
   }
 
   const hasUploading = mediaItems.some((m) => m.uploading) || documents.some((d) => d.uploading)
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="bg-white rounded-xl p-6 space-y-5" style={{ border: '1px solid #e5e5e5' }}>
+    <form onSubmit={(e) => e.preventDefault()} className="app-surface-elevated border app-border rounded-xl p-6 space-y-5">
       {/* Title */}
       <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('title')} *</label>
+        <label className="app-text-secondary block text-sm font-medium mb-1.5">{t('title')} *</label>
         <Input placeholder={t('titlePlaceholder')} value={title} onChange={(e) => setTitle(e.target.value)} required />
       </div>
 
       {/* Category */}
       {categories.length > 0 && (
         <div>
-          <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('category')} *</label>
+          <label className="app-text-secondary block text-sm font-medium mb-1.5">{t('category')} *</label>
           <Select value={category} onValueChange={(val) => val && setCategory(val)}>
             <SelectTrigger className="w-full">
               <span className="flex-1 text-left">
@@ -344,31 +344,30 @@ function MediaEditorForm({ id, defaultSpeaker, config, renderItemContent, onSave
 
       {/* Summary */}
       <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('description')}</label>
+        <label className="app-text-secondary block text-sm font-medium mb-1.5">{t('description')}</label>
         <Textarea placeholder={t('descriptionPlaceholder')} value={summary} onChange={(e) => setSummary(e.target.value)} rows={2} />
       </div>
 
       {/* Cover Image */}
       <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('cover')}</label>
+        <label className="app-text-secondary block text-sm font-medium mb-1.5">{t('cover')}</label>
         <ImageUpload value={coverUrl} onChange={setCoverUrl} />
       </div>
 
       {/* Media Upload Area */}
       <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t(config.uploadLabelKey)} *</label>
+        <label className="app-text-secondary block text-sm font-medium mb-1.5">{t(config.uploadLabelKey)} *</label>
         {uploadError && (
-          <div className="text-xs mb-2 p-2 rounded" style={{ color: '#cc0000', background: '#fff0f0' }}>{uploadError}</div>
+          <div className="theme-danger-banner text-xs mb-2 p-2 rounded">{uploadError}</div>
         )}
         <div
-          className="rounded-lg cursor-pointer transition-colors flex flex-col items-center justify-center gap-2 p-8"
-          style={{ border: '2px dashed #d4d4d4', background: '#fafafa' }}
+          className="app-surface-muted border-2 border-dashed app-border rounded-lg cursor-pointer transition-colors flex flex-col items-center justify-center gap-2 p-8"
           onClick={() => fileInputRef.current?.click()}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => { e.preventDefault(); handleUploadFiles(Array.from(e.dataTransfer.files)) }}
         >
-          <Upload size={24} style={{ color: '#909090' }} />
-          <span className="text-sm" style={{ color: '#909090' }}>{t(config.uploadHintKey)}</span>
+          <Upload size={24} className="app-text-tertiary" />
+          <span className="app-text-tertiary text-sm">{t(config.uploadHintKey)}</span>
         </div>
         <input ref={fileInputRef} type="file" accept={config.accept} multiple onChange={(e) => { if (e.target.files) handleUploadFiles(Array.from(e.target.files)); e.target.value = '' }} className="hidden" />
       </div>
@@ -376,10 +375,10 @@ function MediaEditorForm({ id, defaultSpeaker, config, renderItemContent, onSave
       {/* Media List */}
       {mediaItems.length > 0 && (
         <div>
-          <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t(config.listLabelKey)}</label>
+          <label className="app-text-secondary block text-sm font-medium mb-1.5">{t(config.listLabelKey)}</label>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={mediaItems.map((m) => m.localId)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-2 rounded-lg" style={{ border: '1px solid #e5e5e5' }}>
+              <div className="app-surface-elevated border app-border space-y-2 rounded-lg p-2">
                 {mediaItems.map((item, index) => (
                   <SortableMediaItem
                     key={item.localId}
@@ -411,7 +410,7 @@ function MediaEditorForm({ id, defaultSpeaker, config, renderItemContent, onSave
             label={t('speaker')}
           />
           <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('speakerBio')}</label>
+            <label className="app-text-secondary block text-sm font-medium mb-1.5">{t('speakerBio')}</label>
             <Input placeholder={t('speakerBioPlaceholder')} value={speakerBio} onChange={(e) => setSpeakerBio(e.target.value)} />
           </div>
         </div>

@@ -18,20 +18,20 @@ interface EditorActionsProps {
 export default function EditorActions({ saving, isNew, contentStatus, disabled, onSave, onCancel }: EditorActionsProps) {
   const { t } = useTranslation('editor')
   return (
-    <div className="flex items-center gap-3 pt-4" style={{ borderTop: '1px solid #e5e5e5' }}>
+    <div className="border-t app-border flex items-center gap-3 pt-4">
       {(isNew || contentStatus === 'draft') ? (
         <>
           <Button type="button" variant="outline" disabled={saving || disabled} onClick={() => onSave('draft')}>
             <Save size={16} />
             {saving ? t('saving') : t('saveDraft')}
           </Button>
-          <Button type="button" disabled={saving || disabled} onClick={() => onSave('published')} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
+          <Button type="button" disabled={saving || disabled} onClick={() => onSave('published')} className="theme-primary-button rounded-[18px]">
             {saving ? t('publishing') : t('publish')}
           </Button>
         </>
       ) : (
         <>
-          <Button type="button" disabled={saving || disabled} onClick={() => onSave('published')} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
+          <Button type="button" disabled={saving || disabled} onClick={() => onSave('published')} className="theme-primary-button rounded-[18px]">
             <Save size={16} />
             {saving ? t('saving') : t('save')}
           </Button>

@@ -121,11 +121,11 @@ function GalleryDetail() {
   }, [])
 
   if (loading) {
-    return <div className="p-6 text-center" style={{ color: '#606060' }}>{t('content:loading')}</div>
+    return <div className="app-text-secondary p-6 text-center">{t('content:loading')}</div>
   }
 
   if (error || !content) {
-    return <div className="p-6 text-center" style={{ color: '#606060' }}>{t('content:notFound')}</div>
+    return <div className="app-text-secondary p-6 text-center">{t('content:notFound')}</div>
   }
 
   const isDraft = content.status === 'draft'
@@ -134,7 +134,7 @@ function GalleryDetail() {
   const galleryItems = content.attachments || []
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-6">
+    <div className="app-surface max-w-[1200px] mx-auto px-6 py-6">
       {/* Draft banner */}
       {isDraft && (
         <div className="mb-4 px-4 py-3 rounded-xl text-sm font-medium" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
@@ -143,20 +143,20 @@ function GalleryDetail() {
       )}
 
       {/* Title */}
-      <h1 className="text-xl font-medium mb-3" style={{ color: '#0f0f0f', lineHeight: 1.4 }}>{content.title}</h1>
+      <h1 className="text-xl font-medium mb-3 text-foreground" style={{ lineHeight: 1.4 }}>{content.title}</h1>
 
       {/* Author info + actions */}
-      <div className="flex items-center justify-between pb-4 mb-4" style={{ borderBottom: '1px solid #e5e5e5' }}>
+      <div className="flex items-center justify-between pb-4 mb-4 border-b app-border">
         <div className="flex items-center gap-3">
           <Avatar size="lg">
             <SiteAvatarImage src={getSpeakerAvatar(content, siteConfig)} alt={getSpeakerDisplayName(content)} />
             <AvatarFallback>{getSpeakerDisplayName(content).charAt(0) || t('common:anonymousAbbrev')}</AvatarFallback>
           </Avatar>
           <div>
-            <div className="text-sm font-medium" style={{ color: '#0f0f0f' }}>
+            <div className="text-sm font-medium text-foreground">
               {getSpeakerDisplayName(content)}
             </div>
-            <div className="text-xs" style={{ color: '#606060' }}>
+            <div className="app-text-secondary text-xs">
               {dayjs(content.created_at).fromNow()}
             </div>
           </div>
@@ -165,9 +165,9 @@ function GalleryDetail() {
           <button
             className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
             style={{
-              background: liked ? 'rgba(6,95,212,0.1)' : 'rgba(0,0,0,0.05)',
-              color: liked ? '#065fd4' : '#0f0f0f',
-              boxShadow: highlightedContent ? 'inset 0 0 0 1px rgba(6,95,212,0.28)' : undefined,
+              background: liked ? 'var(--brand-soft)' : 'var(--surface-hover)',
+              color: liked ? 'var(--brand)' : 'var(--foreground)',
+              boxShadow: highlightedContent ? 'inset 0 0 0 1px color-mix(in srgb, var(--brand) 40%, transparent)' : undefined,
             }}
             onClick={() => {
               toggleLike('content', content.id).then((res) => { setLiked(res.data.liked); setLikeCount(res.data.like_count) })
@@ -178,7 +178,7 @@ function GalleryDetail() {
           </button>
           <button
             className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
-            style={{ background: favorited ? 'rgba(234,179,8,0.1)' : 'rgba(0,0,0,0.05)', color: favorited ? '#b45309' : '#0f0f0f' }}
+            style={{ background: favorited ? 'color-mix(in srgb, #f59e0b 18%, transparent)' : 'var(--surface-hover)', color: favorited ? '#b45309' : 'var(--foreground)' }}
             onClick={() => {
               favoriteContent(content.id).then((res) => { setFavorited(res.data.favorited); setFavoriteCount(res.data.favorite_count) })
             }}
@@ -186,7 +186,7 @@ function GalleryDetail() {
             <Bookmark size={18} fill={favorited ? 'currentColor' : 'none'} />
             <span>{favoriteCount || 0}</span>
           </button>
-          <a href="#comments" className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors no-underline" style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}>
+          <a href="#comments" className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors no-underline" style={{ background: 'var(--surface-hover)', color: 'var(--foreground)' }}>
             <MessageCircle size={18} />
             <span>{commentCount || 0}</span>
           </a>
@@ -194,10 +194,10 @@ function GalleryDetail() {
             title={content.title}
             text={content.summary || undefined}
             className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
-            style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}
+            style={{ background: 'var(--surface-hover)', color: 'var(--foreground)' }}
           />
           {canEdit && (
-            <Link to={contentEditPath(content)} className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors no-underline" style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}>
+            <Link to={contentEditPath(content)} className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors no-underline" style={{ background: 'var(--surface-hover)', color: 'var(--foreground)' }}>
               <Pencil size={16} />
               <span>{t('common:edit')}</span>
             </Link>
@@ -210,8 +210,8 @@ function GalleryDetail() {
 
       {/* Description & tags */}
       {content.summary && (
-        <div className="mt-6 p-3 rounded-xl text-sm whitespace-pre-wrap" style={{ background: 'rgba(0,0,0,0.03)', color: '#0f0f0f' }}>
-          <div className="flex items-center gap-2 mb-2 text-xs" style={{ color: '#606060' }}>
+        <div className="app-surface-muted mt-6 p-3 rounded-xl text-sm whitespace-pre-wrap text-foreground">
+          <div className="app-text-secondary flex items-center gap-2 mb-2 text-xs">
             <span>{categoryLabel}</span>
             {content.tags?.length > 0 && (
               <>

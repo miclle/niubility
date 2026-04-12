@@ -3,6 +3,7 @@ import { RouterProvider, createBrowserRouter } from 'react-router-dom'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
 import { AppContext } from 'src/context/app'
+import { ThemeProvider } from 'src/context/theme'
 import routes from './router'
 import type { User, SiteConfig } from 'src/types/user'
 import type { Category } from 'src/types/content'
@@ -26,21 +27,23 @@ function App({ initialUser, initialized, categories, registrationEnabled, ssoEna
   const [currentSiteConfig, setCurrentSiteConfig] = useState<SiteConfig | null>(siteConfig)
 
   return (
-    <AppContext.Provider value={{
-      initialized,
-      currentUser,
-      categories,
-      registrationEnabled,
-      ssoEnabled,
-      ssoLoginUrl,
-      siteConfig: currentSiteConfig,
-      setCurrentUser,
-      setSiteConfig: setCurrentSiteConfig,
-    }}>
-      <TooltipProvider>
-        <RouterProvider router={router} />
-      </TooltipProvider>
-    </AppContext.Provider>
+    <ThemeProvider>
+      <AppContext.Provider value={{
+        initialized,
+        currentUser,
+        categories,
+        registrationEnabled,
+        ssoEnabled,
+        ssoLoginUrl,
+        siteConfig: currentSiteConfig,
+        setCurrentUser,
+        setSiteConfig: setCurrentSiteConfig,
+      }}>
+        <TooltipProvider>
+          <RouterProvider router={router} />
+        </TooltipProvider>
+      </AppContext.Provider>
+    </ThemeProvider>
   )
 }
 

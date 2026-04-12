@@ -80,39 +80,39 @@ function MyContents() {
   const activeTypeLabel = typeTabs.find((tab) => tab.key === activeType)?.label || t('settings:myContents')
 
   return (
-    <div className="min-h-full bg-white">
+    <div className="app-surface min-h-full">
       <div className="px-6 pt-8 pb-0 lg:px-12">
-        <h1 className="text-[2rem] font-semibold tracking-tight" style={{ color: '#0f0f0f' }}>
+        <h1 className="text-[2rem] font-semibold tracking-tight text-foreground">
           {t('settings:myContentsTitle')}
         </h1>
 
-        <div className="mt-6 -mx-6 flex gap-10 overflow-x-auto border-b border-[#ececec] px-6 lg:-mx-12 lg:px-12">
+        <div className="mt-6 -mx-6 flex gap-10 overflow-x-auto border-b app-border px-6 lg:-mx-12 lg:px-12">
           {typeTabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveType(tab.key)}
               className="relative shrink-0 pb-2.5 text-[15px] font-semibold transition-colors"
-              style={{ color: activeType === tab.key ? '#0f0f0f' : '#6f6f6f' }}
+              style={{ color: activeType === tab.key ? 'var(--foreground)' : 'var(--text-secondary)' }}
             >
               {tab.label}
               {activeType === tab.key && (
-                <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full" style={{ background: '#0f0f0f' }} />
+                <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full" style={{ background: 'var(--foreground)' }} />
               )}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="flex min-h-[76px] items-center gap-5 border-b border-[#ececec] px-6 lg:px-12">
-        <SlidersHorizontal size={20} style={{ color: '#0f0f0f' }} />
-        <span className="text-[15px]" style={{ color: '#8a8a8a' }}>{ta('admin:filter')}</span>
+      <div className="flex min-h-[76px] items-center gap-5 border-b app-border px-6 lg:px-12">
+        <SlidersHorizontal size={20} className="text-foreground" />
+        <span className="app-text-tertiary text-[15px]">{ta('admin:filter')}</span>
         <div className="flex flex-wrap items-center gap-2">
           <button
             className="rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
             onClick={() => setActiveTab('published')}
             style={{
-              background: activeTab === 'published' ? '#0f0f0f' : '#f5f5f5',
-              color: activeTab === 'published' ? '#ffffff' : '#606060',
+              background: activeTab === 'published' ? 'var(--foreground)' : 'var(--surface-muted)',
+              color: activeTab === 'published' ? 'var(--background)' : 'var(--text-secondary)',
             }}
           >
             {t('settings:published')}
@@ -121,8 +121,8 @@ function MyContents() {
             className="rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
             onClick={() => setActiveTab('draft')}
             style={{
-              background: activeTab === 'draft' ? '#0f0f0f' : '#f5f5f5',
-              color: activeTab === 'draft' ? '#ffffff' : '#606060',
+              background: activeTab === 'draft' ? 'var(--foreground)' : 'var(--surface-muted)',
+              color: activeTab === 'draft' ? 'var(--background)' : 'var(--text-secondary)',
             }}
           >
             {t('settings:draft')}
@@ -138,16 +138,16 @@ function MyContents() {
           >
             <Sparkles size={72} strokeWidth={1.5} style={{ color: '#1296c9' }} />
           </div>
-          <h2 className="mt-8 text-2xl font-semibold" style={{ color: '#0f0f0f' }}>
+          <h2 className="mt-8 text-2xl font-semibold text-foreground">
             {t('settings:emptyContentsTitle')}
           </h2>
-          <p className="mt-3 max-w-md text-sm leading-6" style={{ color: '#707070' }}>
+          <p className="app-text-secondary mt-3 max-w-md text-sm leading-6">
             {activeTab === 'draft' ? t('settings:noDrafts') : t('settings:emptyContentsDescription')}
           </p>
           <NavLink to={contentNewPath(activeType)} className="mt-8 no-underline">
             <Button
               className="h-11 rounded-full px-6 text-sm font-medium"
-              style={{ background: '#0f0f0f', color: '#ffffff' }}
+              style={{ background: 'var(--foreground)', color: 'var(--background)' }}
             >
               {t('settings:createContent')}
             </Button>
@@ -166,26 +166,26 @@ function MyContents() {
                 <col style={{ width: '6%' }} />
               </colgroup>
               <thead>
-                <tr className="border-b border-[#ececec]">
-                  <th className="px-6 py-6 text-left text-sm font-semibold" style={{ color: '#606060' }}>{activeTypeLabel}</th>
-                  <th className="px-4 py-6 text-left text-sm font-semibold" style={{ color: '#606060' }}>{t('settings:statusColumn')}</th>
-                  <th className="px-4 py-6 text-left text-sm font-semibold" style={{ color: '#0f0f0f' }}>
+                <tr className="border-b app-border">
+                  <th className="app-text-secondary px-6 py-6 text-left text-sm font-semibold">{activeTypeLabel}</th>
+                  <th className="app-text-secondary px-4 py-6 text-left text-sm font-semibold">{t('settings:statusColumn')}</th>
+                  <th className="px-4 py-6 text-left text-sm font-semibold text-foreground">
                     <span className="inline-flex items-center gap-1">
                       {t('settings:dateColumn')}
                       <ArrowDown size={14} />
                     </span>
                   </th>
-                  <th className="px-4 py-6 text-left text-sm font-semibold" style={{ color: '#606060' }}>{t('settings:likesColumn')}</th>
-                  <th className="px-4 py-6 text-left text-sm font-semibold" style={{ color: '#606060' }}>{t('settings:commentsColumn')}</th>
-                  <th className="px-4 py-6 text-left text-sm font-semibold" style={{ color: '#606060' }}>{t('settings:actionsColumn')}</th>
+                  <th className="app-text-secondary px-4 py-6 text-left text-sm font-semibold">{t('settings:likesColumn')}</th>
+                  <th className="app-text-secondary px-4 py-6 text-left text-sm font-semibold">{t('settings:commentsColumn')}</th>
+                  <th className="app-text-secondary px-4 py-6 text-left text-sm font-semibold">{t('settings:actionsColumn')}</th>
                 </tr>
               </thead>
               <tbody>
                 {contents.map((content) => (
-                  <tr key={content.id} className="border-b border-[#ececec] align-top">
+                  <tr key={content.id} className="border-b app-border align-top">
                     <td className="px-6 py-5">
                       <div className="flex items-start gap-5">
-                        <div className="mt-0.5 h-24 w-[168px] shrink-0 overflow-hidden rounded-2xl bg-[#f5f5f5]">
+                        <div className="app-surface-muted mt-0.5 h-24 w-[168px] shrink-0 overflow-hidden rounded-2xl">
                           <img
                             src={getStyledContentCardCover(content, siteConfig)}
                             alt={content.title}
@@ -198,19 +198,19 @@ function MyContents() {
                           <NavLink
                             to={activeTab === 'draft' ? contentEditPath(content) : contentDetailPath(content)}
                             className="block truncate text-[15px] font-medium no-underline hover:underline"
-                            style={{ color: '#0f0f0f' }}
+                            style={{ color: 'var(--foreground)' }}
                           >
                             {content.title}
                           </NavLink>
                           {content.summary && (
-                            <p className="mt-3 line-clamp-2 text-sm leading-6" style={{ color: '#707070' }}>
+                            <p className="app-text-secondary mt-3 line-clamp-2 text-sm leading-6">
                               {toPlainTextPreview(content.summary)}
                             </p>
                           )}
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-5 text-sm" style={{ color: '#606060' }}>
+                    <td className="app-text-secondary px-4 py-5 text-sm">
                       <span
                         className="inline-flex rounded-full px-3 py-1 text-xs font-medium"
                         style={content.status === 'draft'
@@ -220,10 +220,10 @@ function MyContents() {
                         {content.status === 'draft' ? t('settings:draft') : t('settings:published')}
                       </span>
                     </td>
-                    <td className="px-4 py-5 text-sm" style={{ color: '#606060' }}>
+                    <td className="app-text-secondary px-4 py-5 text-sm">
                       {new Date(content.created_at).toLocaleDateString('zh-CN')}
                     </td>
-                    <td className="px-4 py-5 text-sm" style={{ color: '#606060' }}>
+                    <td className="app-text-secondary px-4 py-5 text-sm">
                       <span className="inline-flex items-center gap-1"><Heart size={14} />{content.like_count}</span>
                     </td>
                     <td className="px-4 py-5 text-sm" style={{ color: '#606060' }}>
@@ -234,8 +234,8 @@ function MyContents() {
                         {activeTab === 'draft' && (
                           <button
                             onClick={() => handlePublish(content)}
-                            className="rounded-xl p-2 transition-colors hover:bg-black/5"
-                            style={{ color: '#065fd4' }}
+                            className="rounded-xl p-2 transition-colors hover:bg-[var(--surface-hover)]"
+                            style={{ color: 'var(--brand)' }}
                             title={t('settings:publish')}
                           >
                             <Send size={16} />
@@ -243,8 +243,8 @@ function MyContents() {
                         )}
                         <NavLink
                           to={contentEditPath(content)}
-                          className="rounded-xl p-2 transition-colors hover:bg-black/5 no-underline"
-                          style={{ color: '#606060' }}
+                          className="rounded-xl p-2 transition-colors hover:bg-[var(--surface-hover)] no-underline"
+                          style={{ color: 'var(--text-secondary)' }}
                           title={t('settings:edit')}
                         >
                           <Pencil size={16} />

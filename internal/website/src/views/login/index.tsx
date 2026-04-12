@@ -9,6 +9,7 @@ import { useAppContext } from 'src/context/app'
 import { useSiteHead } from 'src/hooks/useSiteHead'
 import { siteResourceURL } from 'src/api/upload'
 import { login } from 'src/api/user'
+import ThemeDropdown from 'src/components/ThemeDropdown'
 
 // Login provides the username+password login page.
 function Login() {
@@ -30,14 +31,14 @@ function Login() {
   // If not initialized, show prompt instead of login form
   if (!initialized) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#f8f8f8' }}>
-        <div className="text-center px-8 py-10 rounded-2xl bg-white" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-5" style={{ background: '#f2f2f2' }}>
-            <ServerOff size={28} style={{ color: '#909090' }} />
+      <div className="app-surface min-h-screen flex items-center justify-center px-4">
+        <div className="app-panel text-center px-8 py-10 rounded-2xl">
+          <div className="app-surface-muted inline-flex items-center justify-center w-14 h-14 rounded-full mb-5">
+            <ServerOff size={28} className="app-text-tertiary" />
           </div>
-          <h1 className="text-2xl font-semibold mb-2" style={{ color: '#0f0f0f' }}>{siteTitle}</h1>
-          <p className="text-sm mb-1" style={{ color: '#606060' }}>{t('auth:notInitialized')}</p>
-          <p className="text-xs" style={{ color: '#909090' }}>{t('auth:contactAdmin')}</p>
+          <h1 className="text-2xl font-semibold mb-2 text-foreground">{siteTitle}</h1>
+          <p className="app-text-secondary text-sm mb-1">{t('auth:notInitialized')}</p>
+          <p className="app-text-tertiary text-xs">{t('auth:contactAdmin')}</p>
         </div>
       </div>
     )
@@ -65,26 +66,29 @@ function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white px-4">
+    <div className="app-surface relative min-h-screen flex items-center justify-center px-4">
+      <div className="absolute right-4 top-4">
+        <ThemeDropdown variant="outline" />
+      </div>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           {siteLogoUrl ? (
             <img src={siteLogoUrl} alt={siteTitle} className="h-10 mx-auto mb-3 object-contain" />
           ) : (
-            <h1 className="text-2xl font-semibold mb-2" style={{ color: '#0f0f0f' }}>{siteTitle}</h1>
+            <h1 className="text-2xl font-semibold mb-2 text-foreground">{siteTitle}</h1>
           )}
-          <p className="text-sm" style={{ color: '#606060' }}>{t('auth:loginToAccount')}</p>
+          <p className="app-text-secondary text-sm">{t('auth:loginToAccount')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="p-3 rounded-lg text-sm" style={{ background: '#fee2e2', color: '#991b1b' }}>
+            <div className="theme-danger-banner p-3 rounded-lg text-sm">
               {error}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('auth:username')}</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">{t('auth:username')}</label>
             <Input
               required
               placeholder={t('auth:usernamePlaceholder')}
@@ -94,7 +98,7 @@ function Login() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('auth:password')}</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">{t('auth:password')}</label>
             <Input
               required
               type="password"
@@ -107,8 +111,7 @@ function Login() {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full"
-            style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}
+            className="theme-primary-button w-full rounded-[18px]"
           >
             {loading ? <><Loader2 size={16} className="animate-spin" /> {t('auth:loggingIn')}</> : t('auth:login')}
           </Button>
@@ -118,14 +121,13 @@ function Login() {
         {ssoEnabled && ssoLoginUrl && (
           <div className="mt-4">
             <div className="flex items-center gap-3 mb-4">
-              <div className="flex-1 h-px" style={{ background: '#e5e5e5' }} />
-              <span className="text-xs" style={{ color: '#909090' }}>{t('auth:or')}</span>
-              <div className="flex-1 h-px" style={{ background: '#e5e5e5' }} />
+              <div className="flex-1 h-px bg-[var(--surface-border)]" />
+              <span className="app-text-tertiary text-xs">{t('auth:or')}</span>
+              <div className="flex-1 h-px bg-[var(--surface-border)]" />
             </div>
             <a
               href={ssoLoginUrl}
-              className="flex items-center justify-center w-full py-2 rounded-full text-sm font-medium no-underline transition-colors"
-              style={{ border: '1px solid #e5e5e5', color: '#0f0f0f' }}
+              className="app-surface-elevated flex items-center justify-center w-full py-2 rounded-full text-sm font-medium no-underline transition-colors border app-border text-foreground hover:bg-[var(--surface-hover)]"
             >
               {t('auth:ssoLogin')}
             </a>
@@ -134,9 +136,9 @@ function Login() {
 
         {/* Registration link */}
         {registrationEnabled && (
-          <p className="mt-6 text-center text-sm" style={{ color: '#606060' }}>
+          <p className="app-text-secondary mt-6 text-center text-sm">
             {t('auth:noAccount')}{' '}
-            <Link to="/register" className="font-medium" style={{ color: '#065fd4' }}>{t('auth:register')}</Link>
+            <Link to="/register" className="app-link font-medium">{t('auth:register')}</Link>
           </p>
         )}
       </div>

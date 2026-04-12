@@ -14,6 +14,7 @@ import { getProfile, updateProfile } from 'src/api/user'
 import { uploadAvatar, avatarURL as resolveAvatarURL } from 'src/api/upload'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import type { User } from 'src/types/user'
+import { useTheme } from 'src/context/theme'
 
 // socialFields defines the social account fields with domain prefixes and placeholders.
 // Fields with a prefix store only the username; the full URL is assembled on save.
@@ -43,6 +44,7 @@ function addPrefix(value: string, prefix: string): string {
 function AccountSettings() {
   const { t } = useTranslation('settings')
   const { currentUser, setCurrentUser } = useAppContext()
+  const { theme, setTheme } = useTheme()
   const [loading, setLoading] = useState(true)
 
   const [name, setName] = useState('')
@@ -136,7 +138,7 @@ function AccountSettings() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 size={32} className="animate-spin" style={{ color: '#909090' }} />
+        <Loader2 size={32} className="app-text-tertiary animate-spin" />
       </div>
     )
   }
@@ -144,9 +146,9 @@ function AccountSettings() {
   const avatarDisplayURL = avatar ? resolveAvatarURL(avatar) : ''
 
   return (
-    <div className="min-h-full bg-white">
-      <div className="border-b border-[#ececec] px-6 py-8 lg:px-12">
-        <h1 className="text-[2rem] font-semibold tracking-tight" style={{ color: '#0f0f0f' }}>{t('settings:accountSettingsTitle')}</h1>
+    <div className="app-surface min-h-full">
+      <div className="border-b app-border px-6 py-8 lg:px-12">
+        <h1 className="text-[2rem] font-semibold tracking-tight text-foreground">{t('settings:accountSettingsTitle')}</h1>
       </div>
 
       {/* Two-column layout: form left, avatar right */}
@@ -156,33 +158,33 @@ function AccountSettings() {
           {/* Basic info section */}
           <div className="space-y-4">
             <div>
-              <Label htmlFor="name" className="text-sm mb-1.5 block" style={{ color: '#606060' }}>{t('settings:name')}</Label>
+              <Label htmlFor="name" className="app-text-secondary text-sm mb-1.5 block">{t('settings:name')}</Label>
               <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('settings:inputName')} />
             </div>
 
             <div>
-              <Label htmlFor="bio" className="text-sm mb-1.5 block" style={{ color: '#606060' }}>{t('settings:bio')}</Label>
+              <Label htmlFor="bio" className="app-text-secondary text-sm mb-1.5 block">{t('settings:bio')}</Label>
               <Textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} placeholder={t('settings:inputBio')} rows={3} />
             </div>
 
             <div>
-              <Label htmlFor="location" className="text-sm mb-1.5 block" style={{ color: '#606060' }}>{t('settings:location')}</Label>
+              <Label htmlFor="location" className="app-text-secondary text-sm mb-1.5 block">{t('settings:location')}</Label>
               <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t('settings:inputLocation')} />
             </div>
           </div>
 
           {/* Social accounts section */}
           <div className="space-y-4">
-            <h2 className="text-base font-medium" style={{ color: '#0f0f0f' }}>{t('settings:socialAccounts')}</h2>
+            <h2 className="text-base font-medium text-foreground">{t('settings:socialAccounts')}</h2>
 
             {socialFields.map((field) => (
               <div key={field.key}>
-                <Label htmlFor={`social-${field.key}`} className="text-sm mb-1.5 block" style={{ color: '#606060' }}>{field.label}</Label>
+                <Label htmlFor={`social-${field.key}`} className="app-text-secondary text-sm mb-1.5 block">{field.label}</Label>
                 {field.prefix ? (
                   <div className="flex items-stretch rounded-lg overflow-hidden" style={{ border: '1px solid var(--input)' }}>
                     <span
                       className="flex items-center px-2.5 text-sm select-none shrink-0"
-                      style={{ background: '#f5f5f5', color: '#909090', borderRight: '1px solid var(--input)' }}
+                      style={{ background: 'var(--surface-muted)', color: 'var(--text-tertiary)', borderRight: '1px solid var(--input)' }}
                     >
                       {field.prefix}
                     </span>
@@ -208,7 +210,7 @@ function AccountSettings() {
 
           {/* Language section */}
           <div className="space-y-4">
-            <h2 className="text-base font-medium" style={{ color: '#0f0f0f' }}>{t('settings:language')}</h2>
+            <h2 className="text-base font-medium text-foreground">{t('settings:language')}</h2>
             <div>
               <Select value={language} onValueChange={(v) => { const lng = v || 'zh-CN'; setLanguage(lng); i18n.changeLanguage(lng); localStorage.setItem('i18nextLng', lng) }}>
                 <SelectTrigger className="w-full max-w-xs">
@@ -219,21 +221,44 @@ function AccountSettings() {
                   <SelectItem value="en">{t('settings:languageEn')}</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs mt-1.5" style={{ color: '#909090' }}>{t('settings:languageDescription')}</p>
+              <p className="app-text-tertiary text-xs mt-1.5">{t('settings:languageDescription')}</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-base font-medium text-foreground">{t('settings:themePreference')}</h2>
+            <div>
+              <Select value={theme} onValueChange={(value) => setTheme((value || 'system') as 'system' | 'light' | 'dark')}>
+                <SelectTrigger className="w-full max-w-xs">
+                  <span>
+                    {theme === 'light'
+                      ? t('nav:themeLight')
+                      : theme === 'dark'
+                        ? t('nav:themeDark')
+                        : t('nav:themeSystem')}
+                  </span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="system">{t('nav:themeSystem')}</SelectItem>
+                  <SelectItem value="light">{t('nav:themeLight')}</SelectItem>
+                  <SelectItem value="dark">{t('nav:themeDark')}</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="app-text-tertiary text-xs mt-1.5">{t('settings:themePreferenceDescription')}</p>
             </div>
           </div>
 
           {/* Feedback */}
           {success && (
-            <div className="p-3 rounded-lg flex items-center gap-2" style={{ background: '#dcfce7' }}>
-              <CheckCircle size={16} style={{ color: '#166534' }} />
-              <span className="text-sm" style={{ color: '#166534' }}>{t('settings:profileSaved')}</span>
+            <div className="theme-success-banner p-3 rounded-lg flex items-center gap-2">
+              <CheckCircle size={16} />
+              <span className="text-sm">{t('settings:profileSaved')}</span>
             </div>
           )}
           {error && (
-            <div className="p-3 rounded-lg flex items-center gap-2" style={{ background: '#fee2e2' }}>
-              <XCircle size={16} style={{ color: '#991b1b' }} />
-              <span className="text-sm" style={{ color: '#991b1b' }}>{error}</span>
+            <div className="theme-danger-banner p-3 rounded-lg flex items-center gap-2">
+              <XCircle size={16} />
+              <span className="text-sm">{error}</span>
             </div>
           )}
 
@@ -241,7 +266,7 @@ function AccountSettings() {
           <Button
             disabled={saving}
             onClick={handleSave}
-            style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}
+            className="theme-primary-button rounded-[18px]"
           >
             {saving ? (
               <><Loader2 size={16} className="animate-spin" /> {t('settings:saving')}</>
@@ -253,7 +278,7 @@ function AccountSettings() {
 
         {/* Right column: avatar */}
         <div className="flex-shrink-0 xl:w-[200px]">
-          <Label className="text-sm font-medium mb-3 block" style={{ color: '#606060' }}>{t('settings:avatar')}</Label>
+          <Label className="app-text-secondary text-sm font-medium mb-3 block">{t('settings:avatar')}</Label>
           <div className="relative group cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
             <Avatar className="h-[200px] w-[200px]">
               <SiteAvatarImage src={avatarDisplayURL} alt={name} />

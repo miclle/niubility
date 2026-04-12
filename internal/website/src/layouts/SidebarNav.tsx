@@ -47,10 +47,10 @@ export default function SidebarNav({ category, typeFilter, isHome, currentUser, 
         end
         className={() =>
           `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-            isHome && !typeFilter && !category ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+            isHome && !typeFilter && !category ? 'app-chip font-medium' : 'hover:bg-[var(--surface-hover)]'
           }`
         }
-        style={{ color: '#0f0f0f' }}
+        style={{ color: 'var(--foreground)' }}
       >
         <Home size={24} />
         <span className="text-sm">{t('nav:home')}</span>
@@ -60,10 +60,10 @@ export default function SidebarNav({ category, typeFilter, isHome, currentUser, 
           to="/following"
           className={() =>
             `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-              locationPathname === '/following' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+              locationPathname === '/following' ? 'app-chip font-medium' : 'hover:bg-[var(--surface-hover)]'
             }`
           }
-          style={{ color: '#0f0f0f' }}
+          style={{ color: 'var(--foreground)' }}
         >
           <UserCheck size={24} />
           <span className="text-sm">{t('nav:following')}</span>
@@ -76,36 +76,36 @@ export default function SidebarNav({ category, typeFilter, isHome, currentUser, 
   const renderTypeFilterNav = () => (
     <div className="px-3">
       <div className="flex items-center justify-between px-3 py-1 mb-1">
-        <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('nav:types')}</span>
+        <span className="text-sm font-medium text-foreground">{t('nav:types')}</span>
       </div>
       <NavLink
         to="/videos"
-        className={`flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${typeFilter === 'video' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'}`}
-        style={{ color: '#0f0f0f' }}
+        className={`flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${typeFilter === 'video' ? 'app-chip font-medium' : 'hover:bg-[var(--surface-hover)]'}`}
+        style={{ color: 'var(--foreground)' }}
       >
         <Play size={24} />
         <span className="text-sm">{t('nav:video')}</span>
       </NavLink>
       <NavLink
         to="/galleries"
-        className={`flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${typeFilter === 'gallery' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'}`}
-        style={{ color: '#0f0f0f' }}
+        className={`flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${typeFilter === 'gallery' ? 'app-chip font-medium' : 'hover:bg-[var(--surface-hover)]'}`}
+        style={{ color: 'var(--foreground)' }}
       >
         <ImageIcon size={24} />
         <span className="text-sm">{t('nav:gallery')}</span>
       </NavLink>
       <NavLink
         to="/articles"
-        className={`flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${typeFilter === 'article' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'}`}
-        style={{ color: '#0f0f0f' }}
+        className={`flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${typeFilter === 'article' ? 'app-chip font-medium' : 'hover:bg-[var(--surface-hover)]'}`}
+        style={{ color: 'var(--foreground)' }}
       >
         <FileText size={24} />
         <span className="text-sm">{t('nav:article')}</span>
       </NavLink>
       <NavLink
         to="/podcasts"
-        className={`flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${typeFilter === 'podcast' ? 'bg-black/10 font-medium' : 'hover:bg-black/5'}`}
-        style={{ color: '#0f0f0f' }}
+        className={`flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${typeFilter === 'podcast' ? 'app-chip font-medium' : 'hover:bg-[var(--surface-hover)]'}`}
+        style={{ color: 'var(--foreground)' }}
       >
         <Mic size={24} />
         <span className="text-sm">{t('nav:podcast')}</span>
@@ -123,11 +123,11 @@ export default function SidebarNav({ category, typeFilter, isHome, currentUser, 
             key={cat.slug}
             to={`/${cat.slug}`}
             className={() =>
-              `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                category === cat.slug ? 'bg-black/10 font-medium' : 'hover:bg-black/5'
+                `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
+                category === cat.slug ? 'app-chip font-medium' : 'hover:bg-[var(--surface-hover)]'
               }`
             }
-            style={{ color: '#0f0f0f' }}
+            style={{ color: 'var(--foreground)' }}
           >
             <IconComponent size={24} />
             <span className="text-sm">{cat.name}</span>
@@ -140,11 +140,11 @@ export default function SidebarNav({ category, typeFilter, isHome, currentUser, 
   return (
     <nav className="py-3 overflow-y-auto flex flex-col" style={{ height: 'calc(100% - 56px)' }}>
       {renderMainNav()}
-      <div className="my-3 mx-3 h-px" style={{ background: '#e5e5e5' }} />
+      <div className="app-divider my-3 mx-3 h-px" />
       {renderTypeFilterNav()}
-      <div className="my-3 mx-3 h-px" style={{ background: '#e5e5e5' }} />
+      <div className="app-divider my-3 mx-3 h-px" />
       {renderCategoryNav()}
-      <div className="mt-auto px-6 py-4 space-y-1 text-xs" style={{ color: '#909090' }}>
+      <div className="app-text-tertiary mt-auto px-6 py-4 space-y-1 text-xs">
         <div>&copy; {new Date().getFullYear()} {copyright}</div>
         {siteVersion && <div>{siteVersion}</div>}
       </div>

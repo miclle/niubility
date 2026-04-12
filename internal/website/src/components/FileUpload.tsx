@@ -88,7 +88,7 @@ function FileUpload({ accept, value, onChange, onFileUploaded, onMultipleFiles, 
 
   if (value) {
     return (
-      <div className="relative rounded-lg overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
+      <div className="app-surface-elevated border app-border relative rounded-lg overflow-hidden">
         <div className="p-3">
           {renderPreview ? renderPreview(fileURL(value)) : (
             <a href={fileURL(value)} target="_blank" rel="noreferrer" className="text-sm break-all" style={{ color: '#2563eb' }}>{value}</a>
@@ -110,8 +110,8 @@ function FileUpload({ accept, value, onChange, onFileUploaded, onMultipleFiles, 
     <div
       className="relative rounded-lg cursor-pointer transition-colors flex flex-col items-center justify-center gap-2 p-6"
       style={{
-        border: `2px dashed ${dragOver ? '#0f0f0f' : '#d4d4d4'}`,
-        background: dragOver ? '#f8f8f8' : '#fafafa',
+        border: `2px dashed ${dragOver ? 'var(--foreground)' : 'var(--surface-border)'}`,
+        background: dragOver ? 'var(--surface-hover)' : 'var(--surface-muted)',
       }}
       onClick={() => inputRef.current?.click()}
       onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
@@ -120,16 +120,16 @@ function FileUpload({ accept, value, onChange, onFileUploaded, onMultipleFiles, 
     >
       {uploading ? (
         <>
-          <Loader2 size={24} className="animate-spin" style={{ color: '#909090' }} />
-          <span className="text-sm" style={{ color: '#909090' }}>{t('editor:uploadingProgress', { progress })}</span>
-          <div className="w-full max-w-xs h-1.5 rounded-full overflow-hidden" style={{ background: '#e5e5e5' }}>
-            <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, background: '#0f0f0f' }} />
+          <Loader2 size={24} className="app-text-tertiary animate-spin" />
+          <span className="app-text-tertiary text-sm">{t('editor:uploadingProgress', { progress })}</span>
+          <div className="w-full max-w-xs h-1.5 rounded-full overflow-hidden bg-[var(--surface-border)]">
+            <div className="h-full rounded-full transition-all bg-foreground" style={{ width: `${progress}%` }} />
           </div>
         </>
       ) : (
         <>
-          <Upload size={24} style={{ color: '#909090' }} />
-          <span className="text-sm" style={{ color: '#909090' }}>{placeholder}</span>
+          <Upload size={24} className="app-text-tertiary" />
+          <span className="app-text-tertiary text-sm">{placeholder}</span>
         </>
       )}
       <input ref={inputRef} type="file" accept={accept} multiple={multiple} onChange={handleFileChange} className="hidden" />

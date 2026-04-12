@@ -9,6 +9,7 @@ import { useAppContext } from 'src/context/app'
 import { useSiteHead } from 'src/hooks/useSiteHead'
 import { siteResourceURL } from 'src/api/upload'
 import { register } from 'src/api/user'
+import ThemeDropdown from 'src/components/ThemeDropdown'
 
 // Register provides the user self-registration page.
 function Register() {
@@ -73,17 +74,16 @@ function Register() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white px-4">
+      <div className="app-surface min-h-screen flex items-center justify-center px-4">
         <div className="w-full max-w-sm text-center">
-          <CheckCircle size={48} className="mx-auto mb-4" style={{ color: '#166534' }} />
-          <h2 className="text-xl font-semibold mb-2" style={{ color: '#0f0f0f' }}>{t('auth:registerSuccess')}</h2>
-          <p className="text-sm mb-6" style={{ color: '#606060' }}>
+          <CheckCircle size={48} className="mx-auto mb-4 text-emerald-600 dark:text-emerald-400" />
+          <h2 className="text-xl font-semibold mb-2 text-foreground">{t('auth:registerSuccess')}</h2>
+          <p className="app-text-secondary text-sm mb-6">
             {t('auth:registerSuccessDescription')}
           </p>
           <Link
             to="/login"
-            className="inline-flex items-center justify-center px-6 py-2 rounded-full text-sm font-medium no-underline"
-            style={{ background: '#0f0f0f', color: '#ffffff' }}
+            className="theme-primary-button inline-flex items-center justify-center px-6 py-2 rounded-full text-sm font-medium no-underline"
           >
             {t('auth:backToLogin')}
           </Link>
@@ -93,26 +93,29 @@ function Register() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white px-4">
+    <div className="app-surface relative min-h-screen flex items-center justify-center px-4">
+      <div className="absolute right-4 top-4">
+        <ThemeDropdown variant="outline" />
+      </div>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           {siteLogoUrl ? (
             <img src={siteLogoUrl} alt={siteTitle} className="h-10 mx-auto mb-3 object-contain" />
           ) : (
-            <h1 className="text-2xl font-semibold mb-2" style={{ color: '#0f0f0f' }}>{siteTitle}</h1>
+            <h1 className="text-2xl font-semibold mb-2 text-foreground">{siteTitle}</h1>
           )}
-          <p className="text-sm" style={{ color: '#606060' }}>{t('auth:createAccount')}</p>
+          <p className="app-text-secondary text-sm">{t('auth:createAccount')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="p-3 rounded-lg text-sm" style={{ background: '#fee2e2', color: '#991b1b' }}>
+            <div className="theme-danger-banner p-3 rounded-lg text-sm">
               {error}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('auth:username')}</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">{t('auth:username')}</label>
             <Input
               required
               placeholder={t('auth:usernamePlaceholder')}
@@ -122,7 +125,7 @@ function Register() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('auth:email')}</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">{t('auth:email')}</label>
             <Input
               required
               type="email"
@@ -133,7 +136,7 @@ function Register() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('auth:password')}</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">{t('auth:password')}</label>
             <Input
               required
               type="password"
@@ -144,7 +147,7 @@ function Register() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('auth:confirmPassword')}</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">{t('auth:confirmPassword')}</label>
             <Input
               required
               type="password"
@@ -157,16 +160,15 @@ function Register() {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full"
-            style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}
+            className="theme-primary-button w-full rounded-[18px]"
           >
             {loading ? <><Loader2 size={16} className="animate-spin" /> {t('auth:registering')}</> : t('auth:register')}
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-sm" style={{ color: '#606060' }}>
+        <p className="app-text-secondary mt-6 text-center text-sm">
           {t('auth:hasAccount')}{' '}
-          <Link to="/login" className="font-medium" style={{ color: '#065fd4' }}>{t('auth:login')}</Link>
+          <Link to="/login" className="app-link font-medium">{t('auth:login')}</Link>
         </p>
       </div>
     </div>

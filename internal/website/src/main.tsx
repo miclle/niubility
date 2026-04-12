@@ -3,12 +3,15 @@ import { createRoot } from 'react-dom/client'
 import { QueryClientProvider } from '@tanstack/react-query'
 
 import { boot } from 'src/api/user'
+import { initializeTheme } from 'src/context/theme'
 import { queryClient } from 'src/lib/query-client'
 import App from './App'
 import type { BootResponse } from 'src/types/user'
 
 import 'src/i18n'
 import 'src/globals.css'
+
+initializeTheme()
 
 // Boot the application: fetch system state, then render.
 boot()

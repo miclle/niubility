@@ -13,8 +13,7 @@ export default function CreateMenu() {
       <DropdownMenuTrigger
         render={
           <button
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-colors cursor-pointer border-0"
-            style={{ background: '#0f0f0f', color: '#ffffff' }}
+            className="theme-primary-button flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-colors cursor-pointer border-0"
           >
             <Plus size={16} />
             {t('nav:create')}

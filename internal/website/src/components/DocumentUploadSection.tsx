@@ -18,16 +18,15 @@ function DocumentUploadSection({ documents, docInputRef, onUpload, onChange, onR
   const { t } = useTranslation('editor')
   return (
     <div>
-      <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('documentAttachments')}</label>
+      <label className="app-text-secondary block text-sm font-medium mb-1.5">{t('documentAttachments')}</label>
       <div
-        className="rounded-lg cursor-pointer transition-colors flex flex-col items-center justify-center gap-2 p-6"
-        style={{ border: '2px dashed #d4d4d4', background: '#fafafa' }}
+        className="app-surface-muted rounded-lg cursor-pointer transition-colors flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed app-border"
         onClick={() => docInputRef.current?.click()}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => { e.preventDefault(); onUpload(Array.from(e.dataTransfer.files)) }}
       >
-        <FileText size={20} style={{ color: '#909090' }} />
-        <span className="text-sm" style={{ color: '#909090' }}>{t('documentHint')}</span>
+        <FileText size={20} className="app-text-tertiary" />
+        <span className="app-text-tertiary text-sm">{t('documentHint')}</span>
       </div>
       <input
         ref={docInputRef}
@@ -40,8 +39,8 @@ function DocumentUploadSection({ documents, docInputRef, onUpload, onChange, onR
       {documents.length > 0 && (
         <div className="mt-3 space-y-2">
           {documents.map((doc) => (
-            <div key={doc.localId} className="flex items-center gap-3 p-3 rounded-lg" style={{ border: '1px solid #e5e5e5' }}>
-              <FileText size={20} style={{ color: '#909090' }} />
+            <div key={doc.localId} className="app-surface-elevated border app-border flex items-center gap-3 p-3 rounded-lg">
+              <FileText size={20} className="app-text-tertiary" />
               <div className="flex-1 min-w-0">
                 <Input
                   placeholder={t('documentTitleOptional')}
@@ -49,21 +48,21 @@ function DocumentUploadSection({ documents, docInputRef, onUpload, onChange, onR
                   onChange={(e) => onChange(doc.localId, 'title', e.target.value)}
                   className="mb-1"
                 />
-                <div className="text-xs truncate" style={{ color: '#909090' }}>
+                <div className="app-text-tertiary text-xs truncate">
                   {doc.filename} {doc.fileSize > 0 && `(${formatFileSize(doc.fileSize)})`}
                 </div>
                 {doc.uploading && (
-                  <div className="w-full h-1 rounded-full overflow-hidden mt-2" style={{ background: '#e5e5e5' }}>
-                    <div className="h-full rounded-full transition-all" style={{ width: `${doc.progress}%`, background: '#0f0f0f' }} />
+                  <div className="mt-2 w-full h-1 rounded-full overflow-hidden bg-[var(--surface-border)]">
+                    <div className="h-full rounded-full transition-all bg-foreground" style={{ width: `${doc.progress}%` }} />
                   </div>
                 )}
               </div>
               <button
                 type="button"
                 onClick={() => onRemove(doc.localId)}
-                className="p-1.5 rounded hover:bg-red-50 transition-colors"
+                className="p-1.5 rounded transition-colors hover:bg-red-500/10"
               >
-                <Trash2 size={14} style={{ color: '#cc0000' }} />
+                <Trash2 size={14} className="text-red-600 dark:text-red-400" />
               </button>
             </div>
           ))}

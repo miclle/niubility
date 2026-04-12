@@ -308,23 +308,23 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
   }
 
   if (loading) {
-    return <div className="text-center py-20" style={{ color: '#909090' }}>{t('loading')}</div>
+    return <div className="app-text-tertiary text-center py-20">{t('loading')}</div>
   }
 
   const uploadedItems = items.filter((i) => i.url)
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="bg-white rounded-xl p-6 space-y-5" style={{ border: '1px solid #e5e5e5' }}>
+    <form onSubmit={(e) => e.preventDefault()} className="app-surface-elevated border app-border rounded-xl p-6 space-y-5">
       {/* Title */}
       <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('title')} *</label>
+        <label className="app-text-secondary block text-sm font-medium mb-1.5">{t('title')} *</label>
         <Input placeholder={t('titlePlaceholder')} value={title} onChange={(e) => setTitle(e.target.value)} required />
       </div>
 
       {/* Category */}
       {categories.length > 0 && (
         <div>
-          <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('category')} *</label>
+          <label className="app-text-secondary block text-sm font-medium mb-1.5">{t('category')} *</label>
           <Select value={category} onValueChange={(val) => val && setCategory(val)}>
             <SelectTrigger className="w-full">
               <span className="flex-1 text-left">
@@ -342,17 +342,17 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
 
       {/* Summary */}
       <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('galleryDescription')}</label>
+        <label className="app-text-secondary block text-sm font-medium mb-1.5">{t('galleryDescription')}</label>
         <Textarea placeholder={t('galleryDescriptionPlaceholder')} value={summary} onChange={(e) => setSummary(e.target.value)} rows={3} />
       </div>
 
       {/* Gallery Items */}
       <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>
-          {t('galleryItemsHint')} * <span className="font-normal text-xs" style={{ color: '#909090' }}>{t('galleryItemsVideoTip')}</span>
+        <label className="app-text-secondary block text-sm font-medium mb-1.5">
+          {t('galleryItemsHint')} * <span className="app-text-tertiary font-normal text-xs">{t('galleryItemsVideoTip')}</span>
         </label>
         {uploadError && (
-          <div className="text-xs mb-2" style={{ color: '#cc0000' }}>{uploadError}</div>
+          <div className="text-xs mb-2 text-red-600 dark:text-red-400">{uploadError}</div>
         )}
         {uploadedItems.length > 0 && (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -371,8 +371,7 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
           </DndContext>
         )}
         <div
-          className="rounded-lg cursor-pointer transition-colors flex flex-col items-center justify-center gap-2 p-6"
-          style={{ border: '2px dashed #d4d4d4', background: '#fafafa' }}
+          className="app-surface-muted border-2 border-dashed app-border rounded-lg cursor-pointer transition-colors flex flex-col items-center justify-center gap-2 p-6"
           onClick={() => fileInputRef.current?.click()}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
@@ -382,13 +381,13 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
         >
           {uploading ? (
             <>
-              <Loader2 size={24} className="animate-spin" style={{ color: '#909090' }} />
-              <span className="text-sm" style={{ color: '#909090' }}>{t('uploading')}</span>
+              <Loader2 size={24} className="app-text-tertiary animate-spin" />
+              <span className="app-text-tertiary text-sm">{t('uploading')}</span>
             </>
           ) : (
             <>
-              <Upload size={24} style={{ color: '#909090' }} />
-              <span className="text-sm" style={{ color: '#909090' }}>{t('galleryUploadHint')}</span>
+              <Upload size={24} className="app-text-tertiary" />
+              <span className="app-text-tertiary text-sm">{t('galleryUploadHint')}</span>
             </>
           )}
           <input
@@ -407,7 +406,7 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
 
       {/* Tags */}
       <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('tags')}</label>
+        <label className="app-text-secondary block text-sm font-medium mb-1.5">{t('tags')}</label>
         <div className="flex items-center gap-2 mb-2">
           <Input
             placeholder={t('tagsPlaceholder')}
@@ -421,7 +420,7 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {tags.map((tag) => (
-              <span key={tag} className="px-2 py-1 rounded-full text-xs cursor-pointer" style={{ background: '#f2f2f2', color: '#606060' }} onClick={() => setTags(tags.filter((t) => t !== tag))}>
+              <span key={tag} className="app-chip px-2 py-1 rounded-full text-xs cursor-pointer" onClick={() => setTags(tags.filter((t) => t !== tag))}>
                 {tag} ×
               </span>
             ))}

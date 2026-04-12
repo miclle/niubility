@@ -93,28 +93,28 @@ function MyLikes() {
   };
 
   return (
-    <div className="min-h-full bg-white">
+    <div className="app-surface min-h-full">
       <div className="px-6 pt-8 pb-0 lg:px-12">
         <h1
           className="text-[2rem] font-semibold tracking-tight"
-          style={{ color: "#0f0f0f" }}
+          style={{ color: "var(--foreground)" }}
         >
           {t("settings:myLikesTitle")}
         </h1>
 
-        <div className="mt-6 -mx-6 flex gap-10 overflow-x-auto border-b border-[#ececec] px-6 lg:-mx-12 lg:px-12">
+        <div className="mt-6 -mx-6 flex gap-10 overflow-x-auto border-b app-border px-6 lg:-mx-12 lg:px-12">
           {typeTabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveType(tab.key)}
               className="relative shrink-0 pb-2.5 text-[15px] font-semibold transition-colors"
-              style={{ color: activeType === tab.key ? "#0f0f0f" : "#6f6f6f" }}
+              style={{ color: activeType === tab.key ? "var(--foreground)" : "var(--text-secondary)" }}
             >
               {tab.label}
               {activeType === tab.key && (
                 <span
                   className="absolute inset-x-0 bottom-0 h-0.5 rounded-full"
-                  style={{ background: "#0f0f0f" }}
+                  style={{ background: "var(--foreground)" }}
                 />
               )}
             </button>
@@ -134,13 +134,13 @@ function MyLikes() {
           </div>
           <h2
             className="mt-8 text-2xl font-semibold"
-            style={{ color: "#0f0f0f" }}
+            style={{ color: "var(--foreground)" }}
           >
             {t("settings:myLikesTitle")}
           </h2>
           <p
             className="mt-3 max-w-md text-sm leading-6"
-            style={{ color: "#707070" }}
+            style={{ color: "var(--text-secondary)" }}
           >
             {allItems.length === 0
               ? t("settings:noLikes")
@@ -149,13 +149,13 @@ function MyLikes() {
         </div>
       ) : (
         <div className="px-6 py-8 lg:px-12">
-          <div className="divide-y divide-[#ececec]">
+          <div className="divide-y app-border">
             {items.map((item) => (
               <div
                 key={`${item.content.id}-${item.last_liked_at}`}
                 className="flex gap-5 py-5 first:pt-0"
               >
-                <div className="h-[84px] w-[148px] shrink-0 overflow-hidden rounded-xl bg-[#f5f5f5]">
+                <div className="app-surface-muted h-[84px] w-[148px] shrink-0 overflow-hidden rounded-xl">
                   <NavLink
                     to={buildLikeTargetPath(item)}
                     className="block h-full w-full no-underline"
@@ -175,7 +175,7 @@ function MyLikes() {
                       <NavLink
                         to={buildLikeTargetPath(item)}
                         className="block truncate text-[15px] font-medium no-underline hover:underline"
-                        style={{ color: "#0f0f0f" }}
+                        style={{ color: "var(--foreground)" }}
                       >
                         {item.content.title}
                       </NavLink>
@@ -183,7 +183,7 @@ function MyLikes() {
                       {item.content.summary && (
                         <p
                           className="mt-1 line-clamp-2 text-sm leading-6"
-                          style={{ color: "#707070" }}
+                          style={{ color: "var(--text-secondary)" }}
                         >
                           {toPlainTextPreview(item.content.summary)}
                         </p>
@@ -191,7 +191,7 @@ function MyLikes() {
 
                       <div
                         className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm"
-                        style={{ color: "#909090" }}
+                        style={{ color: "var(--text-tertiary)" }}
                       >
                         <span className="inline-flex items-center gap-1">
                           <Heart size={13} style={{ color: "#b42359" }} />
@@ -215,7 +215,7 @@ function MyLikes() {
                         <NavLink
                           to={buildLikeTargetPath(item)}
                           className="inline-flex items-center gap-1 font-medium no-underline hover:underline"
-                          style={{ color: "#065fd4" }}
+                          style={{ color: "var(--brand)" }}
                         >
                           <Sparkles size={14} />
                           {t("settings:viewDetails")}
@@ -233,7 +233,7 @@ function MyLikes() {
       <div
         ref={loaderRef}
         className="py-4 text-center text-sm"
-        style={{ color: "#909090" }}
+        style={{ color: "var(--text-tertiary)" }}
       >
         {loading
           ? tc("common:loading")

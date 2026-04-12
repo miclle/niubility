@@ -39,7 +39,7 @@ function ArticleEditor() {
   }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!currentUser) return null
-  if (loading || !verified) return <div className="text-center py-20" style={{ color: '#909090' }}>{t('common:loading')}</div>
+  if (loading || !verified) return <div className="app-text-tertiary text-center py-20">{t('common:loading')}</div>
 
   const defaultSpeaker = isNew
     ? { id: currentUser.id, name: currentUser.name, avatar: currentUser.avatar }

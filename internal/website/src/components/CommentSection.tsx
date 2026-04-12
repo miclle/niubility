@@ -136,7 +136,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
 
   return (
     <div className="mt-6">
-      <h3 className="text-base font-medium mb-5" style={{ color: '#0f0f0f' }}>
+      <h3 className="text-base font-medium mb-5 text-foreground">
         {total > 0 ? t('comments:commentsCount', { count: total }) : t('comments:comments')}
       </h3>
 
@@ -188,7 +188,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
               <div className="ml-12 mt-2">
                 <button
                   className="flex items-center gap-1 text-sm font-medium"
-                  style={{ color: '#065fd4' }}
+                  style={{ color: 'var(--brand)' }}
                   onClick={() => toggleReplies(comment.id)}
                 >
                   {expandedReplies.has(comment.id) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -237,7 +237,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
         <div className="text-center mt-6">
           <button
             className="text-sm font-medium px-4 py-2 rounded-full"
-            style={{ color: '#065fd4', background: 'rgba(6,95,212,0.05)' }}
+            style={{ color: 'var(--brand)', background: 'var(--brand-soft)' }}
             disabled={loading}
             onClick={() => fetchNextPage()}
           >
@@ -247,7 +247,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
       )}
 
       {!loading && allComments.length === 0 && (
-        <div className="text-center py-8 text-sm" style={{ color: '#606060' }}>
+        <div className="app-text-secondary text-center py-8 text-sm">
           {t('comments:noComments')}
         </div>
       )}

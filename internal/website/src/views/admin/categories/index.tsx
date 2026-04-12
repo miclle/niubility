@@ -38,7 +38,7 @@ function SortableRow({ cat, onEdit, onDelete, onToggleVisible }: {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    borderTop: '1px solid #e5e5e5',
+    borderTop: '1px solid var(--surface-border)',
   }
 
   const Icon = iconMap[cat.icon] || Home
@@ -47,40 +47,40 @@ function SortableRow({ cat, onEdit, onDelete, onToggleVisible }: {
     <tr ref={setNodeRef} style={style}>
       <td style={{ padding: '12px 8px 12px 16px', width: 40 }}>
         <button
-          className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-black/5 transition-colors"
-          style={{ color: '#909090', touchAction: 'none' }}
+          className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-[var(--surface-hover)] transition-colors"
+          style={{ color: 'var(--text-tertiary)', touchAction: 'none' }}
           {...attributes}
           {...listeners}
         >
           <GripVertical size={16} />
         </button>
       </td>
-      <td style={{ padding: '12px 16px', fontWeight: 500, color: '#0f0f0f' }}>{cat.name}</td>
-      <td style={{ padding: '12px 16px', color: '#606060' }}>
-        <code className="px-1.5 py-0.5 rounded text-xs" style={{ background: '#f2f2f2' }}>{cat.slug}</code>
+      <td style={{ padding: '12px 16px', fontWeight: 500, color: 'var(--foreground)' }}>{cat.name}</td>
+      <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>
+        <code className="app-surface-muted px-1.5 py-0.5 rounded text-xs">{cat.slug}</code>
       </td>
-      <td style={{ padding: '12px 16px', color: '#606060' }}>
+      <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>
         <span className="inline-flex items-center gap-1.5">
           <Icon size={16} />
-          <span className="text-xs" style={{ color: '#909090' }}>{cat.icon}</span>
+          <span className="app-text-tertiary text-xs">{cat.icon}</span>
         </span>
       </td>
-      <td style={{ padding: '12px 16px', color: '#606060' }}>{cat.content_count ?? 0}</td>
+      <td style={{ padding: '12px 16px', color: 'var(--text-secondary)' }}>{cat.content_count ?? 0}</td>
       <td style={{ padding: '12px 16px' }}>
         <button
           onClick={() => onToggleVisible(cat.id, !cat.visible)}
           className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors"
-          style={{ background: cat.visible ? '#0f0f0f' : '#d4d4d4' }}
+          style={{ background: cat.visible ? 'var(--foreground)' : 'color-mix(in srgb, var(--foreground) 20%, transparent)' }}
         >
           <span
-            className="inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform"
+            className="inline-block h-3.5 w-3.5 rounded-full bg-background transition-transform"
             style={{ transform: cat.visible ? 'translateX(18px)' : 'translateX(3px)' }}
           />
         </button>
       </td>
       <td style={{ padding: '12px 16px' }}>
         <div className="flex gap-2">
-          <Button variant="ghost" style={{ color: '#606060' }} onClick={() => onEdit(cat)}>
+          <Button variant="ghost" style={{ color: 'var(--text-secondary)' }} onClick={() => onEdit(cat)}>
             <Pencil size={14} />
           </Button>
           <AlertDialog>
@@ -232,38 +232,38 @@ function AdminCategories() {
   }
 
   return (
-    <div>
+    <div className="app-surface">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>{t('admin:categoryManagement')}</h1>
-        <Button onClick={openCreate} style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}>
+        <h1 className="text-xl font-semibold text-foreground">{t('admin:categoryManagement')}</h1>
+        <Button onClick={openCreate} className="theme-primary-button rounded-[18px]">
           <Plus size={16} />
           {t('admin:newCategory')}
         </Button>
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <div className="bg-white rounded-xl overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
+        <div className="app-surface-elevated rounded-xl overflow-hidden border app-border">
           <table className="w-full">
             <thead>
-              <tr style={{ background: '#f9f9f9' }}>
+              <tr style={{ background: 'var(--surface-muted)' }}>
                 <th style={{ padding: '12px 8px 12px 16px', width: 40 }} />
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>{t('admin:categoryName')}</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>{t('admin:categorySlug')}</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>{t('admin:categoryIcon')}</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>{t('admin:categoryContentCount')}</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>{t('admin:categoryDisplay')}</th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#606060', fontWeight: 500 }}>{t('admin:categoryActions')}</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 500 }}>{t('admin:categoryName')}</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 500 }}>{t('admin:categorySlug')}</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 500 }}>{t('admin:categoryIcon')}</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 500 }}>{t('admin:categoryContentCount')}</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 500 }}>{t('admin:categoryDisplay')}</th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 500 }}>{t('admin:categoryActions')}</th>
               </tr>
             </thead>
             <SortableContext items={categories.map((c) => c.id)} strategy={verticalListSortingStrategy}>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-8" style={{ color: '#909090' }}>{tc('common:loading')}</td>
+                    <td colSpan={7} className="app-text-tertiary text-center py-8">{tc('common:loading')}</td>
                   </tr>
                 ) : categories.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-8" style={{ color: '#909090' }}>{t('admin:noCategories')}</td>
+                    <td colSpan={7} className="app-text-tertiary text-center py-8">{t('admin:noCategories')}</td>
                   </tr>
                 ) : (
                   categories.map((cat) => (
@@ -290,13 +290,13 @@ function AdminCategories() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('admin:categoryName')} *</label>
+              <label className="app-text-secondary block text-sm font-medium mb-1.5">{t('admin:categoryName')} *</label>
               <Input placeholder={t('admin:categoryNamePlaceholder')} value={formName} onChange={(e) => setFormName(e.target.value)} />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>
+              <label className="app-text-secondary block text-sm font-medium mb-1.5">
                 {t('admin:categorySlug')} *
-                {editing && <span className="text-xs font-normal ml-2" style={{ color: '#909090' }}>{t('admin:categorySlugHint')}</span>}
+                {editing && <span className="app-text-tertiary text-xs font-normal ml-2">{t('admin:categorySlugHint')}</span>}
               </label>
               <Input
                 placeholder={t('admin:categorySlugPlaceholder')}
@@ -306,7 +306,7 @@ function AdminCategories() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('admin:categoryIcon')}</label>
+              <label className="app-text-secondary block text-sm font-medium mb-1.5">{t('admin:categoryIcon')}</label>
               <Select value={formIcon} onValueChange={(val) => val && setFormIcon(val)}>
                 <SelectTrigger className="w-full">
                   <span className="inline-flex items-center gap-2">
@@ -329,7 +329,7 @@ function AdminCategories() {
                 </SelectContent>
               </Select>
             </div>
-            {error && <p className="text-sm" style={{ color: '#cc0000' }}>{error}</p>}
+            {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
           </div>
           <DialogFooter>
             <DialogClose render={
@@ -338,7 +338,7 @@ function AdminCategories() {
                 {tc('common:cancel')}
               </Button>
             } />
-            <Button onClick={handleSave} disabled={saving} style={{ background: '#0f0f0f', color: '#ffffff' }}>
+            <Button onClick={handleSave} disabled={saving} className="theme-primary-button">
               <Save size={16} />
               {saving ? tc('common:saving') : t('admin:save')}
             </Button>

@@ -40,7 +40,7 @@ function CopyLinkButton({ commentID }: { commentID: string }) {
   return (
     <button
       className="flex items-center gap-1 text-xs transition-colors"
-      style={{ color: copied ? '#065fd4' : '#606060' }}
+      style={{ color: copied ? 'var(--brand)' : 'var(--text-secondary)' }}
       onClick={handleCopy}
       title={copied ? t('copied') : t('copyLink')}
     >
@@ -93,7 +93,7 @@ function CommentCard({
     <div
       id={`comment-${comment.id}`}
       className={`flex gap-3 rounded-2xl px-3 py-2 transition-colors ${isReply ? 'ml-12' : ''}`}
-      style={isHighlighted ? { background: 'rgba(6,95,212,0.08)', boxShadow: 'inset 0 0 0 1px rgba(6,95,212,0.22)' } : undefined}
+      style={isHighlighted ? { background: 'var(--brand-soft)', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--brand) 35%, transparent)' } : undefined}
     >
       {/* Avatar */}
       <Avatar className="size-9">
@@ -104,29 +104,29 @@ function CommentCard({
       <div className="flex-1 min-w-0">
         {/* Header */}
         <div className="flex items-center gap-2">
-          <span className="text-[13px] font-medium" style={{ color: '#0f0f0f' }}>
+          <span className="text-[13px] font-medium text-foreground">
             {comment.user?.name || t('comments:anonymousUser')}
           </span>
           {isPinned && (
-            <span className="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded" style={{ color: '#065fd4', background: 'rgba(6,95,212,0.1)' }}>
+            <span className="app-chip-primary inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded">
               <Pin size={10} />
               {t('comments:pinned')}
             </span>
           )}
-          <span className="text-xs" style={{ color: '#606060' }}>
+          <span className="app-text-secondary text-xs">
             {dayjs(comment.created_at).fromNow()}
           </span>
         </div>
 
         {/* Reply indicator */}
         {isReply && comment.reply_to?.user && comment.reply_to_id !== comment.parent_id && (
-          <div className="text-xs mt-0.5" style={{ color: '#606060' }}>
+          <div className="app-text-secondary text-xs mt-0.5">
             {t('comments:replyToUser')} <span className="font-medium">{comment.reply_to.user.name}</span>
           </div>
         )}
 
         {/* Body */}
-        <div className="text-sm mt-1" style={{ color: '#0f0f0f' }}>
+        <div className="text-sm mt-1 text-foreground">
           {comment.body}
         </div>
 
@@ -134,7 +134,7 @@ function CommentCard({
         <div className="flex items-center gap-3 mt-1.5">
           <button
             className="flex items-center gap-1 text-xs transition-colors"
-            style={{ color: isLiked ? '#065fd4' : '#606060' }}
+            style={{ color: isLiked ? 'var(--brand)' : 'var(--text-secondary)' }}
             onClick={() => onLike(comment.id)}
           >
             <ThumbsUp size={14} fill={isLiked ? 'currentColor' : 'none'} />
@@ -142,7 +142,7 @@ function CommentCard({
           </button>
           <button
             className="flex items-center gap-1 text-xs transition-colors"
-            style={{ color: '#606060' }}
+            style={{ color: 'var(--text-secondary)' }}
             onClick={() => onStartReply(comment.id, parentID, comment.user?.name || t('common:anonymousUser'))}
           >
             <MessageCircle size={14} />
@@ -151,7 +151,7 @@ function CommentCard({
           {isAdmin && !isReply && (
             <button
               className="flex items-center gap-1 text-xs transition-colors"
-              style={{ color: isPinned ? '#065fd4' : '#606060' }}
+              style={{ color: isPinned ? 'var(--brand)' : 'var(--text-secondary)' }}
               onClick={() => onPin(comment.id, isPinned)}
             >
               <Pin size={14} fill={isPinned ? 'currentColor' : 'none'} />
@@ -160,7 +160,7 @@ function CommentCard({
           )}
           {(comment.user_id === currentUserID || isAdmin) && (
             <AlertDialog>
-              <AlertDialogTrigger className="flex items-center gap-1 text-xs transition-colors cursor-pointer" style={{ color: '#606060' }}>
+              <AlertDialogTrigger className="flex items-center gap-1 text-xs transition-colors cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
                 <Trash2 size={14} />
                 <span>{t('comments:delete')}</span>
               </AlertDialogTrigger>
@@ -199,7 +199,7 @@ function CommentCard({
             <textarea
               rows={1}
               className="w-full border-b text-sm py-1 outline-none bg-transparent resize-none overflow-hidden"
-              style={{ borderColor: '#065fd4', color: '#0f0f0f' }}
+              style={{ borderColor: 'var(--brand)', color: 'var(--foreground)' }}
               placeholder={t('comments:replyTo', { name: replyTo.userName })}
               value={replyText}
               onChange={(e) => { onReplyTextChange(e.target.value); autoResize(e.target) }}
@@ -217,14 +217,14 @@ function CommentCard({
               <div className="flex gap-2">
                 <button
                   className="text-xs px-3 py-1 rounded-full"
-                  style={{ color: '#606060' }}
+                  style={{ color: 'var(--text-secondary)' }}
                   onClick={onCancelReply}
                 >
                   {t('comments:cancel')}
                 </button>
                 <button
                   className="text-xs px-3 py-1 rounded-full text-white disabled:opacity-50"
-                  style={{ background: '#065fd4' }}
+                  style={{ background: 'var(--brand)' }}
                   disabled={!replyText.trim() || submitting}
                   onClick={onReplySubmit}
                 >

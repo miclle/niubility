@@ -32,8 +32,8 @@ function ToolbarButton({ onClick, active, disabled, children, title }: {
       onClick={onClick}
       className="p-1.5 rounded transition-colors"
       style={{
-        background: active ? '#e5e5e5' : 'transparent',
-        color: disabled ? '#d4d4d4' : '#606060',
+        background: active ? 'var(--surface-hover)' : 'transparent',
+        color: disabled ? 'var(--surface-border)' : 'var(--text-secondary)',
       }}
     >
       {children}
@@ -75,11 +75,10 @@ function ImagePlaceholderView({ node }: NodeViewProps) {
   return (
     <NodeViewWrapper>
       <div
-        className="flex items-center gap-3 px-4 py-3 my-2 rounded-lg"
-        style={{ background: '#f8f8f8', border: '1px solid #e5e5e5' }}
+        className="app-surface-muted border app-border flex items-center gap-3 px-4 py-3 my-2 rounded-lg"
       >
-        <Loader2 size={18} className="animate-spin" style={{ color: '#909090' }} />
-        <span className="text-sm" style={{ color: '#909090' }}>
+        <Loader2 size={18} className="app-text-tertiary animate-spin" />
+        <span className="app-text-tertiary text-sm">
           {t('editor:uploadingImage', { filename: node.attrs.fileName || 'Image' })}
         </span>
       </div>
@@ -295,9 +294,9 @@ function RichTextEditor({ value, onChange }: RichTextEditorProps) {
   if (!editor) return null
 
   return (
-    <div className="rounded-lg overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
+    <div className="app-surface-elevated border app-border rounded-lg overflow-hidden">
       {/* Toolbar */}
-      <div className="flex items-center gap-0.5 flex-wrap px-2 py-1.5" style={{ borderBottom: '1px solid #e5e5e5', background: '#fafafa' }}>
+      <div className="app-surface-muted border-b app-border flex items-center gap-0.5 flex-wrap px-2 py-1.5">
         <ToolbarButton title="Bold" active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}>
           <Bold size={16} />
         </ToolbarButton>
@@ -305,7 +304,7 @@ function RichTextEditor({ value, onChange }: RichTextEditorProps) {
           <Italic size={16} />
         </ToolbarButton>
 
-        <div className="w-px h-5 mx-1" style={{ background: '#e5e5e5' }} />
+        <div className="w-px h-5 mx-1 bg-[var(--surface-border)]" />
 
         <ToolbarButton title="Heading 1" active={editor.isActive('heading', { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
           <Heading1 size={16} />
@@ -314,7 +313,7 @@ function RichTextEditor({ value, onChange }: RichTextEditorProps) {
           <Heading2 size={16} />
         </ToolbarButton>
 
-        <div className="w-px h-5 mx-1" style={{ background: '#e5e5e5' }} />
+        <div className="w-px h-5 mx-1 bg-[var(--surface-border)]" />
 
         <ToolbarButton title="Bullet list" active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()}>
           <List size={16} />
@@ -323,7 +322,7 @@ function RichTextEditor({ value, onChange }: RichTextEditorProps) {
           <ListOrdered size={16} />
         </ToolbarButton>
 
-        <div className="w-px h-5 mx-1" style={{ background: '#e5e5e5' }} />
+        <div className="w-px h-5 mx-1 bg-[var(--surface-border)]" />
 
         <ToolbarButton title="Code block" active={editor.isActive('codeBlock')} onClick={() => editor.chain().focus().toggleCodeBlock().run()}>
           <Code size={16} />
@@ -332,7 +331,7 @@ function RichTextEditor({ value, onChange }: RichTextEditorProps) {
           <Minus size={16} />
         </ToolbarButton>
 
-        <div className="w-px h-5 mx-1" style={{ background: '#e5e5e5' }} />
+        <div className="w-px h-5 mx-1 bg-[var(--surface-border)]" />
 
         <ToolbarButton title="Insert image" onClick={() => fileInputRef.current?.click()}>
           <ImagePlus size={16} />

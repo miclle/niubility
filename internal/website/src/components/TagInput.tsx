@@ -46,7 +46,7 @@ export default function TagInput({ tags, onChange, label = '标签', placeholder
   return (
     <div>
       {label && (
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{label}</label>
+        <label className="app-text-secondary block text-sm font-medium mb-1.5">{label}</label>
       )}
       <div className="flex items-center gap-2 mb-2">
         <Input
@@ -65,8 +65,7 @@ export default function TagInput({ tags, onChange, label = '标签', placeholder
           {tags.map((tag) => (
             <span
               key={tag}
-              className="px-2 py-1 rounded-full text-xs cursor-pointer"
-              style={{ background: '#f2f2f2', color: '#606060' }}
+              className="app-chip px-2 py-1 rounded-full text-xs cursor-pointer"
               onClick={() => handleRemoveTag(tag)}
             >
               {tag} ×

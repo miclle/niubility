@@ -41,7 +41,7 @@ function PodcastEditor() {
   }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!currentUser) return null
-  if (loading || !verified) return <div className="text-center py-20" style={{ color: '#909090' }}>{t('common:loading')}</div>
+  if (loading || !verified) return <div className="app-text-tertiary text-center py-20">{t('common:loading')}</div>
 
   const defaultSpeaker = isNew
     ? { id: currentUser.id, name: currentUser.name, avatar: currentUser.avatar }
@@ -59,7 +59,7 @@ function PodcastEditor() {
 
   return (
     <div className="max-w-[1200px] mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>
+      <h1 className="text-xl font-semibold text-foreground mb-6">
         {isNew ? t('editor:publish') + ' ' + t('common:podcast') : t('common:edit') + ' ' + t('common:podcast')}
       </h1>
       <PodcastEditorForm id={id} defaultSpeaker={defaultSpeaker} onSaved={onSaved} onCancel={onCancel} onLoadError={onLoadError} />

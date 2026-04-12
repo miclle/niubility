@@ -2,6 +2,8 @@
   "accountSettings": "Account Settings",
   "language": "Language",
   "languageDescription": "Choose your preferred language for the interface",
+  "themePreference": "Theme",
+  "themePreferenceDescription": "Choose light, dark, or follow your system appearance",
   "languageZhCN": "简体中文",
   "languageEn": "English",
   "account": "Account",

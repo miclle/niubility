@@ -40,22 +40,22 @@ function SAMLSettingsSection({
   const { t } = useTranslation('admin')
 
   return (
-    <div className="space-y-4 pt-2" style={{ borderTop: '1px solid #f0f0f0' }}>
+    <div className="space-y-4 pt-2 border-t app-border">
       <div>
-        <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:idpMetadataURL')}</label>
+        <label className="block text-sm font-medium mb-1 text-foreground">{t('admin:idpMetadataURL')}</label>
         <Input
           placeholder="https://sso.example.com/saml2/meta"
           value={metadataURL}
           onChange={(e) => onMetadataURLChange(e.target.value)}
         />
-        <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:idpMetadataURLHelp')}</p>
+        <p className="app-text-tertiary text-xs mt-1">{t('admin:idpMetadataURLHelp')}</p>
       </div>
-      <div className="p-3 rounded-lg" style={{ background: '#f0f9ff', border: '1px solid #bae6fd' }}>
+      <div className="p-3 rounded-lg" style={{ background: 'color-mix(in srgb, var(--brand) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--brand) 30%, transparent)' }}>
         <p className="text-sm font-medium" style={{ color: '#0369a1' }}>{t('admin:spMetadata')}</p>
         <p className="text-xs mt-1" style={{ color: '#0369a1' }}>
           {t('admin:spMetadataHelp')}
         </p>
-        <code className="block text-xs mt-1 p-2 rounded" style={{ background: '#e0f2fe', color: '#0c4a6e' }}>
+        <code className="block text-xs mt-1 p-2 rounded" style={{ background: 'color-mix(in srgb, var(--brand) 14%, transparent)', color: 'var(--foreground)' }}>
           {spMetadataURL}
         </code>
         <div className="flex gap-2 mt-2">
@@ -71,12 +71,12 @@ function SAMLSettingsSection({
       </div>
 
       {/* Advanced SAML configuration */}
-      <div className="pt-2" style={{ borderTop: '1px solid #f0f0f0' }}>
+      <div className="pt-2 border-t app-border">
         <button
           type="button"
           onClick={onToggleAdvanced}
           className="flex items-center gap-2 text-sm font-medium cursor-pointer bg-transparent border-0 p-0"
-          style={{ color: '#0f0f0f' }}
+          style={{ color: 'var(--foreground)' }}
         >
           {advancedExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           {t('admin:advancedConfig')}
@@ -85,17 +85,17 @@ function SAMLSettingsSection({
         {advancedExpanded && (
           <div className="mt-4 space-y-4 pl-6">
             {/* SP Signing */}
-            <div className="p-3 rounded-lg" style={{ background: '#fafafa' }}>
-              <p className="text-sm font-medium mb-3" style={{ color: '#0f0f0f' }}>
+            <div className="app-surface-muted p-3 rounded-lg">
+              <p className="text-sm font-medium mb-3 text-foreground">
                 {t('admin:spSigningConfig')}
               </p>
-              <p className="text-xs mb-3" style={{ color: '#606060' }}>
+              <p className="app-text-secondary text-xs mb-3">
                 {t('admin:spSigningConfigHelp')}
               </p>
 
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                  <label className="block text-sm font-medium mb-1 text-foreground">
                     {t('admin:spCertificate')}
                   </label>
                   <Textarea
@@ -108,10 +108,10 @@ function SAMLSettingsSection({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                  <label className="block text-sm font-medium mb-1 text-foreground">
                     {t('admin:spPrivateKey')}
                     {hasExistingPrivateKey && (
-                      <span className="ml-2 text-xs" style={{ color: '#166534' }}>
+                      <span className="ml-2 text-xs text-emerald-600 dark:text-emerald-400">
                         {t('admin:secretSetHint')}
                       </span>
                     )}
@@ -123,7 +123,7 @@ function SAMLSettingsSection({
                     onChange={(e) => onFormChange({ ...samlForm, sp_private_key: e.target.value })}
                     className="font-mono text-xs"
                   />
-                  <p className="text-xs mt-1" style={{ color: '#909090' }}>
+                  <p className="app-text-tertiary text-xs mt-1">
                     {t('admin:privateKeyEncryption')}
                   </p>
                 </div>
@@ -132,7 +132,7 @@ function SAMLSettingsSection({
 
             {/* NameID Format */}
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+              <label className="block text-sm font-medium mb-1 text-foreground">
                 {t('admin:nameIDFormat')}
               </label>
               <Select
@@ -149,14 +149,14 @@ function SAMLSettingsSection({
                   <SelectItem value="persistent">{t('admin:nameIDFormatPersistent')}</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs mt-1" style={{ color: '#909090' }}>
+              <p className="app-text-tertiary text-xs mt-1">
                 {t('admin:nameIDFormatHelp')}
               </p>
             </div>
 
             {/* Attribute Mapping */}
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+              <label className="block text-sm font-medium mb-1 text-foreground">
                 {t('admin:attributeMapping')}
               </label>
               <Textarea
@@ -166,7 +166,7 @@ function SAMLSettingsSection({
                 onChange={(e) => onFormChange({ ...samlForm, attribute_mapping: e.target.value })}
                 className="font-mono text-xs"
               />
-              <p className="text-xs mt-1" style={{ color: '#909090' }}>
+              <p className="app-text-tertiary text-xs mt-1">
                 {t('admin:attributeMappingHelp')}
               </p>
             </div>

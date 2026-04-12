@@ -14,5 +14,9 @@
   "notInitialized": "系统尚未初始化",
   "contactAdmin": "请联系管理员完成初始设置",
   "signIn": "登录",
-  "search": "搜索..."
+  "search": "搜索...",
+  "theme": "主题",
+  "themeSystem": "跟随系统",
+  "themeLight": "浅色",
+  "themeDark": "深色"
 }

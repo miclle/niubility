@@ -60,14 +60,14 @@ function MainLayout() {
     // If system is not initialized, show prompt instead of normal content
     if (!initialized) {
         return (
-            <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#f8f8f8' }}>
-                <div className="text-center px-8 py-10 rounded-2xl bg-white" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-5" style={{ background: '#f2f2f2' }}>
-                        <ServerOff size={28} style={{ color: '#909090' }} />
+            <div className="app-surface min-h-screen flex items-center justify-center px-4">
+                <div className="app-panel text-center px-8 py-10 rounded-2xl">
+                    <div className="app-surface-muted inline-flex items-center justify-center w-14 h-14 rounded-full mb-5">
+                        <ServerOff size={28} className="app-text-tertiary" />
                     </div>
-                    <h1 className="text-2xl font-semibold mb-2" style={{ color: '#0f0f0f' }}>Niubility</h1>
-                    <p className="text-sm mb-1" style={{ color: '#606060' }}>{t('nav:notInitialized')}</p>
-                    <p className="text-xs" style={{ color: '#909090' }}>{t('nav:contactAdmin')}</p>
+                    <h1 className="text-2xl font-semibold mb-2 text-foreground">Niubility</h1>
+                    <p className="app-text-secondary text-sm mb-1">{t('nav:notInitialized')}</p>
+                    <p className="app-text-tertiary text-xs">{t('nav:contactAdmin')}</p>
                 </div>
             </div>
         )
@@ -98,9 +98,9 @@ function MainLayout() {
         locationPathname: location.pathname,
     }
     return (
-        <div className="flex flex-col min-h-screen bg-white">
+        <div className="app-surface flex flex-col min-h-screen">
             {/* Top Navigation */}
-            <header className="sticky top-0 z-50 h-14 bg-white flex items-center justify-between px-4">
+            <header className="app-surface sticky top-0 z-50 h-14 flex items-center justify-between px-4 border-b app-border">
                 {/* Left: Menu + Logo */}
                 <div className="flex items-center gap-4">
                     <button
@@ -113,13 +113,13 @@ function MainLayout() {
                             }
                         }}
                     >
-                        <Menu size={24} style={{ color: '#0f0f0f' }} />
+                        <Menu size={24} className="text-foreground" />
                     </button>
                     <NavLink to="/" className="flex items-center gap-1 no-underline">
                         {siteLogoUrl ? (
                             <img src={siteLogoUrl} alt={siteTitle} className="h-6 object-contain" />
                         ) : (
-                            <span className="text-xl font-semibold" style={{ color: '#0f0f0f', letterSpacing: '-0.5px' }}>
+                            <span className="text-xl font-semibold text-foreground" style={{ letterSpacing: '-0.5px' }}>
                                 {siteTitle}
                             </span>
                         )}
@@ -136,7 +136,7 @@ function MainLayout() {
                         className="yt-search-input"
                     />
                     <button className="yt-search-btn" onClick={handleSearch}>
-                        <Search size={20} style={{ color: '#0f0f0f' }} />
+                        <Search size={20} className="text-foreground" />
                     </button>
                 </div>
                 {/* Right: Create button + User menu */}
@@ -151,10 +151,10 @@ function MainLayout() {
                             href="/login"
                             className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium no-underline"
                             style={{
-                                borderColor: '#065fd4',
-                                color: '#065fd4',
+                                borderColor: 'var(--brand)',
+                                color: 'var(--brand)',
                                 background: 'transparent',
-                                border: '1px solid #065fd4',
+                                border: '1px solid var(--brand)',
                             }}
                         >
                             <User size={16} />
@@ -177,21 +177,21 @@ function MainLayout() {
                         />
                         {/* Drawer */}
                         <aside
-                            className={`fixed left-0 top-0 z-[60] h-screen w-60 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${
+                            className={`app-surface-elevated fixed left-0 top-0 z-[60] h-screen w-60 shadow-xl transform transition-transform duration-300 ease-in-out ${
                                 drawerOpen ? 'translate-x-0' : '-translate-x-full'
                             }`}
                         >
-                            <div className="flex items-center gap-4 h-14 px-4 border-b" style={{ borderColor: '#e5e5e5' }}>
+                            <div className="flex items-center gap-4 h-14 px-4 border-b app-border">
                                 <button
                                     onClick={() => setDrawerOpen(false)}
                                     className="yt-icon-btn"
                                 >
-                                    <Menu size={24} style={{ color: '#0f0f0f' }} />
+                                    <Menu size={24} className="text-foreground" />
                                 </button>
                                 {siteLogoUrl ? (
                                     <img src={siteLogoUrl} alt={siteTitle} className="h-6 object-contain" />
                                 ) : (
-                                    <span className="text-xl font-semibold" style={{ color: '#0f0f0f', letterSpacing: '-0.5px' }}>
+                                    <span className="text-xl font-semibold text-foreground" style={{ letterSpacing: '-0.5px' }}>
                                         {siteTitle}
                                     </span>
                                 )}
@@ -203,7 +203,7 @@ function MainLayout() {
                 {/* Sidebar (hidden on detail/settings page) */}
                 {!shouldHideSidebar && (
                     <aside
-                        className="flex-shrink-0 sticky top-14 overflow-y-auto bg-white transition-all duration-200"
+                        className="app-surface flex-shrink-0 sticky top-14 overflow-y-auto transition-all duration-200"
                         style={{
                             width: sidebarCollapsed ? 0 : 240,
                             height: 'calc(100vh - 56px)',
@@ -216,16 +216,16 @@ function MainLayout() {
                     </aside>
                 )}
                 {/* Main content */}
-                <main className="flex-1 min-w-0 bg-white flex flex-col">
+                <main className="app-surface flex-1 min-w-0 flex flex-col">
                     <div className="flex-1">
                         <Outlet context={{ keyword, typeFilter, category }} />
                     </div>
                     {/* Footer */}
-                    <footer className="py-4 px-6 border-t" style={{ borderColor: '#e5e5e5' }}>
-                        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs" style={{ color: '#909090' }}>
+                    <footer className="py-4 px-6 border-t app-border">
+                        <div className="app-text-tertiary flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs">
                             <div dangerouslySetInnerHTML={{ __html: footerContent }} />
                             {siteVersion && (
-                                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px]" style={{ background: '#f4f4f5', color: '#606060' }}>
+                                <span className="app-surface-muted app-text-secondary inline-flex items-center rounded-full px-2 py-0.5 text-[11px]">
                                     {siteVersion}
                                 </span>
                             )}

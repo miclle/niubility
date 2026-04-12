@@ -36,9 +36,9 @@ function MyComments() {
   const loading = isLoading || isFetchingNextPage
 
   return (
-    <div className="min-h-full bg-white">
-      <div className="border-b border-[#ececec] px-6 py-8 lg:px-12">
-        <h1 className="text-[2rem] font-semibold tracking-tight" style={{ color: '#0f0f0f' }}>
+    <div className="app-surface min-h-full">
+      <div className="border-b app-border px-6 py-8 lg:px-12">
+        <h1 className="text-[2rem] font-semibold tracking-tight text-foreground">
           {t('settings:myCommentsTitle')}
         </h1>
       </div>
@@ -51,20 +51,20 @@ function MyComments() {
           >
             <Sparkles size={72} strokeWidth={1.5} style={{ color: '#1296c9' }} />
           </div>
-          <h2 className="mt-8 text-2xl font-semibold" style={{ color: '#0f0f0f' }}>
+          <h2 className="mt-8 text-2xl font-semibold text-foreground">
             {t('settings:myCommentsTitle')}
           </h2>
-          <p className="mt-3 max-w-md text-sm leading-6" style={{ color: '#707070' }}>
+          <p className="app-text-secondary mt-3 max-w-md text-sm leading-6">
             {t('settings:noComments')}
           </p>
         </div>
       ) : (
         <div className="px-6 py-8 lg:px-12">
-          <div className="divide-y divide-[#ececec]">
+          <div className="divide-y app-border">
             {comments.map((comment) => (
               <div key={comment.id} className="flex gap-5 py-5 first:pt-0">
                 {comment.content && (
-                  <div className="h-[68px] w-[120px] shrink-0 overflow-hidden rounded-lg bg-[#f5f5f5]">
+                  <div className="app-surface-muted h-[68px] w-[120px] shrink-0 overflow-hidden rounded-lg">
                     <NavLink to={contentDetailPath(comment.content)} className="block h-full w-full no-underline">
                       <img
                         src={getStyledContentCardCover(comment.content, siteConfig)}
@@ -83,7 +83,7 @@ function MyComments() {
                         <NavLink
                           to={contentDetailPath(comment.content)}
                           className="block truncate text-[15px] font-medium no-underline hover:underline"
-                          style={{ color: '#0f0f0f' }}
+                          style={{ color: 'var(--foreground)' }}
                         >
                           {comment.content.title}
                         </NavLink>
@@ -97,12 +97,12 @@ function MyComments() {
                         <NavLink
                           to={contentDetailPath(comment.content, `comment-${comment.id}`)}
                           className="mt-2 block text-sm no-underline hover:underline"
-                          style={{ color: '#707070', lineHeight: 1.5 }}
+                          style={{ color: 'var(--text-secondary)', lineHeight: 1.5 }}
                         >
                           {comment.body}
                         </NavLink>
                       ) : (
-                        <p className="mt-2 text-sm" style={{ color: '#707070', lineHeight: 1.5 }}>
+                        <p className="app-text-secondary mt-2 text-sm" style={{ lineHeight: 1.5 }}>
                           {comment.body}
                         </p>
                       )}
@@ -110,10 +110,10 @@ function MyComments() {
                   </div>
 
                   <div className="mt-3 flex items-center gap-4">
-                    <span className="text-sm" style={{ color: '#909090' }}>
+                    <span className="app-text-tertiary text-sm">
                       {new Date(comment.created_at).toLocaleDateString('zh-CN')}
                     </span>
-                    <span className="inline-flex items-center gap-1 text-sm" style={{ color: '#909090' }}>
+                    <span className="app-text-tertiary inline-flex items-center gap-1 text-sm">
                       <Heart size={14} />
                       {comment.like_count}
                     </span>
@@ -127,7 +127,7 @@ function MyComments() {
                     ) : (
                       <span
                         className="inline-flex rounded-full px-3 py-0.5 text-xs font-medium"
-                        style={{ background: '#f5f5f5', color: '#606060' }}
+                        style={{ background: 'var(--surface-muted)', color: 'var(--text-secondary)' }}
                       >
                         {comment.parent_id !== '' ? t('settings:reply') : t('settings:topLevel')}
                       </span>
@@ -140,7 +140,7 @@ function MyComments() {
         </div>
       )}
 
-      <div ref={loaderRef} className="py-4 text-center text-sm" style={{ color: '#909090' }}>
+      <div ref={loaderRef} className="app-text-tertiary py-4 text-center text-sm">
         {loading ? tc('common:loading') : !hasNextPage && comments.length > 0 ? tc('common:noMoreContent') : ''}
       </div>
     </div>

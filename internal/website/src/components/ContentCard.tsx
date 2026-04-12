@@ -112,19 +112,19 @@ function ContentCard({ content, hideAuthor = false }: { content: Content; hideAu
 
         {/* Text content */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-medium line-clamp-2 mb-1" style={{ color: '#0f0f0f' }}>
+          <h3 className="text-sm font-medium line-clamp-2 mb-1 text-foreground">
             {content.title}
           </h3>
           {!hideAuthor && (
             <span
               className="text-xs mb-0.5 block hover:underline cursor-pointer"
-              style={{ color: '#606060' }}
+              style={{ color: 'var(--text-secondary)' }}
               onClick={handleProfileClick}
             >
               {displayName}
             </span>
           )}
-          <div className="text-xs" style={{ color: '#606060' }}>
+          <div className="text-xs app-text-secondary">
             {dayjs(content.created_at).fromNow()}
           </div>
         </div>

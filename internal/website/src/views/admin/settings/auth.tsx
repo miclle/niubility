@@ -141,16 +141,16 @@ function SettingsAuth() {
   if (loading) return <SettingsLoading />
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>{t('admin:authSettings')}</h1>
+    <div className="app-surface space-y-6">
+      <h1 className="text-xl font-semibold text-foreground">{t('admin:authSettings')}</h1>
 
       <SettingsFeedback success={success} error={error} />
 
       {/* Authentication settings */}
-      <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
+      <div className="app-surface-elevated rounded-xl p-6 border app-border">
         <div className="flex items-center gap-2 mb-6">
-          <UserPlus size={20} style={{ color: '#0f0f0f' }} />
-          <h3 className="font-medium" style={{ color: '#0f0f0f' }}>{t('admin:basicAuth')}</h3>
+          <UserPlus size={20} className="text-foreground" />
+          <h3 className="font-medium text-foreground">{t('admin:basicAuth')}</h3>
         </div>
 
         <div className="space-y-4">
@@ -162,8 +162,8 @@ function SettingsAuth() {
               className="w-4 h-4 rounded"
             />
             <div>
-              <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:registrationEnabled')}</span>
-              <p className="text-xs" style={{ color: '#606060' }}>{t('admin:registrationEnabledDesc')}</p>
+              <span className="text-sm font-medium text-foreground">{t('admin:registrationEnabled')}</span>
+              <p className="app-text-secondary text-xs">{t('admin:registrationEnabledDesc')}</p>
             </div>
           </label>
 
@@ -175,24 +175,24 @@ function SettingsAuth() {
               className="w-4 h-4 rounded"
             />
             <div>
-              <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:cookieSecureLabel')}</span>
-              <p className="text-xs" style={{ color: '#606060' }}>{t('admin:cookieSecureDesc')}</p>
+              <span className="text-sm font-medium text-foreground">{t('admin:cookieSecureLabel')}</span>
+              <p className="app-text-secondary text-xs">{t('admin:cookieSecureDesc')}</p>
             </div>
           </label>
         </div>
       </div>
 
       {/* SSO settings */}
-      <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
+      <div className="app-surface-elevated rounded-xl p-6 border app-border">
         <div className="flex items-center gap-2 mb-6">
-          <Globe size={20} style={{ color: '#0f0f0f' }} />
-          <h3 className="font-medium" style={{ color: '#0f0f0f' }}>{t('admin:ssoConfig')}</h3>
+          <Globe size={20} className="text-foreground" />
+          <h3 className="font-medium text-foreground">{t('admin:ssoConfig')}</h3>
         </div>
 
         <div className="space-y-4">
           {/* SSO type selector */}
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: '#0f0f0f' }}>{t('admin:ssoType')}</label>
+            <label className="block text-sm font-medium mb-2 text-foreground">{t('admin:ssoType')}</label>
             <div className="flex gap-4">
               {([
                 { value: 'disabled', label: t('admin:disabled') },
@@ -208,7 +208,7 @@ function SettingsAuth() {
                     onChange={() => setSSOType(opt.value)}
                     className="w-4 h-4"
                   />
-                  <span className="text-sm" style={{ color: '#0f0f0f' }}>{opt.label}</span>
+                  <span className="text-sm text-foreground">{opt.label}</span>
                 </label>
               ))}
             </div>
@@ -244,7 +244,7 @@ function SettingsAuth() {
 
       <SaveButton saving={saving} onClick={handleSave} />
 
-      <div className="p-4 rounded-xl" style={{ background: '#f9f9f9', border: '1px solid #e5e5e5' }}>
+      <div className="app-surface-muted p-4 rounded-xl border app-border">
         <div className="flex items-center gap-2">
           <Shield size={14} style={{ color: '#166534' }} />
           <span className="text-xs" style={{ color: '#166534' }}>{t('admin:sensitiveInfoNote')}</span>

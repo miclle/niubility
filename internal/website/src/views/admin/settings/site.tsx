@@ -138,16 +138,16 @@ function SettingsSite() {
     }
 
     return (
-        <div className="max-w-4xl space-y-6">
+        <div className="app-surface max-w-4xl space-y-6">
             {/* Basic Settings */}
-            <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
+            <div className="app-surface-elevated rounded-xl p-6 border app-border">
                 <div className="flex items-center gap-2 mb-6">
-                    <Globe2 size={20} style={{ color: '#0f0f0f' }} />
-                    <h3 className="font-medium" style={{ color: '#0f0f0f' }}>{t('admin:basicSettings')}</h3>
+                    <Globe2 size={20} className="text-foreground" />
+                    <h3 className="font-medium text-foreground">{t('admin:basicSettings')}</h3>
                 </div>
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                        <label className="block text-sm font-medium mb-1 text-foreground">
                             {t('admin:siteName')}
                         </label>
                         <Input
@@ -157,7 +157,7 @@ function SettingsSite() {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                        <label className="block text-sm font-medium mb-1 text-foreground">
                             {t('admin:siteDescription')}
                         </label>
                         <Input
@@ -167,7 +167,7 @@ function SettingsSite() {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                        <label className="block text-sm font-medium mb-1 text-foreground">
                             {t('admin:siteKeywords')}
                         </label>
                         <Input
@@ -177,7 +177,7 @@ function SettingsSite() {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                        <label className="block text-sm font-medium mb-1 text-foreground">
                             {t('admin:versionLabel')}
                         </label>
                         <Input
@@ -188,7 +188,7 @@ function SettingsSite() {
                     </div>
                     <div className="flex items-center gap-6">
                         <div className="flex-1">
-                            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                            <label className="block text-sm font-medium mb-1 text-foreground">
                                 Favicon
                             </label>
                             <div className="flex items-center gap-3">
@@ -198,8 +198,7 @@ function SettingsSite() {
                                 <button
                                     type="button"
                                     onClick={() => document.getElementById('favicon-upload')?.click()}
-                                    className="px-2 rounded-lg hover:bg-black/5 transition-colors"
-                                    style={{ border: '1px solid #e5e5e5', color: '#0f0f0f' }}
+                                    className="px-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors border app-border text-foreground"
                                     disabled={uploading}
                                 >
                                     <Upload size={16} />
@@ -214,7 +213,7 @@ function SettingsSite() {
                             </div>
                         </div>
                         <div className="flex-1">
-                            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                            <label className="block text-sm font-medium mb-1 text-foreground">
                                 Logo
                             </label>
                             <div className="flex items-center gap-3">
@@ -224,8 +223,7 @@ function SettingsSite() {
                                 <button
                                     type="button"
                                     onClick={() => document.getElementById('logo-upload')?.click()}
-                                    className="px-2 rounded-lg hover:bg-black/5 transition-colors"
-                                    style={{ border: '1px solid #e5e5e5', color: '#0f0f0f' }}
+                                    className="px-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors border app-border text-foreground"
                                     disabled={uploading}
                                 >
                                     <Upload size={16} />
@@ -243,13 +241,13 @@ function SettingsSite() {
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
+            <div className="app-surface-elevated rounded-xl p-6 border app-border">
                 <div className="flex items-center gap-2 mb-6">
-                    <h3 className="font-medium" style={{ color: '#0f0f0f' }}>{t('admin:contentDefaultImages')}</h3>
+                    <h3 className="font-medium text-foreground">{t('admin:contentDefaultImages')}</h3>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                     <div>
-                        <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                        <label className="block text-sm font-medium mb-1 text-foreground">
                             {t('admin:videoDefaultCover')}
                         </label>
                         <div className="flex items-center gap-3">
@@ -259,8 +257,7 @@ function SettingsSite() {
                             <button
                                 type="button"
                                 onClick={() => document.getElementById('video-default-cover-upload')?.click()}
-                                className="px-2 rounded-lg hover:bg-black/5 transition-colors"
-                                style={{ border: '1px solid #e5e5e5', color: '#0f0f0f' }}
+                                className="px-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors border app-border text-foreground"
                                 disabled={uploading}
                             >
                                 <Upload size={16} />
@@ -275,7 +272,7 @@ function SettingsSite() {
                         </div>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                        <label className="block text-sm font-medium mb-1 text-foreground">
                             {t('admin:videoSpeakerDefaultAvatar')}
                         </label>
                         <div className="flex items-center gap-3">
@@ -285,8 +282,7 @@ function SettingsSite() {
                             <button
                                 type="button"
                                 onClick={() => document.getElementById('video-speaker-default-avatar-upload')?.click()}
-                                className="px-2 rounded-lg hover:bg-black/5 transition-colors"
-                                style={{ border: '1px solid #e5e5e5', color: '#0f0f0f' }}
+                                className="px-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors border app-border text-foreground"
                                 disabled={uploading}
                             >
                                 <Upload size={16} />
@@ -301,20 +297,20 @@ function SettingsSite() {
                         </div>
                     </div>
                 </div>
-                <p className="mt-3 text-xs" style={{ color: '#606060' }}>
+                <p className="app-text-secondary mt-3 text-xs">
                     {t('admin:contentDefaultImagesHelp')}
                 </p>
             </div>
 
             {/* Copyright & Security */}
-            <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
+            <div className="app-surface-elevated rounded-xl p-6 border app-border">
                 <div className="flex items-center gap-2 mb-6">
-                    <Shield size={20} style={{ color: '#0f0f0f' }} />
-                    <h3 className="font-medium" style={{ color: '#0f0f0f' }}>{t('admin:copyrightAndSecurity')}</h3>
+                    <Shield size={20} className="text-foreground" />
+                    <h3 className="font-medium text-foreground">{t('admin:copyrightAndSecurity')}</h3>
                 </div>
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                        <label className="block text-sm font-medium mb-1 text-foreground">
                             {t('admin:copyrightLabel')}
                         </label>
                         <Input
@@ -335,23 +331,23 @@ function SettingsSite() {
                             </label>
                         </div>
                         <div>
-                            <span className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:forceHTTPS')}</span>
-                            <p className="text-xs" style={{ color: '#606060' }}>{t('admin:forceHTTPSDesc')}</p>
+                            <span className="text-sm font-medium text-foreground">{t('admin:forceHTTPS')}</span>
+                            <p className="app-text-secondary text-xs">{t('admin:forceHTTPSDesc')}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Footer */}
-            <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
+            <div className="app-surface-elevated rounded-xl p-6 border app-border">
                 <div className="flex items-center gap-2 mb-6">
-                    <h3 className="font-medium" style={{ color: '#0f0f0f' }}>{t('admin:footerContentLabel')}</h3>
+                    <h3 className="font-medium text-foreground">{t('admin:footerContentLabel')}</h3>
                 </div>
                 <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+                    <label className="block text-sm font-medium mb-1 text-foreground">
                         {t('admin:footerContentLabel')}
                     </label>
-                    <p className="text-xs mb-2" style={{ color: '#606060' }}>
+                    <p className="app-text-secondary text-xs mb-2">
                         {t('admin:footerContentHelp')}
                     </p>
                     <textarea
@@ -359,7 +355,7 @@ function SettingsSite() {
                         value={footer}
                         onChange={(e) => setFooter(e.target.value)}
                         className="w-full min-h-32 rounded-lg px-3 py-2 resize-none focus:outline-none"
-                        style={{ border: '1px solid #e5e5e5', color: '#0f0f0f' }}
+                        style={{ border: '1px solid var(--surface-border)', color: 'var(--foreground)' }}
                         rows={3}
                     />
                 </div>

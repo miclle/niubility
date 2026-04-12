@@ -74,7 +74,7 @@ export function useSaveSettings(reload: () => Promise<void>) {
 export function SettingsLoading() {
   return (
     <div className="flex items-center justify-center h-64">
-      <Loader2 size={32} className="animate-spin" style={{ color: '#909090' }} />
+      <Loader2 size={32} className="app-text-tertiary animate-spin" />
     </div>
   )
 }
@@ -84,15 +84,15 @@ export function SettingsFeedback({ success, error }: { success: boolean; error: 
   return (
     <>
       {success && (
-        <div className="p-3 rounded-lg flex items-center gap-2" style={{ background: '#dcfce7' }}>
-          <CheckCircle size={16} style={{ color: '#166534' }} />
-          <span className="text-sm" style={{ color: '#166534' }}>Settings saved</span>
+        <div className="theme-success-banner p-3 rounded-lg flex items-center gap-2">
+          <CheckCircle size={16} />
+          <span className="text-sm">Settings saved</span>
         </div>
       )}
       {error && (
-        <div className="p-3 rounded-lg flex items-center gap-2" style={{ background: '#fee2e2' }}>
-          <XCircle size={16} style={{ color: '#991b1b' }} />
-          <span className="text-sm" style={{ color: '#991b1b' }}>{error}</span>
+        <div className="theme-danger-banner p-3 rounded-lg flex items-center gap-2">
+          <XCircle size={16} />
+          <span className="text-sm">{error}</span>
         </div>
       )}
     </>
@@ -105,7 +105,7 @@ export function SaveButton({ saving, onClick }: { saving: boolean; onClick: () =
     <Button
       disabled={saving}
       onClick={onClick}
-      style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}
+      className="theme-primary-button rounded-[18px]"
     >
       {saving ? (
         <><Loader2 size={16} className="animate-spin" /> Saving...</>

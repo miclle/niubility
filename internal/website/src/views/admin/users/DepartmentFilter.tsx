@@ -94,13 +94,13 @@ function DepartmentFilter({
         >
           {hasChildren ? (
             <span className="w-4 h-4 flex items-center justify-center shrink-0" onClick={(e) => toggleExpand(node.id, e)}>
-              <ChevronRight size={12} className="transition-transform" style={{ color: '#909090', transform: isExpanded ? 'rotate(90deg)' : undefined }} />
+              <ChevronRight size={12} className="app-text-tertiary transition-transform" style={{ transform: isExpanded ? 'rotate(90deg)' : undefined }} />
             </span>
           ) : (
             <span className="w-4" />
           )}
-          <span className="text-sm flex-1 truncate" style={{ color: isSelected ? '#0f0f0f' : '#606060', fontWeight: isSelected ? 500 : 400 }}>{node.name}</span>
-          <span className="text-xs tabular-nums" style={{ color: '#909090' }}>{node.user_count || 0}</span>
+          <span className={`text-sm flex-1 truncate ${isSelected ? 'text-foreground' : 'app-text-secondary'}`} style={{ fontWeight: isSelected ? 500 : 400 }}>{node.name}</span>
+          <span className="app-text-tertiary text-xs tabular-nums">{node.user_count || 0}</span>
         </div>
         {hasChildren && isExpanded && node.children?.map(child => renderNode(child, level + 1))}
       </div>
@@ -113,16 +113,16 @@ function DepartmentFilter({
         onClick={() => setOpen(!open)}
         className="flex items-center gap-2 rounded-lg border border-input bg-transparent px-3 h-8 text-sm whitespace-nowrap transition-colors hover:bg-accent/50"
       >
-        <Building2 size={14} style={{ color: '#606060' }} />
-        <span style={{ color: selectedDept ? '#0f0f0f' : '#606060' }}>{selectedDept ? selectedDept.name : t('admin:allDepartments')}</span>
-        <ChevronDown size={14} style={{ color: '#909090' }} />
+        <Building2 size={14} className="app-text-secondary" />
+        <span className={selectedDept ? 'text-foreground' : 'app-text-secondary'}>{selectedDept ? selectedDept.name : t('admin:allDepartments')}</span>
+        <ChevronDown size={14} className="app-text-tertiary" />
       </button>
       {open && (
         <div className="absolute top-full left-0 mt-1 z-50 w-72 rounded-lg bg-popover shadow-md ring-1 ring-foreground/10 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2">
           {/* Search input */}
-          <div className="p-2" style={{ borderBottom: '1px solid #e5e5e5' }}>
+          <div className="border-b app-border p-2">
             <div className="relative">
-              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: '#909090' }} />
+              <Search size={14} className="app-text-tertiary absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input
                 ref={inputRef}
                 type="text"
@@ -138,7 +138,7 @@ function DepartmentFilter({
             {filteredDepts ? (
               // Search mode: flat list
               filteredDepts.length === 0 ? (
-                <div className="py-4 text-center text-sm" style={{ color: '#909090' }}>{t('admin:noMatchedDept')}</div>
+                <div className="app-text-tertiary py-4 text-center text-sm">{t('admin:noMatchedDept')}</div>
               ) : (
                 filteredDepts.map(dept => {
                   const isSelected = String(dept.id) === selectedId
@@ -149,8 +149,8 @@ function DepartmentFilter({
                       style={{ background: isSelected ? 'var(--color-accent)' : undefined }}
                       onClick={() => handleSelect(String(dept.id))}
                     >
-                      <span className="text-sm flex-1 truncate" style={{ color: isSelected ? '#0f0f0f' : '#606060', fontWeight: isSelected ? 500 : 400 }}>{dept.name}</span>
-                      <span className="text-xs tabular-nums" style={{ color: '#909090' }}>{dept.user_count || 0}</span>
+                      <span className={`text-sm flex-1 truncate ${isSelected ? 'text-foreground' : 'app-text-secondary'}`} style={{ fontWeight: isSelected ? 500 : 400 }}>{dept.name}</span>
+                      <span className="app-text-tertiary text-xs tabular-nums">{dept.user_count || 0}</span>
                     </div>
                   )
                 })
@@ -164,7 +164,7 @@ function DepartmentFilter({
                   onClick={() => handleSelect('')}
                 >
                   <span className="w-4" />
-                  <span className="text-sm flex-1" style={{ color: !selectedId ? '#0f0f0f' : '#606060', fontWeight: !selectedId ? 500 : 400 }}>{t('admin:allDepartments')}</span>
+                  <span className={`text-sm flex-1 ${!selectedId ? 'text-foreground' : 'app-text-secondary'}`} style={{ fontWeight: !selectedId ? 500 : 400 }}>{t('admin:allDepartments')}</span>
                 </div>
                 {tree.map(node => renderNode(node))}
               </>

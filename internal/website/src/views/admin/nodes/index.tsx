@@ -8,19 +8,19 @@ import { useTranslation } from "react-i18next";
 import { listAdminNodes } from "src/api/adminNodes";
 import type { AdminServiceNode } from "src/types/adminNode";
 
-const tableBorder = "1px solid #e5e5e5";
+const tableBorder = "1px solid var(--surface-border)";
 const thStyle: React.CSSProperties = {
-  background: "#f9f9f9",
+  background: "var(--surface-muted)",
   padding: "12px 16px",
   textAlign: "left",
-  color: "#606060",
+  color: "var(--text-secondary)",
   fontWeight: 500,
   whiteSpace: "nowrap",
   borderBottom: tableBorder,
 };
 const tdStyle: React.CSSProperties = {
   padding: "12px 16px",
-  color: "#606060",
+  color: "var(--text-secondary)",
   whiteSpace: "nowrap",
   borderTop: tableBorder,
   verticalAlign: "top",
@@ -65,7 +65,7 @@ function NodeTable({
 }) {
   if (items.length === 0) {
     return (
-      <div className="py-10 text-sm text-center" style={{ color: "#909090" }}>
+        <div className="app-text-tertiary py-10 text-sm text-center">
         {emptyText}
       </div>
     );
@@ -93,10 +93,10 @@ function NodeTable({
             return (
               <tr key={item.id}>
                 <td style={tdStyle}>
-                  <div className="font-medium" style={{ color: "#0f0f0f" }}>
+                  <div className="font-medium text-foreground">
                     {item.display_name || item.node_id}
                   </div>
-                  <div className="text-xs mt-1" style={{ color: "#909090" }}>
+                  <div className="app-text-tertiary text-xs mt-1">
                     {item.node_id}
                   </div>
                 </td>
@@ -110,42 +110,42 @@ function NodeTable({
                   </span>
                 </td>
                 <td style={tdStyle}>
-                  <div style={{ color: "#0f0f0f" }}>{item.version || "-"}</div>
-                  <div className="text-xs mt-1" style={{ color: "#909090" }}>
+                  <div className="text-foreground">{item.version || "-"}</div>
+                  <div className="app-text-tertiary text-xs mt-1">
                     {item.git_commit || "-"}
                   </div>
                 </td>
                 <td style={tdStyle}>
-                  <div style={{ color: "#0f0f0f" }}>
+                  <div className="text-foreground">
                     {formatUptime(item.uptime_seconds)}
                   </div>
-                  <div className="text-xs mt-1" style={{ color: "#909090" }}>
+                  <div className="app-text-tertiary text-xs mt-1">
                     {item.started_at
                       ? dayjs(item.started_at).format("YYYY-MM-DD HH:mm:ss")
                       : "-"}
                   </div>
                 </td>
                 <td style={tdStyle}>
-                  <div style={{ color: "#0f0f0f" }}>
+                  <div className="text-foreground">
                     {dayjs(item.last_heartbeat_at).format(
                       "YYYY-MM-DD HH:mm:ss",
                     )}
                   </div>
-                  <div className="text-xs mt-1" style={{ color: "#909090" }}>
+                  <div className="app-text-tertiary text-xs mt-1">
                     {formatRelativeTime(item.last_heartbeat_at)}
                   </div>
                 </td>
                 <td style={tdStyle}>
-                  <div style={{ color: "#0f0f0f" }}>{item.hostname || "-"}</div>
-                  <div className="text-xs mt-1" style={{ color: "#909090" }}>
+                  <div className="text-foreground">{item.hostname || "-"}</div>
+                  <div className="app-text-tertiary text-xs mt-1">
                     {item.instance_ip || "-"}
                   </div>
                 </td>
                 <td style={tdStyle}>
-                  <div style={{ color: "#0f0f0f" }}>
+                  <div className="text-foreground">
                     {item.environment || "-"}
                   </div>
-                  <div className="text-xs mt-1" style={{ color: "#909090" }}>
+                  <div className="app-text-tertiary text-xs mt-1">
                     {[item.region, item.zone].filter(Boolean).join(" / ") ||
                       "-"}
                   </div>
@@ -157,7 +157,7 @@ function NodeTable({
                         <span
                           key={capability}
                           className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
-                          style={{ background: "#f3f4f6", color: "#374151" }}
+                          style={{ background: "var(--surface-muted)", color: "var(--text-secondary)" }}
                         >
                           {capability}
                         </span>
@@ -193,8 +193,7 @@ function AdminNodes() {
       <div className="flex items-center justify-center h-64">
         <Loader2
           size={32}
-          className="animate-spin"
-          style={{ color: "#909090" }}
+          className="app-text-tertiary animate-spin"
         />
       </div>
     );
@@ -205,23 +204,20 @@ function AdminNodes() {
   const offlineItems = data?.offline_items || [];
 
   return (
-    <div className="space-y-6">
+    <div className="app-surface space-y-6">
       <div
-        className="bg-white rounded-xl p-6"
-        style={{ border: "1px solid #e5e5e5" }}
+        className="app-surface-elevated rounded-xl p-6"
+        style={{ border: "1px solid var(--surface-border)" }}
       >
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Server size={20} style={{ color: "#0f0f0f" }} />
-              <h1
-                className="text-xl font-semibold"
-                style={{ color: "#0f0f0f" }}
-              >
+              <Server size={20} className="text-foreground" />
+              <h1 className="text-xl font-semibold text-foreground">
                 {t("admin:serviceNodes")}
               </h1>
             </div>
-            <p className="text-sm" style={{ color: "#606060" }}>
+            <p className="app-text-secondary text-sm">
               {t("admin:serviceNodesDesc")}
             </p>
           </div>
@@ -231,9 +227,9 @@ function AdminNodes() {
               onChange={(e) => setNodeType(e.target.value)}
               className="h-9 rounded-md border px-3 text-sm"
               style={{
-                borderColor: "#e5e5e5",
-                color: "#0f0f0f",
-                background: "#ffffff",
+                borderColor: "var(--surface-border)",
+                color: "var(--foreground)",
+                background: "var(--surface-elevated)",
               }}
             >
               <option value="">{t("admin:allNodeTypes")}</option>
@@ -258,10 +254,7 @@ function AdminNodes() {
         </div>
 
         {summary?.version_drift && (
-          <div
-            className="mt-4 rounded-lg px-4 py-3 text-sm"
-            style={{ background: "#fef3c7", color: "#92400e" }}
-          >
+          <div className="theme-warn-banner mt-4 rounded-lg px-4 py-3 text-sm">
             {t("admin:versionDriftWarning")}
           </div>
         )}
@@ -269,45 +262,45 @@ function AdminNodes() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
           <div
             className="rounded-xl p-4"
-            style={{ border: "1px solid #e5e5e5" }}
+            style={{ border: "1px solid var(--surface-border)" }}
           >
-            <div className="text-sm mb-1" style={{ color: "#606060" }}>
+            <div className="app-text-secondary text-sm mb-1">
               {t("admin:onlineNodes")}
             </div>
-            <div className="text-lg font-medium" style={{ color: "#0f0f0f" }}>
+            <div className="text-lg font-medium text-foreground">
               {summary?.online_count ?? 0}
             </div>
           </div>
           <div
             className="rounded-xl p-4"
-            style={{ border: "1px solid #e5e5e5" }}
+            style={{ border: "1px solid var(--surface-border)" }}
           >
-            <div className="text-sm mb-1" style={{ color: "#606060" }}>
+            <div className="app-text-secondary text-sm mb-1">
               {t("admin:offlineNodes")}
             </div>
-            <div className="text-lg font-medium" style={{ color: "#0f0f0f" }}>
+            <div className="text-lg font-medium text-foreground">
               {summary?.offline_count ?? 0}
             </div>
           </div>
           <div
             className="rounded-xl p-4"
-            style={{ border: "1px solid #e5e5e5" }}
+            style={{ border: "1px solid var(--surface-border)" }}
           >
-            <div className="text-sm mb-1" style={{ color: "#606060" }}>
+            <div className="app-text-secondary text-sm mb-1">
               {t("admin:webNode")}
             </div>
-            <div className="text-lg font-medium" style={{ color: "#0f0f0f" }}>
+            <div className="text-lg font-medium text-foreground">
               {summary?.type_counts?.web ?? 0}
             </div>
           </div>
           <div
             className="rounded-xl p-4"
-            style={{ border: "1px solid #e5e5e5" }}
+            style={{ border: "1px solid var(--surface-border)" }}
           >
-            <div className="text-sm mb-1" style={{ color: "#606060" }}>
+            <div className="app-text-secondary text-sm mb-1">
               {t("admin:workerAndScheduler")}
             </div>
-            <div className="text-lg font-medium" style={{ color: "#0f0f0f" }}>
+            <div className="text-lg font-medium text-foreground">
               {(summary?.type_counts?.worker ?? 0) +
                 (summary?.type_counts?.scheduler ?? 0)}
             </div>
@@ -316,14 +309,14 @@ function AdminNodes() {
       </div>
 
       <div
-        className="bg-white rounded-xl p-6"
-        style={{ border: "1px solid #e5e5e5" }}
+        className="app-surface-elevated rounded-xl p-6"
+        style={{ border: "1px solid var(--surface-border)" }}
       >
         <div className="flex items-center justify-between gap-3 mb-4">
-          <h2 className="text-base font-medium" style={{ color: "#0f0f0f" }}>
+          <h2 className="text-base font-medium text-foreground">
             {t("admin:onlineNodes")}
           </h2>
-          <span className="text-sm" style={{ color: "#606060" }}>
+          <span className="app-text-secondary text-sm">
             {t("admin:nodeCount", { count: onlineItems.length })}
           </span>
         </div>
@@ -335,14 +328,14 @@ function AdminNodes() {
       </div>
 
       <div
-        className="bg-white rounded-xl p-6"
-        style={{ border: "1px solid #e5e5e5" }}
+        className="app-surface-elevated rounded-xl p-6"
+        style={{ border: "1px solid var(--surface-border)" }}
       >
         <div className="flex items-center justify-between gap-3 mb-4">
-          <h2 className="text-base font-medium" style={{ color: "#0f0f0f" }}>
+          <h2 className="text-base font-medium text-foreground">
             {t("admin:offlineNodes")}
           </h2>
-          <span className="text-sm" style={{ color: "#606060" }}>
+          <span className="app-text-secondary text-sm">
             {t("admin:nodeCount", { count: offlineItems.length })}
           </span>
         </div>

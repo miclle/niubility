@@ -40,17 +40,17 @@ function DeliveryCard({ settingsMap, reload }: DeliveryCardProps) {
   }
 
   return (
-    <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
+    <div className="app-surface-elevated rounded-xl p-6 border app-border">
       <div className="flex items-center gap-2 mb-6">
-        <HardDrive size={20} style={{ color: '#0f0f0f' }} />
-        <h3 className="font-medium" style={{ color: '#0f0f0f' }}>{t('admin:resourceDistributionConfig')}</h3>
+        <HardDrive size={20} className="text-foreground" />
+        <h3 className="font-medium text-foreground">{t('admin:resourceDistributionConfig')}</h3>
       </div>
 
       <SettingsFeedback success={success} error={error} />
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:distributionMethod')}</label>
+          <label className="block text-sm font-medium mb-1 text-foreground">{t('admin:distributionMethod')}</label>
           <Select
             value={deliveryForm.provider}
             onValueChange={(value) => value && setDeliveryForm({ ...deliveryForm, provider: value })}
@@ -65,21 +65,21 @@ function DeliveryCard({ settingsMap, reload }: DeliveryCardProps) {
               <SelectItem value="qiniu">{t('admin:qiniuDistribution')}</SelectItem>
             </SelectContent>
           </Select>
-          <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:distributionMethodDesc')}</p>
+          <p className="app-text-tertiary text-xs mt-1">{t('admin:distributionMethodDesc')}</p>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:distributionDomain')}</label>
+          <label className="block text-sm font-medium mb-1 text-foreground">{t('admin:distributionDomain')}</label>
           <Input
             placeholder={t('admin:distributionDomainPlaceholder')}
             value={deliveryForm.domain}
             onChange={(e) => setDeliveryForm({ ...deliveryForm, domain: e.target.value })}
           />
-          <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:distributionDomainExample')}</p>
-          <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:distributionDomainHelp')}</p>
+          <p className="app-text-tertiary text-xs mt-1">{t('admin:distributionDomainExample')}</p>
+          <p className="app-text-tertiary text-xs mt-1">{t('admin:distributionDomainHelp')}</p>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:privateAccess')}</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">{t('admin:privateAccess')}</label>
             <Select
               value={deliveryForm.private_enabled}
               onValueChange={(value) => value && setDeliveryForm({ ...deliveryForm, private_enabled: value })}
@@ -94,21 +94,21 @@ function DeliveryCard({ settingsMap, reload }: DeliveryCardProps) {
                 <SelectItem value="false">{t('admin:disablePrivateAccess')}</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:privateAccessHelp')}</p>
+            <p className="app-text-tertiary text-xs mt-1">{t('admin:privateAccessHelp')}</p>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:urlTTLSeconds')}</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">{t('admin:urlTTLSeconds')}</label>
             <Input
               placeholder={t('admin:urlTTLSecondsPlaceholder')}
               value={deliveryForm.url_ttl_seconds}
               onChange={(e) => setDeliveryForm({ ...deliveryForm, url_ttl_seconds: e.target.value })}
             />
-            <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:urlTTLSecondsExample')}</p>
-            <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:urlTTLSecondsHelp')}</p>
+            <p className="app-text-tertiary text-xs mt-1">{t('admin:urlTTLSecondsExample')}</p>
+            <p className="app-text-tertiary text-xs mt-1">{t('admin:urlTTLSecondsHelp')}</p>
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:styleMode')}</label>
+          <label className="block text-sm font-medium mb-1 text-foreground">{t('admin:styleMode')}</label>
           <Select
             value={deliveryForm.style_mode}
             onValueChange={(value) => value && setDeliveryForm({ ...deliveryForm, style_mode: value })}
@@ -130,10 +130,10 @@ function DeliveryCard({ settingsMap, reload }: DeliveryCardProps) {
               <SelectItem value="path_suffix">{t('admin:styleModePathSuffix')}</SelectItem>
             </SelectContent>
           </Select>
-          <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:styleModeHelp')}</p>
+          <p className="app-text-tertiary text-xs mt-1">{t('admin:styleModeHelp')}</p>
         </div>
       </div>
-      <p className="mt-4 text-xs" style={{ color: '#606060' }}>
+      <p className="app-text-secondary mt-4 text-xs">
         {t('admin:privateDistributionNote')}
       </p>
 

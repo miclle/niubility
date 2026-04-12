@@ -135,7 +135,7 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
   }
 
   if (loading) {
-    return <div className="text-center py-20" style={{ color: '#909090' }}>{t('loading')}</div>
+    return <div className="app-text-tertiary text-center py-20">{t('loading')}</div>
   }
 
   return (
@@ -150,8 +150,8 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
           onInput={(e) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px' }}
           required
           rows={1}
-          className="w-full text-3xl font-bold border-0 outline-none placeholder:text-zinc-300 bg-transparent resize-none overflow-hidden"
-          style={{ color: '#0f0f0f', lineHeight: 1.3 }}
+          className="w-full text-3xl font-bold border-0 outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-500 bg-transparent resize-none overflow-hidden text-foreground"
+          style={{ lineHeight: 1.3 }}
         />
       </div>
 
@@ -169,13 +169,13 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
       <DocumentUploadSection documents={documents} docInputRef={docInputRef} onUpload={handleDocumentUpload} onChange={handleDocumentChange} onRemove={handleRemoveDocument} />
 
       {/* Meta fields in a compact section */}
-      <div className="bg-white rounded-xl p-5 space-y-4" style={{ border: '1px solid #e5e5e5' }}>
-        <h3 className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('articleSettings')}</h3>
+      <div className="app-surface-elevated border app-border rounded-xl p-5 space-y-4">
+        <h3 className="text-sm font-medium text-foreground">{t('articleSettings')}</h3>
 
         {/* Category */}
         {categories.length > 0 && (
           <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('category')} *</label>
+            <label className="app-text-secondary block text-sm font-medium mb-1.5">{t('category')} *</label>
             <Select value={category} onValueChange={(val) => val && setCategory(val)}>
               <SelectTrigger className="w-full">
                 <span className="flex-1 text-left">
@@ -203,7 +203,7 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
               label={t('authorOrSpeaker')}
             />
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{t('authorBio')}</label>
+              <label className="app-text-secondary block text-sm font-medium mb-1.5">{t('authorBio')}</label>
               <Input placeholder={t('speakerBioPlaceholder')} value={speakerBio} onChange={(e) => setSpeakerBio(e.target.value)} />
             </div>
           </div>

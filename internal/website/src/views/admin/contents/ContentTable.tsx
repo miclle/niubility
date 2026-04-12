@@ -29,14 +29,14 @@ const limit = 20
 const thStyle: React.CSSProperties = {
   padding: '12px 16px',
   textAlign: 'left',
-  color: '#606060',
+  color: 'var(--text-secondary)',
   fontWeight: 500,
   whiteSpace: 'nowrap',
 }
 
 const tdStyle: React.CSSProperties = {
   padding: '12px 16px',
-  color: '#606060',
+  color: 'var(--text-secondary)',
   whiteSpace: 'nowrap',
   verticalAlign: 'top',
 }
@@ -81,10 +81,10 @@ function ContentTable({ type, title }: ContentTableProps) {
   }
 
   return (
-    <div>
-      <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>{title}</h1>
+    <div className="app-surface">
+      <h1 className="text-xl font-semibold mb-6 text-foreground">{title}</h1>
 
-      <div className="bg-white rounded-xl overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
+      <div className="app-surface-elevated rounded-xl overflow-hidden border app-border">
         <div className="overflow-x-auto">
           <table className="w-full table-fixed min-w-[1380px]">
             <colgroup>
@@ -101,7 +101,7 @@ function ContentTable({ type, title }: ContentTableProps) {
               <col style={{ width: '110px' }} />
             </colgroup>
             <thead>
-              <tr style={{ background: '#f9f9f9' }}>
+              <tr style={{ background: 'var(--surface-muted)' }}>
                 <th style={thStyle}>{t('admin:title')}</th>
                 <th style={thStyle}>{t('admin:type')}</th>
                 <th style={thStyle}>{t('admin:status')}</th>
@@ -118,7 +118,7 @@ function ContentTable({ type, title }: ContentTableProps) {
             <tbody>
               {contents.length === 0 && !loading ? (
                 <tr>
-                  <td colSpan={type === 'video' ? 11 : 10} className="text-center py-8" style={{ color: '#909090' }}>
+                  <td colSpan={type === 'video' ? 11 : 10} className="app-text-tertiary text-center py-8">
                     {t('admin:noContent')}
                   </td>
                 </tr>
@@ -127,24 +127,24 @@ function ContentTable({ type, title }: ContentTableProps) {
                   const coverUrl = getStyledContentCardCover(content, siteConfig)
                   const hasSpeakerInfo = Boolean(content.speaker || content.speaker_name)
                   return (
-                    <tr key={content.id} style={{ borderTop: '1px solid #e5e5e5' }}>
+                    <tr key={content.id} style={{ borderTop: '1px solid var(--surface-border)' }}>
                       <td style={{ ...tdStyle, whiteSpace: 'normal' }}>
-                        <Link to={contentDetailPath(content)} target="_blank" className="flex items-center gap-3 hover:underline" style={{ color: '#0f0f0f' }}>
-                          <div className="w-[72px] h-[40px] rounded overflow-hidden flex-shrink-0" style={{ background: '#f2f2f2' }}>
+                        <Link to={contentDetailPath(content)} target="_blank" className="flex items-center gap-3 hover:underline" style={{ color: 'var(--foreground)' }}>
+                          <div className="app-surface-muted w-[72px] h-[40px] rounded overflow-hidden flex-shrink-0">
                             {coverUrl ? (
                               <img src={coverUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-xs" style={{ color: '#909090' }}>{t('admin:noCover')}</div>
+                              <div className="app-text-tertiary w-full h-full flex items-center justify-center text-xs">{t('admin:noCover')}</div>
                             )}
                           </div>
                           <div className="min-w-0 flex-1 overflow-hidden">
                             <div className="font-medium line-clamp-1">{content.title}</div>
-                            {content.summary && <div className="text-xs line-clamp-1" style={{ color: '#909090' }}>{toPlainTextPreview(content.summary)}</div>}
+                            {content.summary && <div className="app-text-tertiary text-xs line-clamp-1">{toPlainTextPreview(content.summary)}</div>}
                           </div>
                         </Link>
                       </td>
                       <td style={tdStyle}>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs" style={{ background: '#f2f2f2', color: '#606060' }}>
+                        <span className="app-surface-muted inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs" style={{ color: 'var(--text-secondary)' }}>
                           {typeIcons[content.type]}
                           {tc(content.type)}
                         </span>
@@ -155,7 +155,7 @@ function ContentTable({ type, title }: ContentTableProps) {
                         </span>
                       </td>
                       <td style={tdStyle}>
-                        <span className="px-2 py-0.5 rounded text-xs" style={{ background: '#f2f2f2', color: '#606060' }}>
+                        <span className="app-surface-muted px-2 py-0.5 rounded text-xs" style={{ color: 'var(--text-secondary)' }}>
                           {categoryLabels[content.category] || content.category}
                         </span>
                       </td>
@@ -182,7 +182,7 @@ function ContentTable({ type, title }: ContentTableProps) {
                                   <div
                                     className="text-xs overflow-hidden"
                                     style={{
-                                      color: '#909090',
+                                      color: 'var(--text-tertiary)',
                                       display: '-webkit-box',
                                       WebkitLineClamp: 2,
                                       WebkitBoxOrient: 'vertical',
@@ -213,7 +213,7 @@ function ContentTable({ type, title }: ContentTableProps) {
                       <td style={tdStyle}>
                         <div className="flex gap-2">
                           <Link to={contentEditPath(content)}>
-                            <Button variant="ghost" style={{ color: '#606060' }}>
+                            <Button variant="ghost" style={{ color: 'var(--text-secondary)' }}>
                               <Pencil size={14} />
                             </Button>
                           </Link>
@@ -251,7 +251,7 @@ function ContentTable({ type, title }: ContentTableProps) {
         </div>
       </div>
 
-      <div ref={loaderRef} className="py-4 text-center text-sm" style={{ color: '#909090' }}>
+      <div ref={loaderRef} className="app-text-tertiary py-4 text-center text-sm">
         {loading ? tc('common:loading') : !hasNextPage && contents.length > 0 ? tc('common:noMoreContent') : ''}
       </div>
     </div>

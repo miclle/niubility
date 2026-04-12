@@ -71,8 +71,8 @@ export default function ProfileContents() {
         return (
           <div
             key={content.id}
-            className="rounded-3xl bg-white overflow-hidden"
-            style={{ border: '1px solid #e5e5e5', boxShadow: '0 18px 40px rgba(15,15,15,0.04)' }}
+            className="app-surface-elevated rounded-3xl overflow-hidden"
+            style={{ border: '1px solid var(--surface-border)', boxShadow: '0 18px 40px var(--surface-shadow)' }}
           >
             <div className="flex flex-col gap-4 p-5 lg:flex-row">
               <Link to={contentDetailPath(content)} className="flex-shrink-0 no-underline" style={{ color: 'inherit' }}>
@@ -82,10 +82,10 @@ export default function ProfileContents() {
               </Link>
               <div className="flex-1 min-w-0">
                 <Link to={contentDetailPath(content)} className="no-underline" style={{ color: 'inherit' }}>
-                  <h3 className="text-xl font-semibold mb-2 line-clamp-2" style={{ color: '#0f0f0f', lineHeight: 1.35 }}>{content.title}</h3>
+                  <h3 className="text-xl font-semibold mb-2 line-clamp-2 text-foreground" style={{ lineHeight: 1.35 }}>{content.title}</h3>
                 </Link>
                 {content.summary && (
-                  <p className="text-sm line-clamp-2 mb-4" style={{ color: '#606060', lineHeight: 1.7 }}>{toPlainTextPreview(content.summary)}</p>
+                  <p className="app-text-secondary text-sm line-clamp-2 mb-4" style={{ lineHeight: 1.7 }}>{toPlainTextPreview(content.summary)}</p>
                 )}
                 <div className="space-y-2.5">
                   {audioItems.map((audio, index) => {
@@ -94,20 +94,20 @@ export default function ProfileContents() {
                       <Link
                         key={audio.id}
                         to={episodePath}
-                        className="flex items-center gap-3 px-3.5 py-3 rounded-2xl no-underline transition-colors hover:bg-black/5"
-                        style={{ color: 'inherit', background: '#fafafa', border: '1px solid #f0f0f0' }}
+                        className="flex items-center gap-3 px-3.5 py-3 rounded-2xl no-underline transition-colors hover:bg-[var(--surface-hover)]"
+                        style={{ color: 'inherit', background: 'var(--surface-muted)', border: '1px solid var(--surface-border)' }}
                       >
                         <div
                           className="flex items-center justify-center flex-shrink-0 rounded-full text-xs font-semibold"
-                          style={{ width: 28, height: 28, background: 'rgba(6,95,212,0.08)', color: '#065fd4' }}
+                          style={{ width: 28, height: 28, background: 'var(--brand-soft)', color: 'var(--brand)' }}
                         >
                           {index + 1}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium truncate" style={{ color: '#0f0f0f' }}>
+                          <div className="text-sm font-medium truncate text-foreground">
                             {audio.title || audio.filename || `${t('common:podcast')} ${index + 1}`}
                           </div>
-                          <div className="text-xs" style={{ color: '#909090' }}>
+                          <div className="app-text-tertiary text-xs">
                             {audio.file_size > 0 ? formatFileSize(audio.file_size) : '-'}
                           </div>
                         </div>
@@ -116,7 +116,7 @@ export default function ProfileContents() {
                     )
                   })}
                   {audioItems.length === 0 && (
-                    <div className="px-3 py-3 rounded-2xl text-sm" style={{ color: '#909090', background: '#fafafa', border: '1px solid #f0f0f0' }}>
+                    <div className="app-text-tertiary px-3 py-3 rounded-2xl text-sm" style={{ background: 'var(--surface-muted)', border: '1px solid var(--surface-border)' }}>
                       {t('common:noContent')}
                     </div>
                   )}
@@ -132,7 +132,7 @@ export default function ProfileContents() {
   return (
     <>
       {contents.length === 0 && !loading ? (
-        <div className="text-center py-20" style={{ color: '#606060' }}>
+        <div className="app-text-secondary text-center py-20">
           {t('common:noContent')}
         </div>
       ) : (
@@ -144,7 +144,7 @@ export default function ProfileContents() {
           </div>
         )
       )}
-      <div ref={loadMoreRef} className="text-center py-8" style={{ color: '#606060' }}>
+      <div ref={loadMoreRef} className="app-text-secondary text-center py-8">
         {loading && t('common:loading')}
         {!hasNextPage && contents.length > 0 && t('common:noMoreContent')}
       </div>

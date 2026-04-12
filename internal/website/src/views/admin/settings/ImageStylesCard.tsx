@@ -53,17 +53,17 @@ function ImageStylesCard({ settingsMap, reload }: ImageStylesCardProps) {
   }
 
   return (
-    <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
+    <div className="app-surface-elevated rounded-xl p-6 border app-border">
       <div className="flex items-center gap-2 mb-6">
-        <HardDrive size={20} style={{ color: '#0f0f0f' }} />
-        <h3 className="font-medium" style={{ color: '#0f0f0f' }}>{t('admin:imageStyles')}</h3>
+        <HardDrive size={20} className="text-foreground" />
+        <h3 className="font-medium text-foreground">{t('admin:imageStyles')}</h3>
       </div>
 
       <SettingsFeedback success={success} error={error} />
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+          <label className="block text-sm font-medium mb-1 text-foreground">
             {t('admin:videoCardImageStyle')}
           </label>
           <Input
@@ -71,10 +71,10 @@ function ImageStylesCard({ settingsMap, reload }: ImageStylesCardProps) {
             value={videoCardImageStyle}
             onChange={(e) => setVideoCardImageStyle(e.target.value)}
           />
-          <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:videoCardImageStyleExample')}</p>
+          <p className="app-text-tertiary text-xs mt-1">{t('admin:videoCardImageStyleExample')}</p>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+          <label className="block text-sm font-medium mb-1 text-foreground">
             {t('admin:galleryCardImageStyle')}
           </label>
           <Input
@@ -82,10 +82,10 @@ function ImageStylesCard({ settingsMap, reload }: ImageStylesCardProps) {
             value={galleryCardImageStyle}
             onChange={(e) => setGalleryCardImageStyle(e.target.value)}
           />
-          <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:galleryCardImageStyleExample')}</p>
+          <p className="app-text-tertiary text-xs mt-1">{t('admin:galleryCardImageStyleExample')}</p>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+          <label className="block text-sm font-medium mb-1 text-foreground">
             {t('admin:galleryOriginalImageStyle')}
           </label>
           <Input
@@ -93,10 +93,10 @@ function ImageStylesCard({ settingsMap, reload }: ImageStylesCardProps) {
             value={galleryOriginalImageStyle}
             onChange={(e) => setGalleryOriginalImageStyle(e.target.value)}
           />
-          <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:galleryOriginalImageStyleExample')}</p>
+          <p className="app-text-tertiary text-xs mt-1">{t('admin:galleryOriginalImageStyleExample')}</p>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+          <label className="block text-sm font-medium mb-1 text-foreground">
             {t('admin:galleryDetailImageStyle')}
           </label>
           <Input
@@ -104,10 +104,10 @@ function ImageStylesCard({ settingsMap, reload }: ImageStylesCardProps) {
             value={galleryDetailImageStyle}
             onChange={(e) => setGalleryDetailImageStyle(e.target.value)}
           />
-          <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:galleryDetailImageStyleExample')}</p>
+          <p className="app-text-tertiary text-xs mt-1">{t('admin:galleryDetailImageStyleExample')}</p>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+          <label className="block text-sm font-medium mb-1 text-foreground">
             {t('admin:avatarImageStyle')}
           </label>
           <Input
@@ -115,11 +115,11 @@ function ImageStylesCard({ settingsMap, reload }: ImageStylesCardProps) {
             value={avatarImageStyle}
             onChange={(e) => setAvatarImageStyle(e.target.value)}
           />
-          <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:avatarImageStyleExample')}</p>
+          <p className="app-text-tertiary text-xs mt-1">{t('admin:avatarImageStyleExample')}</p>
         </div>
       </div>
 
-      <p className="mt-4 text-xs" style={{ color: '#606060' }}>
+      <p className="app-text-secondary mt-4 text-xs">
         {t('admin:imageStyleHelp')}
       </p>
 

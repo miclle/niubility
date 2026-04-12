@@ -27,22 +27,20 @@ export function EmojiPicker({ active, onToggle, onSelect, pickerRef, iconSize = 
     <div className="relative" ref={active ? pickerRef : undefined}>
       <button
         type="button"
-        className="p-1.5 rounded-full hover:bg-black/5 transition-colors"
-        style={{ color: '#606060' }}
+        className="app-text-secondary p-1.5 rounded-full hover:bg-[var(--surface-hover)] transition-colors"
         onClick={onToggle}
       >
         <Smile size={iconSize} />
       </button>
       {active && (
         <div
-          className="absolute left-0 bottom-full mb-1 w-[280px] grid grid-cols-8 gap-0.5 p-2 rounded-lg shadow-lg border z-50"
-          style={{ background: '#fff', borderColor: '#e5e5e5' }}
+          className="app-surface-elevated absolute left-0 bottom-full mb-1 w-[280px] grid grid-cols-8 gap-0.5 p-2 rounded-lg shadow-lg border app-border z-50"
         >
           {COMMON_EMOJIS.map((emoji) => (
             <button
               key={emoji}
               type="button"
-              className="w-8 h-8 flex items-center justify-center rounded hover:bg-black/5 text-lg cursor-pointer"
+              className="w-8 h-8 flex items-center justify-center rounded hover:bg-[var(--surface-hover)] text-lg cursor-pointer"
               onClick={() => onSelect(emoji)}
             >
               {emoji}
@@ -99,7 +97,7 @@ function CommentInput({ currentUser, value, onChange, onSubmit, submitting, emoj
         <textarea
           rows={1}
           className="w-full border-b text-sm py-1 outline-none bg-transparent resize-none overflow-hidden"
-          style={{ borderColor: focused ? '#0f0f0f' : '#e5e5e5', color: '#0f0f0f' }}
+          style={{ borderColor: focused ? 'var(--foreground)' : 'var(--surface-border)', color: 'var(--foreground)' }}
           placeholder={t('comments:addComment')}
           value={value}
           onChange={(e) => { onChange(e.target.value); autoResize(e.target) }}
@@ -117,14 +115,14 @@ function CommentInput({ currentUser, value, onChange, onSubmit, submitting, emoj
             <div className="flex gap-2">
               <button
                 className="text-sm px-3 py-1.5 rounded-full"
-                style={{ color: '#606060' }}
+                style={{ color: 'var(--text-secondary)' }}
                 onClick={() => { onChange(''); setFocused(false) }}
               >
                 {t('comments:cancel')}
               </button>
               <button
                 className="text-sm px-3 py-1.5 rounded-full text-white disabled:opacity-50"
-                style={{ background: '#065fd4' }}
+                style={{ background: 'var(--brand)' }}
                 disabled={!value.trim() || submitting}
                 onClick={onSubmit}
               >

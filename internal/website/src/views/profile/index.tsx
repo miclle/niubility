@@ -63,8 +63,8 @@ export function FollowButton({ username, following: initialFollowing, onToggle }
       disabled={loading}
       className="px-4 py-1.5 rounded-full text-sm font-medium transition-colors cursor-pointer border"
       style={following
-        ? { background: 'transparent', color: '#606060', borderColor: '#e5e5e5' }
-        : { background: '#0f0f0f', color: '#ffffff', borderColor: '#0f0f0f' }
+        ? { background: 'transparent', color: 'var(--text-secondary)', borderColor: 'var(--surface-border)' }
+        : { background: 'var(--foreground)', color: 'var(--background)', borderColor: 'var(--foreground)' }
       }
     >
       {following ? t('profile:followed') : t('profile:follow')}
@@ -79,17 +79,17 @@ export function UserListItem({ user, currentUserID, isFollowingTab }: { user: Us
   const isMe = currentUserID === user.id
 
   return (
-    <div className="flex items-center gap-4 py-3 px-4 rounded-xl hover:bg-black/5 transition-colors cursor-pointer" onClick={() => navigate(`/@${user.username}`)}>
+    <div className="flex items-center gap-4 py-3 px-4 rounded-xl hover:bg-[var(--surface-hover)] transition-colors cursor-pointer" onClick={() => navigate(`/@${user.username}`)}>
       <Avatar style={{ width: 48, height: 48 }}>
         <SiteAvatarImage src={user.avatar} alt={user.name} />
         <AvatarFallback>{user.name?.charAt(0) || '?'}</AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">
-        <div className="font-medium text-sm" style={{ color: '#0f0f0f' }}>{user.name || user.username}</div>
-        <div className="text-xs" style={{ color: '#606060' }}>@{user.username}</div>
-        {user.bio && <div className="text-xs mt-0.5 truncate" style={{ color: '#606060' }}>{user.bio}</div>}
+        <div className="font-medium text-sm text-foreground">{user.name || user.username}</div>
+        <div className="app-text-secondary text-xs">@{user.username}</div>
+        {user.bio && <div className="app-text-secondary text-xs mt-0.5 truncate">{user.bio}</div>}
       </div>
-      <div className="flex items-center gap-2 text-xs" style={{ color: '#606060' }}>
+      <div className="app-text-secondary flex items-center gap-2 text-xs">
         <span>{t('profile:followers', { count: user.follower_count })}</span>
         {!isMe && (
           <FollowButton username={user.username} following={isFollowingTab} />
@@ -170,7 +170,7 @@ export default function ProfileLayout() {
   return (
     <>
       {/* Profile header */}
-      <div className="mx-auto px-6 pt-8 pb-4" style={{ maxWidth: 1284 }}>
+      <div className="app-surface mx-auto px-6 pt-8 pb-4" style={{ maxWidth: 1284 }}>
         <div className="flex items-start gap-6">
           {/* Large avatar */}
           <Avatar style={{ width: 160, height: 160 }}>
@@ -181,21 +181,21 @@ export default function ProfileLayout() {
           {/* User info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-4">
-              <h1 className="font-bold" style={{ color: '#0f0f0f', fontSize: 36 }}>{user.name}</h1>
+              <h1 className="font-bold text-foreground" style={{ fontSize: 36 }}>{user.name}</h1>
               {!isOwnProfile && currentUser && (
                 <FollowButton username={user.username} following={following} onToggle={handleProfileFollowToggle} />
               )}
             </div>
-            <div className="text-sm mt-1" style={{ color: '#606060' }}>
+            <div className="app-text-secondary text-sm mt-1">
               @{user.username}
             </div>
 
             {user.bio && (
-              <p className="text-sm mt-3" style={{ color: '#0f0f0f' }}>{user.bio}</p>
+              <p className="text-sm mt-3 text-foreground">{user.bio}</p>
             )}
 
             {/* Stats & join date */}
-            <div className="flex items-center gap-4 mt-3 text-sm flex-wrap" style={{ color: '#606060' }}>
+            <div className="app-text-secondary flex items-center gap-4 mt-3 text-sm flex-wrap">
               <span className="flex items-center gap-1">
                 <CalendarDays size={14} />
                 {dayjs(user.created_at).format(t('common:dateFormat'))}{t('common:joined')}
@@ -208,17 +208,17 @@ export default function ProfileLayout() {
               )}
               <button
                 className="flex items-center gap-1 hover:underline cursor-pointer bg-transparent border-0 p-0 text-sm"
-                style={{ color: '#606060' }}
+                style={{ color: 'var(--text-secondary)' }}
                 onClick={() => navigate(`${basePath}/following`)}
               >
-                <span style={{ color: '#0f0f0f', fontWeight: 600 }}>{user.following_count}</span> {t('profile:tabFollowing')}
+                <span style={{ color: 'var(--foreground)', fontWeight: 600 }}>{user.following_count}</span> {t('profile:tabFollowing')}
               </button>
               <button
                 className="flex items-center gap-1 hover:underline cursor-pointer bg-transparent border-0 p-0 text-sm"
-                style={{ color: '#606060' }}
+                style={{ color: 'var(--text-secondary)' }}
                 onClick={() => navigate(`${basePath}/followers`)}
               >
-                <span style={{ color: '#0f0f0f', fontWeight: 600 }}>{user.follower_count}</span> {t('profile:tabFollowers')}
+                <span style={{ color: 'var(--foreground)', fontWeight: 600 }}>{user.follower_count}</span> {t('profile:tabFollowers')}
               </button>
               <span className="flex items-center gap-1">
                 <FileText size={14} />
@@ -245,8 +245,7 @@ export default function ProfileLayout() {
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-1.5 rounded-full hover:bg-black/5 transition-colors"
-                    style={{ color: '#606060' }}
+                    className="app-text-secondary p-1.5 rounded-full hover:bg-[var(--surface-hover)] transition-colors"
                     title={key}
                   >
                     <Icon size={18} />
@@ -259,7 +258,7 @@ export default function ProfileLayout() {
       </div>
 
       {/* Tabs — full-width border, sticky below top nav */}
-      <div className="sticky top-14 z-40 border-b bg-white" style={{ borderColor: '#e5e5e5' }}>
+      <div className="app-surface sticky top-14 z-40 border-b app-border">
         <div className="mx-auto flex gap-1 px-6" style={{ maxWidth: 1284 }}>
           {profileTabs.map((tab) => (
             <NavLink
@@ -268,8 +267,8 @@ export default function ProfileLayout() {
               end={!tab.path}
               className="flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors no-underline"
               style={({ isActive }) => ({
-                borderColor: isActive ? '#0f0f0f' : 'transparent',
-                color: isActive ? '#0f0f0f' : '#606060',
+                borderColor: isActive ? 'var(--foreground)' : 'transparent',
+                color: isActive ? 'var(--foreground)' : 'var(--text-secondary)',
                 background: 'none',
                 cursor: 'pointer',
               })}
@@ -282,7 +281,7 @@ export default function ProfileLayout() {
       </div>
 
       {/* Child route content */}
-      <div className="mx-auto p-6" style={{ maxWidth: 1284 }}>
+      <div className="app-surface mx-auto p-6" style={{ maxWidth: 1284 }}>
         <Outlet context={{ profile, setProfile, currentUser: currentUser ?? undefined } satisfies ProfileContext} />
       </div>
     </>

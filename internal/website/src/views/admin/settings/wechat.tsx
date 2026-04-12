@@ -66,20 +66,20 @@ function SettingsWechat() {
   if (loading) return <SettingsLoading />
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>{t('admin:wechatConfig')}</h1>
+    <div className="app-surface space-y-6">
+      <h1 className="text-xl font-semibold text-foreground">{t('admin:wechatConfig')}</h1>
 
       <SettingsFeedback success={success} error={error} />
 
-      <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
+      <div className="app-surface-elevated rounded-xl p-6 border app-border">
         <div className="flex items-center gap-2 mb-6">
-          <Settings size={20} style={{ color: '#0f0f0f' }} />
-          <h3 className="font-medium" style={{ color: '#0f0f0f' }}>{t('admin:wechatConfig')}</h3>
+          <Settings size={20} className="text-foreground" />
+          <h3 className="font-medium text-foreground">{t('admin:wechatConfig')}</h3>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:corpID')}</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">{t('admin:corpID')}</label>
             <Input
               placeholder={t('admin:corpIDPlaceholder')}
               value={wechatForm.corp_id}
@@ -87,7 +87,7 @@ function SettingsWechat() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:appAgentID')}</label>
+            <label className="block text-sm font-medium mb-1 text-foreground">{t('admin:appAgentID')}</label>
             <Input
               placeholder={t('admin:appAgentIDPlaceholder')}
               value={wechatForm.app_agentid}
@@ -95,10 +95,10 @@ function SettingsWechat() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+            <label className="block text-sm font-medium mb-1 text-foreground">
               {t('admin:appSecret')}
               {hasExistingWechatSecret && (
-                <span className="ml-2 text-xs" style={{ color: '#166534' }}>{t('admin:synced')}</span>
+                <span className="ml-2 text-xs text-emerald-600 dark:text-emerald-400">{t('admin:synced')}</span>
               )}
             </label>
             <Input
@@ -113,7 +113,7 @@ function SettingsWechat() {
 
       <SaveButton saving={saving} onClick={handleSave} />
 
-      <div className="p-4 rounded-xl" style={{ background: '#f9f9f9', border: '1px solid #e5e5e5' }}>
+      <div className="app-surface-muted p-4 rounded-xl border app-border">
         <div className="flex items-center gap-2">
           <Shield size={14} style={{ color: '#166534' }} />
           <span className="text-xs" style={{ color: '#166534' }}>{t('admin:sensitiveInfoNote')}</span>
@@ -121,35 +121,35 @@ function SettingsWechat() {
       </div>
 
       {/* WeChat Sync Section */}
-      <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
+      <div className="app-surface-elevated rounded-xl p-6 border app-border">
         <div className="flex items-center gap-2 mb-4">
-          <RefreshCw size={20} style={{ color: '#0f0f0f' }} />
-          <h3 className="font-medium" style={{ color: '#0f0f0f' }}>{t('admin:wechatSync')}</h3>
+          <RefreshCw size={20} className="text-foreground" />
+          <h3 className="font-medium text-foreground">{t('admin:wechatSync')}</h3>
         </div>
 
-        <p className="text-sm mb-4" style={{ color: '#606060' }}>
+        <p className="app-text-secondary text-sm mb-4">
           {t('admin:wechatSyncDesc')}
         </p>
 
         {/* Sync result */}
         {syncResult && (
-          <div className="mb-4 p-4 rounded-lg" style={{ background: syncResult.users_failed > 0 ? '#fef3c7' : '#dcfce7' }}>
+          <div className={`mb-4 p-4 rounded-lg ${syncResult.users_failed > 0 ? 'theme-warn-banner' : 'theme-success-banner'}`}>
             <div className="flex items-center gap-2 mb-3">
-              <CheckCircle size={16} style={{ color: syncResult.users_failed > 0 ? '#92400e' : '#166534' }} />
-              <span className="text-sm font-medium" style={{ color: syncResult.users_failed > 0 ? '#92400e' : '#166534' }}>
+              <CheckCircle size={16} />
+              <span className="text-sm font-medium">
                 {t('admin:syncComplete')}
               </span>
             </div>
             <div className="grid grid-cols-3 gap-4 ml-6">
               <div className="flex items-center gap-2">
-                <Building2 size={14} style={{ color: '#606060' }} />
-                <span className="text-sm" style={{ color: '#606060' }}>
-                  {t('admin:syncDeptCount')}: <span className="font-medium" style={{ color: '#0f0f0f' }}>{syncResult.departments_synced}</span>
+                <Building2 size={14} className="app-text-secondary" />
+                <span className="app-text-secondary text-sm">
+                  {t('admin:syncDeptCount')}: <span className="font-medium text-foreground">{syncResult.departments_synced}</span>
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Users size={14} style={{ color: '#606060' }} />
-                <span className="text-sm" style={{ color: '#606060' }}>
+                <Users size={14} className="app-text-secondary" />
+                <span className="app-text-secondary text-sm">
                   {t('admin:syncUserCount')}: <span className="font-medium" style={{ color: '#166534' }}>{syncResult.users_synced}</span>
                 </span>
               </div>
@@ -167,9 +167,9 @@ function SettingsWechat() {
 
         {/* Sync error */}
         {syncError && (
-          <div className="mb-4 p-3 rounded-lg flex items-center gap-2" style={{ background: '#fee2e2' }}>
-            <XCircle size={16} style={{ color: '#991b1b' }} />
-            <span className="text-sm" style={{ color: '#991b1b' }}>{syncError}</span>
+          <div className="theme-danger-banner mb-4 p-3 rounded-lg flex items-center gap-2">
+            <XCircle size={16} />
+            <span className="text-sm">{syncError}</span>
           </div>
         )}
 
@@ -177,7 +177,7 @@ function SettingsWechat() {
         <Button
           disabled={syncing}
           onClick={handleSync}
-          style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}
+          className="theme-primary-button rounded-[18px]"
         >
           {syncing ? (
             <>
@@ -194,9 +194,9 @@ function SettingsWechat() {
       </div>
 
       {/* Sync instructions */}
-      <div className="p-4 rounded-xl" style={{ background: '#f9f9f9', border: '1px solid #e5e5e5' }}>
-        <h4 className="font-medium mb-2" style={{ color: '#0f0f0f' }}>{t('admin:syncInstructions')}</h4>
-        <ul className="text-sm space-y-1" style={{ color: '#606060' }}>
+      <div className="app-surface-muted p-4 rounded-xl border app-border">
+        <h4 className="font-medium mb-2 text-foreground">{t('admin:syncInstructions')}</h4>
+        <ul className="app-text-secondary text-sm space-y-1">
           <li>• {t('admin:syncInstructionsList')}</li>
         </ul>
       </div>

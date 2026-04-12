@@ -48,11 +48,11 @@ function VideoDetail() {
   }, [setSearchParams])
 
   if (loading) {
-    return <div className="p-6 text-center" style={{ color: '#606060' }}>{t('content:loading')}</div>
+    return <div className="app-text-secondary p-6 text-center">{t('content:loading')}</div>
   }
 
   if (error || !content) {
-    return <div className="p-6 text-center" style={{ color: '#606060' }}>{t('content:notFound')}</div>
+    return <div className="app-text-secondary p-6 text-center">{t('content:notFound')}</div>
   }
 
   const videoItems = (content.attachments || []).filter((m) => m.type === 'video')
@@ -66,17 +66,17 @@ function VideoDetail() {
   }
 
   const renderActions = () => (
-    <div className="flex items-center justify-between pb-4" style={{ borderBottom: '1px solid #e5e5e5' }}>
+    <div className="flex items-center justify-between pb-4 border-b app-border">
       <div className="flex items-center gap-3">
         <Avatar size="lg">
           <SiteAvatarImage src={getVideoSpeakerAvatar(content, siteConfig)} alt={speakerDisplayName} />
           <AvatarFallback>{speakerDisplayName.charAt(0) || t('common:anonymousAbbrev')}</AvatarFallback>
         </Avatar>
         <div>
-          <div className="text-sm font-medium" style={{ color: '#0f0f0f' }}>
+          <div className="text-sm font-medium text-foreground">
             {speakerDisplayName}
           </div>
-          <div className="text-xs" style={{ color: '#606060' }}>
+          <div className="app-text-secondary text-xs">
             {dayjs(content.created_at).fromNow()}
           </div>
         </div>
@@ -85,9 +85,9 @@ function VideoDetail() {
         <button
           className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
           style={{
-            background: liked ? 'rgba(6,95,212,0.1)' : 'rgba(0,0,0,0.05)',
-            color: liked ? '#065fd4' : '#0f0f0f',
-            boxShadow: highlightedContent ? 'inset 0 0 0 1px rgba(6,95,212,0.28)' : undefined,
+            background: liked ? 'var(--brand-soft)' : 'var(--surface-hover)',
+            color: liked ? 'var(--brand)' : 'var(--foreground)',
+            boxShadow: highlightedContent ? 'inset 0 0 0 1px color-mix(in srgb, var(--brand) 40%, transparent)' : undefined,
           }}
           onClick={handleLike}
         >
@@ -96,13 +96,13 @@ function VideoDetail() {
         </button>
         <button
           className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
-          style={{ background: favorited ? 'rgba(234,179,8,0.1)' : 'rgba(0,0,0,0.05)', color: favorited ? '#b45309' : '#0f0f0f' }}
+          style={{ background: favorited ? 'color-mix(in srgb, #f59e0b 18%, transparent)' : 'var(--surface-hover)', color: favorited ? '#b45309' : 'var(--foreground)' }}
           onClick={handleFavorite}
         >
           <Bookmark size={18} fill={favorited ? 'currentColor' : 'none'} />
           <span>{favoriteCount || 0}</span>
         </button>
-        <a href="#comments" className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors no-underline" style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}>
+        <a href="#comments" className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors no-underline" style={{ background: 'var(--surface-hover)', color: 'var(--foreground)' }}>
           <MessageCircle size={18} />
           <span>{commentCount || 0}</span>
         </a>
@@ -110,10 +110,10 @@ function VideoDetail() {
           title={content.title}
           text={content.summary || content.speaker_bio || undefined}
           className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
-          style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}
+          style={{ background: 'var(--surface-hover)', color: 'var(--foreground)' }}
         />
         {canEdit && (
-          <Link to={contentEditPath(content)} className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors no-underline" style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}>
+          <Link to={contentEditPath(content)} className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors no-underline" style={{ background: 'var(--surface-hover)', color: 'var(--foreground)' }}>
             <Pencil size={16} />
             <span>{t('common:edit')}</span>
           </Link>
@@ -123,8 +123,8 @@ function VideoDetail() {
   )
 
   const renderDescription = () => (
-    <div className="mt-4 p-3 rounded-xl text-sm" style={{ background: 'rgba(0,0,0,0.03)', color: '#0f0f0f' }}>
-      <div className="flex items-center gap-2 mb-2 text-xs" style={{ color: '#606060' }}>
+    <div className="app-surface-muted mt-4 p-3 rounded-xl text-sm text-foreground">
+      <div className="app-text-secondary flex items-center gap-2 mb-2 text-xs">
         <span>{categoryLabel}</span>
         {content.tags?.length > 0 && (
           <>
@@ -138,13 +138,13 @@ function VideoDetail() {
           {content.summary}
         </div>
       )}
-      <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+      <div className="mt-3 pt-3 border-t app-border">
         <span className="font-medium">{t('content:speaker')}</span>
         {speakerDisplayName}
-        {content.speaker_bio && <span className="ml-2" style={{ color: '#606060' }}>- {content.speaker_bio}</span>}
+        {content.speaker_bio && <span className="app-text-secondary ml-2">- {content.speaker_bio}</span>}
       </div>
       {(content.summary || content.speaker_name || content.speaker || content.speaker_bio) && (
-        <button className="mt-2 text-sm font-medium" style={{ color: '#065fd4' }} onClick={() => setDescExpanded(!descExpanded)}>
+        <button className="app-link mt-2 text-sm font-medium" onClick={() => setDescExpanded(!descExpanded)}>
           {descExpanded ? t('content:collapse') : t('content:expand')}
         </button>
       )}
@@ -154,8 +154,8 @@ function VideoDetail() {
   const renderPlaylist = () => {
     if (videoItems.length <= 1) return null
     return (
-      <div className="rounded-xl overflow-hidden mb-4" style={{ border: '1px solid #e5e5e5' }}>
-        <div className="px-4 py-2 text-sm font-medium" style={{ background: '#f9f9f9', color: '#0f0f0f' }}>
+      <div className="app-surface-elevated rounded-xl overflow-hidden mb-4 border app-border">
+        <div className="app-surface-muted px-4 py-2 text-sm font-medium text-foreground">
           {t('content:playlist', { count: videoItems.length })}
         </div>
         <div>
@@ -163,10 +163,10 @@ function VideoDetail() {
             <button
               key={v.id}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors cursor-pointer"
-              style={{ background: i === currentVideoIndex ? 'rgba(0,0,0,0.05)' : 'transparent', borderTop: i > 0 ? '1px solid #f2f2f2' : 'none' }}
+              style={{ background: i === currentVideoIndex ? 'var(--surface-hover)' : 'transparent', borderTop: i > 0 ? '1px solid var(--surface-border)' : 'none' }}
               onClick={() => setCurrentVideoIndex(i, true)}
             >
-              <span className="text-xs font-medium w-5 text-center flex-shrink-0" style={{ color: i === currentVideoIndex ? '#065fd4' : '#909090' }}>
+              <span className="text-xs font-medium w-5 text-center flex-shrink-0" style={{ color: i === currentVideoIndex ? 'var(--brand)' : 'var(--text-tertiary)' }}>
                 {i + 1}
               </span>
               <div className="relative flex-shrink-0 rounded overflow-hidden" style={{ width: 80, aspectRatio: '16/9' }}>
@@ -177,10 +177,10 @@ function VideoDetail() {
                 />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm line-clamp-1" style={{ color: '#0f0f0f', fontWeight: i === currentVideoIndex ? 600 : 400 }}>
+                <div className="text-sm line-clamp-1" style={{ color: 'var(--foreground)', fontWeight: i === currentVideoIndex ? 600 : 400 }}>
                   {v.title || t('content:videoItem', { index: i + 1 })}
                 </div>
-                {v.description && <div className="text-xs line-clamp-1" style={{ color: '#606060' }}>{v.description}</div>}
+                {v.description && <div className="app-text-secondary text-xs line-clamp-1">{v.description}</div>}
               </div>
             </button>
           ))}
@@ -199,7 +199,7 @@ function VideoDetail() {
         {renderPlaylist()}
         {hasRelatedContents && (
           <>
-            <div className="text-sm font-medium mb-3" style={{ color: '#0f0f0f' }}>{t('content:relatedVideos')}</div>
+            <div className="text-sm font-medium mb-3 text-foreground">{t('content:relatedVideos')}</div>
             <div className="space-y-3">
               {relatedContents.map((item) => (
                 <Link key={item.id} to={`/${item.type}s/${item.id}`} className="flex gap-2 no-underline group" style={{ color: 'inherit' }}>
@@ -215,9 +215,9 @@ function VideoDetail() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium line-clamp-2 mb-1" style={{ color: '#0f0f0f' }}>{item.title}</h4>
-                    <div className="text-xs" style={{ color: '#606060' }}>{getVideoSpeakerDisplayName(item)}</div>
-                    <div className="text-xs" style={{ color: '#606060' }}>{dayjs(item.created_at).fromNow()}</div>
+                    <h4 className="text-sm font-medium line-clamp-2 mb-1 text-foreground">{item.title}</h4>
+                    <div className="app-text-secondary text-xs">{getVideoSpeakerDisplayName(item)}</div>
+                    <div className="app-text-secondary text-xs">{dayjs(item.created_at).fromNow()}</div>
                   </div>
                 </Link>
               ))}
@@ -233,8 +233,8 @@ function VideoDetail() {
     if (docs.length === 0) return null
 
     return (
-      <div className="mt-4 p-4 rounded-xl" style={{ background: '#fff', border: '1px solid #e5e5e5' }}>
-        <h3 className="text-base font-medium mb-3" style={{ color: '#0f0f0f' }}>{t('content:download')}</h3>
+      <div className="app-surface-elevated mt-4 p-4 rounded-xl border app-border">
+        <h3 className="text-base font-medium mb-3 text-foreground">{t('content:download')}</h3>
         <div className="space-y-2">
           {docs.map((doc) => (
             <a
@@ -243,18 +243,18 @@ function VideoDetail() {
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
-              style={{ border: '1px solid #e5e5e5' }}
+              style={{ border: '1px solid var(--surface-border)' }}
             >
-              <FileText size={20} style={{ color: '#909090' }} />
+              <FileText size={20} style={{ color: 'var(--text-tertiary)' }} />
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium truncate" style={{ color: '#0f0f0f' }}>
+                <div className="text-sm font-medium truncate text-foreground">
                   {doc.title || doc.filename}
                 </div>
-                <div className="text-xs" style={{ color: '#909090' }}>
+                <div className="app-text-tertiary text-xs">
                   {doc.filename} • {formatFileSize(doc.file_size)}
                 </div>
               </div>
-              <Download size={16} style={{ color: '#909090' }} />
+              <Download size={16} style={{ color: 'var(--text-tertiary)' }} />
             </a>
           ))}
         </div>
@@ -269,7 +269,7 @@ function VideoDetail() {
   ) : null
 
   return (
-    <div className={`flex gap-6 p-6 ${theaterMode ? '' : 'justify-center'}`}>
+    <div className={`app-surface flex gap-6 p-6 ${theaterMode ? '' : 'justify-center'}`}>
       <div style={{ width: theaterMode ? '100%' : 'max(640px, min(calc((100vh - 180px) * 16 / 9), calc(100vw - 48px)))' }}>
         {draftBanner}
         {currentVideo ? (
@@ -300,10 +300,10 @@ function VideoDetail() {
           {renderPlaylist()}
         </div>
 
-        <h1 className="text-xl font-medium mt-4 mb-3" style={{ color: '#0f0f0f', lineHeight: 1.4 }}>
+        <h1 className="text-xl font-medium mt-4 mb-3 text-foreground" style={{ lineHeight: 1.4 }}>
           {content.title}
           {videoItems.length > 1 && currentVideo && (
-            <span className="font-normal ml-2" style={{ color: '#606060' }}>— {currentVideo.title || `${t('common:video')} ${currentVideoIndex + 1}`}</span>
+            <span className="app-text-secondary font-normal ml-2">- {currentVideo.title || `${t('common:video')} ${currentVideoIndex + 1}`}</span>
           )}
         </h1>
         {renderActions()}

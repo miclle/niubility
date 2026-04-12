@@ -36,12 +36,12 @@ function SettingsLayout() {
   const avatarURL = currentUser?.avatar ? resolveAvatarURL(currentUser.avatar) : ''
 
   return (
-    <div className="min-h-[calc(100vh-56px)] border-t border-[#e5e5e5] bg-white md:flex">
+    <div className="app-surface min-h-[calc(100vh-56px)] border-t app-border md:flex">
       <aside
-        className="shrink-0 border-b border-[#e5e5e5] bg-white md:sticky md:top-14 md:h-[calc(100vh-56px)] md:w-[240px] md:overflow-y-auto md:border-r md:border-b-0"
+        className="app-surface shrink-0 border-b app-border md:sticky md:top-14 md:h-[calc(100vh-56px)] md:w-[240px] md:overflow-y-auto md:border-r md:border-b-0"
       >
         <div className="flex h-full flex-col">
-          <div className="border-b border-[#f0f0f0] px-6 py-10 text-center">
+          <div className="border-b app-border px-6 py-10 text-center">
             <div className="flex flex-col items-center">
               <Avatar className="h-24 w-24 shrink-0 md:h-28 md:w-28">
                 <SiteAvatarImage src={avatarURL} alt={displayName} />
@@ -51,11 +51,11 @@ function SettingsLayout() {
               </Avatar>
 
               <div className="mt-5 min-w-0">
-                <h2 className="text-2xl font-semibold leading-tight" style={{ color: '#0f0f0f' }}>
+                <h2 className="text-2xl font-semibold leading-tight text-foreground">
                   {displayName}
                 </h2>
                 {currentUser?.username && (
-                  <p className="mt-2 truncate text-sm" style={{ color: '#606060' }}>
+                  <p className="app-text-secondary mt-2 truncate text-sm">
                     @{currentUser.username}
                   </p>
                 )}
@@ -70,13 +70,10 @@ function SettingsLayout() {
                 to={item.to}
                 className={() =>
                   `mb-1 flex items-center gap-4 rounded-xl px-3 py-2 no-underline transition-colors ${
-                    location.pathname === item.to ? 'font-semibold' : 'hover:bg-black/5'
+                    location.pathname === item.to ? 'app-chip font-semibold' : 'hover:bg-[var(--surface-hover)]'
                   }`
                 }
-                style={{
-                  color: '#0f0f0f',
-                  background: location.pathname === item.to ? 'rgba(0,0,0,0.1)' : 'transparent',
-                }}
+                style={{ color: 'var(--foreground)' }}
               >
                 <item.icon size={22} />
                 <span className="text-sm">{item.label}</span>
@@ -84,11 +81,11 @@ function SettingsLayout() {
             ))}
           </nav>
 
-          <div className="mt-auto border-t border-[#f0f0f0] px-4 py-4">
+          <div className="mt-auto border-t app-border px-4 py-4">
             <NavLink
               to="/"
-              className="flex items-center gap-4 rounded-xl px-3 py-2 no-underline transition-colors hover:bg-black/5"
-              style={{ color: '#0f0f0f' }}
+              className="flex items-center gap-4 rounded-xl px-3 py-2 no-underline transition-colors hover:bg-[var(--surface-hover)]"
+              style={{ color: 'var(--foreground)' }}
             >
               <ArrowLeft size={22} />
               <span className="text-sm">{t('settings:backToHome')}</span>
@@ -97,7 +94,7 @@ function SettingsLayout() {
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1 bg-white">
+      <main className="app-surface min-w-0 flex-1">
         <Outlet />
       </main>
     </div>

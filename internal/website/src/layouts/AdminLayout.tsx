@@ -43,6 +43,7 @@ import { useSiteHead } from "src/hooks/useSiteHead";
 import { siteResourceURL } from "src/api/upload";
 import { contentNewPath } from "src/lib/content-url";
 import SiteAvatarImage from "src/components/SiteAvatarImage";
+import ThemeMenuItems from "src/components/ThemeMenuItems";
 
 // NavChild represents a sub-menu item under a parent nav item.
 interface NavChild {
@@ -156,24 +157,24 @@ function AdminLayout() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="app-surface flex min-h-screen">
       {/* Sidebar - fixed, does not scroll with page */}
       <aside
-        className="fixed top-0 left-0 h-screen flex flex-col bg-white transition-all duration-200 z-30"
+        className="app-surface fixed top-0 left-0 h-screen flex flex-col transition-all duration-200 z-30"
         style={{
           width: sidebarCollapsed ? 72 : 240,
-          borderRight: "1px solid #e5e5e5",
+          borderRight: "1px solid var(--surface-border)",
         }}
       >
         {/* Logo */}
         <div
           className="h-14 px-4 flex items-center gap-3"
-          style={{ borderBottom: "1px solid #e5e5e5" }}
+          style={{ borderBottom: "1px solid var(--surface-border)" }}
         >
           <NavLink
             to="/"
             className="text-lg font-semibold no-underline flex-shrink-0"
-            style={{ color: "#0f0f0f" }}
+            style={{ color: "var(--foreground)" }}
           >
             {siteLogoUrl ? (
               <img
@@ -188,7 +189,7 @@ function AdminLayout() {
             )}
           </NavLink>
           {!sidebarCollapsed && (
-            <span className="text-xs" style={{ color: "#909090" }}>
+            <span className="app-text-tertiary text-xs">
               {t("admin:adminPanel")}
             </span>
           )}
@@ -211,11 +212,11 @@ function AdminLayout() {
                       className={() =>
                         `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
                           isSectionActive
-                            ? "bg-black/10 font-medium"
-                            : "hover:bg-black/5"
+                            ? "app-chip font-medium"
+                            : "hover:bg-[var(--surface-hover)]"
                         }`
                       }
-                      style={{ color: "#0f0f0f", justifyContent: "center" }}
+                      style={{ color: "var(--foreground)", justifyContent: "center" }}
                     >
                       <Tooltip>
                         <TooltipTrigger render={<button type="button" />}>
@@ -238,16 +239,13 @@ function AdminLayout() {
                         }
                         className={`w-full flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
                           isSectionActive && !isExpanded
-                            ? "bg-black/10 font-medium"
-                            : "hover:bg-black/5"
+                            ? "app-chip font-medium"
+                            : "hover:bg-[var(--surface-hover)]"
                         }`}
                         style={{
-                          color: "#0f0f0f",
+                          color: "var(--foreground)",
                           border: "none",
-                          background:
-                            isSectionActive && !isExpanded
-                              ? "rgba(0,0,0,0.1)"
-                              : "transparent",
+                          background: "transparent",
                           cursor: "pointer",
                         }}
                       >
@@ -276,11 +274,11 @@ function AdminLayout() {
                               className={({ isActive }) =>
                                 `flex items-center gap-3 px-3 py-1.5 rounded-lg no-underline transition-colors text-sm ${
                                   isActive
-                                    ? "bg-black/10 font-medium"
-                                    : "hover:bg-black/5"
+                                    ? "app-chip font-medium"
+                                    : "hover:bg-[var(--surface-hover)]"
                                 }`
                               }
-                              style={{ color: "#0f0f0f" }}
+                              style={{ color: "var(--foreground)" }}
                             >
                               <child.icon size={16} />
                               <span>{child.label}</span>
@@ -301,11 +299,11 @@ function AdminLayout() {
                 to={item.to}
                 className={({ isActive }) =>
                   `flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors ${
-                    isActive ? "bg-black/10 font-medium" : "hover:bg-black/5"
+                    isActive ? "app-chip font-medium" : "hover:bg-[var(--surface-hover)]"
                   }`
                 }
                 style={{
-                  color: "#0f0f0f",
+                  color: "var(--foreground)",
                   justifyContent: sidebarCollapsed ? "center" : "flex-start",
                 }}
               >
@@ -331,9 +329,9 @@ function AdminLayout() {
         <div className="px-3 pb-3">
           <NavLink
             to="/"
-            className="flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors hover:bg-black/5"
+            className="flex items-center gap-6 px-3 py-2 rounded-xl no-underline transition-colors hover:bg-[var(--surface-hover)]"
             style={{
-              color: "#0f0f0f",
+              color: "var(--foreground)",
               justifyContent: sidebarCollapsed ? "center" : "flex-start",
             }}
           >
@@ -363,15 +361,15 @@ function AdminLayout() {
       >
         {/* Header */}
         <header
-          className="sticky top-0 h-14 px-6 flex items-center justify-between bg-white z-20"
-          style={{ borderBottom: "1px solid #e5e5e5" }}
+          className="app-surface sticky top-0 h-14 px-6 flex items-center justify-between z-20"
+          style={{ borderBottom: "1px solid var(--surface-border)" }}
         >
           {/* Toggle button */}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="p-2 rounded-lg hover:bg-black/5 transition-colors"
+            className="p-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
           >
-            <Menu size={24} style={{ color: "#0f0f0f" }} />
+            <Menu size={24} style={{ color: "var(--foreground)" }} />
           </button>
 
           {/* Right: Create button + User menu */}
@@ -380,8 +378,7 @@ function AdminLayout() {
               <DropdownMenuTrigger
                 render={
                   <button
-                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-colors cursor-pointer border-0"
-                    style={{ background: "#0f0f0f", color: "#ffffff" }}
+                    className="theme-primary-button flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-colors cursor-pointer border-0"
                   >
                     <Plus size={16} />
                     {t("nav:create")}
@@ -414,7 +411,7 @@ function AdminLayout() {
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
-                  <button className="flex items-center gap-2 cursor-pointer bg-transparent border-0 p-1 rounded-full hover:bg-black/5 transition-colors">
+                  <button className="flex items-center gap-2 cursor-pointer bg-transparent border-0 p-1 rounded-full hover:bg-[var(--surface-hover)] transition-colors">
                     <Avatar className="size-8">
                       <SiteAvatarImage
                         src={currentUser.avatar}
@@ -425,7 +422,7 @@ function AdminLayout() {
                           currentUser.username.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-sm" style={{ color: "#0f0f0f" }}>
+                    <span className="text-sm text-foreground">
                       {currentUser.name || currentUser.username}
                     </span>
                   </button>
@@ -446,6 +443,7 @@ function AdminLayout() {
                   <User size={16} />
                   {t("nav:settings")}
                 </DropdownMenuItem>
+                <ThemeMenuItems />
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   variant="destructive"

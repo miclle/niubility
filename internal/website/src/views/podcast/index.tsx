@@ -44,14 +44,14 @@ function PodcastDetail() {
   }, [setSearchParams])
 
   if (loading) {
-    return <div className="text-center py-20" style={{ color: '#909090' }}>{t('common:loading')}</div>
+    return <div className="app-text-tertiary text-center py-20">{t('common:loading')}</div>
   }
 
   if (error || !content) {
     return (
       <div className="text-center py-20">
-        <div className="text-lg mb-4" style={{ color: '#909090' }}>{t('content:notFound')}</div>
-        <Link to="/" className="text-sm underline" style={{ color: '#0f0f0f' }}>{t('content:backToHome')}</Link>
+        <div className="app-text-tertiary text-lg mb-4">{t('content:notFound')}</div>
+        <Link to="/" className="text-sm underline text-foreground">{t('content:backToHome')}</Link>
       </div>
     )
   }
@@ -80,7 +80,7 @@ function PodcastDetail() {
 
     return (
       <>
-        <div className="text-sm font-medium mb-3" style={{ color: '#0f0f0f' }}>{t('content:relatedPodcasts')}</div>
+        <div className="text-sm font-medium mb-3 text-foreground">{t('content:relatedPodcasts')}</div>
         <div className="space-y-3">
           {relatedContents.map((related) => (
             <Link
@@ -100,11 +100,11 @@ function PodcastDetail() {
                 </div>
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-medium line-clamp-2 mb-1" style={{ color: '#0f0f0f' }}>{related.title}</h4>
-                <div className="text-xs" style={{ color: '#606060' }}>
+                <h4 className="text-sm font-medium line-clamp-2 mb-1 text-foreground">{related.title}</h4>
+                <div className="app-text-secondary text-xs">
                   {related.speaker?.name || related.speaker_name || related.author?.name || t('common:unknownAuthor')}
                 </div>
-                <div className="text-xs" style={{ color: '#606060' }}>{dayjs(related.created_at).fromNow()}</div>
+                <div className="app-text-secondary text-xs">{dayjs(related.created_at).fromNow()}</div>
               </div>
             </Link>
           ))}
@@ -124,7 +124,7 @@ function PodcastDetail() {
   }
 
   return (
-    <div className={`flex gap-6 p-6 ${theaterMode ? '' : 'justify-center'}`}>
+    <div className={`app-surface flex gap-6 p-6 ${theaterMode ? '' : 'justify-center'}`}>
       <div style={{ width: theaterMode ? '100%' : 'max(640px, min(calc((100vh - 180px) * 16 / 9), calc(100vw - 48px)))' }}>
 
         {/* Draft banner */}
@@ -148,10 +148,10 @@ function PodcastDetail() {
         )}
 
         {/* Title */}
-        <h1 className="text-2xl font-bold mb-4" style={{ color: '#0f0f0f', lineHeight: 1.4 }}>{content.title}</h1>
+        <h1 className="text-2xl font-bold mb-4 text-foreground" style={{ lineHeight: 1.4 }}>{content.title}</h1>
 
         {/* Speaker + actions row */}
-        <div className="flex items-center justify-between pb-4 mb-0" style={{ borderBottom: '1px solid #e5e5e5' }}>
+        <div className="flex items-center justify-between pb-4 mb-0 border-b app-border">
           <div className="flex items-center gap-3">
             <Avatar size="lg">
               <SiteAvatarImage src={speakerAvatar} alt={speakerName} />
@@ -160,12 +160,12 @@ function PodcastDetail() {
             <div>
               {speakerUsername ? (
                 <Link to={`/@${speakerUsername}`} className="no-underline">
-                  <div className="text-sm font-medium hover:underline" style={{ color: '#0f0f0f' }}>{speakerName}</div>
+                  <div className="text-sm font-medium hover:underline text-foreground">{speakerName}</div>
                 </Link>
               ) : (
-                <div className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{speakerName}</div>
+                <div className="text-sm font-medium text-foreground">{speakerName}</div>
               )}
-              <div className="text-xs" style={{ color: '#606060' }}>
+              <div className="app-text-secondary text-xs">
                 {dayjs(content.created_at).fromNow()}
               </div>
             </div>
@@ -176,9 +176,9 @@ function PodcastDetail() {
               onClick={handleLike}
               className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
               style={{
-                background: liked ? 'rgba(6,95,212,0.1)' : 'rgba(0,0,0,0.05)',
-                color: liked ? '#065fd4' : '#0f0f0f',
-                boxShadow: highlightedContent ? 'inset 0 0 0 1px rgba(6,95,212,0.28)' : undefined,
+                background: liked ? 'var(--brand-soft)' : 'var(--surface-hover)',
+                color: liked ? 'var(--brand)' : 'var(--foreground)',
+                boxShadow: highlightedContent ? 'inset 0 0 0 1px color-mix(in srgb, var(--brand) 40%, transparent)' : undefined,
               }}
             >
               <ThumbsUp size={18} fill={liked ? 'currentColor' : 'none'} />
@@ -187,12 +187,12 @@ function PodcastDetail() {
             <button
               onClick={handleFavorite}
               className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
-              style={{ background: favorited ? 'rgba(234,179,8,0.1)' : 'rgba(0,0,0,0.05)', color: favorited ? '#b45309' : '#0f0f0f' }}
+              style={{ background: favorited ? 'color-mix(in srgb, #f59e0b 18%, transparent)' : 'var(--surface-hover)', color: favorited ? '#b45309' : 'var(--foreground)' }}
             >
               <Bookmark size={18} fill={favorited ? 'currentColor' : 'none'} />
               <span>{favoriteCount}</span>
             </button>
-            <a href="#comments" className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors no-underline" style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}>
+            <a href="#comments" className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors no-underline" style={{ background: 'var(--surface-hover)', color: 'var(--foreground)' }}>
               <MessageCircle size={18} />
               <span>{commentCount}</span>
             </a>
@@ -200,13 +200,13 @@ function PodcastDetail() {
               title={content.title}
               text={content.summary || undefined}
               className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors"
-              style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}
+              style={{ background: 'var(--surface-hover)', color: 'var(--foreground)' }}
             />
             {canEdit && (
               <Link
                 to={contentEditPath(content)}
                 className="flex items-center gap-2 px-4 h-9 rounded-full text-sm font-medium transition-colors no-underline"
-                style={{ background: 'rgba(0,0,0,0.05)', color: '#0f0f0f' }}
+                style={{ background: 'var(--surface-hover)', color: 'var(--foreground)' }}
               >
                 <Pencil size={16} />
                 <span>{t('common:edit')}</span>
@@ -216,8 +216,8 @@ function PodcastDetail() {
         </div>
 
         {/* Description — same style as video page */}
-        <div className="mt-4 mb-6 p-3 rounded-xl text-sm" style={{ background: 'rgba(0,0,0,0.03)', color: '#0f0f0f' }}>
-          <div className="flex items-center gap-2 mb-2 text-xs" style={{ color: '#606060' }}>
+        <div className="app-surface-muted mt-4 mb-6 p-3 rounded-xl text-sm text-foreground">
+          <div className="app-text-secondary flex items-center gap-2 mb-2 text-xs">
             <span>{categoryLabel}</span>
             {content.tags?.length > 0 && (
               <>
@@ -229,28 +229,28 @@ function PodcastDetail() {
           {summaryHtml && (
             <div
               className={`rich-content prose prose-sm max-w-none ${descExpanded ? '' : 'line-clamp-3'}`}
-              style={{ color: '#292929', lineHeight: 1.75, cursor: descExpanded ? 'auto' : 'pointer' }}
+              style={{ color: 'var(--article-body)', lineHeight: 1.75, cursor: descExpanded ? 'auto' : 'pointer' }}
               onClick={handleDescriptionClick}
               dangerouslySetInnerHTML={{ __html: summaryHtml }}
             />
           )}
           {(speakerName || content.speaker_bio) && (
-            <div className="mt-3 pt-3 text-sm" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+            <div className="mt-3 pt-3 text-sm border-t app-border">
               <span className="font-medium">{t('content:speaker')}</span>
               {speakerName}
-              {content.speaker_bio && <span className="ml-2" style={{ color: '#606060' }}>- {content.speaker_bio}</span>}
+              {content.speaker_bio && <span className="app-text-secondary ml-2">- {content.speaker_bio}</span>}
             </div>
           )}
           {(summaryHtml || content.speaker_bio) && (
-            <button className="mt-2 text-sm font-medium" style={{ color: '#065fd4' }} onClick={() => setDescExpanded(!descExpanded)}>
+            <button className="app-link mt-2 text-sm font-medium" onClick={() => setDescExpanded(!descExpanded)}>
               {descExpanded ? t('content:collapse') : t('content:expand')}
             </button>
           )}
         </div>
         {/* Episode list (multiple audio files) */}
         {audioAttachments.length > 1 && (
-          <div className="mb-6 rounded-xl overflow-hidden" style={{ border: '1px solid #e5e5e5' }}>
-            <div className="px-4 py-2.5 text-sm font-medium" style={{ background: '#f9f9f9', color: '#0f0f0f', borderBottom: '1px solid #e5e5e5' }}>
+          <div className="app-surface-elevated mb-6 rounded-xl overflow-hidden border app-border">
+            <div className="app-surface-muted px-4 py-2.5 text-sm font-medium text-foreground border-b app-border">
               {t('content:episodes')}
             </div>
             <div>
@@ -259,22 +259,22 @@ function PodcastDetail() {
                   key={audio.id}
                   className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors cursor-pointer"
                   style={{
-                    background: index === currentPodcastIndex ? 'rgba(0,0,0,0.04)' : 'transparent',
-                    borderTop: index > 0 ? '1px solid #f2f2f2' : 'none',
+                    background: index === currentPodcastIndex ? 'var(--surface-hover)' : 'transparent',
+                    borderTop: index > 0 ? '1px solid var(--surface-border)' : 'none',
                   }}
                   onClick={() => setCurrentPodcastIndex(index)}
                 >
-                  <Mic size={16} style={{ color: index === currentPodcastIndex ? '#065fd4' : '#909090', flexShrink: 0 }} />
+                  <Mic size={16} style={{ color: index === currentPodcastIndex ? 'var(--brand)' : 'var(--text-tertiary)', flexShrink: 0 }} />
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm truncate" style={{ color: '#0f0f0f', fontWeight: index === currentPodcastIndex ? 600 : 400 }}>
+                    <div className="text-sm truncate" style={{ color: 'var(--foreground)', fontWeight: index === currentPodcastIndex ? 600 : 400 }}>
                       {audio.title || audio.filename}
                     </div>
                     {audio.file_size > 0 && (
-                      <div className="text-xs" style={{ color: '#909090' }}>{formatFileSize(audio.file_size)}</div>
+                      <div className="app-text-tertiary text-xs">{formatFileSize(audio.file_size)}</div>
                     )}
                   </div>
                   {index === currentPodcastIndex && (
-                    <span className="text-xs font-medium" style={{ color: '#065fd4' }}>{t('content:playing')}</span>
+                    <span className="app-link text-xs font-medium">{t('content:playing')}</span>
                   )}
                 </button>
               ))}

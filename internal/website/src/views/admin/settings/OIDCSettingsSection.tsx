@@ -20,18 +20,18 @@ function OIDCSettingsSection({ form, hasExistingSecret, onChange }: OIDCSettings
   const { t } = useTranslation('admin')
 
   return (
-    <div className="space-y-4 pt-2" style={{ borderTop: '1px solid #f0f0f0' }}>
+    <div className="space-y-4 pt-2 border-t app-border">
       <div>
-        <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:issuerURL')}</label>
+        <label className="block text-sm font-medium mb-1 text-foreground">{t('admin:issuerURL')}</label>
         <Input
           placeholder="https://accounts.google.com"
           value={form.issuer}
           onChange={(e) => onChange({ ...form, issuer: e.target.value })}
         />
-        <p className="text-xs mt-1" style={{ color: '#909090' }}>{t('admin:issuerURLHelp')}</p>
+        <p className="app-text-tertiary text-xs mt-1">{t('admin:issuerURLHelp')}</p>
       </div>
       <div>
-        <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>{t('admin:clientID')}</label>
+        <label className="block text-sm font-medium mb-1 text-foreground">{t('admin:clientID')}</label>
         <Input
           placeholder={t('admin:clientIDPlaceholder')}
           value={form.client_id}
@@ -39,10 +39,10 @@ function OIDCSettingsSection({ form, hasExistingSecret, onChange }: OIDCSettings
         />
       </div>
       <div>
-        <label className="block text-sm font-medium mb-1" style={{ color: '#0f0f0f' }}>
+        <label className="block text-sm font-medium mb-1 text-foreground">
           {t('admin:clientSecret')}
           {hasExistingSecret && (
-            <span className="ml-2 text-xs" style={{ color: '#166534' }}>{t('admin:secretSetHint')}</span>
+            <span className="ml-2 text-xs text-emerald-600 dark:text-emerald-400">{t('admin:secretSetHint')}</span>
           )}
         </label>
         <Input

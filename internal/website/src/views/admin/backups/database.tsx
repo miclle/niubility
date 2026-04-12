@@ -98,21 +98,21 @@ function DatabaseBackups() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 size={32} className="animate-spin" style={{ color: '#909090' }} />
+        <Loader2 size={32} className="app-text-tertiary animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
+    <div className="app-surface space-y-6">
+      <div className="app-surface-elevated rounded-xl p-6 border app-border">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Database size={20} style={{ color: '#0f0f0f' }} />
-              <h1 className="text-xl font-semibold" style={{ color: '#0f0f0f' }}>{t('admin:databaseBackup')}</h1>
+              <Database size={20} className="text-foreground" />
+              <h1 className="text-xl font-semibold text-foreground">{t('admin:databaseBackup')}</h1>
             </div>
-            <p className="text-sm" style={{ color: '#606060' }}>{t('admin:databaseBackupDesc')}</p>
+            <p className="app-text-secondary text-sm">{t('admin:databaseBackupDesc')}</p>
           </div>
           <div className="flex items-center gap-3">
             <Button
@@ -128,7 +128,7 @@ function DatabaseBackups() {
               type="button"
               onClick={handleStartBackup}
               disabled={starting || !!runningBackup}
-              style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}
+              className="theme-primary-button rounded-[18px]"
             >
               {starting || runningBackup ? <Loader2 size={16} className="animate-spin" /> : <Database size={16} />}
               {runningBackup ? t('admin:databaseBackupRunning') : t('admin:startDatabaseBackup')}
@@ -137,71 +137,71 @@ function DatabaseBackups() {
         </div>
 
         {error && (
-          <div className="mt-4 p-3 rounded-lg" style={{ background: '#fee2e2', color: '#991b1b' }}>
+          <div className="theme-danger-banner mt-4 p-3 rounded-lg">
             {error}
           </div>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-          <div className="rounded-xl p-4" style={{ border: '1px solid #e5e5e5' }}>
-            <div className="text-sm mb-1" style={{ color: '#606060' }}>{t('admin:databaseType')}</div>
-            <div className="text-lg font-medium" style={{ color: '#0f0f0f' }}>{latestSuccess?.driver || runningBackup?.driver || '-'}</div>
+          <div className="app-surface-muted rounded-xl p-4 border app-border">
+            <div className="app-text-secondary text-sm mb-1">{t('admin:databaseType')}</div>
+            <div className="text-lg font-medium text-foreground">{latestSuccess?.driver || runningBackup?.driver || '-'}</div>
           </div>
-          <div className="rounded-xl p-4" style={{ border: '1px solid #e5e5e5' }}>
-            <div className="text-sm mb-1" style={{ color: '#606060' }}>{t('admin:lastSuccessfulBackup')}</div>
-            <div className="text-lg font-medium" style={{ color: '#0f0f0f' }}>
+          <div className="app-surface-muted rounded-xl p-4 border app-border">
+            <div className="app-text-secondary text-sm mb-1">{t('admin:lastSuccessfulBackup')}</div>
+            <div className="text-lg font-medium text-foreground">
               {latestSuccess ? dayjs(latestSuccess.finished_at || latestSuccess.started_at).format('YYYY-MM-DD HH:mm:ss') : '-'}
             </div>
           </div>
-          <div className="rounded-xl p-4" style={{ border: '1px solid #e5e5e5' }}>
-            <div className="text-sm mb-1" style={{ color: '#606060' }}>{t('admin:currentBackupStatus')}</div>
-            <div className="text-lg font-medium" style={{ color: '#0f0f0f' }}>
+          <div className="app-surface-muted rounded-xl p-4 border app-border">
+            <div className="app-text-secondary text-sm mb-1">{t('admin:currentBackupStatus')}</div>
+            <div className="text-lg font-medium text-foreground">
               {runningBackup ? t('admin:databaseBackupRunning') : t('admin:noRunningBackup')}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl p-6" style={{ border: '1px solid #e5e5e5' }}>
+      <div className="app-surface-elevated rounded-xl p-6 border app-border">
         <div className="flex items-center justify-between gap-3 mb-4">
-          <h2 className="text-base font-medium" style={{ color: '#0f0f0f' }}>{t('admin:databaseBackupHistory')}</h2>
-          <span className="text-sm" style={{ color: '#606060' }}>{t('admin:backupRecordCount', { count: total })}</span>
+          <h2 className="text-base font-medium text-foreground">{t('admin:databaseBackupHistory')}</h2>
+          <span className="app-text-secondary text-sm">{t('admin:backupRecordCount', { count: total })}</span>
         </div>
 
         {items.length === 0 ? (
-          <div className="py-10 text-sm text-center" style={{ color: '#909090' }}>{t('admin:noDatabaseBackups')}</div>
+          <div className="app-text-tertiary py-10 text-sm text-center">{t('admin:noDatabaseBackups')}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr style={{ borderBottom: '1px solid #e5e5e5' }}>
-                  <th className="px-3 py-3 text-left text-sm font-semibold" style={{ color: '#606060' }}>{t('admin:status')}</th>
-                  <th className="px-3 py-3 text-left text-sm font-semibold" style={{ color: '#606060' }}>{t('admin:fileName')}</th>
-                  <th className="px-3 py-3 text-left text-sm font-semibold" style={{ color: '#606060' }}>{t('admin:fileSize')}</th>
-                  <th className="px-3 py-3 text-left text-sm font-semibold" style={{ color: '#606060' }}>{t('admin:operator')}</th>
-                  <th className="px-3 py-3 text-left text-sm font-semibold" style={{ color: '#606060' }}>{t('admin:startedAt')}</th>
-                  <th className="px-3 py-3 text-left text-sm font-semibold" style={{ color: '#606060' }}>{t('admin:duration')}</th>
-                  <th className="px-3 py-3 text-left text-sm font-semibold" style={{ color: '#606060' }}>{t('admin:actions')}</th>
+                <tr className="border-b app-border">
+                  <th className="app-text-secondary px-3 py-3 text-left text-sm font-semibold">{t('admin:status')}</th>
+                  <th className="app-text-secondary px-3 py-3 text-left text-sm font-semibold">{t('admin:fileName')}</th>
+                  <th className="app-text-secondary px-3 py-3 text-left text-sm font-semibold">{t('admin:fileSize')}</th>
+                  <th className="app-text-secondary px-3 py-3 text-left text-sm font-semibold">{t('admin:operator')}</th>
+                  <th className="app-text-secondary px-3 py-3 text-left text-sm font-semibold">{t('admin:startedAt')}</th>
+                  <th className="app-text-secondary px-3 py-3 text-left text-sm font-semibold">{t('admin:duration')}</th>
+                  <th className="app-text-secondary px-3 py-3 text-left text-sm font-semibold">{t('admin:actions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((item) => {
                   const colors = statusColor(item.status)
                   return (
-                    <tr key={item.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <tr key={item.id} className="border-b app-border">
                       <td className="px-3 py-4">
                         <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium" style={colors}>
                           {t(`admin:backupStatus.${item.status}`)}
                         </span>
                         {item.error_message && (
-                          <div className="text-xs mt-2 max-w-xs" style={{ color: '#991b1b' }}>{item.error_message}</div>
+                          <div className="text-xs mt-2 max-w-xs text-red-700 dark:text-red-300">{item.error_message}</div>
                         )}
                       </td>
-                      <td className="px-3 py-4 text-sm" style={{ color: '#0f0f0f' }}>{item.file_name || '-'}</td>
-                      <td className="px-3 py-4 text-sm" style={{ color: '#0f0f0f' }}>{formatFileSize(item.file_size)}</td>
-                      <td className="px-3 py-4 text-sm" style={{ color: '#0f0f0f' }}>{item.started_by_name || '-'}</td>
-                      <td className="px-3 py-4 text-sm" style={{ color: '#0f0f0f' }}>{dayjs(item.started_at).format('YYYY-MM-DD HH:mm:ss')}</td>
-                      <td className="px-3 py-4 text-sm" style={{ color: '#0f0f0f' }}>
+                      <td className="px-3 py-4 text-sm text-foreground">{item.file_name || '-'}</td>
+                      <td className="px-3 py-4 text-sm text-foreground">{formatFileSize(item.file_size)}</td>
+                      <td className="px-3 py-4 text-sm text-foreground">{item.started_by_name || '-'}</td>
+                      <td className="px-3 py-4 text-sm text-foreground">{dayjs(item.started_at).format('YYYY-MM-DD HH:mm:ss')}</td>
+                      <td className="px-3 py-4 text-sm text-foreground">
                         {item.duration_ms > 0 ? `${(item.duration_ms / 1000).toFixed(1)}s` : '-'}
                       </td>
                       <td className="px-3 py-4">

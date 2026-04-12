@@ -76,7 +76,7 @@ function SecuritySettings() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 size={32} className="animate-spin" style={{ color: '#909090' }} />
+        <Loader2 size={32} className="app-text-tertiary animate-spin" />
       </div>
     )
   }
@@ -85,19 +85,19 @@ function SecuritySettings() {
   const showPasswordForm = registrationEnabled || userHasPassword
 
   return (
-    <div className="min-h-full bg-white">
-      <div className="border-b border-[#ececec] px-6 py-8 lg:px-12">
-        <h1 className="text-[2rem] font-semibold tracking-tight" style={{ color: '#0f0f0f' }}>{t('settings:securitySettings')}</h1>
+    <div className="app-surface min-h-full">
+      <div className="border-b app-border px-6 py-8 lg:px-12">
+        <h1 className="text-[2rem] font-semibold tracking-tight text-foreground">{t('settings:securitySettings')}</h1>
       </div>
 
       <div className="max-w-[720px] space-y-8 px-6 py-8 lg:px-12">
         {showPasswordForm ? (
           <div className="space-y-4">
-            <h2 className="text-base font-medium" style={{ color: '#0f0f0f' }}>{t('settings:changePassword')}</h2>
+            <h2 className="text-base font-medium text-foreground">{t('settings:changePassword')}</h2>
 
             {userHasPassword ? (
               <div>
-                <Label htmlFor="old-password" className="text-sm mb-1.5 block" style={{ color: '#606060' }}>{t('settings:oldPassword')}</Label>
+                <Label htmlFor="old-password" className="app-text-secondary text-sm mb-1.5 block">{t('settings:oldPassword')}</Label>
                 <Input
                   id="old-password"
                   type="password"
@@ -107,7 +107,7 @@ function SecuritySettings() {
                 />
               </div>
             ) : (
-              <div className="p-3 rounded-lg flex items-center gap-2" style={{ background: '#f0f9ff' }}>
+              <div className="p-3 rounded-lg flex items-center gap-2" style={{ background: 'color-mix(in srgb, var(--brand) 10%, transparent)' }}>
                 <Info size={16} style={{ color: '#0369a1' }} />
                 <span className="text-sm" style={{ color: '#0369a1' }}>
                   {t('settings:ssoLoginNote')}
@@ -116,7 +116,7 @@ function SecuritySettings() {
             )}
 
             <div>
-              <Label htmlFor="new-password" className="text-sm mb-1.5 block" style={{ color: '#606060' }}>{t('settings:newPassword')}</Label>
+              <Label htmlFor="new-password" className="app-text-secondary text-sm mb-1.5 block">{t('settings:newPassword')}</Label>
               <Input
                 id="new-password"
                 type="password"
@@ -127,7 +127,7 @@ function SecuritySettings() {
             </div>
 
             <div>
-              <Label htmlFor="confirm-password" className="text-sm mb-1.5 block" style={{ color: '#606060' }}>{t('settings:confirmNewPassword')}</Label>
+              <Label htmlFor="confirm-password" className="app-text-secondary text-sm mb-1.5 block">{t('settings:confirmNewPassword')}</Label>
               <Input
                 id="confirm-password"
                 type="password"
@@ -139,22 +139,22 @@ function SecuritySettings() {
 
             {/* Feedback */}
             {success && (
-              <div className="p-3 rounded-lg flex items-center gap-2" style={{ background: '#dcfce7' }}>
-                <CheckCircle size={16} style={{ color: '#166534' }} />
-                <span className="text-sm" style={{ color: '#166534' }}>{t('settings:passwordChangeSuccess')}</span>
+              <div className="theme-success-banner p-3 rounded-lg flex items-center gap-2">
+                <CheckCircle size={16} />
+                <span className="text-sm">{t('settings:passwordChangeSuccess')}</span>
               </div>
             )}
             {error && (
-              <div className="p-3 rounded-lg flex items-center gap-2" style={{ background: '#fee2e2' }}>
-                <XCircle size={16} style={{ color: '#991b1b' }} />
-                <span className="text-sm" style={{ color: '#991b1b' }}>{error}</span>
+              <div className="theme-danger-banner p-3 rounded-lg flex items-center gap-2">
+                <XCircle size={16} />
+                <span className="text-sm">{error}</span>
               </div>
             )}
 
             <Button
               disabled={saving}
               onClick={handleSave}
-              style={{ background: '#0f0f0f', color: '#ffffff', borderRadius: '18px' }}
+              className="theme-primary-button rounded-[18px]"
             >
               {saving ? (
                 <><Loader2 size={16} className="animate-spin" /> {t('settings:savingPassword')}</>
@@ -165,8 +165,8 @@ function SecuritySettings() {
           </div>
         ) : (
           <div className="text-center py-16">
-            <Info size={48} className="mx-auto mb-4" style={{ color: '#d4d4d4' }} />
-            <p className="text-sm" style={{ color: '#909090' }}>
+            <Info size={48} className="app-text-tertiary mx-auto mb-4" />
+            <p className="app-text-tertiary text-sm">
               {t('settings:ssoPasswordManaged')}
             </p>
           </div>

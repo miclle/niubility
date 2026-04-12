@@ -98,16 +98,16 @@ export default function SpeakerSelector({ defaultSpeaker, onChange, label = '作
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium mb-1.5" style={{ color: '#606060' }}>{label}</label>
+        <label className="app-text-secondary block text-sm font-medium mb-1.5">{label}</label>
         {selectedSpeaker ? (
-          <div className="flex items-center gap-3 p-3 rounded-lg" style={{ background: '#f8f8f8', border: '1px solid #e5e5e5' }}>
+          <div className="app-surface-muted border app-border flex items-center gap-3 p-3 rounded-lg">
             <Avatar className="h-8 w-8">
               <SiteAvatarImage src={selectedSpeaker.avatar} alt={selectedSpeaker.name} />
               <AvatarFallback>{selectedSpeaker.name?.charAt(0) || '?'}</AvatarFallback>
             </Avatar>
-            <span className="text-sm font-medium flex-1" style={{ color: '#0f0f0f' }}>{selectedSpeaker.name}</span>
-            <button type="button" className="p-1 rounded-full hover:bg-gray-200 transition-colors" onClick={handleClearSpeaker}>
-              <X size={14} style={{ color: '#909090' }} />
+            <span className="text-sm font-medium text-foreground flex-1">{selectedSpeaker.name}</span>
+            <button type="button" className="p-1 rounded-full hover:bg-[var(--surface-hover)] transition-colors" onClick={handleClearSpeaker}>
+              <X size={14} className="app-text-tertiary" />
             </button>
           </div>
         ) : (
@@ -119,19 +119,19 @@ export default function SpeakerSelector({ defaultSpeaker, onChange, label = '作
               onFocus={() => { if (speakerResults.length > 0) setShowSpeakerDropdown(true) }}
             />
             {showSpeakerDropdown && speakerResults.length > 0 && (
-              <div className="absolute z-10 w-full mt-1 rounded-lg shadow-lg overflow-hidden" style={{ background: '#ffffff', border: '1px solid #e5e5e5', maxHeight: 240, overflowY: 'auto' }}>
+              <div className="app-surface-elevated border app-border absolute z-10 w-full mt-1 rounded-lg shadow-lg overflow-hidden" style={{ maxHeight: 240, overflowY: 'auto' }}>
                 {speakerResults.map((user) => (
                   <button
                     key={user.id}
                     type="button"
-                    className="flex items-center gap-3 w-full px-3 py-2.5 text-left hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-3 w-full px-3 py-2.5 text-left hover:bg-[var(--surface-hover)] transition-colors"
                     onClick={() => handleSelectSpeaker(user)}
                   >
                     <Avatar className="h-8 w-8">
                       <SiteAvatarImage src={user.avatar} alt={user.name} />
                       <AvatarFallback>{user.name?.charAt(0) || '?'}</AvatarFallback>
                     </Avatar>
-                    <span className="text-sm" style={{ color: '#0f0f0f' }}>{user.name}</span>
+                    <span className="text-sm text-foreground">{user.name}</span>
                   </button>
                 ))}
               </div>

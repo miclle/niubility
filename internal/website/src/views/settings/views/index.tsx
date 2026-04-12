@@ -144,28 +144,28 @@ function MyViews() {
   };
 
   return (
-    <div className="min-h-full bg-white">
+    <div className="app-surface min-h-full">
       <div className="px-6 pt-8 pb-0 lg:px-12">
         <h1
           className="text-[2rem] font-semibold tracking-tight"
-          style={{ color: "#0f0f0f" }}
+          style={{ color: "var(--foreground)" }}
         >
           {t("settings:myViewsTitle")}
         </h1>
 
-        <div className="mt-6 -mx-6 flex gap-10 overflow-x-auto border-b border-[#ececec] px-6 lg:-mx-12 lg:px-12">
+        <div className="mt-6 -mx-6 flex gap-10 overflow-x-auto border-b app-border px-6 lg:-mx-12 lg:px-12">
           {typeTabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveType(tab.key)}
               className="relative shrink-0 pb-2.5 text-[15px] font-semibold transition-colors"
-              style={{ color: activeType === tab.key ? "#0f0f0f" : "#6f6f6f" }}
+              style={{ color: activeType === tab.key ? "var(--foreground)" : "var(--text-secondary)" }}
             >
               {tab.label}
               {activeType === tab.key && (
                 <span
                   className="absolute inset-x-0 bottom-0 h-0.5 rounded-full"
-                  style={{ background: "#0f0f0f" }}
+                  style={{ background: "var(--foreground)" }}
                 />
               )}
             </button>
@@ -189,13 +189,13 @@ function MyViews() {
           </div>
           <h2
             className="mt-8 text-2xl font-semibold"
-            style={{ color: "#0f0f0f" }}
+            style={{ color: "var(--foreground)" }}
           >
             {t("settings:myViewsTitle")}
           </h2>
           <p
             className="mt-3 max-w-md text-sm leading-6"
-            style={{ color: "#707070" }}
+            style={{ color: "var(--text-secondary)" }}
           >
             {activeType === "all"
               ? t("settings:noViews")
@@ -220,13 +220,13 @@ function MyViews() {
                 <div className="sticky top-14 z-10 backdrop-blur-xs">
                   <div className="relative grid grid-cols-[32px_minmax(0,1fr)] gap-3 md:grid-cols-[52px_26px_minmax(0,1fr)] md:gap-3">
                     <div className="hidden md:flex items-center justify-end pr-2">
-                      <span className="text-[13px] font-semibold tracking-[0.08em] text-[#52607a]">
+                      <span className="app-text-secondary text-[13px] font-semibold tracking-[0.08em]">
                         {group.label}
                       </span>
                     </div>
                     <div className="relative" />
                     <div className="flex items-center md:hidden">
-                      <span className="text-[13px] font-semibold tracking-[0.08em] text-[#52607a]">
+                      <span className="app-text-secondary text-[13px] font-semibold tracking-[0.08em]">
                         {group.label}
                       </span>
                     </div>
@@ -241,7 +241,7 @@ function MyViews() {
                       className="grid gap-4 md:grid-cols-[52px_26px_minmax(0,1fr)] md:gap-3"
                     >
                       <div className="hidden md:flex flex-col items-end pt-7">
-                        <span className="text-xs font-semibold leading-none tracking-[0.08em] text-[#6c7890]">
+                        <span className="app-text-tertiary text-xs font-semibold leading-none tracking-[0.08em]">
                           {formatTimelineTime(item.last_viewed_at)}
                         </span>
                       </div>
@@ -254,14 +254,14 @@ function MyViews() {
                         <div className="absolute left-3 top-0 bottom-0 w-px -translate-x-1/2 bg-[linear-gradient(180deg,rgba(232,238,248,0)_0%,rgba(232,238,248,1)_14%,rgba(232,238,248,1)_86%,rgba(232,238,248,0)_100%)] md:hidden" />
                         <div className="absolute left-3 top-7 h-3 w-3 -translate-x-1/2 rounded-full border-2 border-white bg-[#4d7df0] shadow-[0_0_0_4px_rgba(77,125,240,0.08)] md:hidden" />
 
-                        <div className="rounded-[1.4rem] border border-[#e9edf5] bg-[linear-gradient(180deg,#ffffff_0%,#fbfcff_100%)] p-4 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
-                          <div className="mb-3 flex items-center gap-2 text-xs font-medium text-[#70809d] md:hidden">
+                        <div className="app-surface-elevated rounded-[1.4rem] border app-border p-4 shadow-[0_10px_30px_var(--surface-shadow)]">
+                          <div className="app-text-secondary mb-3 flex items-center gap-2 text-xs font-medium md:hidden">
                             <Clock3 size={13} />
                             <span>{formatTimelineTime(item.last_viewed_at)}</span>
                           </div>
 
                           <div className="flex gap-4">
-                            <div className="h-[84px] w-[148px] shrink-0 overflow-hidden rounded-xl bg-[#f5f5f5]">
+                            <div className="app-surface-muted h-[84px] w-[148px] shrink-0 overflow-hidden rounded-xl">
                               <NavLink
                                 to={contentDetailPath(item.content)}
                                 className="block h-full w-full no-underline"
@@ -282,7 +282,7 @@ function MyViews() {
                               <NavLink
                                 to={contentDetailPath(item.content)}
                                 className="block truncate text-[15px] font-medium no-underline hover:underline"
-                                style={{ color: "#0f0f0f" }}
+                                style={{ color: "var(--foreground)" }}
                               >
                                 {item.content.title}
                               </NavLink>
@@ -290,7 +290,7 @@ function MyViews() {
                               {item.content.summary && (
                                 <p
                                   className="mt-1 line-clamp-2 text-sm leading-6"
-                                  style={{ color: "#707070" }}
+                                  style={{ color: "var(--text-secondary)" }}
                                 >
                                   {toPlainTextPreview(item.content.summary)}
                                 </p>
@@ -298,7 +298,7 @@ function MyViews() {
 
                               <div
                                 className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm"
-                                style={{ color: "#909090" }}
+                                style={{ color: "var(--text-tertiary)" }}
                               >
                                 <span className="inline-flex items-center gap-1">
                                   <Eye size={13} />

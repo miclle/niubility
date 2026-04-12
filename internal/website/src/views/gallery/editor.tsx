@@ -39,7 +39,7 @@ function GalleryEditor() {
   }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!currentUser) return null
-  if (loading || !verified) return <div className="text-center py-20" style={{ color: '#909090' }}>{t('common:loading')}</div>
+  if (loading || !verified) return <div className="app-text-tertiary text-center py-20">{t('common:loading')}</div>
 
   const onSaved = (contentId: string, status: ContentStatus) => {
     if (status === 'draft') {
@@ -53,7 +53,7 @@ function GalleryEditor() {
 
   return (
     <div className="max-w-[1200px] mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-6" style={{ color: '#0f0f0f' }}>
+      <h1 className="text-xl font-semibold text-foreground mb-6">
         {isNew ? t('editor:publish') + ' ' + t('common:gallery') : t('common:edit') + ' ' + t('common:gallery')}
       </h1>
       <GalleryEditorForm id={id} onSaved={onSaved} onCancel={onCancel} onLoadError={onLoadError} />

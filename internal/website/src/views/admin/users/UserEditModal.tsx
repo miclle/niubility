@@ -167,29 +167,29 @@ function UserEditModal({ user, open, onOpenChange, getDepartmentNames, onSaved }
           <div className="grid gap-4 py-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:userName')}</label>
+                <label className="text-sm font-medium text-foreground">{t('admin:userName')}</label>
                 <Input value={form.username} onChange={(e) => handleFormChange('username', e.target.value)} />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:fullName')}</label>
+                <label className="text-sm font-medium text-foreground">{t('admin:fullName')}</label>
                 <Input value={form.name} onChange={(e) => handleFormChange('name', e.target.value)} />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:emailAddress')}</label>
+                <label className="text-sm font-medium text-foreground">{t('admin:emailAddress')}</label>
                 <Input type="email" value={form.email} onChange={(e) => handleFormChange('email', e.target.value)} />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:mobilePhone')}</label>
+                <label className="text-sm font-medium text-foreground">{t('admin:mobilePhone')}</label>
                 <Input value={form.mobile} onChange={(e) => handleFormChange('mobile', e.target.value)} />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:userRole')}</label>
+                <label className="text-sm font-medium text-foreground">{t('admin:userRole')}</label>
                 <Select value={form.role} onValueChange={(value) => handleFormChange('role', value as Role)}>
                   <SelectTrigger>
                     <SelectValue>
@@ -204,7 +204,7 @@ function UserEditModal({ user, open, onOpenChange, getDepartmentNames, onSaved }
                 </Select>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:userStatus')}</label>
+                <label className="text-sm font-medium text-foreground">{t('admin:userStatus')}</label>
                 <Select value={form.status} onValueChange={(value) => handleFormChange('status', value as UserStatus)}>
                   <SelectTrigger>
                     <SelectValue>
@@ -221,35 +221,35 @@ function UserEditModal({ user, open, onOpenChange, getDepartmentNames, onSaved }
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:userDepartment')}</label>
+                <label className="text-sm font-medium text-foreground">{t('admin:userDepartment')}</label>
                 <Input value={form.department_ids} onChange={(e) => handleFormChange('department_ids', e.target.value)} placeholder={t('admin:departmentHint')} />
-                <div className="text-xs" style={{ color: '#909090' }}>
+                <div className="app-text-tertiary text-xs">
                   {getDepartmentNames(form.department_ids)}
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:resetPassword')}</label>
+                <label className="text-sm font-medium text-foreground">{t('admin:resetPassword')}</label>
                 <Input type="password" value={form.password} onChange={(e) => handleFormChange('password', e.target.value)} placeholder={t('admin:resetPasswordHint')} />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:avatarURL')}</label>
+              <label className="text-sm font-medium text-foreground">{t('admin:avatarURL')}</label>
               <Input value={form.avatar} onChange={(e) => handleFormChange('avatar', e.target.value)} />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:userLocation')}</label>
+              <label className="text-sm font-medium text-foreground">{t('admin:userLocation')}</label>
               <Input value={form.location} onChange={(e) => handleFormChange('location', e.target.value)} />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:userBio')}</label>
+              <label className="text-sm font-medium text-foreground">{t('admin:userBio')}</label>
               <Textarea rows={3} value={form.bio} onChange={(e) => handleFormChange('bio', e.target.value)} />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium" style={{ color: '#0f0f0f' }}>{t('admin:socialAccountsLabel')}</label>
+              <label className="text-sm font-medium text-foreground">{t('admin:socialAccountsLabel')}</label>
               <Textarea
                 rows={4}
                 value={form.social_accounts}
@@ -259,7 +259,7 @@ function UserEditModal({ user, open, onOpenChange, getDepartmentNames, onSaved }
             </div>
 
             {saveError && (
-              <div className="text-sm" style={{ color: '#cc0000' }}>{saveError}</div>
+              <div className="text-sm text-red-600 dark:text-red-400">{saveError}</div>
             )}
           </div>
         )}
