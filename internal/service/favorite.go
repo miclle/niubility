@@ -30,7 +30,7 @@ func (s *Service) ToggleFavorite(ctx context.Context, userID, contentID string) 
 				return fmt.Errorf("delete favorite: %w", err)
 			}
 			if err := updateFavoriteCount(tx, contentID, -1); err != nil {
-				return err
+				return fmt.Errorf("update favorite count: %w", err)
 			}
 			resp.Favorited = false
 		} else if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -44,7 +44,7 @@ func (s *Service) ToggleFavorite(ctx context.Context, userID, contentID string) 
 				return fmt.Errorf("create favorite: %w", err)
 			}
 			if err := updateFavoriteCount(tx, contentID, 1); err != nil {
-				return err
+				return fmt.Errorf("update favorite count: %w", err)
 			}
 			resp.Favorited = true
 		} else {

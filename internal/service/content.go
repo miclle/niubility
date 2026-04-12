@@ -278,7 +278,7 @@ func (s *Service) CreateContent(ctx context.Context, content *entity.Content, at
 		}
 		if len(attachments) > 0 {
 			if err := s.createAttachments(tx, content.ID, content.Type, attachments); err != nil {
-				return err
+				return fmt.Errorf("create content attachments: %w", err)
 			}
 		}
 		return nil
@@ -380,7 +380,7 @@ func (s *Service) UpdateContent(ctx context.Context, id string, args entity.Upda
 			}
 			if len(args.Attachments) > 0 {
 				if err := s.createAttachments(tx, id, contentType, args.Attachments); err != nil {
-					return err
+					return fmt.Errorf("replace content attachments: %w", err)
 				}
 			}
 		}

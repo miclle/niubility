@@ -17,7 +17,7 @@ interface DocumentUploadSectionProps {
 function DocumentUploadSection({ documents, docInputRef, onUpload, onChange, onRemove }: DocumentUploadSectionProps) {
   const { t } = useTranslation('editor')
   return (
-    <div>
+    <div className="document-upload-section">
       <label className="app-text-secondary block text-sm font-medium mb-1.5">{t('documentAttachments')}</label>
       <div
         className="app-surface-muted rounded-lg cursor-pointer transition-colors flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed app-border"

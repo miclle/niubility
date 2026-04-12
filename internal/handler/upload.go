@@ -31,7 +31,7 @@ func (ctrl *Ctrl) GetPresignedURL(c *fox.Context, req *PresignRequest) (*Presign
 
 	result, err := ctrl.service.GetPresignedURL(ctx, req.Filename, req.ContentType)
 	if err != nil {
-		return nil, httperrors.New(http.StatusInternalServerError, err.Error())
+		return nil, httperrors.ErrInternalServerError
 	}
 
 	return &PresignResponse{
@@ -51,7 +51,7 @@ func (ctrl *Ctrl) GetAvatarPresignedURL(c *fox.Context, req *PresignRequest) (*P
 
 	result, err := ctrl.service.GetAvatarPresignedURL(ctx, req.Filename, req.ContentType)
 	if err != nil {
-		return nil, httperrors.New(http.StatusInternalServerError, err.Error())
+		return nil, httperrors.ErrInternalServerError
 	}
 
 	return &PresignResponse{
@@ -132,7 +132,7 @@ func (ctrl *Ctrl) GetSiteResourcePresignedURL(c *fox.Context, req *PresignReques
 
 	result, err := ctrl.service.GetSiteResourcePresignedURL(ctx, req.Filename, req.ContentType)
 	if err != nil {
-		return nil, httperrors.New(http.StatusInternalServerError, err.Error())
+		return nil, httperrors.ErrInternalServerError
 	}
 
 	return &PresignResponse{

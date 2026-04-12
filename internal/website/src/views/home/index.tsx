@@ -85,7 +85,7 @@ function Home() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6" data-testid="home-page">
       {/* Category chips — shown on home and type pages (/videos, /galleries, /articles) */}
       {showCategoryChips && (
         <div className="flex gap-2 pb-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>

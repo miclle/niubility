@@ -393,7 +393,7 @@ func applyUserUpdates(log logger.Logger, tx *gorm.DB, user *entity.User, args en
 	if args.Password != nil {
 		hashed, err := hashOptionalPassword(args.Password)
 		if err != nil {
-			return err
+			return fmt.Errorf("hash password: %w", err)
 		}
 		if err := tx.Model(user).Update("password", hashed).Error; err != nil {
 			log.Errorf("update user password: %v", err)
@@ -424,7 +424,7 @@ func (s *Service) DeleteUser(ctx context.Context, id string) error {
 
 	user, err := s.GetUserByID(ctx, id)
 	if err != nil {
-		return err
+		return fmt.Errorf("get user: %w", err)
 	}
 	if user == nil {
 		return nil
@@ -433,7 +433,7 @@ func (s *Service) DeleteUser(ctx context.Context, id string) error {
 	if roleCanAccessAdmin(user.Role, user.Status) {
 		ok, err := s.hasAnotherActiveAdmin(ctx, user.ID)
 		if err != nil {
-			return err
+			return fmt.Errorf("check active admin: %w", err)
 		}
 		if !ok {
 			return ErrUserLastActiveAdmin

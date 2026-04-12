@@ -51,6 +51,7 @@ type APIError struct {
 	Message    string `json:"message"`
 }
 
+// Error returns a human-readable error message for the API error.
 func (e *APIError) Error() string {
 	if e.Message != "" {
 		return e.Message

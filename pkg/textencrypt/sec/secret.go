@@ -20,14 +20,17 @@ package sec
 // Use Value() to safely retrieve the original value when needed.
 type Secret string
 
+// String returns a masked placeholder to prevent sensitive values from leaking in logs and output.
 func (s Secret) String() string {
 	return "******"
 }
 
+// Value returns the underlying raw string for cases where the plaintext is required.
 func (s Secret) Value() string {
 	return string(s)
 }
 
+// MarshalJSON returns a masked JSON string to prevent sensitive values from leaking during serialization.
 func (s Secret) MarshalJSON() ([]byte, error) {
 	return []byte("\"******\""), nil
 }

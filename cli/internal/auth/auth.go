@@ -56,7 +56,7 @@ func NewManager(token, server string) (*Manager, error) {
 func (m *Manager) Clear() error {
 	serverURL, err := url.Parse(m.server)
 	if err != nil {
-		return err
+		return fmt.Errorf("parse server URL: %w", err)
 	}
 	m.jar.SetCookies(serverURL, nil)
 	m.accessToken = ""
@@ -96,7 +96,7 @@ func (m *Manager) GetClientName() string {
 func (m *Manager) SyncFromJar() error {
 	serverURL, err := url.Parse(m.server)
 	if err != nil {
-		return err
+		return fmt.Errorf("parse server URL: %w", err)
 	}
 
 	for _, cookie := range m.jar.Cookies(serverURL) {

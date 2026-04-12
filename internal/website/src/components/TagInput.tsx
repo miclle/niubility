@@ -44,7 +44,7 @@ export default function TagInput({ tags, onChange, label = '标签', placeholder
   }
 
   return (
-    <div>
+    <div className="tag-input">
       {label && (
         <label className="app-text-secondary block text-sm font-medium mb-1.5">{label}</label>
       )}

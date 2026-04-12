@@ -93,7 +93,7 @@ function Register() {
   }
 
   return (
-    <div className="app-surface relative min-h-screen flex items-center justify-center px-4">
+    <div className="app-surface relative min-h-screen flex items-center justify-center px-4" data-testid="register-page">
       <div className="absolute right-4 top-4">
         <ThemeDropdown variant="outline" />
       </div>
@@ -107,7 +107,7 @@ function Register() {
           <p className="app-text-secondary text-sm">{t('auth:createAccount')}</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" data-testid="register-form">
           {error && (
             <div className="theme-danger-banner p-3 rounded-lg text-sm">
               {error}

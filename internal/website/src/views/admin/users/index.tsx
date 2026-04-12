@@ -127,7 +127,7 @@ function AdminUsers() {
   const hasFilters = search || departmentId
 
   return (
-    <div className="app-surface flex flex-col flex-1 min-h-0">
+    <div className="app-surface flex flex-col flex-1 min-h-0" data-testid="admin-users-page">
       {/* Title */}
       <div className="flex items-center justify-between mb-4 shrink-0">
         <h1 className="text-xl font-semibold text-foreground">{t('admin:userManagement')}</h1>

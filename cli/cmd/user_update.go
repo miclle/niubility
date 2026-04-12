@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/miclle/niubility/cli/internal/api"
 	"github.com/miclle/niubility/cli/internal/output"
 	"github.com/spf13/cobra"
@@ -35,7 +37,7 @@ var userUpdateCmd = &cobra.Command{
 
 		socialAccounts, err := parseSocialAccounts(userUpdateSocials)
 		if err != nil {
-			return err
+			return fmt.Errorf("parse social accounts: %w", err)
 		}
 
 		req := &api.UpdateUserRequest{

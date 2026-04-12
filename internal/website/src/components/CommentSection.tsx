@@ -135,7 +135,7 @@ function CommentSection({ contentID, attachmentID, commentCount, onCommentCountC
   const loading = isLoading || isFetchingNextPage
 
   return (
-    <div className="mt-6">
+    <div className="mt-6" data-testid="comment-section">
       <h3 className="text-base font-medium mb-5 text-foreground">
         {total > 0 ? t('comments:commentsCount', { count: total }) : t('comments:comments')}
       </h3>

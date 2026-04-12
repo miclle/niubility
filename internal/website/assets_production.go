@@ -82,7 +82,7 @@ func EmbedAssets(router *fox.Engine) {
 
 		info, err := file.Stat()
 		if err != nil {
-			return err
+			return fmt.Errorf("stat embedded file: %w", err)
 		}
 
 		return render.Reader{

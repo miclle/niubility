@@ -18,7 +18,7 @@ interface EditorActionsProps {
 export default function EditorActions({ saving, isNew, contentStatus, disabled, onSave, onCancel }: EditorActionsProps) {
   const { t } = useTranslation('editor')
   return (
-    <div className="border-t app-border flex items-center gap-3 pt-4">
+    <div className="border-t app-border flex items-center gap-3 pt-4" data-testid="editor-actions">
       {(isNew || contentStatus === 'draft') ? (
         <>
           <Button type="button" variant="outline" disabled={saving || disabled} onClick={() => onSave('draft')}>

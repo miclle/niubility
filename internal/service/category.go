@@ -11,6 +11,9 @@ import (
 	"github.com/miclle/niubility/internal/entity"
 )
 
+// ErrCategoryHasContents indicates a category cannot be deleted because contents are using it.
+var ErrCategoryHasContents = errors.New("category has associated contents")
+
 // ListCategories retrieves all categories ordered by sort_order ascending.
 // If visibleOnly is true, only visible categories are returned.
 func (s *Service) ListCategories(ctx context.Context, visibleOnly bool) ([]entity.Category, error) {
@@ -146,7 +149,7 @@ func (s *Service) DeleteCategory(ctx context.Context, id string) error {
 
 	category, err := s.GetCategoryByID(ctx, id)
 	if err != nil {
-		return err
+		return fmt.Errorf("get category: %w", err)
 	}
 	if category == nil {
 		return nil
@@ -159,7 +162,7 @@ func (s *Service) DeleteCategory(ctx context.Context, id string) error {
 		return fmt.Errorf("count contents for category: %w", err)
 	}
 	if count > 0 {
-		return fmt.Errorf("cannot delete category: %d contents are using this category", count)
+		return fmt.Errorf("%w: %d contents are using this category", ErrCategoryHasContents, count)
 	}
 
 	if err := s.db.WithContext(ctx).Where("id = ?", id).Delete(&entity.Category{}).Error; err != nil {

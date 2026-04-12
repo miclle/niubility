@@ -46,7 +46,7 @@ func (ctrl *Ctrl) StartDatabaseBackup(c *fox.Context) (*StartDatabaseBackupRespo
 		if errors.Is(err, service.ErrDatabaseBackupRunning) {
 			return nil, httperrors.New(http.StatusConflict, "已有数据库备份任务正在运行")
 		}
-		return nil, httperrors.New(http.StatusInternalServerError, err.Error())
+		return nil, httperrors.ErrInternalServerError
 	}
 	return &StartDatabaseBackupResponse{Backup: *record}, nil
 }
@@ -71,7 +71,7 @@ func (ctrl *Ctrl) GetDatabaseBackupDownloadURL(c *fox.Context) (*DatabaseBackupD
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, httperrors.ErrNotFound
 		}
-		return nil, httperrors.New(http.StatusBadRequest, err.Error())
+		return nil, httperrors.New(http.StatusBadRequest, "failed to generate download URL")
 	}
 	return &DatabaseBackupDownloadResponse{
 		URL:       url,

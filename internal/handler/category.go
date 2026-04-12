@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/fox-gonic/fox"
 	"github.com/fox-gonic/fox/httperrors"
 
 	"github.com/miclle/niubility/internal/entity"
+	"github.com/miclle/niubility/internal/service"
 )
 
 // CategoryWithCount extends Category with the content count for that category.
@@ -118,7 +120,10 @@ func (ctrl *Ctrl) DeleteCategory(c *fox.Context) error {
 	id := c.Param("id")
 
 	if err := ctrl.service.DeleteCategory(ctx, id); err != nil {
-		return httperrors.New(http.StatusConflict, err.Error())
+		if errors.Is(err, service.ErrCategoryHasContents) {
+			return httperrors.New(http.StatusConflict, err.Error())
+		}
+		return httperrors.ErrInternalServerError
 	}
 
 	c.Status(http.StatusNoContent)

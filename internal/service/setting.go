@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/fox-gonic/fox/logger"
@@ -57,7 +58,7 @@ func (s *Service) SetSetting(ctx context.Context, key, value string) error {
 		encrypted, err := s.Encryptor.Encrypt(value)
 		if err != nil {
 			log.Errorf("SetSetting: failed to encrypt setting %s: %v", key, err)
-			return err
+			return fmt.Errorf("encrypt setting %s: %w", key, err)
 		}
 		value = encrypted
 	}
@@ -68,7 +69,7 @@ func (s *Service) SetSetting(ctx context.Context, key, value string) error {
 	}
 	if err := s.db.WithContext(ctx).Save(&setting).Error; err != nil {
 		log.Errorf("SetSetting: failed to save setting %s: %v", key, err)
-		return err
+		return fmt.Errorf("save setting %s: %w", key, err)
 	}
 	return nil
 }
@@ -108,7 +109,7 @@ func (s *Service) UpdateSettingsBatch(ctx context.Context, settings map[string]s
 				encrypted, err := s.Encryptor.Encrypt(value)
 				if err != nil {
 					log.Errorf("UpdateSettingsBatch: failed to encrypt setting %s: %v", key, err)
-					return err
+					return fmt.Errorf("encrypt setting %s: %w", key, err)
 				}
 				value = encrypted
 			}
@@ -119,7 +120,7 @@ func (s *Service) UpdateSettingsBatch(ctx context.Context, settings map[string]s
 			}
 			if err := tx.Save(&setting).Error; err != nil {
 				log.Errorf("UpdateSettingsBatch: failed to save setting %s: %v", key, err)
-				return err
+				return fmt.Errorf("save setting %s: %w", key, err)
 			}
 		}
 		return nil
@@ -135,7 +136,7 @@ func (s *Service) UpdateSettingsWithSideEffects(ctx context.Context, settings ma
 	log := logger.NewWithContext(ctx)
 
 	if err := s.UpdateSettingsBatch(ctx, settings); err != nil {
-		return err
+		return fmt.Errorf("update settings batch: %w", err)
 	}
 
 	// Refresh WeChat client if WeChat keys changed

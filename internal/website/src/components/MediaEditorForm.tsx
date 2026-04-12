@@ -316,7 +316,7 @@ function MediaEditorForm({ id, defaultSpeaker, config, renderItemContent, onSave
   const hasUploading = mediaItems.some((m) => m.uploading) || documents.some((d) => d.uploading)
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="app-surface-elevated border app-border rounded-xl p-6 space-y-5">
+    <form onSubmit={(e) => e.preventDefault()} className="app-surface-elevated border app-border rounded-xl p-6 space-y-5" data-testid="media-editor-form">
       {/* Title */}
       <div>
         <label className="app-text-secondary block text-sm font-medium mb-1.5">{t('title')} *</label>

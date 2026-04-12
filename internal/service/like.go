@@ -31,7 +31,7 @@ func (s *Service) ToggleLike(ctx context.Context, userID, targetID string, targe
 				return fmt.Errorf("delete like: %w", err)
 			}
 			if err := updateLikeCount(tx, targetID, targetType, -1); err != nil {
-				return err
+				return fmt.Errorf("update like count: %w", err)
 			}
 			resp.Liked = false
 		} else if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -46,7 +46,7 @@ func (s *Service) ToggleLike(ctx context.Context, userID, targetID string, targe
 				return fmt.Errorf("create like: %w", err)
 			}
 			if err := updateLikeCount(tx, targetID, targetType, 1); err != nil {
-				return err
+				return fmt.Errorf("update like count: %w", err)
 			}
 			resp.Liked = true
 		} else {
@@ -56,7 +56,7 @@ func (s *Service) ToggleLike(ctx context.Context, userID, targetID string, targe
 		// Read back the updated like_count
 		count, err := getLikeCount(tx, targetID, targetType)
 		if err != nil {
-			return err
+			return fmt.Errorf("get like count: %w", err)
 		}
 		resp.LikeCount = count
 		return nil

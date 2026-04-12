@@ -50,7 +50,7 @@ Start by logging in:
   niubility login --server http://your-server:9000`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if err := config.ValidateProfile(profileName); err != nil {
-			return err
+			return fmt.Errorf("validate profile: %w", err)
 		}
 
 		// Local-only commands manage config without requiring a server session.

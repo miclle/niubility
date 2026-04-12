@@ -57,7 +57,7 @@ Examples:
   niubility login --server http://localhost:9000 --username admin --password-stdin < password.txt`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := config.ValidateProfile(profileName); err != nil {
-			return err
+			return fmt.Errorf("validate profile: %w", err)
 		}
 
 		// Load existing config if available
@@ -114,7 +114,7 @@ Examples:
 
 		mode, err := resolveLoginMode(ctx, apiClient)
 		if err != nil {
-			return err
+			return fmt.Errorf("resolve login mode: %w", err)
 		}
 
 		if mode == loginModeSSO {
@@ -124,7 +124,7 @@ Examples:
 		} else {
 			username, password, err := readPasswordLoginInput()
 			if err != nil {
-				return err
+				return fmt.Errorf("read login input: %w", err)
 			}
 
 			_, err = apiClient.Login(ctx, username, password)

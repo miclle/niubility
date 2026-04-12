@@ -139,7 +139,7 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
   }
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+    <form onSubmit={(e) => e.preventDefault()} className="space-y-6" data-testid="article-editor-form">
       {/* Title - Medium style, auto-resize textarea */}
       <div>
         <textarea

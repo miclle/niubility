@@ -148,7 +148,7 @@ func openBrowser(target string) error {
 	}
 
 	if err := cmd.Start(); err != nil {
-		return err
+		return fmt.Errorf("start browser: %w", err)
 	}
 
 	done := make(chan error, 1)
@@ -158,7 +158,10 @@ func openBrowser(target string) error {
 
 	select {
 	case err := <-done:
-		return err
+		if err != nil {
+			return fmt.Errorf("browser process: %w", err)
+		}
+		return nil
 	case <-time.After(2 * time.Second):
 		return nil
 	}

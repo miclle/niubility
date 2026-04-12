@@ -314,7 +314,7 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
   const uploadedItems = items.filter((i) => i.url)
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="app-surface-elevated border app-border rounded-xl p-6 space-y-5">
+    <form onSubmit={(e) => e.preventDefault()} className="app-surface-elevated border app-border rounded-xl p-6 space-y-5" data-testid="gallery-editor-form">
       {/* Title */}
       <div>
         <label className="app-text-secondary block text-sm font-medium mb-1.5">{t('title')} *</label>

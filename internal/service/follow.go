@@ -34,7 +34,7 @@ func (s *Service) ToggleFollow(ctx context.Context, followerID, followingID stri
 				return fmt.Errorf("delete follow: %w", err)
 			}
 			if err := updateFollowCounts(tx, followerID, followingID, -1); err != nil {
-				return err
+				return fmt.Errorf("update follow counts: %w", err)
 			}
 			resp.Following = false
 		} else if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -48,7 +48,7 @@ func (s *Service) ToggleFollow(ctx context.Context, followerID, followingID stri
 				return fmt.Errorf("create follow: %w", err)
 			}
 			if err := updateFollowCounts(tx, followerID, followingID, 1); err != nil {
-				return err
+				return fmt.Errorf("update follow counts: %w", err)
 			}
 			resp.Following = true
 		} else {

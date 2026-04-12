@@ -66,7 +66,7 @@ function Login() {
   }
 
   return (
-    <div className="app-surface relative min-h-screen flex items-center justify-center px-4">
+    <div className="app-surface relative min-h-screen flex items-center justify-center px-4" data-testid="login-page">
       <div className="absolute right-4 top-4">
         <ThemeDropdown variant="outline" />
       </div>
@@ -80,7 +80,7 @@ function Login() {
           <p className="app-text-secondary text-sm">{t('auth:loginToAccount')}</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" data-testid="login-form">
           {error && (
             <div className="theme-danger-banner p-3 rounded-lg text-sm">
               {error}
