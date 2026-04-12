@@ -334,7 +334,7 @@ func TestService_MigrateDeprecatedSettings(t *testing.T) {
 		}).Delete(&entity.Setting{})
 
 		if err := s.UpdateSettingsBatch(ctx, map[string]string{
-			entity.SettingSiteGalleryDetailImageStyle:    "old-detail",
+			entity.SettingSiteGalleryDetailImageStyle:     "old-detail",
 			entity.SettingDeliveryGalleryDetailImageStyle: "new-detail-already-set",
 		}); err != nil {
 			t.Fatalf("seed error = %v", err)
