@@ -60,7 +60,10 @@ function MyLikes() {
       initialPageParam: undefined as string | undefined,
     });
 
-  const allItems = data?.pages.flatMap((p) => p.data.items) ?? [];
+  const allItems = useMemo(
+    () => data?.pages.flatMap((p) => p.data.items) ?? [],
+    [data],
+  );
   const items = useMemo(
     () =>
       activeType === "all"

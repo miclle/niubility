@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import { Avatar, AvatarFallback } from 'src/components/ui/avatar'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
+import { autoResizeTextarea } from 'src/lib/textarea'
 
 // COMMON_EMOJIS is the set of emojis available in the picker.
 const COMMON_EMOJIS = [
@@ -52,12 +53,6 @@ export function EmojiPicker({ active, onToggle, onSelect, pickerRef, iconSize = 
   )
 }
 
-// autoResize adjusts textarea height to fit its content.
-export function autoResize(el: HTMLTextAreaElement) {
-  el.style.height = 'auto'
-  el.style.height = el.scrollHeight + 'px'
-}
-
 interface CommentInputProps {
   currentUser: { avatar: string; name: string; username: string }
   value: string
@@ -100,7 +95,7 @@ function CommentInput({ currentUser, value, onChange, onSubmit, submitting, emoj
           style={{ borderColor: focused ? 'var(--foreground)' : 'var(--surface-border)', color: 'var(--foreground)' }}
           placeholder={t('comments:addComment')}
           value={value}
-          onChange={(e) => { onChange(e.target.value); autoResize(e.target) }}
+          onChange={(e) => { onChange(e.target.value); autoResizeTextarea(e.target) }}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSubmit() } }}
           onFocus={() => setFocused(true)}
         />

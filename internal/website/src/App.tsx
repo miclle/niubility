@@ -3,7 +3,7 @@ import { RouterProvider, createBrowserRouter } from 'react-router-dom'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
 import { AppContext } from 'src/context/app'
-import { ThemeProvider } from 'src/context/theme'
+import { ThemeProvider } from 'src/context/ThemeProvider'
 import routes from './router'
 import type { User, SiteConfig } from 'src/types/user'
 import type { Category } from 'src/types/content'

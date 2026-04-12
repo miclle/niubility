@@ -9,7 +9,8 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from 'src/components/ui/alert-dialog'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
-import { EmojiPicker, autoResize } from 'src/components/CommentInput'
+import { EmojiPicker } from 'src/components/CommentInput'
+import { autoResizeTextarea } from 'src/lib/textarea'
 import type { Comment } from 'src/types/content'
 
 // CopyLinkButton renders a copy button that copies the comment anchor URL to clipboard.
@@ -202,7 +203,7 @@ function CommentCard({
               style={{ borderColor: 'var(--brand)', color: 'var(--foreground)' }}
               placeholder={t('comments:replyTo', { name: replyTo.userName })}
               value={replyText}
-              onChange={(e) => { onReplyTextChange(e.target.value); autoResize(e.target) }}
+              onChange={(e) => { onReplyTextChange(e.target.value); autoResizeTextarea(e.target) }}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onReplySubmit() } }}
               autoFocus
             />

@@ -61,7 +61,10 @@ function MyViews() {
       enabled: !!currentUser,
     });
 
-  const items = data?.pages.flatMap((p) => p.data.items) ?? [];
+  const items = useMemo(
+    () => data?.pages.flatMap((p) => p.data.items) ?? [],
+    [data],
+  );
   const groupedItems = useMemo<ViewGroup[]>(() => {
     const now = new Date();
     const today = getStartOfDay(now);

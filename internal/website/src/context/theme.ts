@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useContext } from 'react'
 
 export type ThemePreference = 'system' | 'light' | 'dark'
 export type ResolvedTheme = 'light' | 'dark'
@@ -11,7 +11,7 @@ interface ThemeContextValue {
   setTheme: (theme: ThemePreference) => void
 }
 
-const ThemeContext = createContext<ThemeContextValue>({
+export const ThemeContext = createContext<ThemeContextValue>({
   theme: 'system',
   resolvedTheme: 'light',
   setTheme: () => {},
@@ -32,7 +32,7 @@ function readStoredTheme(): ThemePreference {
   return isThemePreference(stored) ? stored : 'system'
 }
 
-function applyThemeToDocument(theme: ThemePreference) {
+export function applyThemeToDocument(theme: ThemePreference) {
   if (typeof document === 'undefined') return getSystemTheme()
 
   const resolvedTheme = theme === 'system' ? getSystemTheme() : theme
@@ -43,39 +43,16 @@ function applyThemeToDocument(theme: ThemePreference) {
   return resolvedTheme
 }
 
-export function initializeTheme() {
-  applyThemeToDocument(readStoredTheme())
+export function readInitialTheme() {
+  const theme = readStoredTheme()
+  return {
+    theme,
+    resolvedTheme: applyThemeToDocument(theme),
+  }
 }
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemePreference>(() => readStoredTheme())
-  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() => applyThemeToDocument(readStoredTheme()))
-
-  useEffect(() => {
-    const media = window.matchMedia('(prefers-color-scheme: dark)')
-    const syncTheme = () => {
-      setResolvedTheme(applyThemeToDocument(theme))
-    }
-
-    syncTheme()
-    window.localStorage.setItem(STORAGE_KEY, theme)
-    media.addEventListener('change', syncTheme)
-
-    return () => {
-      media.removeEventListener('change', syncTheme)
-    }
-  }, [theme])
-
-  const value = useMemo(
-    () => ({
-      theme,
-      resolvedTheme,
-      setTheme: setThemeState,
-    }),
-    [theme, resolvedTheme],
-  )
-
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+export function initializeTheme() {
+  applyThemeToDocument(readStoredTheme())
 }
 
 export function useTheme() {
