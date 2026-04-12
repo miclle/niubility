@@ -122,6 +122,9 @@ func New(ctx context.Context, driver, dsn string) (*Service, error) {
 	wechatApp := svc.initWechatClient(ctx)
 	svc.Wechat = wechatApp
 
+	// Migrate deprecated setting keys to their replacements (idempotent)
+	svc.MigrateDeprecatedSettings(ctx)
+
 	return svc, nil
 }
 

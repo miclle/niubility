@@ -116,7 +116,9 @@ const (
 	SettingSiteVideoSpeakerDefaultAvatarURL = "site.video_speaker_default_avatar_url"
 )
 
-// Deprecated site-level image style keys kept only for backward-compatible reads.
+// Deprecated site-level image style keys.
+// Values are auto-migrated to their delivery.* replacements on startup.
+// These constants will be removed in the next major version.
 const (
 	SettingSiteGalleryCardImageStyle   = "site.gallery_card_image_style"
 	SettingSiteGalleryDetailImageStyle = "site.gallery_detail_image_style"

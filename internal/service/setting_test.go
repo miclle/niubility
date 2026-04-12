@@ -255,6 +255,7 @@ func TestService_GetSiteConfig_FallsBackToLegacyImageStyleKeys(t *testing.T) {
 	s := setupTestService(t)
 	ctx := context.Background()
 
+	// Seed deprecated keys only
 	if err := s.UpdateSettingsBatch(ctx, map[string]string{
 		entity.SettingSiteGalleryCardImageStyle:   "legacy-card-style",
 		entity.SettingSiteGalleryDetailImageStyle: "legacy-detail-style",
@@ -262,6 +263,9 @@ func TestService_GetSiteConfig_FallsBackToLegacyImageStyleKeys(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("UpdateSettingsBatch() error = %v", err)
 	}
+
+	// Run migration — should copy deprecated values to delivery.* keys
+	s.MigrateDeprecatedSettings(ctx)
 
 	cfg, err := s.GetSiteConfig(ctx)
 	if err != nil {
@@ -277,4 +281,81 @@ func TestService_GetSiteConfig_FallsBackToLegacyImageStyleKeys(t *testing.T) {
 	if cfg.AvatarImageStyle != "legacy-avatar-style" {
 		t.Errorf("AvatarImageStyle = %q, want %q", cfg.AvatarImageStyle, "legacy-avatar-style")
 	}
+
+	// Deprecated rows should be gone
+	for _, key := range []string{
+		entity.SettingSiteGalleryCardImageStyle,
+		entity.SettingSiteGalleryDetailImageStyle,
+		entity.SettingSiteAvatarImageStyle,
+	} {
+		val, err := s.GetSetting(ctx, key)
+		if err != nil {
+			t.Fatalf("GetSetting(%s) error = %v", key, err)
+		}
+		if val != "" {
+			t.Errorf("deprecated key %s still has value %q, want empty", key, val)
+		}
+	}
+}
+
+func TestService_MigrateDeprecatedSettings(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	t.Run("copies deprecated to new when new is empty", func(t *testing.T) {
+		if err := s.UpdateSettingsBatch(ctx, map[string]string{
+			entity.SettingSiteGalleryCardImageStyle: "card-from-deprecated",
+		}); err != nil {
+			t.Fatalf("seed error = %v", err)
+		}
+
+		s.MigrateDeprecatedSettings(ctx)
+
+		got, err := s.GetSetting(ctx, entity.SettingDeliveryGalleryCardImageStyle)
+		if err != nil {
+			t.Fatalf("GetSetting() error = %v", err)
+		}
+		if got != "card-from-deprecated" {
+			t.Errorf("delivery key = %q, want %q", got, "card-from-deprecated")
+		}
+
+		// Deprecated key should be deleted
+		old, _ := s.GetSetting(ctx, entity.SettingSiteGalleryCardImageStyle)
+		if old != "" {
+			t.Errorf("deprecated key still has value %q", old)
+		}
+	})
+
+	t.Run("does not overwrite existing new key", func(t *testing.T) {
+		// Clean up from previous subtest
+		s.db.Where("key IN ?", []string{
+			entity.SettingDeliveryGalleryDetailImageStyle,
+			entity.SettingSiteGalleryDetailImageStyle,
+		}).Delete(&entity.Setting{})
+
+		if err := s.UpdateSettingsBatch(ctx, map[string]string{
+			entity.SettingSiteGalleryDetailImageStyle:    "old-detail",
+			entity.SettingDeliveryGalleryDetailImageStyle: "new-detail-already-set",
+		}); err != nil {
+			t.Fatalf("seed error = %v", err)
+		}
+
+		s.MigrateDeprecatedSettings(ctx)
+
+		got, _ := s.GetSetting(ctx, entity.SettingDeliveryGalleryDetailImageStyle)
+		if got != "new-detail-already-set" {
+			t.Errorf("delivery key = %q, want %q (should not be overwritten)", got, "new-detail-already-set")
+		}
+
+		// Deprecated key should still be deleted
+		old, _ := s.GetSetting(ctx, entity.SettingSiteGalleryDetailImageStyle)
+		if old != "" {
+			t.Errorf("deprecated key still has value %q", old)
+		}
+	})
+
+	t.Run("idempotent — no error on second run", func(t *testing.T) {
+		s.MigrateDeprecatedSettings(ctx)
+		// Should not panic or error
+	})
 }

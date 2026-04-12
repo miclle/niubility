@@ -337,6 +337,51 @@ func (s *Service) loadSettings(ctx context.Context, keys ...string) map[string]s
 	return m
 }
 
+// MigrateDeprecatedSettings copies values from deprecated site.* image style keys
+// to their delivery.* replacements (when the new key is still empty), then deletes
+// the deprecated rows. This is idempotent — once deprecated rows are gone the
+// method is a no-op.
+func (s *Service) MigrateDeprecatedSettings(ctx context.Context) {
+	log := logger.NewWithContext(ctx)
+
+	// deprecated key → new key
+	migrations := map[string]string{
+		entity.SettingSiteGalleryCardImageStyle:   entity.SettingDeliveryGalleryCardImageStyle,
+		entity.SettingSiteGalleryDetailImageStyle: entity.SettingDeliveryGalleryDetailImageStyle,
+		entity.SettingSiteAvatarImageStyle:        entity.SettingDeliveryAvatarImageStyle,
+	}
+
+	deprecatedKeys := make([]string, 0, len(migrations))
+	newKeys := make([]string, 0, len(migrations))
+	for dk, nk := range migrations {
+		deprecatedKeys = append(deprecatedKeys, dk)
+		newKeys = append(newKeys, nk)
+	}
+
+	allKeys := append(deprecatedKeys, newKeys...)
+	m := s.loadSettings(ctx, allKeys...)
+
+	for dk, nk := range migrations {
+		oldVal := m[dk]
+		if oldVal == "" {
+			continue // nothing to migrate
+		}
+		newVal := m[nk]
+		if newVal == "" {
+			// Copy deprecated value to new key
+			if err := s.SetSetting(ctx, nk, oldVal); err != nil {
+				log.Errorf("MigrateDeprecatedSettings: copy %s → %s: %v", dk, nk, err)
+				continue
+			}
+			log.Infof("MigrateDeprecatedSettings: migrated %s → %s", dk, nk)
+		}
+		// Delete deprecated row regardless — the value has been preserved in the new key
+		if err := s.db.WithContext(ctx).Where("key = ?", dk).Delete(&entity.Setting{}).Error; err != nil {
+			log.Errorf("MigrateDeprecatedSettings: delete %s: %v", dk, err)
+		}
+	}
+}
+
 // GetSiteConfig retrieves the site-level configuration from settings.
 // Returns a config with default values.
 func (s *Service) GetSiteConfig(ctx context.Context) (*entity.SiteConfig, error) {
@@ -348,10 +393,10 @@ func (s *Service) GetSiteConfig(ctx context.Context) (*entity.SiteConfig, error)
 		entity.SettingSiteFooter,
 		entity.SettingSiteVideoDefaultCoverURL, entity.SettingSiteVideoSpeakerDefaultAvatarURL,
 		entity.SettingDeliveryVideoCardImageStyle,
-		entity.SettingDeliveryGalleryCardImageStyle, entity.SettingSiteGalleryCardImageStyle,
+		entity.SettingDeliveryGalleryCardImageStyle,
 		entity.SettingDeliveryGalleryOriginalImageStyle,
-		entity.SettingDeliveryGalleryDetailImageStyle, entity.SettingSiteGalleryDetailImageStyle,
-		entity.SettingDeliveryAvatarImageStyle, entity.SettingSiteAvatarImageStyle,
+		entity.SettingDeliveryGalleryDetailImageStyle,
+		entity.SettingDeliveryAvatarImageStyle,
 	)
 
 	title := m[entity.SettingSiteTitle]
@@ -363,11 +408,6 @@ func (s *Service) GetSiteConfig(ctx context.Context) (*entity.SiteConfig, error)
 		copyright = "Niubility"
 	}
 	forceHTTPSBool, _ := strconv.ParseBool(m[entity.SettingSiteForceHTTPS])
-
-	// Fallback: prefer delivery.* keys, fall back to deprecated site.* keys
-	galleryCardImageStyle := firstNonEmpty(m[entity.SettingDeliveryGalleryCardImageStyle], m[entity.SettingSiteGalleryCardImageStyle])
-	galleryDetailImageStyle := firstNonEmpty(m[entity.SettingDeliveryGalleryDetailImageStyle], m[entity.SettingSiteGalleryDetailImageStyle])
-	avatarImageStyle := firstNonEmpty(m[entity.SettingDeliveryAvatarImageStyle], m[entity.SettingSiteAvatarImageStyle])
 
 	return &entity.SiteConfig{
 		Title:                        title,
@@ -382,9 +422,9 @@ func (s *Service) GetSiteConfig(ctx context.Context) (*entity.SiteConfig, error)
 		VideoDefaultCoverURL:         m[entity.SettingSiteVideoDefaultCoverURL],
 		VideoSpeakerDefaultAvatarURL: m[entity.SettingSiteVideoSpeakerDefaultAvatarURL],
 		VideoCardImageStyle:          m[entity.SettingDeliveryVideoCardImageStyle],
-		GalleryCardImageStyle:        galleryCardImageStyle,
+		GalleryCardImageStyle:        m[entity.SettingDeliveryGalleryCardImageStyle],
 		GalleryOriginalImageStyle:    m[entity.SettingDeliveryGalleryOriginalImageStyle],
-		GalleryDetailImageStyle:      galleryDetailImageStyle,
-		AvatarImageStyle:             avatarImageStyle,
+		GalleryDetailImageStyle:      m[entity.SettingDeliveryGalleryDetailImageStyle],
+		AvatarImageStyle:             m[entity.SettingDeliveryAvatarImageStyle],
 	}, nil
 }
