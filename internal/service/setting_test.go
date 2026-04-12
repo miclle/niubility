@@ -103,6 +103,41 @@ func TestService_UpdateSettingsBatch(t *testing.T) {
 	}
 }
 
+func TestService_LoadSettingsBatch(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	// Insert multiple settings
+	if err := s.UpdateSettingsBatch(ctx, map[string]string{
+		"batch_a": "value_a",
+		"batch_b": "value_b",
+		"batch_c": "value_c",
+	}); err != nil {
+		t.Fatalf("UpdateSettingsBatch() error = %v", err)
+	}
+
+	// Batch load should return all keys in one query
+	m := s.loadSettings(ctx, "batch_a", "batch_b", "batch_c", "nonexistent")
+	if m["batch_a"] != "value_a" {
+		t.Errorf("loadSettings[batch_a] = %q, want %q", m["batch_a"], "value_a")
+	}
+	if m["batch_b"] != "value_b" {
+		t.Errorf("loadSettings[batch_b] = %q, want %q", m["batch_b"], "value_b")
+	}
+	if m["batch_c"] != "value_c" {
+		t.Errorf("loadSettings[batch_c] = %q, want %q", m["batch_c"], "value_c")
+	}
+	if m["nonexistent"] != "" {
+		t.Errorf("loadSettings[nonexistent] = %q, want empty", m["nonexistent"])
+	}
+
+	// Empty keys should return empty map
+	empty := s.loadSettings(ctx)
+	if len(empty) != 0 {
+		t.Errorf("loadSettings() returned %d items, want 0", len(empty))
+	}
+}
+
 func TestSensitiveKeys(t *testing.T) {
 	// Test that sensitiveKeys map contains expected keys
 	expectedKeys := []string{

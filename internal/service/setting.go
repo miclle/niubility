@@ -304,71 +304,86 @@ func (s *Service) GetBackupConfig(ctx context.Context) (*entity.BackupConfig, er
 	}, nil
 }
 
-func (s *Service) getSettingWithFallback(ctx context.Context, key string, fallbackKeys ...string) string {
-	value, _ := s.GetSetting(ctx, key)
-	if value != "" {
-		return value
-	}
-	for _, fallbackKey := range fallbackKeys {
-		value, _ = s.GetSetting(ctx, fallbackKey)
-		if value != "" {
-			return value
-		}
-	}
-	return ""
-}
-
-// loadSettings reads multiple setting keys and returns them as a map.
+// loadSettings reads multiple setting keys in a single batch query and returns them as a map.
+// Sensitive values are automatically decrypted.
 func (s *Service) loadSettings(ctx context.Context, keys ...string) map[string]string {
+	log := logger.NewWithContext(ctx)
+
 	m := make(map[string]string, len(keys))
-	for _, key := range keys {
-		m[key], _ = s.GetSetting(ctx, key)
+	if len(keys) == 0 {
+		return m
 	}
+
+	var settings []entity.Setting
+	if err := s.db.WithContext(ctx).Where("key IN ?", keys).Find(&settings).Error; err != nil {
+		log.Errorf("loadSettings: batch query: %v", err)
+		return m
+	}
+
+	for _, setting := range settings {
+		value := setting.Value
+		// Decrypt sensitive values
+		if sensitiveKeys[setting.Key] && s.Encryptor != nil && textencrypt.IsEncrypted(value) {
+			decrypted, err := s.Encryptor.Decrypt(value)
+			if err != nil {
+				log.Errorf("loadSettings: decrypt %s: %v", setting.Key, err)
+				continue
+			}
+			value = decrypted
+		}
+		m[setting.Key] = value
+	}
+
 	return m
 }
 
 // GetSiteConfig retrieves the site-level configuration from settings.
 // Returns a config with default values.
 func (s *Service) GetSiteConfig(ctx context.Context) (*entity.SiteConfig, error) {
-	title, _ := s.GetSetting(ctx, entity.SettingSiteTitle)
+	m := s.loadSettings(ctx,
+		entity.SettingSiteTitle, entity.SettingSiteDescription,
+		entity.SettingSiteKeywords, entity.SettingSiteVersion,
+		entity.SettingSiteFaviconURL, entity.SettingSiteLogoURL,
+		entity.SettingSiteCopyright, entity.SettingSiteForceHTTPS,
+		entity.SettingSiteFooter,
+		entity.SettingSiteVideoDefaultCoverURL, entity.SettingSiteVideoSpeakerDefaultAvatarURL,
+		entity.SettingDeliveryVideoCardImageStyle,
+		entity.SettingDeliveryGalleryCardImageStyle, entity.SettingSiteGalleryCardImageStyle,
+		entity.SettingDeliveryGalleryOriginalImageStyle,
+		entity.SettingDeliveryGalleryDetailImageStyle, entity.SettingSiteGalleryDetailImageStyle,
+		entity.SettingDeliveryAvatarImageStyle, entity.SettingSiteAvatarImageStyle,
+	)
+
+	title := m[entity.SettingSiteTitle]
 	if title == "" {
 		title = "Niubility"
 	}
-	description, _ := s.GetSetting(ctx, entity.SettingSiteDescription)
-	keywords, _ := s.GetSetting(ctx, entity.SettingSiteKeywords)
-	version, _ := s.GetSetting(ctx, entity.SettingSiteVersion)
-	faviconURL, _ := s.GetSetting(ctx, entity.SettingSiteFaviconURL)
-	logoURL, _ := s.GetSetting(ctx, entity.SettingSiteLogoURL)
-	copyright, _ := s.GetSetting(ctx, entity.SettingSiteCopyright)
+	copyright := m[entity.SettingSiteCopyright]
 	if copyright == "" {
 		copyright = "Niubility"
 	}
-	forceHTTPS, _ := s.GetSetting(ctx, entity.SettingSiteForceHTTPS)
-	forceHTTPSBool, _ := strconv.ParseBool(forceHTTPS)
-	footer, _ := s.GetSetting(ctx, entity.SettingSiteFooter)
-	videoDefaultCoverURL, _ := s.GetSetting(ctx, entity.SettingSiteVideoDefaultCoverURL)
-	videoSpeakerDefaultAvatarURL, _ := s.GetSetting(ctx, entity.SettingSiteVideoSpeakerDefaultAvatarURL)
-	videoCardImageStyle, _ := s.GetSetting(ctx, entity.SettingDeliveryVideoCardImageStyle)
-	galleryCardImageStyle := s.getSettingWithFallback(ctx, entity.SettingDeliveryGalleryCardImageStyle, entity.SettingSiteGalleryCardImageStyle)
-	galleryOriginalImageStyle, _ := s.GetSetting(ctx, entity.SettingDeliveryGalleryOriginalImageStyle)
-	galleryDetailImageStyle := s.getSettingWithFallback(ctx, entity.SettingDeliveryGalleryDetailImageStyle, entity.SettingSiteGalleryDetailImageStyle)
-	avatarImageStyle := s.getSettingWithFallback(ctx, entity.SettingDeliveryAvatarImageStyle, entity.SettingSiteAvatarImageStyle)
+	forceHTTPSBool, _ := strconv.ParseBool(m[entity.SettingSiteForceHTTPS])
+
+	// Fallback: prefer delivery.* keys, fall back to deprecated site.* keys
+	galleryCardImageStyle := firstNonEmpty(m[entity.SettingDeliveryGalleryCardImageStyle], m[entity.SettingSiteGalleryCardImageStyle])
+	galleryDetailImageStyle := firstNonEmpty(m[entity.SettingDeliveryGalleryDetailImageStyle], m[entity.SettingSiteGalleryDetailImageStyle])
+	avatarImageStyle := firstNonEmpty(m[entity.SettingDeliveryAvatarImageStyle], m[entity.SettingSiteAvatarImageStyle])
 
 	return &entity.SiteConfig{
 		Title:                        title,
-		Description:                  description,
-		Keywords:                     keywords,
-		Version:                      version,
-		FaviconURL:                   faviconURL,
-		LogoURL:                      logoURL,
+		Description:                  m[entity.SettingSiteDescription],
+		Keywords:                     m[entity.SettingSiteKeywords],
+		Version:                      m[entity.SettingSiteVersion],
+		FaviconURL:                   m[entity.SettingSiteFaviconURL],
+		LogoURL:                      m[entity.SettingSiteLogoURL],
 		Copyright:                    copyright,
 		ForceHTTPS:                   forceHTTPSBool,
-		Footer:                       footer,
-		VideoDefaultCoverURL:         videoDefaultCoverURL,
-		VideoSpeakerDefaultAvatarURL: videoSpeakerDefaultAvatarURL,
-		VideoCardImageStyle:          videoCardImageStyle,
+		Footer:                       m[entity.SettingSiteFooter],
+		VideoDefaultCoverURL:         m[entity.SettingSiteVideoDefaultCoverURL],
+		VideoSpeakerDefaultAvatarURL: m[entity.SettingSiteVideoSpeakerDefaultAvatarURL],
+		VideoCardImageStyle:          m[entity.SettingDeliveryVideoCardImageStyle],
 		GalleryCardImageStyle:        galleryCardImageStyle,
-		GalleryOriginalImageStyle:    galleryOriginalImageStyle,
+		GalleryOriginalImageStyle:    m[entity.SettingDeliveryGalleryOriginalImageStyle],
 		GalleryDetailImageStyle:      galleryDetailImageStyle,
 		AvatarImageStyle:             avatarImageStyle,
 	}, nil
