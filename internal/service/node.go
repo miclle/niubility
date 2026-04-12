@@ -128,7 +128,7 @@ func (s *Service) UpsertServiceNodeHeartbeat(ctx context.Context, input ServiceN
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		node = entity.ServiceNode{
-			ID: nodeIDToEntityID(nodeID),
+			ID: entity.ID(),
 		}
 	}
 
@@ -323,13 +323,6 @@ func cloneStringMap(src map[string]string) map[string]string {
 		dst[k] = v
 	}
 	return dst
-}
-
-func nodeIDToEntityID(nodeID string) string {
-	if nodeID == "" {
-		return entity.ID()
-	}
-	return entity.ID()
 }
 
 func detectPrimaryIP() string {
