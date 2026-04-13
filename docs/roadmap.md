@@ -2,6 +2,27 @@
 
 本文档记录仍有明确价值、但尚未完整落地的事项。已在代码中完成的能力不再重复列入 roadmap。
 
+## Slider (幻灯片)
+
+详细设计方案见 `docs/slider-design.md`。
+
+- [ ] **Phase 1**：Slider 基础功能
+  - 新增 `slider` 内容类型（前后端全链路）
+  - PDF 上传 → 服务端转图片（`pdftoppm`）→ 翻页浏览
+  - 翻页浏览器组件（键盘导航、全屏演示、缩略图导航）
+  - 转换状态跟踪与展示
+  - Admin 管理页面
+
+- [ ] **Phase 2**：PPT/PPTX + Keynote 支持
+  - 引入 LibreOffice headless 转换链路
+  - PPT/PPTX/Keynote → PDF → 图片
+  - 并发控制与字体兼容
+
+- [ ] **Phase 3**：AI 语音讲解
+  - 文本提取 + AI 生成讲解文案
+  - TTS 语音合成
+  - 翻页 + 语音同步播放
+
 ## CLI
 
 - [ ] 将 `cli/` 从“可用命令集”推进到“稳定交付入口”
