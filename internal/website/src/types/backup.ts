@@ -1,8 +1,10 @@
 export interface BackupRecord {
   id: string
   type: string
-  status: string
-  driver: string
+  status: 'running' | 'success' | 'failed'
+  method: 'native_tool' | 'go_builtin' | ''
+  node_id: string
+  driver: 'postgres' | 'mysql' | string
   object_key: string
   file_name: string
   file_size: number

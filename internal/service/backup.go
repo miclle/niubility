@@ -151,7 +151,8 @@ func (s *Service) runDatabaseBackup(ctx context.Context, recordID string) {
 	dumpSQLPath := filepath.Join(tmpDir, dumpBaseName+".sql")
 	archivePath := dumpSQLPath + ".gz"
 
-	if err := s.dumpDatabaseToFile(ctx, info, dumpSQLPath); err != nil {
+	method, err := s.dumpDatabaseToFile(ctx, info, dumpSQLPath)
+	if err != nil {
 		s.failBackup(ctx, record, startedAt, err)
 		return
 	}
@@ -172,6 +173,7 @@ func (s *Service) runDatabaseBackup(ctx context.Context, recordID string) {
 	updates := map[string]any{
 		"status":          entity.BackupStatusSuccess,
 		"lock_key":        nil,
+		"method":          method,
 		"object_key":      objectKey,
 		"file_name":       filepath.Base(archivePath),
 		"file_size":       size,
@@ -191,12 +193,16 @@ func (s *Service) createRunningBackupRecord(ctx context.Context, operator *entit
 		return nil, fmt.Errorf("operator is required")
 	}
 
+	// Attempt to recover stale locks left by crashed nodes
+	s.recoverStaleLocks(ctx)
+
 	lockKey := entity.BackupTypeDatabase
 	record := &entity.BackupRecord{
 		ID:              entity.ID(),
 		Type:            entity.BackupTypeDatabase,
 		Status:          entity.BackupStatusRunning,
 		LockKey:         &lockKey,
+		NodeID:          s.nodeID,
 		Driver:          s.dialect,
 		Compressed:      true,
 		StartedByUserID: operator.ID,
@@ -217,33 +223,68 @@ func (s *Service) createRunningBackupRecord(ctx context.Context, operator *entit
 	return record, nil
 }
 
-func (s *Service) dumpDatabaseToFile(ctx context.Context, info *dbConnectionInfo, outputPath string) error {
+// dumpDatabaseToFile exports the database to a SQL file.
+// It tries the native CLI tool first (pg_dump/mysqldump); if the tool is not
+// installed it falls back to the built-in Go SQL exporter.
+// Returns the backup method used ("native_tool" or "go_builtin").
+func (s *Service) dumpDatabaseToFile(ctx context.Context, info *dbConnectionInfo, outputPath string) (string, error) {
 	if info == nil {
-		return fmt.Errorf("database connection info is nil")
+		return "", fmt.Errorf("database connection info is nil")
 	}
 
 	output, err := os.Create(outputPath)
 	if err != nil {
-		return fmt.Errorf("create dump file: %w", err)
+		return "", fmt.Errorf("create dump file: %w", err)
 	}
 	defer func() {
 		_ = output.Close()
 	}()
 
+	toolName := "pg_dump"
+	if s.isMySQL() {
+		toolName = "mysqldump"
+	}
+
+	_, lookErr := s.lookPath(toolName)
+	useNativeTool := lookErr == nil
+
+	if useNativeTool {
+		if err := s.dumpWithNativeTool(ctx, info, output); err != nil {
+			return "", err
+		}
+		return entity.BackupMethodNativeTool, nil
+	}
+
+	// Native tool not found, fall back to Go built-in exporter
+	if err := s.dumpWithGoBuiltin(ctx, info, output); err != nil {
+		return "", err
+	}
+	return entity.BackupMethodGoBuiltin, nil
+}
+
+// dumpWithNativeTool runs pg_dump or mysqldump to export the database.
+func (s *Service) dumpWithNativeTool(ctx context.Context, info *dbConnectionInfo, w io.Writer) error {
 	var stderr strings.Builder
 	name, args, env := s.buildDumpCommand(info)
 	if name == "" {
 		return fmt.Errorf("unsupported database driver: %s", s.dialect)
 	}
 
-	if err := s.commandRunner(ctx, name, args, env, output, &stderr); err != nil {
+	if err := s.commandRunner(ctx, name, args, env, w, &stderr); err != nil {
 		msg := strings.TrimSpace(stderr.String())
 		if msg == "" {
 			msg = err.Error()
 		}
 		return fmt.Errorf("%s failed: %s", name, sanitizeBackupError(msg))
 	}
+	return nil
+}
 
+// dumpWithGoBuiltin uses the built-in Go SQL exporter to export the database.
+func (s *Service) dumpWithGoBuiltin(ctx context.Context, info *dbConnectionInfo, w io.Writer) error {
+	if err := s.nativeDumper(ctx, s.dialect, info, w); err != nil {
+		return fmt.Errorf("go builtin dump failed: %s", sanitizeBackupError(err.Error()))
+	}
 	return nil
 }
 
@@ -353,6 +394,49 @@ func (s *Service) failBackup(ctx context.Context, record *entity.BackupRecord, s
 		"duration_ms":   finishedAt.Sub(startedAt).Milliseconds(),
 		"error_message": sanitizeBackupError(err.Error()),
 	}).Error
+}
+
+// recoverStaleLocks clears backup locks left by nodes that are no longer alive.
+// It must be called while backupMutex is held.
+func (s *Service) recoverStaleLocks(ctx context.Context) {
+	var stale []entity.BackupRecord
+	if err := s.db.WithContext(ctx).
+		Where("status = ? AND lock_key IS NOT NULL", entity.BackupStatusRunning).
+		Find(&stale).Error; err != nil || len(stale) == 0 {
+		return
+	}
+
+	now := time.Now()
+	const staleFallbackTimeout = 30 * time.Minute
+
+	for i := range stale {
+		rec := &stale[i]
+		if rec.NodeID == "" {
+			// Legacy record without node tracking — use time-based fallback
+			if now.Sub(rec.StartedAt) < staleFallbackTimeout {
+				continue
+			}
+		} else {
+			// Check whether the owning node is still alive via heartbeat
+			var node entity.ServiceNode
+			err := s.db.WithContext(ctx).
+				Where("node_id = ?", rec.NodeID).
+				First(&node).Error
+			if err == nil && now.Sub(node.LastHeartbeatAt) <= s.nodeHeartbeatTimeout {
+				continue // Node is alive — backup may still be running
+			}
+		}
+
+		// Node is dead or record is stale — force-fail the backup
+		finishedAt := now
+		_ = s.db.WithContext(ctx).Model(&entity.BackupRecord{}).Where("id = ?", rec.ID).Updates(map[string]any{
+			"status":        entity.BackupStatusFailed,
+			"lock_key":      nil,
+			"finished_at":   &finishedAt,
+			"duration_ms":   finishedAt.Sub(rec.StartedAt).Milliseconds(),
+			"error_message": "backup aborted: owning node is no longer active",
+		}).Error
+	}
 }
 
 func buildDatabaseBackupBaseName(now time.Time, driver string) string {

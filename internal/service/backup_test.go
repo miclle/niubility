@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -113,6 +114,9 @@ func TestService_StartDatabaseBackup_Success(t *testing.T) {
 		_, _ = stdout.Write([]byte("select 1;\n"))
 		return nil
 	}
+	s.lookPath = func(file string) (string, error) {
+		return "/usr/bin/" + file, nil
+	}
 
 	var uploadedPath string
 	var uploadedKey string
@@ -196,5 +200,326 @@ func TestService_CreateRunningBackupRecord_ConflictOnDuplicateLock(t *testing.T)
 	}
 	if !errors.Is(err, ErrDatabaseBackupRunning) {
 		t.Fatalf("createRunningBackupRecord() error = %v, want %v", err, ErrDatabaseBackupRunning)
+	}
+}
+
+func TestService_StartDatabaseBackup_FallbackToGoBuiltin(t *testing.T) {
+	s := setupTestService(t)
+	s.dialect = "postgres"
+	s.dsn = "postgres://tester:secret@localhost:5432/niubility?sslmode=disable"
+	ctx := context.Background()
+
+	if err := s.UpdateSettingsBatch(ctx, map[string]string{
+		entity.SettingS3Endpoint:                          "https://s3.example.com",
+		entity.SettingS3Region:                            "us-east-1",
+		entity.SettingS3Bucket:                            "niubility",
+		entity.SettingS3AccessKey:                         "ak",
+		entity.SettingS3SecretKey:                         "sk",
+		entity.SettingBackupDatabaseS3Prefix:              "backups/database",
+		entity.SettingBackupDatabaseDownloadURLTTLSeconds: "900",
+	}); err != nil {
+		t.Fatalf("UpdateSettingsBatch() error = %v", err)
+	}
+
+	// lookPath returns not found → should fall back to nativeDumper
+	s.lookPath = func(file string) (string, error) {
+		return "", exec.ErrNotFound
+	}
+
+	var nativeDumperCalled bool
+	s.nativeDumper = func(ctx context.Context, dialect string, info *dbConnectionInfo, w io.Writer) error {
+		nativeDumperCalled = true
+		_, _ = w.Write([]byte("-- go builtin dump\nSELECT 1;\n"))
+		return nil
+	}
+
+	var commandRunnerCalled bool
+	s.commandRunner = func(ctx context.Context, name string, args []string, env []string, stdout, stderr io.Writer) error {
+		commandRunnerCalled = true
+		return nil
+	}
+
+	s.backupUploader = func(ctx context.Context, localPath, objectKey string) error {
+		return nil
+	}
+
+	operator := &entity.User{ID: "admin-1", Username: "admin", Name: "管理员"}
+	record, err := s.StartDatabaseBackup(ctx, operator)
+	if err != nil {
+		t.Fatalf("StartDatabaseBackup() error = %v", err)
+	}
+
+	stored, err := s.getBackupRecordByID(ctx, record.ID)
+	if err != nil {
+		t.Fatalf("getBackupRecordByID() error = %v", err)
+	}
+	if stored.Status != entity.BackupStatusSuccess {
+		t.Errorf("backup status = %q, want %q; error = %s", stored.Status, entity.BackupStatusSuccess, stored.ErrorMessage)
+	}
+	if stored.Method != entity.BackupMethodGoBuiltin {
+		t.Errorf("backup method = %q, want %q", stored.Method, entity.BackupMethodGoBuiltin)
+	}
+	if !nativeDumperCalled {
+		t.Error("nativeDumper was not called")
+	}
+	if commandRunnerCalled {
+		t.Error("commandRunner should not be called when tool is not found")
+	}
+}
+
+func TestService_StartDatabaseBackup_PreferNativeTool(t *testing.T) {
+	s := setupTestService(t)
+	s.dialect = "postgres"
+	s.dsn = "postgres://tester:secret@localhost:5432/niubility?sslmode=disable"
+	ctx := context.Background()
+
+	if err := s.UpdateSettingsBatch(ctx, map[string]string{
+		entity.SettingS3Endpoint:                          "https://s3.example.com",
+		entity.SettingS3Region:                            "us-east-1",
+		entity.SettingS3Bucket:                            "niubility",
+		entity.SettingS3AccessKey:                         "ak",
+		entity.SettingS3SecretKey:                         "sk",
+		entity.SettingBackupDatabaseS3Prefix:              "backups/database",
+		entity.SettingBackupDatabaseDownloadURLTTLSeconds: "900",
+	}); err != nil {
+		t.Fatalf("UpdateSettingsBatch() error = %v", err)
+	}
+
+	s.lookPath = func(file string) (string, error) {
+		return "/usr/bin/" + file, nil
+	}
+
+	var commandRunnerCalled bool
+	s.commandRunner = func(ctx context.Context, name string, args []string, env []string, stdout, stderr io.Writer) error {
+		commandRunnerCalled = true
+		_, _ = stdout.Write([]byte("select 1;\n"))
+		return nil
+	}
+
+	var nativeDumperCalled bool
+	s.nativeDumper = func(ctx context.Context, dialect string, info *dbConnectionInfo, w io.Writer) error {
+		nativeDumperCalled = true
+		return nil
+	}
+
+	s.backupUploader = func(ctx context.Context, localPath, objectKey string) error {
+		return nil
+	}
+
+	operator := &entity.User{ID: "admin-1", Username: "admin", Name: "管理员"}
+	record, err := s.StartDatabaseBackup(ctx, operator)
+	if err != nil {
+		t.Fatalf("StartDatabaseBackup() error = %v", err)
+	}
+
+	stored, err := s.getBackupRecordByID(ctx, record.ID)
+	if err != nil {
+		t.Fatalf("getBackupRecordByID() error = %v", err)
+	}
+	if stored.Status != entity.BackupStatusSuccess {
+		t.Errorf("backup status = %q, want %q; error = %s", stored.Status, entity.BackupStatusSuccess, stored.ErrorMessage)
+	}
+	if stored.Method != entity.BackupMethodNativeTool {
+		t.Errorf("backup method = %q, want %q", stored.Method, entity.BackupMethodNativeTool)
+	}
+	if !commandRunnerCalled {
+		t.Error("commandRunner was not called")
+	}
+	if nativeDumperCalled {
+		t.Error("nativeDumper should not be called when native tool is available")
+	}
+}
+
+func TestService_StartDatabaseBackup_NativeToolFailureNoFallback(t *testing.T) {
+	s := setupTestService(t)
+	s.dialect = "postgres"
+	s.dsn = "postgres://tester:secret@localhost:5432/niubility?sslmode=disable"
+	ctx := context.Background()
+
+	if err := s.UpdateSettingsBatch(ctx, map[string]string{
+		entity.SettingS3Endpoint:  "https://s3.example.com",
+		entity.SettingS3Region:    "us-east-1",
+		entity.SettingS3Bucket:    "niubility",
+		entity.SettingS3AccessKey: "ak",
+		entity.SettingS3SecretKey: "sk",
+	}); err != nil {
+		t.Fatalf("UpdateSettingsBatch() error = %v", err)
+	}
+
+	// Tool exists but fails
+	s.lookPath = func(file string) (string, error) {
+		return "/usr/bin/" + file, nil
+	}
+	s.commandRunner = func(ctx context.Context, name string, args []string, env []string, stdout, stderr io.Writer) error {
+		_, _ = stderr.Write([]byte("connection refused"))
+		return fmt.Errorf("exit status 1")
+	}
+
+	var nativeDumperCalled bool
+	s.nativeDumper = func(ctx context.Context, dialect string, info *dbConnectionInfo, w io.Writer) error {
+		nativeDumperCalled = true
+		return nil
+	}
+
+	s.backupUploader = func(ctx context.Context, localPath, objectKey string) error {
+		return nil
+	}
+
+	operator := &entity.User{ID: "admin-1", Username: "admin", Name: "管理员"}
+	record, err := s.StartDatabaseBackup(ctx, operator)
+	if err != nil {
+		t.Fatalf("StartDatabaseBackup() error = %v", err)
+	}
+
+	stored, err := s.getBackupRecordByID(ctx, record.ID)
+	if err != nil {
+		t.Fatalf("getBackupRecordByID() error = %v", err)
+	}
+	if stored.Status != entity.BackupStatusFailed {
+		t.Errorf("backup status = %q, want %q", stored.Status, entity.BackupStatusFailed)
+	}
+	if nativeDumperCalled {
+		t.Error("nativeDumper should not be called when native tool exists but fails")
+	}
+}
+
+func TestService_RecoverStaleLocks_DeadNode(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	// Create a service node that stopped heartbeating (dead)
+	deadNodeID := "dead-host:web:0.0.0.0:9000"
+	s.db.WithContext(ctx).Create(&entity.ServiceNode{
+		ID:              entity.ID(),
+		NodeID:          deadNodeID,
+		NodeType:        entity.NodeTypeWeb,
+		LastHeartbeatAt: time.Now().Add(-5 * time.Minute), // Well beyond 90s timeout
+	})
+
+	// Create a stuck running backup owned by the dead node
+	lockKey := entity.BackupTypeDatabase
+	stuckRecord := &entity.BackupRecord{
+		ID:        entity.ID(),
+		Type:      entity.BackupTypeDatabase,
+		Status:    entity.BackupStatusRunning,
+		LockKey:   &lockKey,
+		NodeID:    deadNodeID,
+		StartedAt: time.Now().Add(-10 * time.Minute),
+	}
+	s.db.WithContext(ctx).Create(stuckRecord)
+
+	// A new backup should succeed because the stale lock gets recovered
+	s.nativeDumper = func(ctx context.Context, dialect string, info *dbConnectionInfo, w io.Writer) error {
+		_, _ = w.Write([]byte("SELECT 1;\n"))
+		return nil
+	}
+	s.backupUploader = func(ctx context.Context, localPath, objectKey string) error { return nil }
+	s.dialect = "postgres"
+	s.dsn = "postgres://tester:secret@localhost:5432/niubility?sslmode=disable"
+	if err := s.UpdateSettingsBatch(ctx, map[string]string{
+		entity.SettingS3Endpoint:  "https://s3.example.com",
+		entity.SettingS3Region:    "us-east-1",
+		entity.SettingS3Bucket:    "niubility",
+		entity.SettingS3AccessKey: "ak",
+		entity.SettingS3SecretKey: "sk",
+	}); err != nil {
+		t.Fatalf("UpdateSettingsBatch() error = %v", err)
+	}
+
+	operator := &entity.User{ID: "admin-1", Username: "admin", Name: "管理员"}
+	_, err := s.StartDatabaseBackup(ctx, operator)
+	if err != nil {
+		t.Fatalf("StartDatabaseBackup() error = %v, want nil (stale lock should be recovered)", err)
+	}
+
+	// Verify the old record was force-failed
+	var old entity.BackupRecord
+	s.db.WithContext(ctx).Where("id = ?", stuckRecord.ID).First(&old)
+	if old.Status != entity.BackupStatusFailed {
+		t.Errorf("stale record status = %q, want %q", old.Status, entity.BackupStatusFailed)
+	}
+	if old.LockKey != nil {
+		t.Error("stale record lock_key should be nil")
+	}
+}
+
+func TestService_RecoverStaleLocks_AliveNode(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	// Create a service node that is alive
+	aliveNodeID := "alive-host:web:0.0.0.0:9000"
+	s.db.WithContext(ctx).Create(&entity.ServiceNode{
+		ID:              entity.ID(),
+		NodeID:          aliveNodeID,
+		NodeType:        entity.NodeTypeWeb,
+		LastHeartbeatAt: time.Now(), // Just heartbeated
+	})
+
+	// Create a running backup owned by the alive node
+	lockKey := entity.BackupTypeDatabase
+	runningRecord := &entity.BackupRecord{
+		ID:        entity.ID(),
+		Type:      entity.BackupTypeDatabase,
+		Status:    entity.BackupStatusRunning,
+		LockKey:   &lockKey,
+		NodeID:    aliveNodeID,
+		StartedAt: time.Now().Add(-1 * time.Minute),
+	}
+	s.db.WithContext(ctx).Create(runningRecord)
+
+	// A new backup should fail with conflict because the running backup's node is alive
+	operator := &entity.User{ID: "admin-1", Username: "admin", Name: "管理员"}
+	_, err := s.StartDatabaseBackup(ctx, operator)
+	if !errors.Is(err, ErrDatabaseBackupRunning) {
+		t.Fatalf("StartDatabaseBackup() error = %v, want %v", err, ErrDatabaseBackupRunning)
+	}
+}
+
+func TestService_RecoverStaleLocks_LegacyRecordTimeout(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	// Create a legacy running record without NodeID, started 31 minutes ago
+	lockKey := entity.BackupTypeDatabase
+	legacyRecord := &entity.BackupRecord{
+		ID:        entity.ID(),
+		Type:      entity.BackupTypeDatabase,
+		Status:    entity.BackupStatusRunning,
+		LockKey:   &lockKey,
+		NodeID:    "", // Legacy — no node tracking
+		StartedAt: time.Now().Add(-31 * time.Minute),
+	}
+	s.db.WithContext(ctx).Create(legacyRecord)
+
+	// A new backup should succeed because the legacy lock is timed out
+	s.nativeDumper = func(ctx context.Context, dialect string, info *dbConnectionInfo, w io.Writer) error {
+		_, _ = w.Write([]byte("SELECT 1;\n"))
+		return nil
+	}
+	s.backupUploader = func(ctx context.Context, localPath, objectKey string) error { return nil }
+	s.dialect = "postgres"
+	s.dsn = "postgres://tester:secret@localhost:5432/niubility?sslmode=disable"
+	if err := s.UpdateSettingsBatch(ctx, map[string]string{
+		entity.SettingS3Endpoint:  "https://s3.example.com",
+		entity.SettingS3Region:    "us-east-1",
+		entity.SettingS3Bucket:    "niubility",
+		entity.SettingS3AccessKey: "ak",
+		entity.SettingS3SecretKey: "sk",
+	}); err != nil {
+		t.Fatalf("UpdateSettingsBatch() error = %v", err)
+	}
+
+	operator := &entity.User{ID: "admin-1", Username: "admin", Name: "管理员"}
+	_, err := s.StartDatabaseBackup(ctx, operator)
+	if err != nil {
+		t.Fatalf("StartDatabaseBackup() error = %v, want nil (legacy timeout should be recovered)", err)
+	}
+
+	// Verify the legacy record was force-failed
+	var old entity.BackupRecord
+	s.db.WithContext(ctx).Where("id = ?", legacyRecord.ID).First(&old)
+	if old.Status != entity.BackupStatusFailed {
+		t.Errorf("legacy record status = %q, want %q", old.Status, entity.BackupStatusFailed)
 	}
 }

@@ -36,8 +36,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("init service: %v", err)
 	}
+
+	nodeID := resolveNodeID(cfg.Addr)
+	svc.SetNodeID(nodeID)
 	svc.StartCurrentNodeHeartbeat(ctx, service.CurrentNodeConfig{
-		NodeID:            resolveNodeID(cfg.Addr),
+		NodeID:            nodeID,
 		NodeType:          resolveNodeType(),
 		ServiceName:       envOrDefault("NIUBILITY_NODE_SERVICE_NAME", "niubility"),
 		DisplayName:       os.Getenv("NIUBILITY_NODE_DISPLAY_NAME"),

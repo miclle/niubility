@@ -229,6 +229,7 @@
   "startedAt": "开始时间",
   "duration": "耗时",
   "download": "下载",
+  "backupMethod": "备份方式",
   "backupStatus": {
     "running": "执行中",
     "success": "成功",

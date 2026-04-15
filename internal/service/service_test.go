@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"io"
+	"os/exec"
 	"testing"
 	"time"
 
@@ -59,6 +60,12 @@ func setupTestService(t *testing.T) *Service {
 		},
 		asyncRunner: func(fn func()) {
 			fn()
+		},
+		lookPath: func(file string) (string, error) {
+			return "", exec.ErrNotFound
+		},
+		nativeDumper: func(ctx context.Context, dialect string, info *dbConnectionInfo, w io.Writer) error {
+			return nil
 		},
 	}
 }

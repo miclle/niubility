@@ -22,6 +22,14 @@ function statusColor(status: string) {
   return { background: '#f3f4f6', color: '#374151' }
 }
 
+function formatBackupMethod(method: string, driver: string) {
+  if (method === 'native_tool') {
+    return driver === 'mysql' ? 'mysqldump' : 'pg_dump'
+  }
+  if (method === 'go_builtin') return 'Go builtin'
+  return '-'
+}
+
 function DatabaseBackups() {
   const { t } = useTranslation('admin')
   const pageSize = 20
@@ -176,6 +184,7 @@ function DatabaseBackups() {
               <thead>
                 <tr className="border-b app-border">
                   <th className="app-text-secondary px-3 py-3 text-left text-sm font-semibold">{t('admin:status')}</th>
+                  <th className="app-text-secondary px-3 py-3 text-left text-sm font-semibold">{t('admin:backupMethod')}</th>
                   <th className="app-text-secondary px-3 py-3 text-left text-sm font-semibold">{t('admin:fileName')}</th>
                   <th className="app-text-secondary px-3 py-3 text-left text-sm font-semibold">{t('admin:fileSize')}</th>
                   <th className="app-text-secondary px-3 py-3 text-left text-sm font-semibold">{t('admin:operator')}</th>
@@ -197,6 +206,7 @@ function DatabaseBackups() {
                           <div className="text-xs mt-2 max-w-xs text-red-700 dark:text-red-300">{item.error_message}</div>
                         )}
                       </td>
+                      <td className="px-3 py-4 text-sm text-foreground">{formatBackupMethod(item.method, item.driver)}</td>
                       <td className="px-3 py-4 text-sm text-foreground">{item.file_name || '-'}</td>
                       <td className="px-3 py-4 text-sm text-foreground">{formatFileSize(item.file_size)}</td>
                       <td className="px-3 py-4 text-sm text-foreground">{item.started_by_name || '-'}</td>

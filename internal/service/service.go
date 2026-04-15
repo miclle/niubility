@@ -32,12 +32,15 @@ type Service struct {
 	dialect              string // "postgres" or "mysql"
 	dsn                  string
 	jwtSecret            string
+	nodeID               string // current service node identity, set via SetNodeID
 	nodeHeartbeatTimeout time.Duration
 	wechatMutex          sync.RWMutex
 	backupMutex          sync.Mutex
 	commandRunner        func(ctx context.Context, name string, args []string, env []string, stdout, stderr io.Writer) error
 	backupUploader       func(ctx context.Context, localPath, objectKey string) error
 	asyncRunner          func(fn func())
+	lookPath             func(file string) (string, error)
+	nativeDumper         func(ctx context.Context, dialect string, info *dbConnectionInfo, w io.Writer) error
 	now                  func() time.Time
 }
 
@@ -89,9 +92,11 @@ func New(ctx context.Context, driver, dsn string) (*Service, error) {
 		asyncRunner: func(fn func()) {
 			go fn()
 		},
-		now: time.Now,
+		lookPath: exec.LookPath,
+		now:      time.Now,
 	}
 	svc.backupUploader = svc.uploadBackupFile
+	svc.nativeDumper = svc.dumpDatabaseNative
 
 	// Initialize encryption key (auto-generate on first boot)
 	encKey, err := svc.ensureSetting(ctx, entity.SettingEncryptionKey, func() (string, error) {
@@ -131,6 +136,11 @@ func New(ctx context.Context, driver, dsn string) (*Service, error) {
 // GetJWTSecret returns the JWT signing secret.
 func (s *Service) GetJWTSecret() string {
 	return s.jwtSecret
+}
+
+// SetNodeID sets the current service node identity for backup lock tracking.
+func (s *Service) SetNodeID(id string) {
+	s.nodeID = id
 }
 
 // IsInitialized checks whether the system has been initialized with a super admin.

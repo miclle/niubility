@@ -8,6 +8,11 @@ const (
 	BackupStatusRunning = "running"
 	BackupStatusSuccess = "success"
 	BackupStatusFailed  = "failed"
+
+	// BackupMethodNativeTool indicates the backup was produced by pg_dump or mysqldump.
+	BackupMethodNativeTool = "native_tool"
+	// BackupMethodGoBuiltin indicates the backup was produced by the built-in Go SQL exporter.
+	BackupMethodGoBuiltin = "go_builtin"
 )
 
 // BackupRecord stores metadata for a generated backup artifact.
@@ -16,6 +21,8 @@ type BackupRecord struct {
 	Type            string     `json:"type"               gorm:"column:type;size:32;index"`
 	Status          string     `json:"status"             gorm:"column:status;size:32;index"`
 	LockKey         *string    `json:"lock_key"           gorm:"column:lock_key;size:64;uniqueIndex:uniq_backup_records_lock_key"`
+	Method          string     `json:"method"             gorm:"column:method;size:32"`
+	NodeID          string     `json:"node_id"            gorm:"column:node_id;size:191"`
 	Driver          string     `json:"driver"             gorm:"column:driver;size:16"`
 	ObjectKey       string     `json:"object_key"         gorm:"column:object_key;type:text"`
 	FileName        string     `json:"file_name"          gorm:"column:file_name;type:text"`

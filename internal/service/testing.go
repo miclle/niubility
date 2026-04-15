@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"io"
+	"os/exec"
 	"time"
 
 	"gorm.io/gorm"
@@ -26,6 +27,12 @@ func NewTestService(db *gorm.DB) *Service {
 		},
 		asyncRunner: func(fn func()) {
 			fn()
+		},
+		lookPath: func(file string) (string, error) {
+			return "", exec.ErrNotFound
+		},
+		nativeDumper: func(ctx context.Context, dialect string, info *dbConnectionInfo, w io.Writer) error {
+			return nil
 		},
 	}
 	return svc

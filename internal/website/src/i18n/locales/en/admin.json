@@ -227,6 +227,7 @@
   "startedAt": "Started At",
   "duration": "Duration",
   "download": "Download",
+  "backupMethod": "Method",
   "backupStatus": {
     "running": "Running",
     "success": "Success",
