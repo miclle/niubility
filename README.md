@@ -167,6 +167,7 @@ See:
 - [Roadmap](./docs/roadmap.md)
 - [CLI Design](./docs/cli-design.md)
 - [CLI SSO Login Design](./docs/cli-sso-login-design.md)
+- [Content Moderation and Visibility Design](./docs/content-moderation-design.md)
 - [Database Backup](./docs/database-backup-design.md)
 - [WeCom OAuth](./docs/wechat-oauth.md)
 

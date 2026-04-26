@@ -167,6 +167,7 @@ task run
 - [路线图](./docs/roadmap.md)
 - [CLI 设计](./docs/cli-design.md)
 - [CLI SSO 登录设计](./docs/cli-sso-login-design.md)
+- [内容审核与可见性设计](./docs/content-moderation-design.md)
 - [数据库备份](./docs/database-backup-design.md)
 - [企业微信 OAuth](./docs/wechat-oauth.md)
 
