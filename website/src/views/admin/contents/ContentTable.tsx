@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 
 import { listContents, moderateContent, deleteContent } from 'src/api/content'
 import { searchUsers } from 'src/api/user'
@@ -110,7 +111,7 @@ function ContentTable({ type, title }: ContentTableProps) {
       initialPageParam: undefined as string | undefined,
     })
 
-  const contents = data?.pages.flatMap((p) => p.data.items) ?? []
+  const contents = useMemo(() => data?.pages.flatMap((p) => p.data.items) ?? [], [data])
   const contentIDs = useMemo(() => contents.map((content) => content.id), [contents])
   const selectedCount = selectedContentIDs.length
   const allVisibleSelected = contents.length > 0 && selectedCount === contents.length
@@ -126,7 +127,13 @@ function ContentTable({ type, title }: ContentTableProps) {
   ].filter(Boolean).length
 
   useEffect(() => {
-    setSelectedContentIDs((current) => current.filter((id) => contentIDs.includes(id)))
+    setSelectedContentIDs((current) => {
+      const next = current.filter((id) => contentIDs.includes(id))
+      if (next.length === current.length && next.every((id, index) => id === current[index])) {
+        return current
+      }
+      return next
+    })
   }, [contentIDs])
 
   useEffect(() => {
@@ -617,18 +624,6 @@ function ContentTable({ type, title }: ContentTableProps) {
                       <td style={tdStyle}>{dayjs(content.created_at).format('YYYY-MM-DD')}</td>
                       <td style={tdStyle}>
                         <div className="flex flex-wrap gap-2">
-                          <Button variant="ghost" style={{ color: '#166534' }} onClick={() => openModerationDialog(content, 'approved', 'public')} title={t('admin:approveAndPublish')}>
-                            {t('admin:approveAndPublishShort')}
-                          </Button>
-                          <Button variant="ghost" style={{ color: '#1d4ed8' }} onClick={() => openModerationDialog(content, 'approved', 'unlisted')} title={t('admin:approveUnlisted')}>
-                            {t('admin:approveUnlistedShort')}
-                          </Button>
-                          <Button variant="ghost" style={{ color: '#92400e' }} onClick={() => openModerationDialog(content, 'pending', 'private')} title={t('admin:markPending')}>
-                            {t('admin:markPendingShort')}
-                          </Button>
-                          <Button variant="ghost" style={{ color: '#991b1b' }} onClick={() => openModerationDialog(content, content.review_status === 'rejected' ? 'rejected' : 'approved', 'blocked')} title={t('admin:blockContent')}>
-                            {t('admin:blockShort')}
-                          </Button>
                           <Button variant="outline" onClick={() => openModerationDialog(content)}>
                             {t('admin:moderate')}
                           </Button>
@@ -687,6 +682,59 @@ function ContentTable({ type, title }: ContentTableProps) {
           </DialogHeader>
 
           <div className="space-y-4">
+            <div className="rounded-xl border app-border p-3">
+              <div className="mb-2 text-xs font-medium text-foreground">{t('admin:moderationPresets')}</div>
+              <p className="mb-3 text-xs app-text-secondary">{t('admin:moderationPresetsDesc')}</p>
+              <div className="flex flex-wrap gap-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger render={
+                      <Button type="button" variant="ghost" style={{ color: '#166534' }} onClick={() => {
+                        setDraftReviewStatus('approved')
+                        setDraftVisibility('public')
+                      }}>
+                        {t('admin:approveAndPublishShort')}
+                      </Button>
+                    } />
+                    <TooltipContent>{t('admin:approveAndPublishHelp')}</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger render={
+                      <Button type="button" variant="ghost" style={{ color: '#1d4ed8' }} onClick={() => {
+                        setDraftReviewStatus('approved')
+                        setDraftVisibility('unlisted')
+                      }}>
+                        {t('admin:approveUnlistedShort')}
+                      </Button>
+                    } />
+                    <TooltipContent>{t('admin:approveUnlistedHelp')}</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger render={
+                      <Button type="button" variant="ghost" style={{ color: '#92400e' }} onClick={() => {
+                        setDraftReviewStatus('pending')
+                        setDraftVisibility('private')
+                      }}>
+                        {t('admin:markPendingShort')}
+                      </Button>
+                    } />
+                    <TooltipContent>{t('admin:markPendingHelp')}</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger render={
+                      <Button type="button" variant="ghost" style={{ color: '#991b1b' }} onClick={() => {
+                        setDraftReviewStatus(editingContent?.review_status === 'rejected' ? 'rejected' : 'approved')
+                        setDraftVisibility('blocked')
+                      }}>
+                        {t('admin:blockShort')}
+                      </Button>
+                    } />
+                    <TooltipContent>{t('admin:blockContentHelp')}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="flex flex-col gap-1.5">
                 <span className="text-xs font-medium app-text-secondary">{t('admin:reviewStatus')}</span>
