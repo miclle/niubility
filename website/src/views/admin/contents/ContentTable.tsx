@@ -1,4 +1,4 @@
-import { useRef, useCallback, useMemo, useState } from 'react'
+import { useRef, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
@@ -64,9 +64,11 @@ function ContentTable({ type, title }: ContentTableProps) {
   const [draftKeyword, setDraftKeyword] = useState('')
   const [keyword, setKeyword] = useState('')
   const [editingContent, setEditingContent] = useState<Content | null>(null)
+  const [batchModerationOpen, setBatchModerationOpen] = useState(false)
   const [draftReviewStatus, setDraftReviewStatus] = useState<ContentReviewStatus>('pending')
   const [draftVisibility, setDraftVisibility] = useState<ContentVisibility>('private')
   const [draftReviewNote, setDraftReviewNote] = useState('')
+  const [selectedContentIDs, setSelectedContentIDs] = useState<string[]>([])
 
   const moderationLabel = (status: ContentReviewStatus) => {
     if (status === 'approved') return t('admin:approved')
@@ -100,8 +102,16 @@ function ContentTable({ type, title }: ContentTableProps) {
     })
 
   const contents = data?.pages.flatMap((p) => p.data.items) ?? []
+  const contentIDs = useMemo(() => contents.map((content) => content.id), [contents])
+  const selectedCount = selectedContentIDs.length
+  const allVisibleSelected = contents.length > 0 && selectedCount === contents.length
+  const selectedContentSet = useMemo(() => new Set(selectedContentIDs), [selectedContentIDs])
   const pendingCount = contents.filter((content) => content.review_status === 'pending').length
   const activeFilterCount = [statusFilter !== 'all', reviewFilter !== 'all', visibilityFilter !== 'all', keyword.trim() !== ''].filter(Boolean).length
+
+  useEffect(() => {
+    setSelectedContentIDs((current) => current.filter((id) => contentIDs.includes(id)))
+  }, [contentIDs])
 
   const loaderRef = useRef<HTMLDivElement>(null)
   const handleIntersect = useCallback(() => {
@@ -120,26 +130,54 @@ function ContentTable({ type, title }: ContentTableProps) {
     }
   }
 
+  const resetModerationState = () => {
+    setEditingContent(null)
+    setBatchModerationOpen(false)
+  }
+
   const openModerationDialog = (content: Content, reviewStatus?: ContentReviewStatus, visibility?: ContentVisibility) => {
     setEditingContent(content)
+    setBatchModerationOpen(false)
     setDraftReviewStatus(reviewStatus || content.review_status || 'pending')
     setDraftVisibility(visibility || content.visibility || 'private')
     setDraftReviewNote(content.review_note || '')
   }
 
+  const openBatchModerationDialog = (reviewStatus?: ContentReviewStatus, visibility?: ContentVisibility) => {
+    if (selectedCount === 0) return
+    setEditingContent(null)
+    setBatchModerationOpen(true)
+    setDraftReviewStatus(reviewStatus || 'pending')
+    setDraftVisibility(visibility || 'private')
+    setDraftReviewNote('')
+  }
+
   const handleSaveModeration = async () => {
-    if (!editingContent) return
+    const targetIDs = editingContent ? [editingContent.id] : selectedContentIDs
+    if (targetIDs.length === 0) return
     try {
-      await moderateContent(editingContent.id, {
+      await Promise.all(targetIDs.map((id) => moderateContent(id, {
         review_status: draftReviewStatus,
         visibility: draftVisibility,
         review_note: draftReviewNote.trim(),
-      })
-      setEditingContent(null)
+      })))
+      resetModerationState()
+      setSelectedContentIDs([])
       queryClient.invalidateQueries({ queryKey: ['admin-contents', type] })
     } catch {
       // Silently fail
     }
+  }
+
+  const toggleSelectContent = (contentID: string, checked: boolean) => {
+    setSelectedContentIDs((current) => {
+      if (checked) return current.includes(contentID) ? current : [...current, contentID]
+      return current.filter((id) => id !== contentID)
+    })
+  }
+
+  const toggleSelectAllVisible = (checked: boolean) => {
+    setSelectedContentIDs(checked ? contentIDs : [])
   }
 
   const resetFilters = () => {
@@ -256,9 +294,35 @@ function ContentTable({ type, title }: ContentTableProps) {
       </div>
 
       <div className="app-surface-elevated rounded-xl overflow-hidden border app-border">
+        {selectedCount > 0 && (
+          <div className="flex flex-col gap-3 border-b app-border px-4 py-3 md:flex-row md:items-center md:justify-between">
+            <div className="text-sm">
+              <span className="font-medium text-foreground">{t('admin:selectedCount', { count: selectedCount })}</span>
+              <span className="ml-2 app-text-secondary">{t('admin:selectedHint')}</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => openBatchModerationDialog()}>
+                {t('admin:batchModerate')}
+              </Button>
+              <Button variant="ghost" style={{ color: '#166534' }} onClick={() => openBatchModerationDialog('approved', 'public')}>
+                {t('admin:approveAndPublishBatchShort')}
+              </Button>
+              <Button variant="ghost" style={{ color: '#1d4ed8' }} onClick={() => openBatchModerationDialog('approved', 'unlisted')}>
+                {t('admin:approveUnlistedBatchShort')}
+              </Button>
+              <Button variant="ghost" style={{ color: '#991b1b' }} onClick={() => openBatchModerationDialog('approved', 'blocked')}>
+                {t('admin:blockBatchShort')}
+              </Button>
+              <Button variant="ghost" onClick={() => setSelectedContentIDs([])}>
+                {t('admin:clearSelection')}
+              </Button>
+            </div>
+          </div>
+        )}
         <div className="overflow-x-auto">
-          <table className="w-full table-fixed min-w-[1560px]">
+          <table className="w-full table-fixed min-w-[1612px]">
             <colgroup>
+              <col style={{ width: '52px' }} />
               <col style={{ width: '320px' }} />
               <col style={{ width: '92px' }} />
               <col style={{ width: '96px' }} />
@@ -275,6 +339,15 @@ function ContentTable({ type, title }: ContentTableProps) {
             </colgroup>
             <thead>
               <tr style={{ background: 'var(--surface-muted)' }}>
+                <th style={thStyle}>
+                  <input
+                    type="checkbox"
+                    aria-label={t('admin:selectAllVisible')}
+                    checked={allVisibleSelected}
+                    onChange={(e) => toggleSelectAllVisible(e.target.checked)}
+                    className="h-4 w-4 rounded border app-border"
+                  />
+                </th>
                 <th style={thStyle}>{t('admin:title')}</th>
                 <th style={thStyle}>{t('admin:type')}</th>
                 <th style={thStyle}>{t('admin:status')}</th>
@@ -293,7 +366,7 @@ function ContentTable({ type, title }: ContentTableProps) {
             <tbody>
               {contents.length === 0 && !loading ? (
                 <tr>
-                  <td colSpan={type === 'video' ? 13 : 12} className="app-text-tertiary text-center py-8">
+                  <td colSpan={type === 'video' ? 14 : 13} className="app-text-tertiary text-center py-8">
                     {t('admin:noContent')}
                   </td>
                 </tr>
@@ -301,8 +374,18 @@ function ContentTable({ type, title }: ContentTableProps) {
                 contents.map((content) => {
                   const coverUrl = getStyledContentCardCover(content, siteConfig)
                   const hasSpeakerInfo = Boolean(content.speaker || content.speaker_name)
+                  const selected = selectedContentSet.has(content.id)
                   return (
-                    <tr key={content.id} style={{ borderTop: '1px solid var(--surface-border)' }}>
+                    <tr key={content.id} style={{ borderTop: '1px solid var(--surface-border)', background: selected ? 'color-mix(in srgb, var(--surface-muted) 65%, white)' : undefined }}>
+                      <td style={tdStyle}>
+                        <input
+                          type="checkbox"
+                          aria-label={t('admin:selectContent', { title: content.title })}
+                          checked={selected}
+                          onChange={(e) => toggleSelectContent(content.id, e.target.checked)}
+                          className="h-4 w-4 rounded border app-border"
+                        />
+                      </td>
                       <td style={{ ...tdStyle, whiteSpace: 'normal' }}>
                         <Link to={contentDetailPath(content)} target="_blank" className="flex items-center gap-3 hover:underline" style={{ color: 'var(--foreground)' }}>
                           <div className="app-surface-muted w-[72px] h-[40px] rounded overflow-hidden flex-shrink-0">
@@ -467,12 +550,14 @@ function ContentTable({ type, title }: ContentTableProps) {
         {loading ? tc('common:loading') : !hasNextPage && contents.length > 0 ? tc('common:noMoreContent') : ''}
       </div>
 
-      <Dialog open={Boolean(editingContent)} onOpenChange={(open) => { if (!open) setEditingContent(null) }}>
+      <Dialog open={Boolean(editingContent) || batchModerationOpen} onOpenChange={(open) => { if (!open) resetModerationState() }}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>{t('admin:moderationDialogTitle')}</DialogTitle>
+            <DialogTitle>{editingContent ? t('admin:moderationDialogTitle') : t('admin:batchModerationDialogTitle')}</DialogTitle>
             <DialogDescription>
-              {editingContent ? t('admin:moderationDialogDesc', { title: editingContent.title }) : ''}
+              {editingContent
+                ? t('admin:moderationDialogDesc', { title: editingContent.title })
+                : t('admin:batchModerationDialogDesc', { count: selectedCount })}
             </DialogDescription>
           </DialogHeader>
 
@@ -535,7 +620,7 @@ function ContentTable({ type, title }: ContentTableProps) {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingContent(null)}>
+            <Button variant="outline" onClick={resetModerationState}>
               {tc('common:cancel')}
             </Button>
             <Button onClick={handleSaveModeration}>
