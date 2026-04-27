@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 
 import { listContents, moderateContent, deleteContent } from 'src/api/content'
+import { searchUsers } from 'src/api/user'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
 import { getSpeakerAvatar, getSpeakerDisplayName, getStyledContentCardCover } from 'src/lib/content-assets'
 import { toPlainTextPreview } from 'src/lib/utils'
@@ -21,6 +22,7 @@ import { useAppContext } from 'src/context/app'
 import { useIntersection } from 'src/hooks/use-intersection'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
 import type { Content, ContentReviewStatus, ContentType, ContentVisibility, ListContentsArgs } from 'src/types/content'
+import type { SearchUserItem } from 'src/types/user'
 
 const typeIcons: Record<ContentType, React.ReactNode> = {
   video: <Play size={12} />,
@@ -59,10 +61,15 @@ function ContentTable({ type, title }: ContentTableProps) {
   const categoryLabels = Object.fromEntries(categories.map((c) => [c.slug, c.name]))
 
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published'>('all')
-  const [reviewFilter, setReviewFilter] = useState<ContentReviewStatus | 'all'>('all')
+  const [reviewFilter, setReviewFilter] = useState<ContentReviewStatus | 'all'>('pending')
   const [visibilityFilter, setVisibilityFilter] = useState<ContentVisibility | 'all'>('all')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [draftKeyword, setDraftKeyword] = useState('')
   const [keyword, setKeyword] = useState('')
+  const [draftAuthorKeyword, setDraftAuthorKeyword] = useState('')
+  const [selectedAuthor, setSelectedAuthor] = useState<SearchUserItem | null>(null)
+  const [authorOptions, setAuthorOptions] = useState<SearchUserItem[]>([])
+  const [authorSearching, setAuthorSearching] = useState(false)
   const [editingContent, setEditingContent] = useState<Content | null>(null)
   const [batchModerationOpen, setBatchModerationOpen] = useState(false)
   const [draftReviewStatus, setDraftReviewStatus] = useState<ContentReviewStatus>('pending')
@@ -87,10 +94,12 @@ function ContentTable({ type, title }: ContentTableProps) {
     limit,
     status: statusFilter,
     type,
+    category: categoryFilter === 'all' ? undefined : categoryFilter,
     review_status: reviewFilter,
     visibility: visibilityFilter,
     keyword: keyword.trim() || undefined,
-  }), [keyword, reviewFilter, statusFilter, type, visibilityFilter])
+    author_id: selectedAuthor?.id || undefined,
+  }), [categoryFilter, keyword, reviewFilter, selectedAuthor?.id, statusFilter, type, visibilityFilter])
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
     useInfiniteQuery({
@@ -107,11 +116,51 @@ function ContentTable({ type, title }: ContentTableProps) {
   const allVisibleSelected = contents.length > 0 && selectedCount === contents.length
   const selectedContentSet = useMemo(() => new Set(selectedContentIDs), [selectedContentIDs])
   const pendingCount = contents.filter((content) => content.review_status === 'pending').length
-  const activeFilterCount = [statusFilter !== 'all', reviewFilter !== 'all', visibilityFilter !== 'all', keyword.trim() !== ''].filter(Boolean).length
+  const activeFilterCount = [
+    statusFilter !== 'all',
+    reviewFilter !== 'pending',
+    visibilityFilter !== 'all',
+    categoryFilter !== 'all',
+    keyword.trim() !== '',
+    selectedAuthor !== null,
+  ].filter(Boolean).length
 
   useEffect(() => {
     setSelectedContentIDs((current) => current.filter((id) => contentIDs.includes(id)))
   }, [contentIDs])
+
+  useEffect(() => {
+    const q = draftAuthorKeyword.trim()
+    if (!q || (selectedAuthor && q === selectedAuthor.name)) {
+      setAuthorOptions([])
+      setAuthorSearching(false)
+      return
+    }
+
+    let cancelled = false
+    const timer = window.setTimeout(async () => {
+      setAuthorSearching(true)
+      try {
+        const response = await searchUsers(q)
+        if (!cancelled) {
+          setAuthorOptions(response.data.users)
+        }
+      } catch {
+        if (!cancelled) {
+          setAuthorOptions([])
+        }
+      } finally {
+        if (!cancelled) {
+          setAuthorSearching(false)
+        }
+      }
+    }, 250)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [draftAuthorKeyword, selectedAuthor])
 
   const loaderRef = useRef<HTMLDivElement>(null)
   const handleIntersect = useCallback(() => {
@@ -182,10 +231,20 @@ function ContentTable({ type, title }: ContentTableProps) {
 
   const resetFilters = () => {
     setStatusFilter('all')
-    setReviewFilter('all')
+    setReviewFilter('pending')
     setVisibilityFilter('all')
+    setCategoryFilter('all')
     setDraftKeyword('')
     setKeyword('')
+    setDraftAuthorKeyword('')
+    setSelectedAuthor(null)
+    setAuthorOptions([])
+  }
+
+  const pickAuthor = (user: SearchUserItem | null) => {
+    setSelectedAuthor(user)
+    setDraftAuthorKeyword(user?.name || '')
+    setAuthorOptions([])
   }
 
   return (
@@ -220,7 +279,7 @@ function ContentTable({ type, title }: ContentTableProps) {
             <Filter size={16} style={{ color: 'var(--text-secondary)' }} />
             <span className="text-sm font-medium text-foreground">{t('admin:moderationFilters')}</span>
           </div>
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,0.8fr))]">
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)_repeat(4,minmax(0,0.75fr))]">
             <label className="flex flex-col gap-1.5">
               <span className="text-xs font-medium app-text-secondary">{t('admin:searchContent')}</span>
               <div className="relative">
@@ -237,6 +296,56 @@ function ContentTable({ type, title }: ContentTableProps) {
               </div>
             </label>
             <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium app-text-secondary">{t('admin:author')}</span>
+              <div className="relative">
+                <Input
+                  value={draftAuthorKeyword}
+                  onChange={(e) => {
+                    const next = e.target.value
+                    setDraftAuthorKeyword(next)
+                    if (selectedAuthor && next !== selectedAuthor.name) {
+                      setSelectedAuthor(null)
+                    }
+                  }}
+                  placeholder={t('admin:searchAuthorPlaceholder')}
+                />
+                {(authorSearching || authorOptions.length > 0 || selectedAuthor) && (
+                  <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-xl border app-border bg-background shadow-lg">
+                    {selectedAuthor && (
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-muted"
+                        onClick={() => pickAuthor(null)}
+                      >
+                        <span className="font-medium text-foreground">{selectedAuthor.name}</span>
+                        <span className="app-text-secondary text-xs">{t('admin:clearAuthorFilter')}</span>
+                      </button>
+                    )}
+                    {!selectedAuthor && authorSearching && (
+                      <div className="px-3 py-2 text-sm app-text-secondary">{tc('common:loading')}</div>
+                    )}
+                    {!selectedAuthor && !authorSearching && authorOptions.length === 0 && draftAuthorKeyword.trim() !== '' && (
+                      <div className="px-3 py-2 text-sm app-text-secondary">{t('admin:noAuthorResults')}</div>
+                    )}
+                    {!selectedAuthor && authorOptions.map((user) => (
+                      <button
+                        key={user.id}
+                        type="button"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
+                        onClick={() => pickAuthor(user)}
+                      >
+                        <Avatar className="h-6 w-6">
+                          <SiteAvatarImage src={user.avatar || ''} alt={user.name} />
+                          <AvatarFallback className="text-[11px]">{user.name.charAt(0) || '-'}</AvatarFallback>
+                        </Avatar>
+                        <span className="truncate text-foreground">{user.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </label>
+            <label className="flex flex-col gap-1.5">
               <span className="text-xs font-medium app-text-secondary">{t('admin:status')}</span>
               <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}>
                 <SelectTrigger className="w-full">
@@ -248,6 +357,22 @@ function ContentTable({ type, title }: ContentTableProps) {
                   <SelectItem value="all">{t('admin:all')}</SelectItem>
                   <SelectItem value="published">{t('admin:published')}</SelectItem>
                   <SelectItem value="draft">{t('admin:draft')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium app-text-secondary">{t('admin:category')}</span>
+              <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value || 'all')}>
+                <SelectTrigger className="w-full">
+                  <SelectValue>
+                    {categoryFilter === 'all' ? t('admin:all') : categoryLabels[categoryFilter] || categoryFilter}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('admin:all')}</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.slug}>{category.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </label>
@@ -286,9 +411,9 @@ function ContentTable({ type, title }: ContentTableProps) {
             </label>
           </div>
           <div className="flex justify-end mt-3">
-            <Button onClick={() => setKeyword(draftKeyword)}>
-              {t('admin:applyFilters')}
-            </Button>
+              <Button onClick={() => setKeyword(draftKeyword)}>
+                {t('admin:applyFilters')}
+              </Button>
           </div>
         </div>
       </div>
