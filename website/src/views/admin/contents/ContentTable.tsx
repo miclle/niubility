@@ -1,13 +1,17 @@
-import { useRef, useCallback } from 'react'
+import { useRef, useCallback, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Trash2, Heart, MessageSquare, Play, Image, FileText, Bookmark, Mic } from 'lucide-react'
+import { Pencil, Trash2, Heart, MessageSquare, Play, Image, FileText, Bookmark, Mic, Search, Filter, ShieldCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 
 import { listContents, moderateContent, deleteContent } from 'src/api/content'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
@@ -16,7 +20,7 @@ import { toPlainTextPreview } from 'src/lib/utils'
 import { useAppContext } from 'src/context/app'
 import { useIntersection } from 'src/hooks/use-intersection'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
-import type { Content, ContentReviewStatus, ContentType, ContentVisibility } from 'src/types/content'
+import type { Content, ContentReviewStatus, ContentType, ContentVisibility, ListContentsArgs } from 'src/types/content'
 
 const typeIcons: Record<ContentType, React.ReactNode> = {
   video: <Play size={12} />,
@@ -24,6 +28,7 @@ const typeIcons: Record<ContentType, React.ReactNode> = {
   article: <FileText size={12} />,
   podcast: <Mic size={12} />,
 }
+
 const limit = 20
 
 const thStyle: React.CSSProperties = {
@@ -53,16 +58,51 @@ function ContentTable({ type, title }: ContentTableProps) {
   const queryClient = useQueryClient()
   const categoryLabels = Object.fromEntries(categories.map((c) => [c.slug, c.name]))
 
+  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published'>('all')
+  const [reviewFilter, setReviewFilter] = useState<ContentReviewStatus | 'all'>('all')
+  const [visibilityFilter, setVisibilityFilter] = useState<ContentVisibility | 'all'>('all')
+  const [draftKeyword, setDraftKeyword] = useState('')
+  const [keyword, setKeyword] = useState('')
+  const [editingContent, setEditingContent] = useState<Content | null>(null)
+  const [draftReviewStatus, setDraftReviewStatus] = useState<ContentReviewStatus>('pending')
+  const [draftVisibility, setDraftVisibility] = useState<ContentVisibility>('private')
+  const [draftReviewNote, setDraftReviewNote] = useState('')
+
+  const moderationLabel = (status: ContentReviewStatus) => {
+    if (status === 'approved') return t('admin:approved')
+    if (status === 'rejected') return t('admin:rejected')
+    return t('admin:pending')
+  }
+
+  const visibilityLabel = (visibility: ContentVisibility) => {
+    if (visibility === 'public') return t('admin:visibilityPublic')
+    if (visibility === 'unlisted') return t('admin:visibilityUnlisted')
+    if (visibility === 'blocked') return t('admin:visibilityBlocked')
+    return t('admin:visibilityPrivate')
+  }
+
+  const listParams = useMemo<ListContentsArgs>(() => ({
+    limit,
+    status: statusFilter,
+    type,
+    review_status: reviewFilter,
+    visibility: visibilityFilter,
+    keyword: keyword.trim() || undefined,
+  }), [keyword, reviewFilter, statusFilter, type, visibilityFilter])
+
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
     useInfiniteQuery({
-      queryKey: ['admin-contents', type],
+      queryKey: ['admin-contents', type, listParams],
       queryFn: ({ pageParam }) =>
-        listContents({ cursor: pageParam, limit, status: 'all', type }),
+        listContents({ cursor: pageParam, ...listParams }),
       getNextPageParam: (lastPage) => lastPage.data.next_cursor || undefined,
       initialPageParam: undefined as string | undefined,
     })
 
   const contents = data?.pages.flatMap((p) => p.data.items) ?? []
+  const pendingCount = contents.filter((content) => content.review_status === 'pending').length
+  const activeFilterCount = [statusFilter !== 'all', reviewFilter !== 'all', visibilityFilter !== 'all', keyword.trim() !== ''].filter(Boolean).length
+
   const loaderRef = useRef<HTMLDivElement>(null)
   const handleIntersect = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage()
@@ -70,17 +110,6 @@ function ContentTable({ type, title }: ContentTableProps) {
   useIntersection(loaderRef, handleIntersect)
 
   const loading = isLoading || isFetchingNextPage
-  const moderationLabel = (status: ContentReviewStatus) => {
-    if (status === 'approved') return t('admin:approved')
-    if (status === 'rejected') return t('admin:rejected')
-    return t('admin:pending')
-  }
-  const visibilityLabel = (visibility: ContentVisibility) => {
-    if (visibility === 'public') return t('admin:visibilityPublic')
-    if (visibility === 'unlisted') return t('admin:visibilityUnlisted')
-    if (visibility === 'blocked') return t('admin:visibilityBlocked')
-    return t('admin:visibilityPrivate')
-  }
 
   const handleDelete = async (id: string) => {
     try {
@@ -91,22 +120,140 @@ function ContentTable({ type, title }: ContentTableProps) {
     }
   }
 
-  const handleModerate = async (content: Content, reviewStatus: ContentReviewStatus, visibility: ContentVisibility) => {
+  const openModerationDialog = (content: Content, reviewStatus?: ContentReviewStatus, visibility?: ContentVisibility) => {
+    setEditingContent(content)
+    setDraftReviewStatus(reviewStatus || content.review_status || 'pending')
+    setDraftVisibility(visibility || content.visibility || 'private')
+    setDraftReviewNote(content.review_note || '')
+  }
+
+  const handleSaveModeration = async () => {
+    if (!editingContent) return
     try {
-      await moderateContent(content.id, {
-        review_status: reviewStatus,
-        visibility,
-        review_note: content.review_note || '',
+      await moderateContent(editingContent.id, {
+        review_status: draftReviewStatus,
+        visibility: draftVisibility,
+        review_note: draftReviewNote.trim(),
       })
+      setEditingContent(null)
       queryClient.invalidateQueries({ queryKey: ['admin-contents', type] })
     } catch {
       // Silently fail
     }
   }
 
+  const resetFilters = () => {
+    setStatusFilter('all')
+    setReviewFilter('all')
+    setVisibilityFilter('all')
+    setDraftKeyword('')
+    setKeyword('')
+  }
+
   return (
     <div className="app-surface">
-      <h1 className="text-xl font-semibold mb-6 text-foreground">{title}</h1>
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-foreground">{title}</h1>
+            <p className="app-text-secondary text-sm mt-1">{t('admin:moderationWorkbenchDesc')}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium"
+              style={pendingCount > 0 ? { background: '#fef3c7', color: '#92400e' } : { background: 'var(--surface-muted)', color: 'var(--text-secondary)' }}
+            >
+              <ShieldCheck size={14} />
+              {t('admin:pendingCount', { count: pendingCount })}
+            </span>
+            {activeFilterCount > 0 && (
+              <Button variant="outline" onClick={resetFilters}>
+                {t('admin:clearFilters')}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <div
+          className="app-surface-elevated rounded-2xl p-4 border app-border"
+          style={{ boxShadow: '0 12px 30px var(--surface-shadow)' }}
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <Filter size={16} style={{ color: 'var(--text-secondary)' }} />
+            <span className="text-sm font-medium text-foreground">{t('admin:moderationFilters')}</span>
+          </div>
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,0.8fr))]">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium app-text-secondary">{t('admin:searchContent')}</span>
+              <div className="relative">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 app-text-tertiary" />
+                <Input
+                  value={draftKeyword}
+                  onChange={(e) => setDraftKeyword(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') setKeyword(draftKeyword)
+                  }}
+                  placeholder={t('admin:searchContentPlaceholder')}
+                  className="pl-9"
+                />
+              </div>
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium app-text-secondary">{t('admin:status')}</span>
+              <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue>
+                    {statusFilter === 'all' ? t('admin:all') : statusFilter === 'published' ? t('admin:published') : t('admin:draft')}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('admin:all')}</SelectItem>
+                  <SelectItem value="published">{t('admin:published')}</SelectItem>
+                  <SelectItem value="draft">{t('admin:draft')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium app-text-secondary">{t('admin:reviewStatus')}</span>
+              <Select value={reviewFilter} onValueChange={(value) => setReviewFilter(value as typeof reviewFilter)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue>
+                    {reviewFilter === 'all' ? t('admin:all') : moderationLabel(reviewFilter)}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('admin:all')}</SelectItem>
+                  <SelectItem value="pending">{t('admin:pending')}</SelectItem>
+                  <SelectItem value="approved">{t('admin:approved')}</SelectItem>
+                  <SelectItem value="rejected">{t('admin:rejected')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium app-text-secondary">{t('admin:visibility')}</span>
+              <Select value={visibilityFilter} onValueChange={(value) => setVisibilityFilter(value as typeof visibilityFilter)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue>
+                    {visibilityFilter === 'all' ? t('admin:all') : visibilityLabel(visibilityFilter)}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('admin:all')}</SelectItem>
+                  <SelectItem value="public">{t('admin:visibilityPublic')}</SelectItem>
+                  <SelectItem value="unlisted">{t('admin:visibilityUnlisted')}</SelectItem>
+                  <SelectItem value="private">{t('admin:visibilityPrivate')}</SelectItem>
+                  <SelectItem value="blocked">{t('admin:visibilityBlocked')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </label>
+          </div>
+          <div className="flex justify-end mt-3">
+            <Button onClick={() => setKeyword(draftKeyword)}>
+              {t('admin:applyFilters')}
+            </Button>
+          </div>
+        </div>
+      </div>
 
       <div className="app-surface-elevated rounded-xl overflow-hidden border app-border">
         <div className="overflow-x-auto">
@@ -124,7 +271,7 @@ function ContentTable({ type, title }: ContentTableProps) {
               <col style={{ width: '76px' }} />
               <col style={{ width: '76px' }} />
               <col style={{ width: '120px' }} />
-              <col style={{ width: '110px' }} />
+              <col style={{ width: '180px' }} />
             </colgroup>
             <thead>
               <tr style={{ background: 'var(--surface-muted)' }}>
@@ -168,6 +315,11 @@ function ContentTable({ type, title }: ContentTableProps) {
                           <div className="min-w-0 flex-1 overflow-hidden">
                             <div className="font-medium line-clamp-1">{content.title}</div>
                             {content.summary && <div className="app-text-tertiary text-xs line-clamp-1">{toPlainTextPreview(content.summary)}</div>}
+                            {content.review_note && (
+                              <div className="mt-1 inline-flex max-w-full rounded-full px-2 py-0.5 text-[11px]" style={{ background: 'color-mix(in srgb, #f59e0b 15%, transparent)', color: '#92400e' }}>
+                                {t('admin:reviewNotePrefix')}{content.review_note}
+                              </div>
+                            )}
                           </div>
                         </Link>
                       </td>
@@ -183,9 +335,16 @@ function ContentTable({ type, title }: ContentTableProps) {
                         </span>
                       </td>
                       <td style={tdStyle}>
-                        <span className="px-2 py-0.5 rounded text-xs" style={content.review_status === 'approved' ? { background: '#dcfce7', color: '#166534' } : content.review_status === 'rejected' ? { background: '#fee2e2', color: '#991b1b' } : { background: '#fef3c7', color: '#92400e' }}>
-                          {moderationLabel(content.review_status)}
-                        </span>
+                        <div className="space-y-1">
+                          <span className="px-2 py-0.5 rounded text-xs" style={content.review_status === 'approved' ? { background: '#dcfce7', color: '#166534' } : content.review_status === 'rejected' ? { background: '#fee2e2', color: '#991b1b' } : { background: '#fef3c7', color: '#92400e' }}>
+                            {moderationLabel(content.review_status)}
+                          </span>
+                          {content.reviewed_at && (
+                            <div className="text-[11px] app-text-tertiary">
+                              {dayjs(content.reviewed_at).format('MM-DD HH:mm')}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td style={tdStyle}>
                         <span className="px-2 py-0.5 rounded text-xs" style={content.visibility === 'public' ? { background: '#dbeafe', color: '#1d4ed8' } : content.visibility === 'blocked' ? { background: '#fee2e2', color: '#991b1b' } : { background: '#e5e7eb', color: '#374151' }}>
@@ -250,17 +409,20 @@ function ContentTable({ type, title }: ContentTableProps) {
                       <td style={tdStyle}>{dayjs(content.created_at).format('YYYY-MM-DD')}</td>
                       <td style={tdStyle}>
                         <div className="flex flex-wrap gap-2">
-                          <Button variant="ghost" style={{ color: '#166534' }} onClick={() => handleModerate(content, 'approved', 'public')} title={t('admin:approveAndPublish')}>
+                          <Button variant="ghost" style={{ color: '#166534' }} onClick={() => openModerationDialog(content, 'approved', 'public')} title={t('admin:approveAndPublish')}>
                             {t('admin:approveAndPublishShort')}
                           </Button>
-                          <Button variant="ghost" style={{ color: '#1d4ed8' }} onClick={() => handleModerate(content, 'approved', 'unlisted')} title={t('admin:approveUnlisted')}>
+                          <Button variant="ghost" style={{ color: '#1d4ed8' }} onClick={() => openModerationDialog(content, 'approved', 'unlisted')} title={t('admin:approveUnlisted')}>
                             {t('admin:approveUnlistedShort')}
                           </Button>
-                          <Button variant="ghost" style={{ color: '#92400e' }} onClick={() => handleModerate(content, 'pending', 'private')} title={t('admin:markPending')}>
+                          <Button variant="ghost" style={{ color: '#92400e' }} onClick={() => openModerationDialog(content, 'pending', 'private')} title={t('admin:markPending')}>
                             {t('admin:markPendingShort')}
                           </Button>
-                          <Button variant="ghost" style={{ color: '#991b1b' }} onClick={() => handleModerate(content, content.review_status === 'rejected' ? 'rejected' : 'approved', 'blocked')} title={t('admin:blockContent')}>
+                          <Button variant="ghost" style={{ color: '#991b1b' }} onClick={() => openModerationDialog(content, content.review_status === 'rejected' ? 'rejected' : 'approved', 'blocked')} title={t('admin:blockContent')}>
                             {t('admin:blockShort')}
+                          </Button>
+                          <Button variant="outline" onClick={() => openModerationDialog(content)}>
+                            {t('admin:moderate')}
                           </Button>
                           <Link to={contentEditPath(content)}>
                             <Button variant="ghost" style={{ color: 'var(--text-secondary)' }}>
@@ -304,6 +466,84 @@ function ContentTable({ type, title }: ContentTableProps) {
       <div ref={loaderRef} className="app-text-tertiary py-4 text-center text-sm">
         {loading ? tc('common:loading') : !hasNextPage && contents.length > 0 ? tc('common:noMoreContent') : ''}
       </div>
+
+      <Dialog open={Boolean(editingContent)} onOpenChange={(open) => { if (!open) setEditingContent(null) }}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{t('admin:moderationDialogTitle')}</DialogTitle>
+            <DialogDescription>
+              {editingContent ? t('admin:moderationDialogDesc', { title: editingContent.title }) : ''}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium app-text-secondary">{t('admin:reviewStatus')}</span>
+                <Select value={draftReviewStatus} onValueChange={(value) => setDraftReviewStatus(value as ContentReviewStatus)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue>
+                      {moderationLabel(draftReviewStatus)}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">{t('admin:pending')}</SelectItem>
+                    <SelectItem value="approved">{t('admin:approved')}</SelectItem>
+                    <SelectItem value="rejected">{t('admin:rejected')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium app-text-secondary">{t('admin:visibility')}</span>
+                <Select value={draftVisibility} onValueChange={(value) => setDraftVisibility(value as ContentVisibility)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue>
+                      {visibilityLabel(draftVisibility)}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="private">{t('admin:visibilityPrivate')}</SelectItem>
+                    <SelectItem value="unlisted">{t('admin:visibilityUnlisted')}</SelectItem>
+                    <SelectItem value="public">{t('admin:visibilityPublic')}</SelectItem>
+                    <SelectItem value="blocked">{t('admin:visibilityBlocked')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </label>
+            </div>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium app-text-secondary">{t('admin:reviewNote')}</span>
+              <Textarea
+                value={draftReviewNote}
+                onChange={(e) => setDraftReviewNote(e.target.value)}
+                placeholder={t('admin:reviewNotePlaceholder')}
+                rows={5}
+              />
+            </label>
+
+            <div className="rounded-xl border app-border p-3 app-surface-muted">
+              <div className="text-xs font-medium text-foreground mb-1">{t('admin:moderationPreview')}</div>
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="rounded-full px-2 py-1" style={draftReviewStatus === 'approved' ? { background: '#dcfce7', color: '#166534' } : draftReviewStatus === 'rejected' ? { background: '#fee2e2', color: '#991b1b' } : { background: '#fef3c7', color: '#92400e' }}>
+                  {moderationLabel(draftReviewStatus)}
+                </span>
+                <span className="rounded-full px-2 py-1" style={draftVisibility === 'public' ? { background: '#dbeafe', color: '#1d4ed8' } : draftVisibility === 'blocked' ? { background: '#fee2e2', color: '#991b1b' } : { background: '#e5e7eb', color: '#374151' }}>
+                  {visibilityLabel(draftVisibility)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingContent(null)}>
+              {tc('common:cancel')}
+            </Button>
+            <Button onClick={handleSaveModeration}>
+              {t('admin:saveModeration')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
