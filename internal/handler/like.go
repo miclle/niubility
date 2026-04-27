@@ -39,6 +39,9 @@ func (ctrl *Ctrl) ToggleLike(c *fox.Context, args ToggleLikeArgs) (*entity.LikeR
 		if content == nil {
 			return nil, httperrors.ErrNotFound
 		}
+		if !ctrl.service.CanUserAccessContent(user, content) {
+			return nil, httperrors.ErrNotFound
+		}
 	case "comment":
 		targetType = entity.TargetTypeComment
 		comment, err := ctrl.service.GetCommentByID(ctx, args.TargetID)
@@ -48,9 +51,29 @@ func (ctrl *Ctrl) ToggleLike(c *fox.Context, args ToggleLikeArgs) (*entity.LikeR
 		if comment == nil {
 			return nil, httperrors.ErrNotFound
 		}
+		content, err := ctrl.service.GetContentByID(ctx, comment.ContentID)
+		if err != nil {
+			return nil, httperrors.ErrInternalServerError
+		}
+		if content == nil || !ctrl.service.CanUserAccessContent(user, content) {
+			return nil, httperrors.ErrNotFound
+		}
 	case "attachment":
 		targetType = entity.TargetTypeAttachment
-		// Attachment validation is handled in service layer
+		attachment, err := ctrl.service.GetAttachmentByID(ctx, args.TargetID)
+		if err != nil {
+			return nil, httperrors.ErrInternalServerError
+		}
+		if attachment == nil {
+			return nil, httperrors.ErrNotFound
+		}
+		content, err := ctrl.service.GetContentByID(ctx, attachment.ContentID)
+		if err != nil {
+			return nil, httperrors.ErrInternalServerError
+		}
+		if content == nil || !ctrl.service.CanUserAccessContent(user, content) {
+			return nil, httperrors.ErrNotFound
+		}
 	default:
 		return nil, httperrors.ErrInvalidArguments
 	}

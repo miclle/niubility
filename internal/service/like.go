@@ -173,11 +173,11 @@ func loadMyLikeInteractionsByType(ctx context.Context, db *gorm.DB, userID strin
 	var rows []myLikeRow
 	q := db.WithContext(ctx).Model(&entity.Like{}).
 		Select(spec.selectCols).
-		Where("likes.user_id = ? AND likes.target_type = ?", userID, spec.targetType).
-		Where("contents.status = ?", entity.ContentStatusPublished)
+		Where("likes.user_id = ? AND likes.target_type = ?", userID, spec.targetType)
 	for _, join := range spec.joins {
 		q = q.Joins(join)
 	}
+	q = scopePublicDetailVisible(q)
 	if err := q.Scan(&rows).Error; err != nil {
 		return nil, err
 	}
@@ -305,6 +305,7 @@ func (s *Service) ListMyLikesGroupedByContent(ctx context.Context, userID string
 		Where("contents.id IN ?", contentIDs).
 		Preload("Author").
 		Preload("Speaker").
+		Scopes(scopePublicDetailVisible).
 		Find(&contents).Error; err != nil {
 		log.Errorf("ListMyLikesGroupedByContent: load contents: %v", err)
 		return nil, 0, "", fmt.Errorf("load liked contents: %w", err)

@@ -58,6 +58,7 @@ var skipPaths = []string{
 var softPaths = []string{
 	"/api/v1/boot",
 	"/api/v1/contents",
+	"/api/v1/comments",
 	"/api/v1/users/",
 }
 

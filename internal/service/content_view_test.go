@@ -13,7 +13,7 @@ func TestService_RecordContentView(t *testing.T) {
 	ctx := context.Background()
 
 	user := &entity.User{ID: entity.ID(), Username: "viewer", Role: entity.RoleUser, Status: entity.UserStatusActivated}
-	content := &entity.Content{ID: entity.ID(), AuthorID: user.ID, Title: "Viewed", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished}
+	content := &entity.Content{ID: entity.ID(), AuthorID: user.ID, Title: "Viewed", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityPublic}
 	if err := s.db.Create(user).Error; err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -72,9 +72,9 @@ func TestService_ListMyContentViews(t *testing.T) {
 		t.Fatalf("create author: %v", err)
 	}
 
-	video := &entity.Content{ID: entity.ID(), AuthorID: author.ID, Title: "Video", Type: entity.ContentTypeVideo, Category: "test", Status: entity.ContentStatusPublished}
-	article := &entity.Content{ID: entity.ID(), AuthorID: author.ID, Title: "Article", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished}
-	draft := &entity.Content{ID: entity.ID(), AuthorID: author.ID, Title: "Draft", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusDraft}
+	video := &entity.Content{ID: entity.ID(), AuthorID: author.ID, Title: "Video", Type: entity.ContentTypeVideo, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityPublic}
+	article := &entity.Content{ID: entity.ID(), AuthorID: author.ID, Title: "Article", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityUnlisted}
+	draft := &entity.Content{ID: entity.ID(), AuthorID: author.ID, Title: "Draft", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusDraft, ReviewStatus: entity.ContentReviewStatusPending, Visibility: entity.ContentVisibilityPrivate}
 	if err := s.db.Create(video).Error; err != nil {
 		t.Fatalf("create video: %v", err)
 	}
@@ -149,11 +149,58 @@ func TestService_ListMyContentViews(t *testing.T) {
 	}
 }
 
+func TestService_ListMyContentViews_FiltersByDetailVisibility(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	user := &entity.User{ID: entity.ID(), Username: "historyvisibilityuser", Role: entity.RoleUser, Status: entity.UserStatusActivated}
+	author := &entity.User{ID: entity.ID(), Username: "historyvisibilityauthor", Role: entity.RoleUser, Status: entity.UserStatusActivated}
+	if err := s.db.Create(user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	if err := s.db.Create(author).Error; err != nil {
+		t.Fatalf("create author: %v", err)
+	}
+
+	publicContent := &entity.Content{ID: entity.ID(), AuthorID: author.ID, Title: "Public", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityPublic}
+	unlistedContent := &entity.Content{ID: entity.ID(), AuthorID: author.ID, Title: "Unlisted", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityUnlisted}
+	blockedContent := &entity.Content{ID: entity.ID(), AuthorID: author.ID, Title: "Blocked", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityBlocked}
+	for _, content := range []*entity.Content{publicContent, unlistedContent, blockedContent} {
+		if err := s.db.Create(content).Error; err != nil {
+			t.Fatalf("create content: %v", err)
+		}
+	}
+
+	base := time.Date(2026, 4, 10, 8, 0, 0, 0, time.UTC)
+	for i, content := range []*entity.Content{publicContent, unlistedContent, blockedContent} {
+		if err := s.db.Create(&entity.ContentView{
+			ID:            entity.ID(),
+			UserID:        user.ID,
+			ContentID:     content.ID,
+			FirstViewedAt: base.Add(time.Duration(i) * time.Hour),
+			LastViewedAt:  base.Add(time.Duration(i) * time.Hour),
+			ViewCount:     1,
+		}).Error; err != nil {
+			t.Fatalf("create content view: %v", err)
+		}
+	}
+
+	items, _, err := s.ListMyContentViews(ctx, user.ID, entity.ListMyContentViewsArgs{
+		Pagination: entity.Pagination{Limit: 10},
+	})
+	if err != nil {
+		t.Fatalf("ListMyContentViews() error = %v", err)
+	}
+	if len(items) != 2 {
+		t.Fatalf("len(items) = %d, want 2", len(items))
+	}
+}
+
 func TestService_ListContentViewUsers(t *testing.T) {
 	s := setupTestService(t)
 	ctx := context.Background()
 
-	content := &entity.Content{ID: entity.ID(), AuthorID: entity.ID(), Title: "Admin View", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished}
+	content := &entity.Content{ID: entity.ID(), AuthorID: entity.ID(), Title: "Admin View", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityPublic}
 	if err := s.db.Create(content).Error; err != nil {
 		t.Fatalf("create content: %v", err)
 	}

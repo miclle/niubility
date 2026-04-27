@@ -82,17 +82,18 @@ func (s *Service) IsFavorited(ctx context.Context, userID, contentID string) (bo
 	return count > 0, nil
 }
 
-// ListFavorites returns a paginated list of contents that the given user has favorited.
-func (s *Service) ListFavorites(ctx context.Context, userID string, pagination entity.Pagination) ([]entity.Content, string, error) {
+func (s *Service) listFavoritesWithScope(ctx context.Context, userID string, pagination entity.Pagination, scope func(*gorm.DB) *gorm.DB) ([]entity.Content, string, error) {
 	log := logger.NewWithContext(ctx)
 
 	var contents []entity.Content
 	query := applyContentListSelects(s.db.WithContext(ctx)).
 		Joins("JOIN favorites ON favorites.content_id = contents.id").
 		Where("favorites.user_id = ?", userID).
-		Where("contents.status = ?", entity.ContentStatusPublished).
 		Preload("Author").Preload("Speaker").
 		Order("favorites.created_at DESC, favorites.id DESC")
+	if scope != nil {
+		query = scope(query)
+	}
 
 	if pagination.Cursor != "" {
 		parts, err := entity.DecodeCursor(pagination.Cursor, 2)
@@ -122,6 +123,17 @@ func (s *Service) ListFavorites(ctx context.Context, userID string, pagination e
 	}
 
 	return contents, nextCursor, nil
+}
+
+// ListFavorites returns a paginated list of contents that the given user has favorited
+// and can still access by detail link.
+func (s *Service) ListFavorites(ctx context.Context, userID string, pagination entity.Pagination) ([]entity.Content, string, error) {
+	return s.listFavoritesWithScope(ctx, userID, pagination, scopePublicDetailVisible)
+}
+
+// ListUserPublicFavorites returns the public-facing favorites shown on a user's profile page.
+func (s *Service) ListUserPublicFavorites(ctx context.Context, userID string, pagination entity.Pagination) ([]entity.Content, string, error) {
+	return s.listFavoritesWithScope(ctx, userID, pagination, scopePublicListVisible)
 }
 
 // updateFavoriteCount adjusts the favorite_count on the content's table.

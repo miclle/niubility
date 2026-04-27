@@ -364,6 +364,179 @@ func TestPublicContentEndpoints_AllowUnauthenticatedRead(t *testing.T) {
 			t.Fatalf("title = %q, want %q", resp.Items[0].Title, "Public article")
 		}
 	})
+
+	t.Run("public user favorites", func(t *testing.T) {
+		favorite := &entity.Favorite{ID: entity.ID(), UserID: owner.ID, ContentID: content.ID}
+		if err := te.db.Create(favorite).Error; err != nil {
+			t.Fatalf("seed favorite: %v", err)
+		}
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/users/"+owner.Username+"/favorites", nil)
+		rec := te.doRequest(req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+		}
+	})
+}
+
+func TestContentInteractionEndpoints_RespectVisibility(t *testing.T) {
+	te := setupTestEnv(t)
+	te.markInitialized(t)
+
+	author := &entity.User{Username: "interaction-author", Name: "Interaction Author", Role: entity.RoleUser}
+	viewer := &entity.User{Username: "interaction-viewer", Name: "Interaction Viewer", Role: entity.RoleUser}
+	te.createTestUser(t, author)
+	te.createTestUser(t, viewer)
+	viewerToken := te.issueTestToken(t, viewer)
+
+	privateContent := &entity.Content{
+		ID:           entity.ID(),
+		AuthorID:     author.ID,
+		Title:        "Private content",
+		Type:         entity.ContentTypeArticle,
+		Category:     "test",
+		Status:       entity.ContentStatusPublished,
+		ReviewStatus: entity.ContentReviewStatusPending,
+		Visibility:   entity.ContentVisibilityPrivate,
+	}
+	publicContent := &entity.Content{
+		ID:           entity.ID(),
+		AuthorID:     author.ID,
+		Title:        "Public content",
+		Type:         entity.ContentTypeArticle,
+		Category:     "test",
+		Status:       entity.ContentStatusPublished,
+		ReviewStatus: entity.ContentReviewStatusApproved,
+		Visibility:   entity.ContentVisibilityPublic,
+	}
+	for _, content := range []*entity.Content{privateContent, publicContent} {
+		if err := te.db.Create(content).Error; err != nil {
+			t.Fatalf("seed content: %v", err)
+		}
+	}
+
+	comment := &entity.Comment{ID: entity.ID(), ContentID: privateContent.ID, UserID: author.ID, Body: "private comment"}
+	if err := te.db.Create(comment).Error; err != nil {
+		t.Fatalf("seed comment: %v", err)
+	}
+	attachment := &entity.Attachment{ID: entity.ID(), ContentID: privateContent.ID, Type: entity.AttachmentTypeImage, URL: "private/image.jpg"}
+	if err := te.db.Create(attachment).Error; err != nil {
+		t.Fatalf("seed attachment: %v", err)
+	}
+
+	t.Run("favorite private content denied", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/contents/"+privateContent.ID+"/favorite", nil)
+		req.AddCookie(authCookie(viewerToken))
+		rec := te.doRequest(req)
+		if rec.Code != http.StatusNotFound {
+			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusNotFound, rec.Body.String())
+		}
+	})
+
+	t.Run("record private content view denied", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/contents/"+privateContent.ID+"/view", bytes.NewReader([]byte(`{}`)))
+		req.Header.Set("Content-Type", "application/json")
+		req.AddCookie(authCookie(viewerToken))
+		rec := te.doRequest(req)
+		if rec.Code != http.StatusNotFound {
+			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusNotFound, rec.Body.String())
+		}
+	})
+
+	t.Run("like private content targets denied", func(t *testing.T) {
+		for _, body := range []string{
+			`{"target_type":"content","target_id":"` + privateContent.ID + `"}`,
+			`{"target_type":"comment","target_id":"` + comment.ID + `"}`,
+			`{"target_type":"attachment","target_id":"` + attachment.ID + `"}`,
+		} {
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/likes", bytes.NewReader([]byte(body)))
+			req.Header.Set("Content-Type", "application/json")
+			req.AddCookie(authCookie(viewerToken))
+			rec := te.doRequest(req)
+			if rec.Code != http.StatusNotFound {
+				t.Fatalf("body %s status = %d, want %d; resp = %s", body, rec.Code, http.StatusNotFound, rec.Body.String())
+			}
+		}
+	})
+}
+
+func TestCommentsEndpoints_RespectVisibilityAndAllowPublicRead(t *testing.T) {
+	te := setupTestEnv(t)
+	te.markInitialized(t)
+
+	author := &entity.User{Username: "comment-author", Name: "Comment Author", Role: entity.RoleUser}
+	viewer := &entity.User{Username: "comment-viewer", Name: "Comment Viewer", Role: entity.RoleUser}
+	te.createTestUser(t, author)
+	te.createTestUser(t, viewer)
+	viewerToken := te.issueTestToken(t, viewer)
+
+	publicContent := &entity.Content{
+		ID:           entity.ID(),
+		AuthorID:     author.ID,
+		Title:        "Public content",
+		Type:         entity.ContentTypeArticle,
+		Category:     "test",
+		Status:       entity.ContentStatusPublished,
+		ReviewStatus: entity.ContentReviewStatusApproved,
+		Visibility:   entity.ContentVisibilityPublic,
+	}
+	privateContent := &entity.Content{
+		ID:           entity.ID(),
+		AuthorID:     author.ID,
+		Title:        "Private content",
+		Type:         entity.ContentTypeArticle,
+		Category:     "test",
+		Status:       entity.ContentStatusPublished,
+		ReviewStatus: entity.ContentReviewStatusPending,
+		Visibility:   entity.ContentVisibilityPrivate,
+	}
+	for _, content := range []*entity.Content{publicContent, privateContent} {
+		if err := te.db.Create(content).Error; err != nil {
+			t.Fatalf("seed content: %v", err)
+		}
+	}
+
+	publicComment := &entity.Comment{ID: entity.ID(), ContentID: publicContent.ID, UserID: author.ID, Body: "hello public"}
+	privateComment := &entity.Comment{ID: entity.ID(), ContentID: privateContent.ID, UserID: author.ID, Body: "hello private"}
+	for _, comment := range []*entity.Comment{publicComment, privateComment} {
+		if err := te.db.Create(comment).Error; err != nil {
+			t.Fatalf("seed comment: %v", err)
+		}
+	}
+
+	t.Run("public comments list allows unauthenticated read", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/comments?content_id="+publicContent.ID, nil)
+		rec := te.doRequest(req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+		}
+		var resp ListCommentsResponse
+		decodeJSON(t, rec.Body, &resp)
+		if len(resp.Items) != 1 {
+			t.Fatalf("len(items) = %d, want 1", len(resp.Items))
+		}
+		if len(resp.LikedCommentIDs) != 0 {
+			t.Fatalf("len(liked_comment_ids) = %d, want 0", len(resp.LikedCommentIDs))
+		}
+	})
+
+	t.Run("private comments list is hidden", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/comments?content_id="+privateContent.ID, nil)
+		rec := te.doRequest(req)
+		if rec.Code != http.StatusNotFound {
+			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusNotFound, rec.Body.String())
+		}
+	})
+
+	t.Run("cannot comment on private content", func(t *testing.T) {
+		body := []byte(`{"content_id":"` + privateContent.ID + `","body":"blocked"}`)
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/comments", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.AddCookie(authCookie(viewerToken))
+		rec := te.doRequest(req)
+		if rec.Code != http.StatusNotFound {
+			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusNotFound, rec.Body.String())
+		}
+	})
 }
 
 func TestCreateContent(t *testing.T) {

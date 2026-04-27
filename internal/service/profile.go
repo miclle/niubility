@@ -59,7 +59,10 @@ func (s *Service) GetUserContentCount(ctx context.Context, userID string) (int64
 	log := logger.NewWithContext(ctx)
 
 	var count int64
-	if err := s.db.WithContext(ctx).Model(&entity.Content{}).Where("author_id = ?", userID).Count(&count).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(&entity.Content{}).
+		Where("author_id = ?", userID).
+		Scopes(scopePublicListVisible).
+		Count(&count).Error; err != nil {
 		log.Errorf("count user contents: %v", err)
 		return 0, fmt.Errorf("count user contents: %w", err)
 	}
@@ -74,6 +77,7 @@ func (s *Service) GetUserTotalLikes(ctx context.Context, userID string) (int64, 
 	err := s.db.WithContext(ctx).
 		Model(&entity.Content{}).
 		Where("author_id = ?", userID).
+		Scopes(scopePublicListVisible).
 		Select("COALESCE(SUM(like_count), 0)").
 		Scan(&total).Error
 	if err != nil {
@@ -88,7 +92,10 @@ func (s *Service) GetUserSpeakerContentCount(ctx context.Context, userID string)
 	log := logger.NewWithContext(ctx)
 
 	var count int64
-	if err := s.db.WithContext(ctx).Model(&entity.Content{}).Where("speaker_id = ?", userID).Count(&count).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(&entity.Content{}).
+		Where("speaker_id = ?", userID).
+		Scopes(scopePublicListVisible).
+		Count(&count).Error; err != nil {
 		log.Errorf("count speaker contents: %v", err)
 		return 0, fmt.Errorf("count speaker contents: %w", err)
 	}

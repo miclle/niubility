@@ -58,7 +58,7 @@ func (ctrl *Ctrl) RecordContentView(c *fox.Context, args RecordContentViewArgs) 
 	if content == nil {
 		return nil, httperrors.ErrNotFound
 	}
-	if content.Status == entity.ContentStatusDraft && user.ID != content.AuthorID && !user.IsAdmin() {
+	if !ctrl.service.CanUserAccessContent(user, content) {
 		return nil, httperrors.ErrNotFound
 	}
 

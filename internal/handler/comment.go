@@ -28,12 +28,17 @@ type ListCommentsQueryArgs struct {
 func (ctrl *Ctrl) ListCommentsQuery(c *fox.Context, args ListCommentsQueryArgs) (*ListCommentsResponse, error) {
 	ctx := c.Logger.WithContext(c.Request.Context())
 	user := CurrentUser(c)
-	if user == nil {
-		return nil, httperrors.ErrUnauthorized
-	}
 
 	if args.ContentID == "" {
 		return nil, httperrors.ErrInvalidArguments
+	}
+
+	content, err := ctrl.service.GetContentByID(ctx, args.ContentID)
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+	if content == nil || !ctrl.service.CanUserAccessContent(user, content) {
+		return nil, httperrors.ErrNotFound
 	}
 
 	comments, total, nextCursor, err := ctrl.service.ListComments(ctx, args.ContentID, args.AttachmentID, args.Pagination)
@@ -50,7 +55,10 @@ func (ctrl *Ctrl) ListCommentsQuery(c *fox.Context, args ListCommentsQueryArgs) 
 		}
 	}
 
-	likedIDs, _ := ctrl.service.GetLikedIDs(ctx, user.ID, allIDs, entity.TargetTypeComment)
+	likedIDs := []string{}
+	if user != nil {
+		likedIDs, _ = ctrl.service.GetLikedIDs(ctx, user.ID, allIDs, entity.TargetTypeComment)
+	}
 
 	for i := range comments {
 		comments[i].ResolveAssetURLs()
@@ -88,6 +96,9 @@ func (ctrl *Ctrl) CreateCommentBody(c *fox.Context, args CreateCommentBodyArgs) 
 		return nil, httperrors.ErrInternalServerError
 	}
 	if content == nil {
+		return nil, httperrors.ErrNotFound
+	}
+	if !ctrl.service.CanUserAccessContent(user, content) {
 		return nil, httperrors.ErrNotFound
 	}
 

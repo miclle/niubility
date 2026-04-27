@@ -23,6 +23,9 @@ func (ctrl *Ctrl) FavoriteContent(c *fox.Context) (*entity.FavoriteResponse, err
 	if content == nil {
 		return nil, httperrors.ErrNotFound
 	}
+	if !ctrl.service.CanUserAccessContent(user, content) {
+		return nil, httperrors.ErrNotFound
+	}
 
 	resp, err := ctrl.service.ToggleFavorite(ctx, user.ID, contentID)
 	if err != nil {
@@ -60,17 +63,12 @@ func (ctrl *Ctrl) ListFavorites(c *fox.Context, args entity.Pagination) (*ListCo
 func (ctrl *Ctrl) ListUserFavorites(c *fox.Context, args entity.Pagination) (*ListContentsResponse, error) {
 	ctx := c.Logger.WithContext(c.Request.Context())
 
-	user := CurrentUser(c)
-	if user == nil {
-		return nil, httperrors.ErrUnauthorized
-	}
-
 	targetID, err := ctrl.resolveUserByUsername(c)
 	if err != nil {
 		return nil, err
 	}
 
-	contents, nextCursor, err := ctrl.service.ListFavorites(ctx, targetID, args)
+	contents, nextCursor, err := ctrl.service.ListUserPublicFavorites(ctx, targetID, args)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}

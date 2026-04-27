@@ -122,8 +122,8 @@ func TestService_ListMyLikesGroupedByContent(t *testing.T) {
 		t.Fatalf("Failed to create author: %v", err)
 	}
 
-	content1 := &entity.Content{ID: entity.ID(), AuthorID: author.ID, Title: "Article", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished}
-	content2 := &entity.Content{ID: entity.ID(), AuthorID: author.ID, Title: "Gallery", Type: entity.ContentTypeGallery, Category: "test", Status: entity.ContentStatusPublished}
+	content1 := &entity.Content{ID: entity.ID(), AuthorID: author.ID, Title: "Article", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityPublic}
+	content2 := &entity.Content{ID: entity.ID(), AuthorID: author.ID, Title: "Gallery", Type: entity.ContentTypeGallery, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityUnlisted}
 	if err := s.db.Create(content1).Error; err != nil {
 		t.Fatalf("Failed to create content1: %v", err)
 	}
@@ -227,6 +227,54 @@ func TestService_ListMyLikesGroupedByContent(t *testing.T) {
 	}
 }
 
+func TestService_ListMyLikesGroupedByContent_FiltersByDetailVisibility(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	user := &entity.User{ID: entity.ID(), Username: "mylikesvisibility", Role: entity.RoleUser, Status: entity.UserStatusActivated}
+	author := &entity.User{ID: entity.ID(), Username: "mylikesvisibilityauthor", Role: entity.RoleUser, Status: entity.UserStatusActivated}
+	if err := s.db.Create(user).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+	if err := s.db.Create(author).Error; err != nil {
+		t.Fatalf("Failed to create author: %v", err)
+	}
+
+	publicContent := &entity.Content{ID: entity.ID(), AuthorID: author.ID, Title: "Public", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityPublic}
+	unlistedContent := &entity.Content{ID: entity.ID(), AuthorID: author.ID, Title: "Unlisted", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityUnlisted}
+	blockedContent := &entity.Content{ID: entity.ID(), AuthorID: author.ID, Title: "Blocked", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityBlocked}
+	for _, content := range []*entity.Content{publicContent, unlistedContent, blockedContent} {
+		if err := s.db.Create(content).Error; err != nil {
+			t.Fatalf("Failed to create content: %v", err)
+		}
+	}
+
+	base := time.Date(2026, 4, 11, 9, 0, 0, 0, time.UTC)
+	for i, content := range []*entity.Content{publicContent, unlistedContent, blockedContent} {
+		like := &entity.Like{
+			ID:         entity.ID(),
+			UserID:     user.ID,
+			TargetID:   content.ID,
+			TargetType: entity.TargetTypeContent,
+			CreatedAt:  base.Add(time.Duration(i) * time.Minute),
+		}
+		if err := s.db.Create(like).Error; err != nil {
+			t.Fatalf("Failed to create like: %v", err)
+		}
+	}
+
+	items, total, _, err := s.ListMyLikesGroupedByContent(ctx, user.ID, entity.Pagination{Limit: 10})
+	if err != nil {
+		t.Fatalf("ListMyLikesGroupedByContent() error = %v", err)
+	}
+	if total != 2 {
+		t.Fatalf("total = %d, want 2", total)
+	}
+	if len(items) != 2 {
+		t.Fatalf("len(items) = %d, want 2", len(items))
+	}
+}
+
 func TestService_ListMyLikesGroupedByContent_Pagination(t *testing.T) {
 	s := setupTestService(t)
 	ctx := context.Background()
@@ -240,12 +288,14 @@ func TestService_ListMyLikesGroupedByContent_Pagination(t *testing.T) {
 	contentIDs := make([]string, 0, 3)
 	for i := 0; i < 3; i++ {
 		content := &entity.Content{
-			ID:       entity.ID(),
-			AuthorID: user.ID,
-			Title:    "Paged",
-			Type:     entity.ContentTypeArticle,
-			Category: "test",
-			Status:   entity.ContentStatusPublished,
+			ID:           entity.ID(),
+			AuthorID:     user.ID,
+			Title:        "Paged",
+			Type:         entity.ContentTypeArticle,
+			Category:     "test",
+			Status:       entity.ContentStatusPublished,
+			ReviewStatus: entity.ContentReviewStatusApproved,
+			Visibility:   entity.ContentVisibilityPublic,
 		}
 		if err := s.db.Create(content).Error; err != nil {
 			t.Fatalf("Failed to create content %d: %v", i, err)

@@ -60,8 +60,8 @@ func (s *Service) ListMyContentViews(ctx context.Context, userID string, args en
 	query := s.db.WithContext(ctx).Model(&entity.ContentView{}).
 		Joins("JOIN contents ON contents.id = content_views.content_id").
 		Where("content_views.user_id = ?", userID).
-		Where("contents.status = ?", entity.ContentStatusPublished).
-		Order("content_views.last_viewed_at DESC, content_views.id DESC")
+		Order("content_views.last_viewed_at DESC, content_views.id DESC").
+		Scopes(scopePublicDetailVisible)
 
 	if args.Type != "" {
 		query = query.Where("contents.type = ?", args.Type)
@@ -154,6 +154,7 @@ func (s *Service) buildMyContentViewItems(ctx context.Context, records []entity.
 		Where("contents.id IN ?", contentIDs).
 		Preload("Author").
 		Preload("Speaker").
+		Scopes(scopePublicDetailVisible).
 		Find(&contents).Error; err != nil {
 		return nil, fmt.Errorf("load contents for content views: %w", err)
 	}

@@ -270,6 +270,21 @@ func (s *Service) GetContentByID(ctx context.Context, id string) (*entity.Conten
 	return &content, nil
 }
 
+// GetAttachmentByID retrieves an attachment by ID.
+func (s *Service) GetAttachmentByID(ctx context.Context, id string) (*entity.Attachment, error) {
+	log := logger.NewWithContext(ctx)
+
+	var attachment entity.Attachment
+	if err := s.db.WithContext(ctx).Where("id = ?", id).First(&attachment).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		log.Errorf("GetAttachmentByID: %v", err)
+		return nil, fmt.Errorf("get attachment by id: %w", err)
+	}
+	return &attachment, nil
+}
+
 // createAttachments creates attachments for a content, validating gallery constraints and dedup.
 func (s *Service) createAttachments(tx *gorm.DB, contentID string, contentType entity.ContentType, items []entity.CreateAttachmentArgs) error {
 	// Collect non-empty checksums for dedup within the batch

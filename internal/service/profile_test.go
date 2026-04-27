@@ -103,9 +103,9 @@ func TestService_GetUserContentCount(t *testing.T) {
 
 	// Create contents
 	contents := []*entity.Content{
-		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 1", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished},
-		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 2", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished},
-		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 3", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusDraft},
+		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 1", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityPublic},
+		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 2", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityUnlisted},
+		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 3", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusDraft, ReviewStatus: entity.ContentReviewStatusPending, Visibility: entity.ContentVisibilityPrivate},
 	}
 	for _, c := range contents {
 		if err := s.db.Create(c).Error; err != nil {
@@ -117,8 +117,8 @@ func TestService_GetUserContentCount(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetUserContentCount() error = %v", err)
 	}
-	if count != 3 {
-		t.Errorf("GetUserContentCount() = %d, want 3", count)
+	if count != 1 {
+		t.Errorf("GetUserContentCount() = %d, want 1", count)
 	}
 }
 
@@ -134,9 +134,9 @@ func TestService_GetUserTotalLikes(t *testing.T) {
 
 	// Create contents with like counts
 	contents := []*entity.Content{
-		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 1", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, LikeCount: 10},
-		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 2", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, LikeCount: 20},
-		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 3", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, LikeCount: 5},
+		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 1", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityPublic, LikeCount: 10},
+		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 2", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityUnlisted, LikeCount: 20},
+		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 3", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityPublic, LikeCount: 5},
 	}
 	for _, c := range contents {
 		if err := s.db.Create(c).Error; err != nil {
@@ -148,8 +148,8 @@ func TestService_GetUserTotalLikes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetUserTotalLikes() error = %v", err)
 	}
-	if total != 35 {
-		t.Errorf("GetUserTotalLikes() = %d, want 35", total)
+	if total != 15 {
+		t.Errorf("GetUserTotalLikes() = %d, want 15", total)
 	}
 }
 
@@ -169,8 +169,8 @@ func TestService_GetUserSpeakerContentCount(t *testing.T) {
 
 	// Create contents with speaker
 	contents := []*entity.Content{
-		{ID: entity.ID(), AuthorID: author.ID, SpeakerID: speaker.ID, Title: "Content 1", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished},
-		{ID: entity.ID(), AuthorID: author.ID, SpeakerID: speaker.ID, Title: "Content 2", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished},
+		{ID: entity.ID(), AuthorID: author.ID, SpeakerID: speaker.ID, Title: "Content 1", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityPublic},
+		{ID: entity.ID(), AuthorID: author.ID, SpeakerID: speaker.ID, Title: "Content 2", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityUnlisted},
 	}
 	for _, c := range contents {
 		if err := s.db.Create(c).Error; err != nil {
@@ -182,7 +182,7 @@ func TestService_GetUserSpeakerContentCount(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetUserSpeakerContentCount() error = %v", err)
 	}
-	if count != 2 {
-		t.Errorf("GetUserSpeakerContentCount() = %d, want 2", count)
+	if count != 1 {
+		t.Errorf("GetUserSpeakerContentCount() = %d, want 1", count)
 	}
 }

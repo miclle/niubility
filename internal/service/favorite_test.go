@@ -65,8 +65,8 @@ func TestService_ListFavorites(t *testing.T) {
 	}
 
 	// Create contents
-	content1 := &entity.Content{ID: entity.ID(), AuthorID: user.ID, Title: "Fav 1", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished}
-	content2 := &entity.Content{ID: entity.ID(), AuthorID: user.ID, Title: "Fav 2", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished}
+	content1 := &entity.Content{ID: entity.ID(), AuthorID: user.ID, Title: "Fav 1", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityPublic}
+	content2 := &entity.Content{ID: entity.ID(), AuthorID: user.ID, Title: "Fav 2", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityPublic}
 	if err := s.db.Create(content1).Error; err != nil {
 		t.Fatalf("Failed to create test content: %v", err)
 	}
@@ -94,6 +94,76 @@ func TestService_ListFavorites(t *testing.T) {
 	}
 }
 
+func TestService_ListFavorites_UsesDetailVisibility(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	user := &entity.User{ID: entity.ID(), Username: "listfavoritesvisibility", Role: entity.RoleUser, Status: entity.UserStatusActivated}
+	if err := s.db.Create(user).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	publicContent := &entity.Content{ID: entity.ID(), AuthorID: user.ID, Title: "Public", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityPublic}
+	unlistedContent := &entity.Content{ID: entity.ID(), AuthorID: user.ID, Title: "Unlisted", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityUnlisted}
+	blockedContent := &entity.Content{ID: entity.ID(), AuthorID: user.ID, Title: "Blocked", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityBlocked}
+	for _, content := range []*entity.Content{publicContent, unlistedContent, blockedContent} {
+		if err := s.db.Create(content).Error; err != nil {
+			t.Fatalf("Failed to create test content: %v", err)
+		}
+	}
+	for _, favorite := range []*entity.Favorite{
+		{ID: entity.ID(), UserID: user.ID, ContentID: publicContent.ID},
+		{ID: entity.ID(), UserID: user.ID, ContentID: unlistedContent.ID},
+		{ID: entity.ID(), UserID: user.ID, ContentID: blockedContent.ID},
+	} {
+		if err := s.db.Create(favorite).Error; err != nil {
+			t.Fatalf("Failed to create favorite: %v", err)
+		}
+	}
+
+	contents, _, err := s.ListFavorites(ctx, user.ID, entity.Pagination{Limit: 10})
+	if err != nil {
+		t.Fatalf("ListFavorites() error = %v", err)
+	}
+	if len(contents) != 2 {
+		t.Fatalf("len(contents) = %d, want 2", len(contents))
+	}
+}
+
+func TestService_ListUserPublicFavorites_UsesListVisibility(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	user := &entity.User{ID: entity.ID(), Username: "publicfavoritesuser", Role: entity.RoleUser, Status: entity.UserStatusActivated}
+	if err := s.db.Create(user).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	publicContent := &entity.Content{ID: entity.ID(), AuthorID: user.ID, Title: "Public", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityPublic}
+	unlistedContent := &entity.Content{ID: entity.ID(), AuthorID: user.ID, Title: "Unlisted", Type: entity.ContentTypeArticle, Category: "test", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityUnlisted}
+	for _, content := range []*entity.Content{publicContent, unlistedContent} {
+		if err := s.db.Create(content).Error; err != nil {
+			t.Fatalf("Failed to create test content: %v", err)
+		}
+	}
+	for _, favorite := range []*entity.Favorite{
+		{ID: entity.ID(), UserID: user.ID, ContentID: publicContent.ID},
+		{ID: entity.ID(), UserID: user.ID, ContentID: unlistedContent.ID},
+	} {
+		if err := s.db.Create(favorite).Error; err != nil {
+			t.Fatalf("Failed to create favorite: %v", err)
+		}
+	}
+
+	contents, _, err := s.ListUserPublicFavorites(ctx, user.ID, entity.Pagination{Limit: 10})
+	if err != nil {
+		t.Fatalf("ListUserPublicFavorites() error = %v", err)
+	}
+	if len(contents) != 1 || contents[0].ID != publicContent.ID {
+		t.Fatalf("contents = %+v, want only public content", contents)
+	}
+}
+
 func TestService_ListFavorites_OmitsAttachmentsButKeepsGalleryCover(t *testing.T) {
 	s := setupTestService(t)
 	ctx := context.Background()
@@ -104,12 +174,14 @@ func TestService_ListFavorites_OmitsAttachmentsButKeepsGalleryCover(t *testing.T
 	}
 
 	content := &entity.Content{
-		ID:       entity.ID(),
-		AuthorID: user.ID,
-		Title:    "Favorite gallery",
-		Type:     entity.ContentTypeGallery,
-		Category: "test",
-		Status:   entity.ContentStatusPublished,
+		ID:           entity.ID(),
+		AuthorID:     user.ID,
+		Title:        "Favorite gallery",
+		Type:         entity.ContentTypeGallery,
+		Category:     "test",
+		Status:       entity.ContentStatusPublished,
+		ReviewStatus: entity.ContentReviewStatusApproved,
+		Visibility:   entity.ContentVisibilityPublic,
 	}
 	if err := s.db.Create(content).Error; err != nil {
 		t.Fatalf("Failed to create test content: %v", err)
