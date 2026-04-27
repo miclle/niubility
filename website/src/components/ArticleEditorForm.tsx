@@ -215,6 +215,7 @@ function ArticleEditorForm({ id, defaultSpeaker, onSaved, onCancel, onLoadError 
         saving={saving}
         isNew={isNew}
         contentStatus={contentStatus}
+        resubmitOnSave={!isAdmin && contentStatus === 'published'}
         disabled={!title.trim()}
         onSave={handleSubmit}
         onCancel={onCancel}

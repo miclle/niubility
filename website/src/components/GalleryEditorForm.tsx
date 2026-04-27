@@ -115,7 +115,8 @@ function SortableGalleryItem({ item, onRemove, onSetCover }: {
 // GalleryEditorForm is the editor form for creating/editing gallery (image/short-video) content.
 function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditorFormProps) {
   const { t } = useTranslation('editor')
-  const { categories } = useAppContext()
+  const { currentUser, categories } = useAppContext()
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'super_admin'
 
   const [summary, setSummary] = useState('')
   const [items, setItems] = useState<GalleryItem[]>([])
@@ -433,6 +434,7 @@ function GalleryEditorForm({ id, onSaved, onCancel, onLoadError }: GalleryEditor
         saving={saving}
         isNew={isNew}
         contentStatus={contentStatus}
+        resubmitOnSave={!isAdmin && contentStatus === 'published'}
         disabled={!title.trim() || items.length === 0 || uploading}
         onSave={handleSubmit}
         onCancel={onCancel}

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/miclle/niubility/internal/entity"
 )
@@ -41,6 +42,46 @@ func TestService_CreateContent(t *testing.T) {
 
 	if content.Status != entity.ContentStatusDraft {
 		t.Errorf("Default Status = %q, want %q", content.Status, entity.ContentStatusDraft)
+	}
+	if content.ReviewStatus != entity.ContentReviewStatusPending {
+		t.Errorf("Default ReviewStatus = %q, want %q", content.ReviewStatus, entity.ContentReviewStatusPending)
+	}
+	if content.Visibility != entity.ContentVisibilityPrivate {
+		t.Errorf("Default Visibility = %q, want %q", content.Visibility, entity.ContentVisibilityPrivate)
+	}
+}
+
+func TestService_CreateContent_PublishedStartsPendingPrivate(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	user := &entity.User{
+		ID:       entity.ID(),
+		Username: "publishedcontentauthor",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	if err := s.db.Create(user).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	content := &entity.Content{
+		AuthorID: user.ID,
+		Title:    "Pending publish",
+		Type:     entity.ContentTypeArticle,
+		Category: "test",
+		Status:   entity.ContentStatusPublished,
+	}
+
+	if err := s.CreateContent(ctx, content, nil); err != nil {
+		t.Fatalf("CreateContent() error = %v", err)
+	}
+
+	if content.ReviewStatus != entity.ContentReviewStatusPending {
+		t.Fatalf("ReviewStatus = %q, want %q", content.ReviewStatus, entity.ContentReviewStatusPending)
+	}
+	if content.Visibility != entity.ContentVisibilityPrivate {
+		t.Fatalf("Visibility = %q, want %q", content.Visibility, entity.ContentVisibilityPrivate)
 	}
 }
 
@@ -243,6 +284,168 @@ func TestService_UpdateContent(t *testing.T) {
 	}
 }
 
+func TestService_UpdateContent_AuthorEditPublishedResetsModeration(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	user := &entity.User{
+		ID:       entity.ID(),
+		Username: "resubmitauthor",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	if err := s.db.Create(user).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	now := time.Now()
+	content := &entity.Content{
+		ID:           entity.ID(),
+		AuthorID:     user.ID,
+		Title:        "Approved",
+		Type:         entity.ContentTypeArticle,
+		Category:     "test",
+		Status:       entity.ContentStatusPublished,
+		ReviewStatus: entity.ContentReviewStatusApproved,
+		Visibility:   entity.ContentVisibilityPublic,
+		ReviewedBy:   entity.ID(),
+		ReviewedAt:   &now,
+		ReviewNote:   "Old note",
+	}
+	if err := s.db.Create(content).Error; err != nil {
+		t.Fatalf("Failed to create test content: %v", err)
+	}
+
+	newTitle := "Approved updated"
+	publishedStatus := entity.ContentStatusPublished
+	updated, err := s.UpdateContent(ctx, content.ID, entity.UpdateContentArgs{
+		Title:  &newTitle,
+		Status: &publishedStatus,
+	})
+	if err != nil {
+		t.Fatalf("UpdateContent() error = %v", err)
+	}
+	if updated.ReviewStatus != entity.ContentReviewStatusPending {
+		t.Fatalf("ReviewStatus = %q, want %q", updated.ReviewStatus, entity.ContentReviewStatusPending)
+	}
+	if updated.Visibility != entity.ContentVisibilityPrivate {
+		t.Fatalf("Visibility = %q, want %q", updated.Visibility, entity.ContentVisibilityPrivate)
+	}
+	if updated.ReviewedBy != "" {
+		t.Fatalf("ReviewedBy = %q, want empty", updated.ReviewedBy)
+	}
+	if updated.ReviewedAt != nil {
+		t.Fatalf("ReviewedAt = %v, want nil", updated.ReviewedAt)
+	}
+	if updated.ReviewNote != "" {
+		t.Fatalf("ReviewNote = %q, want empty", updated.ReviewNote)
+	}
+}
+
+func TestService_UpdateContent_AdminEditPublishedKeepsModeration(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	user := &entity.User{
+		ID:       entity.ID(),
+		Username: "adminmaintainer",
+		Role:     entity.RoleAdmin,
+		Status:   entity.UserStatusActivated,
+	}
+	if err := s.db.Create(user).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	now := time.Now()
+	content := &entity.Content{
+		ID:           entity.ID(),
+		AuthorID:     user.ID,
+		Title:        "Approved admin",
+		Type:         entity.ContentTypeArticle,
+		Category:     "test",
+		Status:       entity.ContentStatusPublished,
+		ReviewStatus: entity.ContentReviewStatusApproved,
+		Visibility:   entity.ContentVisibilityPublic,
+		ReviewedBy:   entity.ID(),
+		ReviewedAt:   &now,
+		ReviewNote:   "Keep visible",
+	}
+	if err := s.db.Create(content).Error; err != nil {
+		t.Fatalf("Failed to create test content: %v", err)
+	}
+
+	newTitle := "Admin updated"
+	publishedStatus := entity.ContentStatusPublished
+	updated, err := s.UpdateContent(ctx, content.ID, entity.UpdateContentArgs{
+		Title:   &newTitle,
+		Status:  &publishedStatus,
+		ByAdmin: true,
+	})
+	if err != nil {
+		t.Fatalf("UpdateContent() error = %v", err)
+	}
+	if updated.ReviewStatus != entity.ContentReviewStatusApproved {
+		t.Fatalf("ReviewStatus = %q, want %q", updated.ReviewStatus, entity.ContentReviewStatusApproved)
+	}
+	if updated.Visibility != entity.ContentVisibilityPublic {
+		t.Fatalf("Visibility = %q, want %q", updated.Visibility, entity.ContentVisibilityPublic)
+	}
+	if updated.ReviewNote != "Keep visible" {
+		t.Fatalf("ReviewNote = %q, want %q", updated.ReviewNote, "Keep visible")
+	}
+}
+
+func TestService_UpdateContent_RevertToDraftClearsModeration(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	user := &entity.User{
+		ID:       entity.ID(),
+		Username: "draftrevertauthor",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	if err := s.db.Create(user).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+
+	now := time.Now()
+	content := &entity.Content{
+		ID:           entity.ID(),
+		AuthorID:     user.ID,
+		Title:        "Published revert",
+		Type:         entity.ContentTypeArticle,
+		Category:     "test",
+		Status:       entity.ContentStatusPublished,
+		ReviewStatus: entity.ContentReviewStatusApproved,
+		Visibility:   entity.ContentVisibilityPublic,
+		ReviewedBy:   entity.ID(),
+		ReviewedAt:   &now,
+		ReviewNote:   "Approved before",
+	}
+	if err := s.db.Create(content).Error; err != nil {
+		t.Fatalf("Failed to create test content: %v", err)
+	}
+
+	draftStatus := entity.ContentStatusDraft
+	updated, err := s.UpdateContent(ctx, content.ID, entity.UpdateContentArgs{Status: &draftStatus})
+	if err != nil {
+		t.Fatalf("UpdateContent() error = %v", err)
+	}
+	if updated.Status != entity.ContentStatusDraft {
+		t.Fatalf("Status = %q, want %q", updated.Status, entity.ContentStatusDraft)
+	}
+	if updated.ReviewStatus != entity.ContentReviewStatusPending {
+		t.Fatalf("ReviewStatus = %q, want %q", updated.ReviewStatus, entity.ContentReviewStatusPending)
+	}
+	if updated.Visibility != entity.ContentVisibilityPrivate {
+		t.Fatalf("Visibility = %q, want %q", updated.Visibility, entity.ContentVisibilityPrivate)
+	}
+	if updated.ReviewNote != "" {
+		t.Fatalf("ReviewNote = %q, want empty", updated.ReviewNote)
+	}
+}
+
 func TestService_UpdateContent_UpdatesSpeakerFields(t *testing.T) {
 	s := setupTestService(t)
 	ctx := context.Background()
@@ -365,6 +568,7 @@ func TestService_UpdateContent_RefreshesGalleryCoverFromAttachments(t *testing.T
 			{URL: "gallery/1.jpg", Type: entity.AttachmentTypeImage, SortOrder: 0},
 			{URL: "gallery/new-cover.jpg", Type: entity.AttachmentTypeImage, SortOrder: 1, IsCover: true},
 		},
+		ByAdmin: true,
 	})
 	if err != nil {
 		t.Fatalf("UpdateContent() error = %v", err)

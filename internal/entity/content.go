@@ -168,4 +168,5 @@ type UpdateContentArgs struct {
 	// CreatedAt and UpdatedAt can only be set by admin (e.g. for importing legacy content)
 	CreatedAt *time.Time `json:"created_at"`
 	UpdatedAt *time.Time `json:"updated_at"`
+	ByAdmin   bool       `json:"-" form:"-"`
 }

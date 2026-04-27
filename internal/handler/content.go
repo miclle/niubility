@@ -204,6 +204,7 @@ func (ctrl *Ctrl) UpdateContent(c *fox.Context, args entity.UpdateContentArgs) (
 		args.CreatedAt = nil
 		args.UpdatedAt = nil
 	}
+	args.ByAdmin = user.IsAdmin()
 
 	content, err := ctrl.service.UpdateContent(ctx, id, args)
 	if err != nil {

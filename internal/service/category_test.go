@@ -273,11 +273,11 @@ func TestService_GetCategoryContentCounts(t *testing.T) {
 
 	// Create contents
 	contents := []*entity.Content{
-		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 1", Category: "cat1", Type: entity.ContentTypeArticle, Status: entity.ContentStatusPublished},
-		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 2", Category: "cat1", Type: entity.ContentTypeArticle, Status: entity.ContentStatusPublished},
-		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 3", Category: "cat1", Type: entity.ContentTypeArticle, Status: entity.ContentStatusPublished},
-		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 4", Category: "cat2", Type: entity.ContentTypeArticle, Status: entity.ContentStatusPublished},
-		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 5", Category: "cat2", Type: entity.ContentTypeArticle, Status: entity.ContentStatusPublished},
+		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 1", Category: "cat1", Type: entity.ContentTypeArticle, Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityPublic},
+		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 2", Category: "cat1", Type: entity.ContentTypeArticle, Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityPublic},
+		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 3", Category: "cat1", Type: entity.ContentTypeArticle, Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusPending, Visibility: entity.ContentVisibilityPrivate},
+		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 4", Category: "cat2", Type: entity.ContentTypeArticle, Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityPublic},
+		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 5", Category: "cat2", Type: entity.ContentTypeArticle, Status: entity.ContentStatusDraft, ReviewStatus: entity.ContentReviewStatusPending, Visibility: entity.ContentVisibilityPrivate},
 	}
 	for _, c := range contents {
 		if err := s.db.Create(c).Error; err != nil {
@@ -285,7 +285,7 @@ func TestService_GetCategoryContentCounts(t *testing.T) {
 		}
 	}
 
-	counts, err := s.GetCategoryContentCounts(ctx)
+	counts, err := s.GetCategoryContentCounts(ctx, false)
 	if err != nil {
 		t.Fatalf("GetCategoryContentCounts() error = %v", err)
 	}
@@ -295,6 +295,18 @@ func TestService_GetCategoryContentCounts(t *testing.T) {
 	}
 	if counts["cat2"] != 2 {
 		t.Errorf("counts[cat2] = %d, want 2", counts["cat2"])
+	}
+
+	publicCounts, err := s.GetCategoryContentCounts(ctx, true)
+	if err != nil {
+		t.Fatalf("GetCategoryContentCounts(publicOnly) error = %v", err)
+	}
+
+	if publicCounts["cat1"] != 2 {
+		t.Errorf("publicCounts[cat1] = %d, want 2", publicCounts["cat1"])
+	}
+	if publicCounts["cat2"] != 1 {
+		t.Errorf("publicCounts[cat2] = %d, want 1", publicCounts["cat2"])
 	}
 }
 

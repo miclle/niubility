@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import { NavLink } from 'react-router-dom'
-import { Pencil, Heart, MessageSquare, Trash2, Send, ArrowDown, Sparkles, SlidersHorizontal } from 'lucide-react'
+import { Pencil, Heart, MessageSquare, Trash2, Send, ArrowDown, Sparkles, SlidersHorizontal, FileDown } from 'lucide-react'
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
@@ -66,6 +66,15 @@ function MyContents() {
     }
   }
 
+  const handleRevertToDraft = async (content: Content) => {
+    try {
+      await updateContent(content.id, { status: 'draft' })
+      invalidate()
+    } catch {
+      // Silently fail
+    }
+  }
+
   const handleDelete = async (content: Content) => {
     if (!confirm(tc('common:confirmDelete'))) return
     try {
@@ -88,6 +97,15 @@ function MyContents() {
     if (content.visibility === 'unlisted') return t('settings:visibilityUnlisted')
     if (content.visibility === 'blocked') return t('settings:visibilityBlocked')
     return t('settings:visibilityPrivate')
+  }
+  const statusHint = (content: Content) => {
+    if (content.status === 'draft') return ''
+    if (content.review_status === 'rejected') return t('settings:rejectedHint')
+    if (content.review_status === 'pending') return t('settings:pendingHint')
+    if (content.visibility === 'public') return t('settings:approvedPublicHint')
+    if (content.visibility === 'unlisted') return t('settings:approvedUnlistedHint')
+    if (content.visibility === 'blocked') return t('settings:blockedHint')
+    return t('settings:approvedPrivateHint')
   }
 
   return (
@@ -242,6 +260,17 @@ function MyContents() {
                           </>
                         )}
                       </div>
+                      {content.status !== 'draft' && (
+                        <div className="mt-3 space-y-1.5 text-xs leading-5" style={{ color: 'var(--text-secondary)' }}>
+                          <p>{statusHint(content)}</p>
+                          {content.review_note && (
+                            <p>
+                              <span className="font-medium text-foreground">{t('settings:reviewFeedbackLabel')}</span>
+                              {content.review_note}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td className="app-text-secondary px-4 py-5 text-sm">
                       {new Date(content.created_at).toLocaleDateString('zh-CN')}
@@ -259,9 +288,19 @@ function MyContents() {
                             onClick={() => handlePublish(content)}
                             className="rounded-xl p-2 transition-colors hover:bg-[var(--surface-hover)]"
                             style={{ color: 'var(--brand)' }}
-                            title={t('settings:publish')}
+                            title={t('settings:submitForReview')}
                           >
                             <Send size={16} />
+                          </button>
+                        )}
+                        {activeTab !== 'draft' && (
+                          <button
+                            onClick={() => handleRevertToDraft(content)}
+                            className="rounded-xl p-2 transition-colors hover:bg-[var(--surface-hover)]"
+                            style={{ color: 'var(--text-secondary)' }}
+                            title={t('settings:revertToDraft')}
+                          >
+                            <FileDown size={16} />
                           </button>
                         )}
                         <NavLink

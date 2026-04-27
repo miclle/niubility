@@ -72,6 +72,20 @@ func galleryCoverURL(items []entity.CreateAttachmentArgs) string {
 	return first.URL
 }
 
+func hasAuthorVisibleContentChanges(args entity.UpdateContentArgs) bool {
+	return args.Title != nil ||
+		args.Summary != nil ||
+		args.Body != nil ||
+		args.CoverURL != nil ||
+		args.Type != nil ||
+		args.Category != nil ||
+		args.Tags != nil ||
+		args.SpeakerID != nil ||
+		args.SpeakerName != nil ||
+		args.SpeakerBio != nil ||
+		args.Attachments != nil
+}
+
 func scopePublicListVisible(query *gorm.DB) *gorm.DB {
 	return query.Where("status = ?", entity.ContentStatusPublished).
 		Where("(review_status = ? OR review_status = '')", entity.ContentReviewStatusApproved).
@@ -420,7 +434,27 @@ func (s *Service) UpdateContent(ctx context.Context, id string, args entity.Upda
 	}
 	if args.Status != nil {
 		updates["status"] = *args.Status
+		if *args.Status == entity.ContentStatusDraft {
+			updates["review_status"] = entity.ContentReviewStatusPending
+			updates["visibility"] = entity.ContentVisibilityPrivate
+			updates["reviewed_by"] = ""
+			updates["reviewed_at"] = nil
+			updates["review_note"] = ""
+		}
 		if *args.Status == entity.ContentStatusPublished && content.Status != entity.ContentStatusPublished && args.ReviewStatus == nil && args.Visibility == nil {
+			updates["review_status"] = entity.ContentReviewStatusPending
+			updates["visibility"] = entity.ContentVisibilityPrivate
+			updates["reviewed_by"] = ""
+			updates["reviewed_at"] = nil
+			updates["review_note"] = ""
+		}
+	}
+	if !args.ByAdmin && content.Status == entity.ContentStatusPublished && args.ReviewStatus == nil && args.Visibility == nil {
+		targetStatus := content.Status
+		if args.Status != nil {
+			targetStatus = *args.Status
+		}
+		if targetStatus == entity.ContentStatusPublished && hasAuthorVisibleContentChanges(args) {
 			updates["review_status"] = entity.ContentReviewStatusPending
 			updates["visibility"] = entity.ContentVisibilityPrivate
 			updates["reviewed_by"] = ""

@@ -123,7 +123,7 @@ type FollowDomain interface {
 // CategoryDomain covers category management.
 type CategoryDomain interface {
 	ListCategories(ctx context.Context, visibleOnly bool) ([]entity.Category, error)
-	GetCategoryContentCounts(ctx context.Context) (map[string]int64, error)
+	GetCategoryContentCounts(ctx context.Context, publicOnly bool) (map[string]int64, error)
 	GetCategoryByID(ctx context.Context, id string) (*entity.Category, error)
 	CreateCategory(ctx context.Context, category *entity.Category) error
 	UpdateCategory(ctx context.Context, id string, args entity.UpdateCategoryArgs) (*entity.Category, error)

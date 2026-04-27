@@ -32,7 +32,8 @@ func (s *Service) ListCategories(ctx context.Context, visibleOnly bool) ([]entit
 }
 
 // GetCategoryContentCounts returns a map of category slug to content count.
-func (s *Service) GetCategoryContentCounts(ctx context.Context) (map[string]int64, error) {
+// When publicOnly is true, only publicly listable contents are included.
+func (s *Service) GetCategoryContentCounts(ctx context.Context, publicOnly bool) (map[string]int64, error) {
 	log := logger.NewWithContext(ctx)
 
 	type result struct {
@@ -40,8 +41,12 @@ func (s *Service) GetCategoryContentCounts(ctx context.Context) (map[string]int6
 		Count    int64
 	}
 	var results []result
-	if err := s.db.WithContext(ctx).Model(&entity.Content{}).
-		Select("category, count(*) as count").
+	query := s.db.WithContext(ctx).Model(&entity.Content{}).
+		Select("category, count(*) as count")
+	if publicOnly {
+		query = query.Scopes(scopePublicListVisible)
+	}
+	if err := query.
 		Group("category").
 		Find(&results).Error; err != nil {
 		log.Errorf("GetCategoryContentCounts: %v", err)

@@ -30,7 +30,7 @@ func (ctrl *Ctrl) ListCategories(c *fox.Context) (*ListCategoriesResponse, error
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
-	counts, _ := ctrl.service.GetCategoryContentCounts(ctx)
+	counts, _ := ctrl.service.GetCategoryContentCounts(ctx, true)
 	items := make([]CategoryWithCount, len(categories))
 	for i, cat := range categories {
 		items[i] = CategoryWithCount{Category: cat, ContentCount: counts[cat.Slug]}
@@ -46,7 +46,7 @@ func (ctrl *Ctrl) ListAllCategories(c *fox.Context) (*ListCategoriesResponse, er
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}
-	counts, _ := ctrl.service.GetCategoryContentCounts(ctx)
+	counts, _ := ctrl.service.GetCategoryContentCounts(ctx, false)
 	items := make([]CategoryWithCount, len(categories))
 	for i, cat := range categories {
 		items[i] = CategoryWithCount{Category: cat, ContentCount: counts[cat.Slug]}

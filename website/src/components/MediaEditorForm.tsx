@@ -421,6 +421,7 @@ function MediaEditorForm({ id, defaultSpeaker, config, renderItemContent, onSave
         saving={saving}
         isNew={isNew}
         contentStatus={contentStatus}
+        resubmitOnSave={!isAdmin && contentStatus === 'published'}
         disabled={!title.trim() || hasUploading}
         onSave={handleSubmit}
         onCancel={onCancel}
