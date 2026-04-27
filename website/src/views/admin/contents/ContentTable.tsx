@@ -9,14 +9,14 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 
-import { listContents, deleteContent } from 'src/api/content'
+import { listContents, moderateContent, deleteContent } from 'src/api/content'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
 import { getSpeakerAvatar, getSpeakerDisplayName, getStyledContentCardCover } from 'src/lib/content-assets'
 import { toPlainTextPreview } from 'src/lib/utils'
 import { useAppContext } from 'src/context/app'
 import { useIntersection } from 'src/hooks/use-intersection'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
-import type { ContentType } from 'src/types/content'
+import type { Content, ContentReviewStatus, ContentType, ContentVisibility } from 'src/types/content'
 
 const typeIcons: Record<ContentType, React.ReactNode> = {
   video: <Play size={12} />,
@@ -70,10 +70,34 @@ function ContentTable({ type, title }: ContentTableProps) {
   useIntersection(loaderRef, handleIntersect)
 
   const loading = isLoading || isFetchingNextPage
+  const moderationLabel = (status: ContentReviewStatus) => {
+    if (status === 'approved') return t('admin:approved')
+    if (status === 'rejected') return t('admin:rejected')
+    return t('admin:pending')
+  }
+  const visibilityLabel = (visibility: ContentVisibility) => {
+    if (visibility === 'public') return t('admin:visibilityPublic')
+    if (visibility === 'unlisted') return t('admin:visibilityUnlisted')
+    if (visibility === 'blocked') return t('admin:visibilityBlocked')
+    return t('admin:visibilityPrivate')
+  }
 
   const handleDelete = async (id: string) => {
     try {
       await deleteContent(id)
+      queryClient.invalidateQueries({ queryKey: ['admin-contents', type] })
+    } catch {
+      // Silently fail
+    }
+  }
+
+  const handleModerate = async (content: Content, reviewStatus: ContentReviewStatus, visibility: ContentVisibility) => {
+    try {
+      await moderateContent(content.id, {
+        review_status: reviewStatus,
+        visibility,
+        review_note: content.review_note || '',
+      })
       queryClient.invalidateQueries({ queryKey: ['admin-contents', type] })
     } catch {
       // Silently fail
@@ -86,11 +110,13 @@ function ContentTable({ type, title }: ContentTableProps) {
 
       <div className="app-surface-elevated rounded-xl overflow-hidden border app-border">
         <div className="overflow-x-auto">
-          <table className="w-full table-fixed min-w-[1380px]">
+          <table className="w-full table-fixed min-w-[1560px]">
             <colgroup>
               <col style={{ width: '320px' }} />
               <col style={{ width: '92px' }} />
               <col style={{ width: '96px' }} />
+              <col style={{ width: '120px' }} />
+              <col style={{ width: '120px' }} />
               <col style={{ width: '120px' }} />
               <col style={{ width: '160px' }} />
               {type === 'video' && <col style={{ width: '240px' }} />}
@@ -105,6 +131,8 @@ function ContentTable({ type, title }: ContentTableProps) {
                 <th style={thStyle}>{t('admin:title')}</th>
                 <th style={thStyle}>{t('admin:type')}</th>
                 <th style={thStyle}>{t('admin:status')}</th>
+                <th style={thStyle}>{t('admin:reviewStatus')}</th>
+                <th style={thStyle}>{t('admin:visibility')}</th>
                 <th style={thStyle}>{t('admin:category')}</th>
                 <th style={thStyle}>{t('admin:author')}</th>
                 {type === 'video' && <th style={thStyle}>Speaker</th>}
@@ -118,7 +146,7 @@ function ContentTable({ type, title }: ContentTableProps) {
             <tbody>
               {contents.length === 0 && !loading ? (
                 <tr>
-                  <td colSpan={type === 'video' ? 11 : 10} className="app-text-tertiary text-center py-8">
+                  <td colSpan={type === 'video' ? 13 : 12} className="app-text-tertiary text-center py-8">
                     {t('admin:noContent')}
                   </td>
                 </tr>
@@ -152,6 +180,16 @@ function ContentTable({ type, title }: ContentTableProps) {
                       <td style={tdStyle}>
                         <span className="px-2 py-0.5 rounded text-xs" style={content.status === 'draft' ? { background: '#fef3c7', color: '#92400e' } : { background: '#d1fae5', color: '#065f46' }}>
                           {content.status === 'draft' ? t('admin:draft') : t('admin:published')}
+                        </span>
+                      </td>
+                      <td style={tdStyle}>
+                        <span className="px-2 py-0.5 rounded text-xs" style={content.review_status === 'approved' ? { background: '#dcfce7', color: '#166534' } : content.review_status === 'rejected' ? { background: '#fee2e2', color: '#991b1b' } : { background: '#fef3c7', color: '#92400e' }}>
+                          {moderationLabel(content.review_status)}
+                        </span>
+                      </td>
+                      <td style={tdStyle}>
+                        <span className="px-2 py-0.5 rounded text-xs" style={content.visibility === 'public' ? { background: '#dbeafe', color: '#1d4ed8' } : content.visibility === 'blocked' ? { background: '#fee2e2', color: '#991b1b' } : { background: '#e5e7eb', color: '#374151' }}>
+                          {visibilityLabel(content.visibility)}
                         </span>
                       </td>
                       <td style={tdStyle}>
@@ -211,7 +249,19 @@ function ContentTable({ type, title }: ContentTableProps) {
                       </td>
                       <td style={tdStyle}>{dayjs(content.created_at).format('YYYY-MM-DD')}</td>
                       <td style={tdStyle}>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
+                          <Button variant="ghost" style={{ color: '#166534' }} onClick={() => handleModerate(content, 'approved', 'public')} title={t('admin:approveAndPublish')}>
+                            {t('admin:approveAndPublishShort')}
+                          </Button>
+                          <Button variant="ghost" style={{ color: '#1d4ed8' }} onClick={() => handleModerate(content, 'approved', 'unlisted')} title={t('admin:approveUnlisted')}>
+                            {t('admin:approveUnlistedShort')}
+                          </Button>
+                          <Button variant="ghost" style={{ color: '#92400e' }} onClick={() => handleModerate(content, 'pending', 'private')} title={t('admin:markPending')}>
+                            {t('admin:markPendingShort')}
+                          </Button>
+                          <Button variant="ghost" style={{ color: '#991b1b' }} onClick={() => handleModerate(content, content.review_status === 'rejected' ? 'rejected' : 'approved', 'blocked')} title={t('admin:blockContent')}>
+                            {t('admin:blockShort')}
+                          </Button>
                           <Link to={contentEditPath(content)}>
                             <Button variant="ghost" style={{ color: 'var(--text-secondary)' }}>
                               <Pencil size={14} />

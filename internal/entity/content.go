@@ -34,26 +34,57 @@ const (
 	ContentStatusPublished ContentStatus = "published"
 )
 
+// ContentReviewStatus represents the moderation status of content.
+type ContentReviewStatus string
+
+const (
+	// ContentReviewStatusPending indicates content is waiting for moderation.
+	ContentReviewStatusPending ContentReviewStatus = "pending"
+	// ContentReviewStatusApproved indicates content passed moderation.
+	ContentReviewStatusApproved ContentReviewStatus = "approved"
+	// ContentReviewStatusRejected indicates content was rejected in moderation.
+	ContentReviewStatusRejected ContentReviewStatus = "rejected"
+)
+
+// ContentVisibility represents the public visibility of content.
+type ContentVisibility string
+
+const (
+	// ContentVisibilityPrivate indicates content is not publicly visible.
+	ContentVisibilityPrivate ContentVisibility = "private"
+	// ContentVisibilityUnlisted indicates content is only accessible by direct link.
+	ContentVisibilityUnlisted ContentVisibility = "unlisted"
+	// ContentVisibilityPublic indicates content is publicly listed and viewable.
+	ContentVisibilityPublic ContentVisibility = "public"
+	// ContentVisibilityBlocked indicates content is hidden from public access.
+	ContentVisibilityBlocked ContentVisibility = "blocked"
+)
+
 // Content represents a piece of content in the system.
 type Content struct {
-	ID            string        `json:"id"             gorm:"column:id;primaryKey;size:36"`
-	AuthorID      string        `json:"author_id"      gorm:"column:author_id;size:36;index:idx_contents_author_id"`
-	Title         string        `json:"title"          gorm:"column:title"`
-	Summary       string        `json:"summary"        gorm:"column:summary"`
-	Body          string        `json:"body"           gorm:"column:body;type:text"`
-	CoverURL      string        `json:"cover_url"      gorm:"column:cover_url"`
-	Type          ContentType   `json:"type"           gorm:"column:type"`
-	Status        ContentStatus `json:"status"         gorm:"column:status;size:32;default:draft;index:idx_contents_status"`
-	Category      string        `json:"category"       gorm:"column:category;size:64;index:idx_contents_category"`
-	Tags          []string      `json:"tags"           gorm:"column:tags;serializer:json"`
-	SpeakerID     string        `json:"speaker_id"     gorm:"column:speaker_id;size:36;index:idx_contents_speaker_id"`
-	SpeakerName   string        `json:"speaker_name"   gorm:"column:speaker_name"`
-	SpeakerBio    string        `json:"speaker_bio"    gorm:"column:speaker_bio"`
-	LikeCount     int64         `json:"like_count"     gorm:"column:like_count;default:0"`
-	FavoriteCount int64         `json:"favorite_count" gorm:"column:favorite_count;default:0"`
-	CommentCount  int64         `json:"comment_count"  gorm:"column:comment_count;default:0"`
-	CreatedAt     time.Time     `json:"created_at"`
-	UpdatedAt     time.Time     `json:"updated_at"`
+	ID            string              `json:"id"             gorm:"column:id;primaryKey;size:36"`
+	AuthorID      string              `json:"author_id"      gorm:"column:author_id;size:36;index:idx_contents_author_id"`
+	Title         string              `json:"title"          gorm:"column:title"`
+	Summary       string              `json:"summary"        gorm:"column:summary"`
+	Body          string              `json:"body"           gorm:"column:body;type:text"`
+	CoverURL      string              `json:"cover_url"      gorm:"column:cover_url"`
+	Type          ContentType         `json:"type"           gorm:"column:type"`
+	Status        ContentStatus       `json:"status"         gorm:"column:status;size:32;default:draft;index:idx_contents_status"`
+	ReviewStatus  ContentReviewStatus `json:"review_status"  gorm:"column:review_status;size:32;default:pending;index:idx_contents_review_status"`
+	Visibility    ContentVisibility   `json:"visibility"     gorm:"column:visibility;size:32;default:private;index:idx_contents_visibility"`
+	Category      string              `json:"category"       gorm:"column:category;size:64;index:idx_contents_category"`
+	Tags          []string            `json:"tags"           gorm:"column:tags;serializer:json"`
+	SpeakerID     string              `json:"speaker_id"     gorm:"column:speaker_id;size:36;index:idx_contents_speaker_id"`
+	SpeakerName   string              `json:"speaker_name"   gorm:"column:speaker_name"`
+	SpeakerBio    string              `json:"speaker_bio"    gorm:"column:speaker_bio"`
+	ReviewedBy    string              `json:"reviewed_by"    gorm:"column:reviewed_by;size:36"`
+	ReviewedAt    *time.Time          `json:"reviewed_at"    gorm:"column:reviewed_at"`
+	ReviewNote    string              `json:"review_note"    gorm:"column:review_note;type:text"`
+	LikeCount     int64               `json:"like_count"     gorm:"column:like_count;default:0"`
+	FavoriteCount int64               `json:"favorite_count" gorm:"column:favorite_count;default:0"`
+	CommentCount  int64               `json:"comment_count"  gorm:"column:comment_count;default:0"`
+	CreatedAt     time.Time           `json:"created_at"`
+	UpdatedAt     time.Time           `json:"updated_at"`
 
 	Author      *User        `json:"author,omitempty"      gorm:"foreignKey:AuthorID"`
 	Speaker     *User        `json:"speaker,omitempty"     gorm:"foreignKey:SpeakerID"`
@@ -78,33 +109,37 @@ const (
 // ListContentsArgs represents the query parameters for listing contents.
 type ListContentsArgs struct {
 	Pagination
-	Category         string        `json:"category"            form:"category"`
-	Type             ContentType   `json:"type"                form:"type"`
-	Status           ContentStatus `json:"status"              form:"status"`
-	Keyword          string        `json:"keyword"             form:"keyword"`
-	Tag              string        `json:"tag"                 form:"tag"`
-	Sort             SortField     `json:"sort"                form:"sort"`
-	AuthorID         string        `json:"author_id"           form:"author_id"`
-	SpeakerID        string        `json:"speaker_id"          form:"speaker_id"`
-	ProfileUserID    string        `json:"profile_user_id"     form:"profile_user_id"`
-	FollowedByUserID string        `json:"followed_by_user_id" form:"followed_by_user_id"`
+	Category         string              `json:"category"            form:"category"`
+	Type             ContentType         `json:"type"                form:"type"`
+	Status           ContentStatus       `json:"status"              form:"status"`
+	ReviewStatus     ContentReviewStatus `json:"review_status"        form:"review_status"`
+	Visibility       ContentVisibility   `json:"visibility"           form:"visibility"`
+	Keyword          string              `json:"keyword"             form:"keyword"`
+	Tag              string              `json:"tag"                 form:"tag"`
+	Sort             SortField           `json:"sort"                form:"sort"`
+	AuthorID         string              `json:"author_id"           form:"author_id"`
+	SpeakerID        string              `json:"speaker_id"          form:"speaker_id"`
+	ProfileUserID    string              `json:"profile_user_id"     form:"profile_user_id"`
+	FollowedByUserID string              `json:"followed_by_user_id" form:"followed_by_user_id"`
 }
 
 // CreateContentArgs represents the fields required to create content.
 type CreateContentArgs struct {
-	Title       string                 `json:"title"        binding:"required"`
-	Summary     string                 `json:"summary"`
-	Body        string                 `json:"body"`
-	CoverURL    string                 `json:"cover_url"`
-	Type        ContentType            `json:"type"         binding:"required"`
-	Status      ContentStatus          `json:"status"`
-	Category    string                 `json:"category"     binding:"required"`
-	Tags        []string               `json:"tags"`
-	AuthorID    string                 `json:"author_id"`
-	SpeakerID   string                 `json:"speaker_id"`
-	SpeakerName string                 `json:"speaker_name"`
-	SpeakerBio  string                 `json:"speaker_bio"`
-	Attachments []CreateAttachmentArgs `json:"attachments"`
+	Title        string                 `json:"title"        binding:"required"`
+	Summary      string                 `json:"summary"`
+	Body         string                 `json:"body"`
+	CoverURL     string                 `json:"cover_url"`
+	Type         ContentType            `json:"type"         binding:"required"`
+	Status       ContentStatus          `json:"status"`
+	ReviewStatus ContentReviewStatus    `json:"review_status"`
+	Visibility   ContentVisibility      `json:"visibility"`
+	Category     string                 `json:"category"     binding:"required"`
+	Tags         []string               `json:"tags"`
+	AuthorID     string                 `json:"author_id"`
+	SpeakerID    string                 `json:"speaker_id"`
+	SpeakerName  string                 `json:"speaker_name"`
+	SpeakerBio   string                 `json:"speaker_bio"`
+	Attachments  []CreateAttachmentArgs `json:"attachments"`
 	// CreatedAt and UpdatedAt can only be set by admin (e.g. for importing legacy content)
 	CreatedAt *time.Time `json:"created_at"`
 	UpdatedAt *time.Time `json:"updated_at"`
@@ -112,19 +147,24 @@ type CreateContentArgs struct {
 
 // UpdateContentArgs represents the fields that can be updated for content.
 type UpdateContentArgs struct {
-	Title       *string                `json:"title"`
-	Summary     *string                `json:"summary"`
-	Body        *string                `json:"body"`
-	CoverURL    *string                `json:"cover_url"`
-	Type        *ContentType           `json:"type"`
-	Status      *ContentStatus         `json:"status"`
-	Category    *string                `json:"category"`
-	Tags        []string               `json:"tags"`
-	AuthorID    *string                `json:"author_id"`
-	SpeakerID   *string                `json:"speaker_id"`
-	SpeakerName *string                `json:"speaker_name"`
-	SpeakerBio  *string                `json:"speaker_bio"`
-	Attachments []CreateAttachmentArgs `json:"attachments"`
+	Title        *string                `json:"title"`
+	Summary      *string                `json:"summary"`
+	Body         *string                `json:"body"`
+	CoverURL     *string                `json:"cover_url"`
+	Type         *ContentType           `json:"type"`
+	Status       *ContentStatus         `json:"status"`
+	ReviewStatus *ContentReviewStatus   `json:"review_status"`
+	Visibility   *ContentVisibility     `json:"visibility"`
+	Category     *string                `json:"category"`
+	Tags         []string               `json:"tags"`
+	AuthorID     *string                `json:"author_id"`
+	SpeakerID    *string                `json:"speaker_id"`
+	SpeakerName  *string                `json:"speaker_name"`
+	SpeakerBio   *string                `json:"speaker_bio"`
+	ReviewedBy   *string                `json:"reviewed_by"`
+	ReviewedAt   **time.Time            `json:"reviewed_at"`
+	ReviewNote   *string                `json:"review_note"`
+	Attachments  []CreateAttachmentArgs `json:"attachments"`
 	// CreatedAt and UpdatedAt can only be set by admin (e.g. for importing legacy content)
 	CreatedAt *time.Time `json:"created_at"`
 	UpdatedAt *time.Time `json:"updated_at"`

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/fox-gonic/fox"
 	"github.com/fox-gonic/fox/httperrors"
@@ -34,6 +35,47 @@ func (ctrl *Ctrl) ListContents(c *fox.Context, args entity.ListContentsArgs) (*L
 	}, nil
 }
 
+// ListUserContents returns the public-facing contents shown on a user's profile page.
+func (ctrl *Ctrl) ListUserContents(c *fox.Context, args entity.ListContentsArgs) (*ListContentsResponse, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+
+	username := c.Param("username")
+	user, err := ctrl.service.GetUserByUsername(ctx, username)
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+	if user == nil {
+		return nil, httperrors.ErrNotFound
+	}
+
+	contents, nextCursor, err := ctrl.service.ListUserPublicContents(ctx, user.ID, args)
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+	for i := range contents {
+		contents[i].ResolveAssetURLs()
+	}
+	return &ListContentsResponse{Items: contents, NextCursor: nextCursor}, nil
+}
+
+// ListMyContents returns all contents authored by the current user.
+func (ctrl *Ctrl) ListMyContents(c *fox.Context, args entity.ListContentsArgs) (*ListContentsResponse, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+	user := CurrentUser(c)
+	if user == nil {
+		return nil, httperrors.ErrUnauthorized
+	}
+
+	contents, nextCursor, err := ctrl.service.ListMyContents(ctx, user.ID, args)
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+	for i := range contents {
+		contents[i].ResolveAssetURLs()
+	}
+	return &ListContentsResponse{Items: contents, NextCursor: nextCursor}, nil
+}
+
 // GetContentResponse represents the response for getting a single content.
 type GetContentResponse struct {
 	*entity.Content
@@ -55,18 +97,15 @@ func (ctrl *Ctrl) GetContent(c *fox.Context) (*GetContentResponse, error) {
 		return nil, httperrors.ErrNotFound
 	}
 
-	// Draft content is only visible to the author or admin
-	if content.Status == entity.ContentStatusDraft {
-		user := CurrentUser(c)
-		if user == nil || (user.ID != content.AuthorID && !user.IsAdmin()) {
-			return nil, httperrors.ErrNotFound
-		}
+	user := CurrentUser(c)
+	if !ctrl.service.CanUserAccessContent(user, content) {
+		return nil, httperrors.ErrNotFound
 	}
 
 	content.ResolveAssetURLs()
 	resp := &GetContentResponse{Content: content}
 
-	if user := CurrentUser(c); user != nil {
+	if user != nil {
 		liked, _ := ctrl.service.IsLiked(ctx, user.ID, id, entity.TargetTypeContent)
 		resp.Liked = liked
 
@@ -176,6 +215,60 @@ func (ctrl *Ctrl) UpdateContent(c *fox.Context, args entity.UpdateContentArgs) (
 
 	content.ResolveAssetURLs()
 	return content, nil
+}
+
+// ModerateContentArgs represents admin-only moderation changes for a content item.
+type ModerateContentArgs struct {
+	ReviewStatus entity.ContentReviewStatus `json:"review_status"`
+	Visibility   entity.ContentVisibility   `json:"visibility"`
+	ReviewNote   string                     `json:"review_note"`
+}
+
+// ModerateContent updates moderation and visibility metadata for a content item (admin only).
+func (ctrl *Ctrl) ModerateContent(c *fox.Context, args ModerateContentArgs) (*entity.Content, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+	id := c.Param("id")
+	admin := CurrentUser(c)
+	if admin == nil || !admin.IsAdmin() {
+		return nil, httperrors.ErrForbidden
+	}
+
+	existing, err := ctrl.service.GetContentByID(ctx, id)
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+	if existing == nil {
+		return nil, httperrors.ErrNotFound
+	}
+
+	reviewedBy := admin.ID
+	reviewNote := args.ReviewNote
+	var reviewedAt *time.Time
+	if args.ReviewStatus != "" && args.ReviewStatus != entity.ContentReviewStatusPending {
+		now := time.Now()
+		reviewedAt = &now
+	}
+	if args.ReviewStatus == entity.ContentReviewStatusPending {
+		reviewedBy = ""
+		reviewNote = ""
+	}
+
+	updated, err := ctrl.service.UpdateContent(ctx, id, entity.UpdateContentArgs{
+		ReviewStatus: &args.ReviewStatus,
+		Visibility:   &args.Visibility,
+		ReviewedBy:   &reviewedBy,
+		ReviewedAt:   &reviewedAt,
+		ReviewNote:   &reviewNote,
+	})
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+	if updated == nil {
+		return nil, httperrors.ErrNotFound
+	}
+
+	updated.ResolveAssetURLs()
+	return updated, nil
 }
 
 // DeleteContent deletes a content by ID (author or admin).

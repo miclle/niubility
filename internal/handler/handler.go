@@ -58,10 +58,12 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 	// ── User profile ────────────────────────────────────────────────────
 	api.GET("/profile", ctrl.GetProfile)
 	api.PATCH("/profile", ctrl.UpdateProfile)
+	api.GET("/profile/contents", ctrl.ListMyContents)
 	api.POST("/profile/upload", ctrl.GetAvatarPresignedURL)
 	api.POST("/profile/change-password", ctrl.ChangePassword)
 	api.GET("/profile/has-password", ctrl.HasPassword)
 	api.GET("/users/:username/profile", ctrl.GetUserProfile)
+	api.GET("/users/:username/contents", ctrl.ListUserContents)
 
 	// ── Content CRUD ────────────────────────────────────────────────────
 	api.GET("/contents", ctrl.ListContents)
@@ -137,6 +139,7 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 
 	// Admin: comment moderation
 	admin.POST("/comments/:id/pin", ctrl.PinComment)
+	admin.PATCH("/contents/:id/moderation", ctrl.ModerateContent)
 }
 
 // Health returns a simple health check response.

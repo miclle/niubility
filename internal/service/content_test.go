@@ -149,12 +149,14 @@ func TestService_GetContentByID(t *testing.T) {
 
 	// Create content
 	content := &entity.Content{
-		ID:       entity.ID(),
-		AuthorID: user.ID,
-		Title:    "Test Content",
-		Type:     entity.ContentTypeArticle,
-		Category: "test",
-		Status:   entity.ContentStatusPublished,
+		ID:           entity.ID(),
+		AuthorID:     user.ID,
+		Title:        "Test Content",
+		Type:         entity.ContentTypeArticle,
+		Category:     "test",
+		Status:       entity.ContentStatusPublished,
+		ReviewStatus: entity.ContentReviewStatusApproved,
+		Visibility:   entity.ContentVisibilityPublic,
 	}
 	if err := s.db.Create(content).Error; err != nil {
 		t.Fatalf("Failed to create test content: %v", err)
@@ -333,13 +335,15 @@ func TestService_UpdateContent_RefreshesGalleryCoverFromAttachments(t *testing.T
 	}
 
 	content := &entity.Content{
-		ID:       entity.ID(),
-		AuthorID: user.ID,
-		Title:    "Gallery",
-		Type:     entity.ContentTypeGallery,
-		Category: "test",
-		Status:   entity.ContentStatusPublished,
-		CoverURL: "gallery/old-cover.jpg",
+		ID:           entity.ID(),
+		AuthorID:     user.ID,
+		Title:        "Gallery",
+		Type:         entity.ContentTypeGallery,
+		Category:     "test",
+		Status:       entity.ContentStatusPublished,
+		ReviewStatus: entity.ContentReviewStatusApproved,
+		Visibility:   entity.ContentVisibilityPublic,
+		CoverURL:     "gallery/old-cover.jpg",
 	}
 	if err := s.db.Create(content).Error; err != nil {
 		t.Fatalf("Failed to create test content: %v", err)
@@ -399,12 +403,14 @@ func TestService_DeleteContent(t *testing.T) {
 
 	// Create content
 	content := &entity.Content{
-		ID:       entity.ID(),
-		AuthorID: user.ID,
-		Title:    "To Delete",
-		Type:     entity.ContentTypeArticle,
-		Category: "test",
-		Status:   entity.ContentStatusPublished,
+		ID:           entity.ID(),
+		AuthorID:     user.ID,
+		Title:        "To Delete",
+		Type:         entity.ContentTypeArticle,
+		Category:     "test",
+		Status:       entity.ContentStatusPublished,
+		ReviewStatus: entity.ContentReviewStatusApproved,
+		Visibility:   entity.ContentVisibilityPublic,
 	}
 	if err := s.db.Create(content).Error; err != nil {
 		t.Fatalf("Failed to create test content: %v", err)
@@ -442,8 +448,8 @@ func TestService_ListContents(t *testing.T) {
 
 	// Create contents
 	contents := []*entity.Content{
-		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 1", Type: entity.ContentTypeArticle, Category: "cat1", Status: entity.ContentStatusPublished},
-		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 2", Type: entity.ContentTypeArticle, Category: "cat1", Status: entity.ContentStatusPublished},
+		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 1", Type: entity.ContentTypeArticle, Category: "cat1", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityPublic},
+		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 2", Type: entity.ContentTypeArticle, Category: "cat1", Status: entity.ContentStatusPublished, ReviewStatus: entity.ContentReviewStatusApproved, Visibility: entity.ContentVisibilityPublic},
 		{ID: entity.ID(), AuthorID: user.ID, Title: "Content 3", Type: entity.ContentTypeVideo, Category: "cat2", Status: entity.ContentStatusDraft},
 	}
 	for _, c := range contents {
@@ -504,12 +510,14 @@ func TestService_ListContents_OmitsAttachmentsButKeepsGalleryCover(t *testing.T)
 	}
 
 	content := &entity.Content{
-		ID:       entity.ID(),
-		AuthorID: user.ID,
-		Title:    "Gallery content",
-		Type:     entity.ContentTypeGallery,
-		Category: "gallery",
-		Status:   entity.ContentStatusPublished,
+		ID:           entity.ID(),
+		AuthorID:     user.ID,
+		Title:        "Gallery content",
+		Type:         entity.ContentTypeGallery,
+		Category:     "gallery",
+		Status:       entity.ContentStatusPublished,
+		ReviewStatus: entity.ContentReviewStatusApproved,
+		Visibility:   entity.ContentVisibilityPublic,
 	}
 	if err := s.db.Create(content).Error; err != nil {
 		t.Fatalf("Failed to create test content: %v", err)
@@ -571,12 +579,14 @@ func TestService_ListContents_IncludesPodcastAttachmentsForPodcastLists(t *testi
 	}
 
 	podcast := &entity.Content{
-		ID:       entity.ID(),
-		AuthorID: user.ID,
-		Title:    "Podcast content",
-		Type:     entity.ContentTypePodcast,
-		Category: "podcast",
-		Status:   entity.ContentStatusPublished,
+		ID:           entity.ID(),
+		AuthorID:     user.ID,
+		Title:        "Podcast content",
+		Type:         entity.ContentTypePodcast,
+		Category:     "podcast",
+		Status:       entity.ContentStatusPublished,
+		ReviewStatus: entity.ContentReviewStatusApproved,
+		Visibility:   entity.ContentVisibilityPublic,
 	}
 	if err := s.db.Create(podcast).Error; err != nil {
 		t.Fatalf("Failed to create test podcast: %v", err)
@@ -718,6 +728,237 @@ func TestService_ListContents_FiltersProfileContentsBySpeakerThenFallbackAuthor(
 	}
 	if gotTitles["Do not match manual speaker"] || gotTitles["Do not match unrelated"] {
 		t.Fatalf("unexpected contents returned: %+v", gotTitles)
+	}
+}
+
+func TestService_ListContents_DefaultsToApprovedPublicOnly(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	author := &entity.User{
+		ID:       entity.ID(),
+		Username: "publiclistauthor",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	if err := s.db.Create(author).Error; err != nil {
+		t.Fatalf("create author: %v", err)
+	}
+
+	contents := []*entity.Content{
+		{
+			ID:           entity.ID(),
+			AuthorID:     author.ID,
+			Title:        "Public content",
+			Type:         entity.ContentTypeArticle,
+			Category:     "test",
+			Status:       entity.ContentStatusPublished,
+			ReviewStatus: entity.ContentReviewStatusApproved,
+			Visibility:   entity.ContentVisibilityPublic,
+		},
+		{
+			ID:           entity.ID(),
+			AuthorID:     author.ID,
+			Title:        "Unlisted content",
+			Type:         entity.ContentTypeArticle,
+			Category:     "test",
+			Status:       entity.ContentStatusPublished,
+			ReviewStatus: entity.ContentReviewStatusApproved,
+			Visibility:   entity.ContentVisibilityUnlisted,
+		},
+		{
+			ID:           entity.ID(),
+			AuthorID:     author.ID,
+			Title:        "Pending content",
+			Type:         entity.ContentTypeArticle,
+			Category:     "test",
+			Status:       entity.ContentStatusPublished,
+			ReviewStatus: entity.ContentReviewStatusPending,
+			Visibility:   entity.ContentVisibilityPublic,
+		},
+	}
+	for _, content := range contents {
+		if err := s.db.Create(content).Error; err != nil {
+			t.Fatalf("create content: %v", err)
+		}
+	}
+
+	got, _, err := s.ListContents(ctx, entity.ListContentsArgs{Pagination: entity.Pagination{Limit: 10}})
+	if err != nil {
+		t.Fatalf("ListContents() error = %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("len(got) = %d, want 1", len(got))
+	}
+	if got[0].Title != "Public content" {
+		t.Fatalf("title = %q, want %q", got[0].Title, "Public content")
+	}
+}
+
+func TestService_ListUserPublicContents_FiltersToApprovedPublicAuthorItems(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	profileUser := &entity.User{
+		ID:       entity.ID(),
+		Username: "profilepublicuser",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	otherUser := &entity.User{
+		ID:       entity.ID(),
+		Username: "profilepublicother",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	if err := s.db.Create(profileUser).Error; err != nil {
+		t.Fatalf("create profile user: %v", err)
+	}
+	if err := s.db.Create(otherUser).Error; err != nil {
+		t.Fatalf("create other user: %v", err)
+	}
+
+	contents := []*entity.Content{
+		{
+			ID:           entity.ID(),
+			AuthorID:     profileUser.ID,
+			Title:        "Fallback public",
+			Type:         entity.ContentTypeArticle,
+			Category:     "test",
+			Status:       entity.ContentStatusPublished,
+			ReviewStatus: entity.ContentReviewStatusApproved,
+			Visibility:   entity.ContentVisibilityPublic,
+		},
+		{
+			ID:           entity.ID(),
+			AuthorID:     profileUser.ID,
+			SpeakerName:  "Profile Speaker",
+			Title:        "Author public with manual speaker",
+			Type:         entity.ContentTypeArticle,
+			Category:     "test",
+			Status:       entity.ContentStatusPublished,
+			ReviewStatus: entity.ContentReviewStatusApproved,
+			Visibility:   entity.ContentVisibilityPublic,
+		},
+		{
+			ID:           entity.ID(),
+			AuthorID:     otherUser.ID,
+			SpeakerID:    profileUser.ID,
+			Title:        "Speaker public only",
+			Type:         entity.ContentTypeArticle,
+			Category:     "test",
+			Status:       entity.ContentStatusPublished,
+			ReviewStatus: entity.ContentReviewStatusApproved,
+			Visibility:   entity.ContentVisibilityPublic,
+		},
+		{
+			ID:           entity.ID(),
+			AuthorID:     profileUser.ID,
+			Title:        "Unlisted fallback",
+			Type:         entity.ContentTypeArticle,
+			Category:     "test",
+			Status:       entity.ContentStatusPublished,
+			ReviewStatus: entity.ContentReviewStatusApproved,
+			Visibility:   entity.ContentVisibilityUnlisted,
+		},
+	}
+	for _, content := range contents {
+		if err := s.db.Create(content).Error; err != nil {
+			t.Fatalf("create content: %v", err)
+		}
+	}
+
+	got, _, err := s.ListUserPublicContents(ctx, profileUser.ID, entity.ListContentsArgs{
+		Pagination: entity.Pagination{Limit: 10},
+	})
+	if err != nil {
+		t.Fatalf("ListUserPublicContents() error = %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("len(got) = %d, want 2", len(got))
+	}
+
+	gotTitles := map[string]bool{}
+	for _, item := range got {
+		gotTitles[item.Title] = true
+	}
+	if !gotTitles["Fallback public"] || !gotTitles["Author public with manual speaker"] {
+		t.Fatalf("expected authored public items to be included: %+v", gotTitles)
+	}
+	if gotTitles["Speaker public only"] || gotTitles["Unlisted fallback"] {
+		t.Fatalf("unexpected items returned: %+v", gotTitles)
+	}
+}
+
+func TestService_ListMyContents_ReturnsAuthorOwnedContentsRegardlessOfVisibility(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	author := &entity.User{
+		ID:       entity.ID(),
+		Username: "mycontentsauthor",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	otherUser := &entity.User{
+		ID:       entity.ID(),
+		Username: "mycontentsother",
+		Role:     entity.RoleUser,
+		Status:   entity.UserStatusActivated,
+	}
+	if err := s.db.Create(author).Error; err != nil {
+		t.Fatalf("create author: %v", err)
+	}
+	if err := s.db.Create(otherUser).Error; err != nil {
+		t.Fatalf("create other user: %v", err)
+	}
+
+	contents := []*entity.Content{
+		{
+			ID:           entity.ID(),
+			AuthorID:     author.ID,
+			Title:        "Draft owned",
+			Type:         entity.ContentTypeArticle,
+			Category:     "test",
+			Status:       entity.ContentStatusDraft,
+			ReviewStatus: entity.ContentReviewStatusPending,
+			Visibility:   entity.ContentVisibilityPrivate,
+		},
+		{
+			ID:           entity.ID(),
+			AuthorID:     author.ID,
+			Title:        "Blocked owned",
+			Type:         entity.ContentTypeArticle,
+			Category:     "test",
+			Status:       entity.ContentStatusPublished,
+			ReviewStatus: entity.ContentReviewStatusApproved,
+			Visibility:   entity.ContentVisibilityBlocked,
+		},
+		{
+			ID:           entity.ID(),
+			AuthorID:     otherUser.ID,
+			Title:        "Other public",
+			Type:         entity.ContentTypeArticle,
+			Category:     "test",
+			Status:       entity.ContentStatusPublished,
+			ReviewStatus: entity.ContentReviewStatusApproved,
+			Visibility:   entity.ContentVisibilityPublic,
+		},
+	}
+	for _, content := range contents {
+		if err := s.db.Create(content).Error; err != nil {
+			t.Fatalf("create content: %v", err)
+		}
+	}
+
+	got, _, err := s.ListMyContents(ctx, author.ID, entity.ListContentsArgs{
+		Pagination: entity.Pagination{Limit: 10},
+	})
+	if err != nil {
+		t.Fatalf("ListMyContents() error = %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("len(got) = %d, want 2", len(got))
 	}
 }
 

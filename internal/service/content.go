@@ -72,26 +72,40 @@ func galleryCoverURL(items []entity.CreateAttachmentArgs) string {
 	return first.URL
 }
 
-// ListContents retrieves a paginated list of contents with optional filters using cursor-based pagination.
-func (s *Service) ListContents(ctx context.Context, args entity.ListContentsArgs) ([]entity.Content, string, error) {
-	log := logger.NewWithContext(ctx)
+func scopePublicListVisible(query *gorm.DB) *gorm.DB {
+	return query.Where("status = ?", entity.ContentStatusPublished).
+		Where("(review_status = ? OR review_status = '')", entity.ContentReviewStatusApproved).
+		Where("(visibility = ? OR visibility = '')", entity.ContentVisibilityPublic)
+}
 
-	var contents []entity.Content
+func scopePublicDetailVisible(query *gorm.DB) *gorm.DB {
+	return query.Where("status = ?", entity.ContentStatusPublished).
+		Where("(review_status = ? OR review_status = '')", entity.ContentReviewStatusApproved).
+		Where("(visibility IN ? OR visibility = '')", []entity.ContentVisibility{entity.ContentVisibilityPublic, entity.ContentVisibilityUnlisted})
+}
 
-	query := applyContentListSelects(s.db.WithContext(ctx).Model(&entity.Content{}))
+func scopeUserProfileListVisible(query *gorm.DB) *gorm.DB {
+	return scopePublicListVisible(query)
+}
 
+func canUserAccessContent(user *entity.User, content *entity.Content) bool {
+	if content == nil {
+		return false
+	}
+	if user != nil && (user.IsAdmin() || user.ID == content.AuthorID) {
+		return true
+	}
+	return content.Status == entity.ContentStatusPublished &&
+		(content.ReviewStatus == "" || content.ReviewStatus == entity.ContentReviewStatusApproved) &&
+		(content.Visibility == "" || content.Visibility == entity.ContentVisibilityPublic || content.Visibility == entity.ContentVisibilityUnlisted)
+}
+
+func applyContentFilters(query *gorm.DB, args entity.ListContentsArgs) *gorm.DB {
 	if args.Category != "" {
 		query = query.Where("category = ?", args.Category)
 	}
 	if args.Type != "" {
 		query = query.Where("type = ?", args.Type)
-	}
-	if args.Keyword != "" {
-		keyword := "%" + args.Keyword + "%"
-		query = s.whereLike(query, []string{"title", "summary"}, keyword)
-	}
-	if args.Tag != "" {
-		query = s.whereJSONContains(query, "tags", fmt.Sprintf(`[%q]`, args.Tag))
 	}
 	if args.AuthorID != "" {
 		query = query.Where("author_id = ?", args.AuthorID)
@@ -111,19 +125,44 @@ func (s *Service) ListContents(ctx context.Context, args entity.ListContentsArgs
 	}
 	if args.Status != "" && args.Status != "all" {
 		query = query.Where("status = ?", args.Status)
-	} else if args.Status == "" {
-		// Default to published content for public listings
-		query = query.Where("status = ?", entity.ContentStatusPublished)
 	}
-	// When args.Status == "all", no filter is applied
+	if args.ReviewStatus != "" && args.ReviewStatus != "all" {
+		query = query.Where("review_status = ?", args.ReviewStatus)
+	}
+	if args.Visibility != "" && args.Visibility != "all" {
+		query = query.Where("visibility = ?", args.Visibility)
+	}
+	return query
+}
 
-	// Determine sort mode
+func (s *Service) whereContentKeyword(query *gorm.DB, keyword string) *gorm.DB {
+	return s.whereLike(query, []string{"title", "summary"}, keyword)
+}
+
+func (s *Service) whereContentTag(query *gorm.DB, tag string) *gorm.DB {
+	return s.whereJSONContains(query, "tags", fmt.Sprintf(`[%q]`, tag))
+}
+
+func (s *Service) listContentsWithScope(ctx context.Context, args entity.ListContentsArgs, scope func(*gorm.DB) *gorm.DB) ([]entity.Content, string, error) {
+	log := logger.NewWithContext(ctx)
+
+	var contents []entity.Content
+	query := applyContentListSelects(s.db.WithContext(ctx).Model(&entity.Content{}))
+	if scope != nil {
+		query = scope(query)
+	}
+
+	query = applyContentFilters(query, args)
+	if args.Keyword != "" {
+		query = s.whereContentKeyword(query, "%"+args.Keyword+"%")
+	}
+	if args.Tag != "" {
+		query = s.whereContentTag(query, args.Tag)
+	}
+
 	sortByLikes := args.Sort == entity.SortByLikeCount
-
-	// Apply cursor-based pagination if cursor is provided
 	if args.Cursor != "" {
 		if sortByLikes {
-			// cursor format: like_count|created_at|id
 			parts, err := entity.DecodeCursor(args.Cursor, 3)
 			if err != nil {
 				return nil, "", fmt.Errorf("decode cursor: %w", err)
@@ -137,12 +176,8 @@ func (s *Service) ListContents(ctx context.Context, args entity.ListContentsArgs
 				return nil, "", fmt.Errorf("parse cursor created_at: %w", err)
 			}
 			cursorID := parts[2]
-			query = query.Where(
-				"(like_count, created_at, id) < (?, ?, ?)",
-				likeCount, cursorTime, cursorID,
-			)
+			query = query.Where("(like_count, created_at, id) < (?, ?, ?)", likeCount, cursorTime, cursorID)
 		} else {
-			// cursor format: created_at|id
 			parts, err := entity.DecodeCursor(args.Cursor, 2)
 			if err != nil {
 				return nil, "", fmt.Errorf("decode cursor: %w", err)
@@ -152,14 +187,10 @@ func (s *Service) ListContents(ctx context.Context, args entity.ListContentsArgs
 				return nil, "", fmt.Errorf("parse cursor created_at: %w", err)
 			}
 			cursorID := parts[1]
-			query = query.Where(
-				"(created_at, id) < (?, ?)",
-				cursorTime, cursorID,
-			)
+			query = query.Where("(created_at, id) < (?, ?)", cursorTime, cursorID)
 		}
 	}
 
-	// sorting — always include id as tie-breaker for stable cursor pagination
 	orderClause := "created_at DESC, id DESC"
 	if sortByLikes {
 		orderClause = "like_count DESC, created_at DESC, id DESC"
@@ -175,11 +206,10 @@ func (s *Service) ListContents(ctx context.Context, args entity.ListContentsArgs
 		Limit(args.GetLimit()).
 		Order(orderClause).
 		Find(&contents).Error; err != nil {
-		log.Errorf("ListContents: %v", err)
+		log.Errorf("list contents with scope: %v", err)
 		return nil, "", fmt.Errorf("list contents: %w", err)
 	}
 
-	// Build next_cursor from the last item
 	var nextCursor string
 	if len(contents) == args.GetLimit() {
 		last := contents[len(contents)-1]
@@ -192,6 +222,35 @@ func (s *Service) ListContents(ctx context.Context, args entity.ListContentsArgs
 	}
 
 	return contents, nextCursor, nil
+}
+
+// ListContents retrieves a paginated list of contents with optional filters using cursor-based pagination.
+func (s *Service) ListContents(ctx context.Context, args entity.ListContentsArgs) ([]entity.Content, string, error) {
+	if args.AuthorID != "" || args.ProfileUserID != "" {
+		return s.listContentsWithScope(ctx, args, nil)
+	}
+	if args.Status == "all" || args.ReviewStatus == "all" || args.Visibility == "all" {
+		return s.listContentsWithScope(ctx, args, nil)
+	}
+	return s.listContentsWithScope(ctx, args, scopePublicListVisible)
+}
+
+// ListUserPublicContents retrieves public-facing contents for a user's profile page.
+func (s *Service) ListUserPublicContents(ctx context.Context, userID string, args entity.ListContentsArgs) ([]entity.Content, string, error) {
+	args.AuthorID = userID
+	args.ProfileUserID = ""
+	return s.listContentsWithScope(ctx, args, scopeUserProfileListVisible)
+}
+
+// ListMyContents retrieves all contents authored by the current user for personal management views.
+func (s *Service) ListMyContents(ctx context.Context, userID string, args entity.ListContentsArgs) ([]entity.Content, string, error) {
+	args.AuthorID = userID
+	return s.listContentsWithScope(ctx, args, nil)
+}
+
+// CanUserAccessContent reports whether the given user may view the content detail.
+func (s *Service) CanUserAccessContent(user *entity.User, content *entity.Content) bool {
+	return canUserAccessContent(user, content)
 }
 
 // GetContentByID retrieves a content by ID with author and attachments preloaded.
@@ -267,6 +326,12 @@ func (s *Service) CreateContent(ctx context.Context, content *entity.Content, at
 	if content.Status == "" {
 		content.Status = entity.ContentStatusDraft
 	}
+	if content.ReviewStatus == "" {
+		content.ReviewStatus = entity.ContentReviewStatusPending
+	}
+	if content.Visibility == "" {
+		content.Visibility = entity.ContentVisibilityPrivate
+	}
 	if content.Type == entity.ContentTypeGallery {
 		content.CoverURL = galleryCoverURL(attachments)
 	}
@@ -340,6 +405,28 @@ func (s *Service) UpdateContent(ctx context.Context, id string, args entity.Upda
 	}
 	if args.Status != nil {
 		updates["status"] = *args.Status
+		if *args.Status == entity.ContentStatusPublished && content.Status != entity.ContentStatusPublished && args.ReviewStatus == nil && args.Visibility == nil {
+			updates["review_status"] = entity.ContentReviewStatusPending
+			updates["visibility"] = entity.ContentVisibilityPrivate
+			updates["reviewed_by"] = ""
+			updates["reviewed_at"] = nil
+			updates["review_note"] = ""
+		}
+	}
+	if args.ReviewStatus != nil {
+		updates["review_status"] = *args.ReviewStatus
+	}
+	if args.Visibility != nil {
+		updates["visibility"] = *args.Visibility
+	}
+	if args.ReviewedBy != nil {
+		updates["reviewed_by"] = *args.ReviewedBy
+	}
+	if args.ReviewedAt != nil {
+		updates["reviewed_at"] = *args.ReviewedAt
+	}
+	if args.ReviewNote != nil {
+		updates["review_note"] = *args.ReviewNote
 	}
 	// Admin can override timestamps (e.g. for importing legacy content)
 	if args.CreatedAt != nil {

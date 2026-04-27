@@ -53,9 +53,6 @@ func (ctrl *Ctrl) GetUserProfile(c *fox.Context) (*UserProfileResponse, error) {
 	ctx := c.Logger.WithContext(c.Request.Context())
 
 	currentUser := CurrentUser(c)
-	if currentUser == nil {
-		return nil, httperrors.ErrUnauthorized
-	}
 
 	username := c.Param("username")
 	user, err := ctrl.service.GetUserByUsername(ctx, username)
@@ -72,7 +69,7 @@ func (ctrl *Ctrl) GetUserProfile(c *fox.Context) (*UserProfileResponse, error) {
 
 	// Check if current user is following this user
 	following := false
-	if currentUser.ID != user.ID {
+	if currentUser != nil && currentUser.ID != user.ID {
 		following, _ = ctrl.service.IsFollowing(ctx, currentUser.ID, user.ID)
 	}
 

@@ -32,6 +32,33 @@ func TestContentStatus_Constants(t *testing.T) {
 	}
 }
 
+func TestContentReviewStatus_Constants(t *testing.T) {
+	if ContentReviewStatusPending != "pending" {
+		t.Errorf("ContentReviewStatusPending = %q, want %q", ContentReviewStatusPending, "pending")
+	}
+	if ContentReviewStatusApproved != "approved" {
+		t.Errorf("ContentReviewStatusApproved = %q, want %q", ContentReviewStatusApproved, "approved")
+	}
+	if ContentReviewStatusRejected != "rejected" {
+		t.Errorf("ContentReviewStatusRejected = %q, want %q", ContentReviewStatusRejected, "rejected")
+	}
+}
+
+func TestContentVisibility_Constants(t *testing.T) {
+	if ContentVisibilityPrivate != "private" {
+		t.Errorf("ContentVisibilityPrivate = %q, want %q", ContentVisibilityPrivate, "private")
+	}
+	if ContentVisibilityUnlisted != "unlisted" {
+		t.Errorf("ContentVisibilityUnlisted = %q, want %q", ContentVisibilityUnlisted, "unlisted")
+	}
+	if ContentVisibilityPublic != "public" {
+		t.Errorf("ContentVisibilityPublic = %q, want %q", ContentVisibilityPublic, "public")
+	}
+	if ContentVisibilityBlocked != "blocked" {
+		t.Errorf("ContentVisibilityBlocked = %q, want %q", ContentVisibilityBlocked, "blocked")
+	}
+}
+
 func TestSortField_Constants(t *testing.T) {
 	if SortByCreatedAt != "created_at" {
 		t.Errorf("SortByCreatedAt = %q, want %q", SortByCreatedAt, "created_at")

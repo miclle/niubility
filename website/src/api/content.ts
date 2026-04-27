@@ -1,9 +1,19 @@
 import client from './client'
-import type { Content, ListContentsArgs, ListContentsResponse, CreateContentArgs, UpdateContentArgs, ListCommentsResponse, Comment, LikeResponse, FavoriteResponse, ListMyCommentsResponse, ListMyLikesResponse } from 'src/types/content'
+import type { Content, ListContentsArgs, ListContentsResponse, CreateContentArgs, UpdateContentArgs, ModerateContentArgs, ListCommentsResponse, Comment, LikeResponse, FavoriteResponse, ListMyCommentsResponse, ListMyLikesResponse } from 'src/types/content'
 
 // listContents fetches a paginated list of contents with optional filters.
 export function listContents(params?: ListContentsArgs) {
   return client.get<ListContentsResponse>('/contents', { params })
+}
+
+// listUserContents fetches the public content list shown on a user's profile page.
+export function listUserContents(username: string, params?: ListContentsArgs) {
+  return client.get<ListContentsResponse>(`/users/${username}/contents`, { params })
+}
+
+// listMyContents fetches all contents authored by the current user.
+export function listMyContents(params?: ListContentsArgs) {
+  return client.get<ListContentsResponse>('/profile/contents', { params })
 }
 
 // getContent fetches a single content by ID.
@@ -19,6 +29,11 @@ export function createContent(data: CreateContentArgs) {
 // updateContent updates an existing content.
 export function updateContent(id: string, data: UpdateContentArgs) {
   return client.put<Content>(`/contents/${id}`, data)
+}
+
+// moderateContent updates moderation and visibility metadata (admin only).
+export function moderateContent(id: string, data: ModerateContentArgs) {
+  return client.patch<Content>(`/admin/contents/${id}/moderation`, data)
 }
 
 // deleteContent deletes a content by ID.

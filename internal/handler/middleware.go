@@ -57,6 +57,8 @@ var skipPaths = []string{
 // softPaths are API paths that attempt authentication but allow unauthenticated access.
 var softPaths = []string{
 	"/api/v1/boot",
+	"/api/v1/contents",
+	"/api/v1/users/",
 }
 
 // AuthMiddleware validates the JWT cookie.

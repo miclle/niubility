@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { Mic } from 'lucide-react'
 
-import { listContents } from 'src/api/content'
+import { listContents, listUserContents } from 'src/api/content'
 import ContentCard from 'src/components/ContentCard'
 import { useIntersection } from 'src/hooks/use-intersection'
 import type { ContentType, ListContentsArgs } from 'src/types/content'
@@ -43,14 +43,14 @@ export default function ProfileContents() {
         const params: ListContentsArgs = { cursor: pageParam, limit: 12 }
         if (tab === 'speaker') {
           params.speaker_id = userID
+          return listContents(params)
         } else {
-          params.profile_user_id = userID
           if (tab === 'video') params.type = 'video' as ContentType
           if (tab === 'gallery') params.type = 'gallery' as ContentType
           if (tab === 'article') params.type = 'article' as ContentType
           if (tab === 'podcast') params.type = 'podcast' as ContentType
+          return listUserContents(profile.user.username, params)
         }
-        return listContents(params)
       },
       getNextPageParam: (lastPage) => lastPage.data.next_cursor || undefined,
       initialPageParam: undefined as string | undefined,

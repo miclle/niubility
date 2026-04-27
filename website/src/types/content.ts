@@ -5,6 +5,8 @@ export type ContentType = 'video' | 'gallery' | 'article' | 'podcast'
 
 // ContentStatus represents the publication status of content.
 export type ContentStatus = 'draft' | 'published'
+export type ContentReviewStatus = 'pending' | 'approved' | 'rejected'
+export type ContentVisibility = 'private' | 'unlisted' | 'public' | 'blocked'
 
 // ContentCategory represents the category of content (dynamic, stored as slug string).
 export type ContentCategory = string
@@ -79,11 +81,16 @@ export interface Content {
   cover_url: string
   type: ContentType
   status: ContentStatus
+  review_status: ContentReviewStatus
+  visibility: ContentVisibility
   category: ContentCategory
   tags: string[]
   speaker_id: string
   speaker_name: string
   speaker_bio: string
+  reviewed_by: string
+  reviewed_at?: string
+  review_note: string
   like_count: number
   favorite_count: number
   comment_count: number
@@ -104,6 +111,8 @@ export interface ListContentsArgs {
   category?: ContentCategory
   type?: ContentType
   status?: ContentStatus | 'all'
+  review_status?: ContentReviewStatus | 'all'
+  visibility?: ContentVisibility | 'all'
   keyword?: string
   tag?: string
   sort?: SortField
@@ -124,6 +133,8 @@ export interface CreateContentArgs {
   cover_url?: string
   type: ContentType
   status?: ContentStatus
+  review_status?: ContentReviewStatus
+  visibility?: ContentVisibility
   category: ContentCategory
   tags?: string[]
   author_id?: string
@@ -141,6 +152,8 @@ export interface UpdateContentArgs {
   cover_url?: string
   type?: ContentType
   status?: ContentStatus
+  review_status?: ContentReviewStatus
+  visibility?: ContentVisibility
   category?: ContentCategory
   tags?: string[]
   author_id?: string
@@ -148,6 +161,12 @@ export interface UpdateContentArgs {
   speaker_name?: string
   speaker_bio?: string
   attachments?: CreateAttachmentArgs[]
+}
+
+export interface ModerateContentArgs {
+  review_status: ContentReviewStatus
+  visibility: ContentVisibility
+  review_note?: string
 }
 
 // Comment represents a comment on a content item.

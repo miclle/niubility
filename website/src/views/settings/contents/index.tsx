@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 
 import { useAppContext } from 'src/context/app'
-import { listContents, updateContent, deleteContent } from 'src/api/content'
+import { listMyContents, updateContent, deleteContent } from 'src/api/content'
 import { getStyledContentCardCover } from 'src/lib/content-assets'
 import { contentDetailPath, contentEditPath, contentNewPath } from 'src/lib/content-url'
 import { toPlainTextPreview } from 'src/lib/utils'
@@ -37,10 +37,9 @@ function MyContents() {
     useInfiniteQuery({
       queryKey: ['my-contents', { authorId: currentUser?.id, status: activeTab, type: activeType }],
       queryFn: ({ pageParam }) =>
-        listContents({
+        listMyContents({
           cursor: pageParam,
           limit,
-          author_id: currentUser?.id,
           status: activeTab,
           type: activeType,
         }),
@@ -78,6 +77,18 @@ function MyContents() {
   }
 
   const activeTypeLabel = typeTabs.find((tab) => tab.key === activeType)?.label || t('settings:myContents')
+  const moderationLabel = (content: Content) => {
+    if (content.status === 'draft') return t('settings:draft')
+    if (content.review_status === 'approved') return t('settings:approved')
+    if (content.review_status === 'rejected') return t('settings:rejected')
+    return t('settings:pending')
+  }
+  const visibilityLabel = (content: Content) => {
+    if (content.visibility === 'public') return t('settings:visibilityPublic')
+    if (content.visibility === 'unlisted') return t('settings:visibilityUnlisted')
+    if (content.visibility === 'blocked') return t('settings:visibilityBlocked')
+    return t('settings:visibilityPrivate')
+  }
 
   return (
     <div className="app-surface min-h-full">
@@ -211,14 +222,26 @@ function MyContents() {
                       </div>
                     </td>
                     <td className="app-text-secondary px-4 py-5 text-sm">
-                      <span
-                        className="inline-flex rounded-full px-3 py-1 text-xs font-medium"
-                        style={content.status === 'draft'
-                          ? { background: '#fef3c7', color: '#92400e' }
-                          : { background: '#dcfce7', color: '#166534' }}
-                      >
-                        {content.status === 'draft' ? t('settings:draft') : t('settings:published')}
-                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        <span
+                          className="inline-flex rounded-full px-3 py-1 text-xs font-medium"
+                          style={content.status === 'draft'
+                            ? { background: '#fef3c7', color: '#92400e' }
+                            : { background: '#dcfce7', color: '#166534' }}
+                        >
+                          {content.status === 'draft' ? t('settings:draft') : t('settings:published')}
+                        </span>
+                        {content.status !== 'draft' && (
+                          <>
+                            <span className="inline-flex rounded-full px-3 py-1 text-xs font-medium" style={{ background: '#e5e7eb', color: '#374151' }}>
+                              {moderationLabel(content)}
+                            </span>
+                            <span className="inline-flex rounded-full px-3 py-1 text-xs font-medium" style={{ background: '#dbeafe', color: '#1d4ed8' }}>
+                              {visibilityLabel(content)}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </td>
                     <td className="app-text-secondary px-4 py-5 text-sm">
                       {new Date(content.created_at).toLocaleDateString('zh-CN')}
