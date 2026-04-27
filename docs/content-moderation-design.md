@@ -36,7 +36,8 @@
 - 将“创作状态”和“公开可见性”拆开，避免把审核语义强塞进现有 `status`
 - 公共列表可见性与公共详情可见性统一收口，避免在多个查询里散落临时判断
 - 作者视角、公共访客视角、管理员视角明确分离
-- 优先在现有内容接口和后台内容管理页上扩展，而不是新增一套平行内容系统
+- 列表接口按使用场景拆分，避免继续让单个 `/contents` 承担公共、个人主页、个人设置三套语义
+- 优先延续现有 `/api/v1` 路由风格和后台内容管理结构，而不是新增一套平行内容系统
 
 ## 核心模型
 
@@ -126,6 +127,8 @@
 
 - 公共列表可见
 - 公共详情可见
+- 用户主页列表可见
+- 当前用户本人内容列表可见
 
 ### 公共列表可见
 
@@ -161,6 +164,102 @@
 - 查看全部内容详情
 - 修改审核状态与可见性
 
+## 列表接口设计
+
+建议将现有内容列表按消费场景拆成三类接口，而不是继续让 `/contents` 同时承载公共、个人主页、个人设置三套语义。
+
+### 1. 公共内容列表
+
+- `GET /api/v1/contents`
+
+职责：
+
+- 作为唯一的公共内容列表接口
+- 只返回管理员审核通过且允许公开展示的内容
+
+可见性规则：
+
+- `status = published`
+- `review_status = approved`
+- `visibility = public`
+
+适用页面：
+
+- 首页
+- 分类页
+- 公共内容流
+- 推荐内容列表中面向公开展示的部分
+
+### 2. 用户主页内容列表
+
+- `GET /api/v1/users/:username/contents`
+
+职责：
+
+- 返回某个用户在个人主页上对外展示的内容
+- 只服务“别人访问某个用户主页时看到的内容列表”
+
+可见性规则：
+
+- 默认与公共列表一致，只返回 `public`
+- `unlisted` 不进入用户主页列表
+
+原因：
+
+- `unlisted` 的语义是“仅直达可见”，而不是“公开出现在个人主页”
+- 用户主页属于公开曝光面，不应把仅直达内容自动暴露出来
+
+### 3. 当前用户自己的内容列表
+
+- `GET /api/v1/profile/contents`
+
+职责：
+
+- 返回当前登录用户自己的全部内容
+- 用于个人设置页、个人内容管理页
+
+可见性规则：
+
+- 不走公共列表过滤
+- 返回当前用户自己的全部内容，包括：
+  - `draft`
+  - `published + pending + private`
+  - `published + approved + unlisted`
+  - `published + approved + public`
+  - `published + rejected + private`
+  - `published + blocked`
+
+### 为什么不建议使用裸 `/<username>/contents`
+
+虽然从 URL 可读性上看 `/<username>/contents` 也能表达用户内容列表，但本项目当前路由体系已经统一在 `/api/v1/*` 下组织。
+
+因此更推荐：
+
+- `GET /api/v1/users/:username/contents`
+- `GET /api/v1/profile/contents`
+
+这样做的好处：
+
+- 保持现有 API 分组和版本管理风格一致
+- 更容易复用现有鉴权、中间件和 handler 注册方式
+- 后续扩展筛选、分页、排序时不会和前端页面路由混淆
+
+## 列表职责边界
+
+三类列表接口的边界建议固定如下：
+
+| 接口 | 面向对象 | 返回范围 |
+|---|---|---|
+| `GET /api/v1/contents` | 所有人 | 公共可见内容 |
+| `GET /api/v1/users/:username/contents` | 访问某个用户主页的访客 | 该用户对外公开展示的内容 |
+| `GET /api/v1/profile/contents` | 当前登录用户本人 | 自己的全部内容 |
+
+这样可以避免以下问题：
+
+- 公共列表因为传入 `author_id` 等参数而混入“私人视角”逻辑
+- 用户主页和个人设置页误复用同一个过滤规则
+- 后续审核状态增加后，一个接口上堆积越来越多例外分支
+
 ## 权限矩阵
 
 | 访问者 | 草稿详情 | 待审核详情 | 仅直达详情 | 公开详情 | 已下线详情 | 公共列表 |
@@ -193,12 +292,24 @@
 
 - 在 `CreateContent` 中补默认值
 - 在 `UpdateContent` 中处理新字段
-- 新增统一可见性条件构造函数，供列表与详情复用
+- 新增统一可见性条件构造函数，供公共列表、用户主页列表、详情复用
 - 将公共列表默认条件从“只看 `status = published`”升级为“只看公共列表可见内容”
+- 将“当前用户自己的内容列表”从原有通用 `/contents` 查询中拆出
+
+建议不要继续只保留一个 `ListContents` service 方法再通过很多参数分支兼容所有场景。
+
+更推荐拆成语义明确的三个 service 入口：
+
+- `ListPublicContents`
+- `ListUserPublicContents`
+- `ListMyContents`
+
+底层仍可复用同一个 query builder，但 handler 和 service 入口的职责应当清晰分离。
 
 建议新增辅助函数：
 
 - `scopePublicListVisible(query *gorm.DB) *gorm.DB`
+- `scopeUserProfileListVisible(query *gorm.DB) *gorm.DB`
 - `scopePublicDetailVisible(query *gorm.DB) *gorm.DB`
 - `canUserAccessContent(user *entity.User, content *entity.Content) bool`
 
@@ -208,6 +319,12 @@
 
 - `GetContent` 不再只针对 `draft` 做权限判断
 - 改为统一调用“作者 / 管理员 / 公共可见性”规则
+
+建议的列表接口组织：
+
+- `GET /api/v1/contents`
+- `GET /api/v1/users/:username/contents`
+- `GET /api/v1/profile/contents`
 
 建议新增管理员审核接口，挂在现有 `/api/v1/admin/*` 下：
 
@@ -230,11 +347,18 @@
 - `website/src/types/content.ts`
 - `website/src/api/content.ts`
 
+建议在前端 API 层明确拆出三个函数，而不是继续用一个 `listContents` 通过不同参数模拟三种语义：
+
+- `listContents()`：公共内容列表
+- `listUserContents(username)`：用户主页内容列表
+- `listMyContents()`：当前用户自己的内容列表
+
 ### 作者内容管理页
 
 扩展 `website/src/views/settings/contents/index.tsx`：
 
-- 当前只区分 `draft` / `published`
+- 当前使用 `/contents + author_id + status` 组合查询
+- 后续建议改为使用 `GET /api/v1/profile/contents`
 - 后续需要额外展示审核状态和可见性 badge
 
 建议展示：
@@ -248,8 +372,17 @@
 
 注意：
 
-- “我的内容”页不应复用公共列表可见性过滤
+- “我的内容”页不应复用公共列表或用户主页列表的可见性过滤
 - 作者需要能看到自己所有内容
+
+### 用户主页内容页
+
+扩展用户主页内容页时，建议改为使用 `GET /api/v1/users/:username/contents`：
+
+- 只展示该用户已对外公开的内容
+- 不展示 `draft`
+- 不展示待审核和驳回内容
+- 不展示 `unlisted`
 
 ### 后台内容管理页
 
@@ -281,8 +414,9 @@
 重点包括：
 
 - 公共内容列表
-- 内容详情
 - 用户主页内容列表
+- 当前用户自己的内容列表
+- 内容详情
 - 相关推荐
 - 收藏列表
 - 点赞列表
