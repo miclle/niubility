@@ -227,12 +227,12 @@
 
 需要同步更新：
 
-- `internal/website/src/types/content.ts`
-- `internal/website/src/api/content.ts`
+- `website/src/types/content.ts`
+- `website/src/api/content.ts`
 
 ### 作者内容管理页
 
-扩展 `internal/website/src/views/settings/contents/index.tsx`：
+扩展 `website/src/views/settings/contents/index.tsx`：
 
 - 当前只区分 `draft` / `published`
 - 后续需要额外展示审核状态和可见性 badge
@@ -253,7 +253,7 @@
 
 ### 后台内容管理页
 
-扩展 `internal/website/src/views/admin/contents/ContentTable.tsx`：
+扩展 `website/src/views/admin/contents/ContentTable.tsx`：
 
 - 新增审核状态列
 - 新增可见性列

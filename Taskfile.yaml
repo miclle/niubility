@@ -1,7 +1,7 @@
 version: "3"
 
 vars:
-  WEBSITE_DIR: internal/website
+  WEBSITE_DIR: website
   CLI_DIR: cli
   BIN_DIR: bin
   BUILD_PLATFORMS: linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64
@@ -46,7 +46,7 @@ tasks:
         reflex \
           -d none -s \
           -r '\.go$' \
-          -R 'internal/website/' \
+          -R 'website/' \
           -R 'tmp' \
           -- go run -trimpath -tags development ./cmd/niubility/ -c cmd/niubility/config.local.yaml
 
@@ -121,7 +121,8 @@ tasks:
     desc: Clean build artifacts
     cmds:
       - rm -rf bin/
-      - go clean ./...
+      - |
+        go list ./... | grep -v '/website/node_modules/' | xargs go clean
 
   # ---------- Code Quality ----------
 
@@ -130,8 +131,10 @@ tasks:
     cmds:
       - go mod tidy
       - gofmt -w .
-      - go vet ./...
-      - staticcheck ./...
+      - |
+        go list ./... | grep -v '/website/node_modules/' | xargs go vet
+      - |
+        go list ./... | grep -v '/website/node_modules/' | xargs staticcheck
       - cd cli && go mod tidy
       - cd {{.WEBSITE_DIR}} && npm run lint
 
@@ -148,13 +151,16 @@ tasks:
     internal: true
     cmds:
       - gofmt -l .
-      - go vet -tags development ./...
       - |
-        LINT_BIN="$(go env GOPATH)/bin/golangci-lint"
-        if [ ! -x "$LINT_BIN" ]; then
-          LINT_BIN=golangci-lint
+        go list ./... | grep -v '/website/node_modules/' | xargs go vet -tags development
+      - |
+        LINT_BIN=golangci-lint
+        GOPATH_LINT="$(go env GOPATH)/bin/golangci-lint"
+        if [ -x "$GOPATH_LINT" ] && "$GOPATH_LINT" --version | grep -q 'version 2\.'; then
+          LINT_BIN="$GOPATH_LINT"
         fi
-        "$LINT_BIN" run --build-tags=development ./...
+        MODULE="$(go list -m)"
+        go list ./... | grep -v '/website/node_modules/' | sed "s#^${MODULE}#.#" | xargs "$LINT_BIN" run --build-tags=development
 
   check-cli-mod-tidy:
     internal: true
@@ -178,9 +184,10 @@ tasks:
     cmds:
       - |
         cd cli
-        LINT_BIN="$(go env GOPATH)/bin/golangci-lint"
-        if [ ! -x "$LINT_BIN" ]; then
-          LINT_BIN=golangci-lint
+        LINT_BIN=golangci-lint
+        GOPATH_LINT="$(go env GOPATH)/bin/golangci-lint"
+        if [ -x "$GOPATH_LINT" ] && "$GOPATH_LINT" --version | grep -q 'version 2\.'; then
+          LINT_BIN="$GOPATH_LINT"
         fi
         "$LINT_BIN" run ./...
       - cd cli && go build -trimpath .
@@ -211,7 +218,8 @@ tasks:
   test:
     desc: Run Go tests with race detection and coverage, then frontend tests
     cmds:
-      - go test -trimpath -race -coverprofile=coverage.out ./...
+      - |
+        go list ./... | grep -v '/website/node_modules/' | xargs go test -trimpath -race -coverprofile=coverage.out
       - cd {{.WEBSITE_DIR}} && npx vitest run
 
   # ---------- Internal ----------
@@ -220,7 +228,7 @@ tasks:
     internal: true
     cmds:
       - |
-        ps aux | grep "[n]pm run dev" | grep "internal/website" | awk '{print $2}' | xargs kill -9 2>/dev/null || true
+        ps aux | grep "[n]pm run dev" | grep "website" | awk '{print $2}' | xargs kill -9 2>/dev/null || true
         sleep 1
 
   update-tools:
@@ -232,6 +240,6 @@ tasks:
       - |
         GOBIN="$(go env GOPATH)/bin"
         mkdir -p "$GOBIN"
-        if [ ! -x "$GOBIN/golangci-lint" ]; then
+        if [ ! -x "$GOBIN/golangci-lint" ] || ! "$GOBIN/golangci-lint" --version | grep -q 'version 2\.'; then
           GOBIN="$GOBIN" GO111MODULE=on go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.0
         fi

@@ -5,7 +5,7 @@ import (
 	"github.com/fox-gonic/fox"
 
 	"github.com/miclle/niubility/internal/service"
-	"github.com/miclle/niubility/internal/website"
+	"github.com/miclle/niubility/website"
 )
 
 // Ctrl is the controller that holds service dependencies and registers routes.

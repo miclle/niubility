@@ -223,12 +223,12 @@ pdftoppm -png -r 300 input.pdf output_prefix
 
 #### 类型定义
 
-- [ ] `internal/website/src/types/content.ts`：`ContentType` 联合类型中添加 `'slider'`
-- [ ] `internal/website/src/types/content.ts`：添加 `SliderConversion` 接口定义
+- [ ] `website/src/types/content.ts`：`ContentType` 联合类型中添加 `'slider'`
+- [ ] `website/src/types/content.ts`：添加 `SliderConversion` 接口定义
 
 #### 路由
 
-- [ ] `internal/website/src/router.tsx`：添加 slider 相关路由
+- [ ] `website/src/router.tsx`：添加 slider 相关路由
   - [ ] `/slider/new` → `SliderEditor`
   - [ ] `/slider/:id/edit` → `SliderEditor`
   - [ ] `/slider/:id` → `SliderDetail`
@@ -238,67 +238,67 @@ pdftoppm -png -r 300 input.pdf output_prefix
 
 #### URL 与资源辅助
 
-- [ ] `internal/website/src/lib/content-url.ts`：`typePrefix` 中添加 `slider: 'slider'`
-- [ ] `internal/website/src/lib/content-assets.ts`：`getStyledContentCardCover` 中处理 slider 类型（可复用 gallery 的 image style）
+- [ ] `website/src/lib/content-url.ts`：`typePrefix` 中添加 `slider: 'slider'`
+- [ ] `website/src/lib/content-assets.ts`：`getStyledContentCardCover` 中处理 slider 类型（可复用 gallery 的 image style）
 
 #### 共享组件修改
 
-- [ ] `internal/website/src/components/ContentCard.tsx`：添加 slider 类型的卡片覆盖层（页数角标 + Presentation 图标）
-- [ ] `internal/website/src/views/admin/contents/ContentTable.tsx`：`typeIcons` 中添加 slider 图标
+- [ ] `website/src/components/ContentCard.tsx`：添加 slider 类型的卡片覆盖层（页数角标 + Presentation 图标）
+- [ ] `website/src/views/admin/contents/ContentTable.tsx`：`typeIcons` 中添加 slider 图标
 
 #### 导航与菜单
 
-- [ ] `internal/website/src/layouts/SidebarNav.tsx`：添加 `/sliders` 导航链接
-- [ ] `internal/website/src/layouts/CreateMenu.tsx`：添加创建 Slider 菜单项
-- [ ] `internal/website/src/layouts/AdminLayout.tsx`：admin 侧边栏添加 `contents/sliders`
+- [ ] `website/src/layouts/SidebarNav.tsx`：添加 `/sliders` 导航链接
+- [ ] `website/src/layouts/CreateMenu.tsx`：添加创建 Slider 菜单项
+- [ ] `website/src/layouts/AdminLayout.tsx`：admin 侧边栏添加 `contents/sliders`
 
 #### 列表与筛选
 
-- [ ] `internal/website/src/views/home/index.tsx`：`contentTypeOptions` 中添加 slider
-- [ ] `internal/website/src/views/settings/contents/index.tsx`：`typeTabs` 中添加 slider
-- [ ] `internal/website/src/views/profile/index.tsx`：`profileTabs` 中添加 sliders tab
-- [ ] `internal/website/src/views/profile/contents.tsx`：路径映射中添加 `sliders` → `'slider'`
+- [ ] `website/src/views/home/index.tsx`：`contentTypeOptions` 中添加 slider
+- [ ] `website/src/views/settings/contents/index.tsx`：`typeTabs` 中添加 slider
+- [ ] `website/src/views/profile/index.tsx`：`profileTabs` 中添加 sliders tab
+- [ ] `website/src/views/profile/contents.tsx`：路径映射中添加 `sliders` → `'slider'`
 
 #### 新建页面
 
-- [ ] `internal/website/src/views/slider/index.tsx`：Slider 详情页
+- [ ] `website/src/views/slider/index.tsx`：Slider 详情页
   - [ ] 翻页浏览器组件（左右箭头、键盘导航、页码）
   - [ ] 全屏演示模式
   - [ ] 缩略图导航条
   - [ ] 转换状态展示（转换中/失败/完成）
   - [ ] 每页标题和描述展示
   - [ ] 点赞/收藏/评论/分享操作栏
-- [ ] `internal/website/src/views/slider/editor.tsx`：Slider 编辑器页面（薄包装层）
-- [ ] `internal/website/src/components/SliderEditorForm.tsx`：Slider 编辑器表单
+- [ ] `website/src/views/slider/editor.tsx`：Slider 编辑器页面（薄包装层）
+- [ ] `website/src/components/SliderEditorForm.tsx`：Slider 编辑器表单
   - [ ] PDF 文件上传区域（支持拖拽）
   - [ ] 转换状态轮询与展示
   - [ ] 转换完成后展示每页预览
   - [ ] 每页标题/描述编辑
   - [ ] 标题、分类、标签等通用字段
-- [ ] `internal/website/src/components/SlideViewer.tsx`：翻页浏览器核心组件
+- [ ] `website/src/components/SlideViewer.tsx`：翻页浏览器核心组件
   - [ ] 图片预加载（当前页 ± 1）
   - [ ] 左右翻页动画
   - [ ] 键盘快捷键（← → 翻页，F 全屏，Esc 退出）
   - [ ] 触控滑动支持（移动端）
   - [ ] 页码显示（当前页 / 总页数）
-- [ ] `internal/website/src/views/admin/contents/sliders.tsx`：Admin 管理页（薄包装层，调用 `ContentTable`）
+- [ ] `website/src/views/admin/contents/sliders.tsx`：Admin 管理页（薄包装层，调用 `ContentTable`）
 
 #### API 调用
 
-- [ ] `internal/website/src/api/content.ts`：添加 `getSliderConversion(contentId)` 方法
+- [ ] `website/src/api/content.ts`：添加 `getSliderConversion(contentId)` 方法
 
 #### 国际化
 
-- [ ] `internal/website/src/locales/en/common.json`：添加 `"slider": "Slider"`
-- [ ] `internal/website/src/locales/zh-CN/common.json`：添加 `"slider": "幻灯片"`
-- [ ] `internal/website/src/locales/en/nav.json`：添加 `"slider": "Sliders"`
-- [ ] `internal/website/src/locales/zh-CN/nav.json`：添加 `"slider": "幻灯片"`
-- [ ] `internal/website/src/locales/en/admin.json`：添加 slider 相关 key
-- [ ] `internal/website/src/locales/zh-CN/admin.json`：添加 slider 相关 key
-- [ ] `internal/website/src/locales/en/settings.json`：添加 `"sliders": "Sliders"`
-- [ ] `internal/website/src/locales/zh-CN/settings.json`：添加 `"sliders": "幻灯片"`
-- [ ] `internal/website/src/locales/en/editor.json`：添加 slider 编辑器相关文案
-- [ ] `internal/website/src/locales/zh-CN/editor.json`：添加 slider 编辑器相关文案
+- [ ] `website/src/locales/en/common.json`：添加 `"slider": "Slider"`
+- [ ] `website/src/locales/zh-CN/common.json`：添加 `"slider": "幻灯片"`
+- [ ] `website/src/locales/en/nav.json`：添加 `"slider": "Sliders"`
+- [ ] `website/src/locales/zh-CN/nav.json`：添加 `"slider": "幻灯片"`
+- [ ] `website/src/locales/en/admin.json`：添加 slider 相关 key
+- [ ] `website/src/locales/zh-CN/admin.json`：添加 slider 相关 key
+- [ ] `website/src/locales/en/settings.json`：添加 `"sliders": "Sliders"`
+- [ ] `website/src/locales/zh-CN/settings.json`：添加 `"sliders": "幻灯片"`
+- [ ] `website/src/locales/en/editor.json`：添加 slider 编辑器相关文案
+- [ ] `website/src/locales/zh-CN/editor.json`：添加 slider 编辑器相关文案
 
 ### 1.7 CLI 改动清单
 

@@ -29,7 +29,7 @@ task check
 task test
 go test ./internal/service/...
 go test ./internal/handler/...
-cd internal/website && npm run build
+cd website && npm run build
 ```
 
 除提交前强制执行一次 `task check` 外，根据实际改动补充其他验证命令，并保留匹配的验证依据。

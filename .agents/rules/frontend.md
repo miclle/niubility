@@ -1,6 +1,6 @@
 # Frontend Rules
 
-适用于 `internal/website/src/` 下的页面、组件、路由、API 调用和类型定义。
+适用于 `website/src/` 下的页面、组件、路由、API 调用和类型定义。
 
 ## MUST
 

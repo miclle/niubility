@@ -20,7 +20,7 @@ Supporting packages:
 | `pkg/gormlog` | GORM log adapter |
 | `pkg/sso` | OIDC and SAML SSO flows |
 | `internal/config` | YAML config parsing |
-| `internal/website` | Embedded React SPA (Vite build) |
+| `website` | Embedded React SPA (Vite build) |
 | `cmd/niubility` | Application entry point |
 | `cli/` | Companion CLI tool |
 
@@ -75,7 +75,7 @@ When route count grows further, consider decentralizing registration by having e
 
 ## Frontend Architecture
 
-The frontend is a React 18 SPA built with Vite 6, located in `internal/website/`:
+The frontend is a React 18 SPA built with Vite 6, located in `website/`:
 
 - **Routing**: React Router v7 with lazy-loaded views
 - **State**: React Query for server state, React context for global app state
@@ -101,7 +101,7 @@ The frontend is a React 18 SPA built with Vite 6, located in `internal/website/`
 ### Frontend
 
 - Vitest for pure utility function tests (`utils.test.ts`, `content-url.test.ts`)
-- Run: `cd internal/website && npx vitest run` or `task test`
+- Run: `cd website && npx vitest run` or `task test`
 
 ## Configuration
 
