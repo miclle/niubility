@@ -58,6 +58,7 @@ function MyContents() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['my-contents'] })
 
   const handlePublish = async (content: Content) => {
+    if (!window.confirm(t('settings:confirmSubmitForReview'))) return
     try {
       await updateContent(content.id, { status: 'published' })
       invalidate()
@@ -67,6 +68,7 @@ function MyContents() {
   }
 
   const handleRevertToDraft = async (content: Content) => {
+    if (!window.confirm(t('settings:confirmRevertToDraft'))) return
     try {
       await updateContent(content.id, { status: 'draft' })
       invalidate()
@@ -264,8 +266,8 @@ function MyContents() {
                         <div className="mt-3 space-y-1.5 text-xs leading-5" style={{ color: 'var(--text-secondary)' }}>
                           <p>{statusHint(content)}</p>
                           {content.review_note && (
-                            <p>
-                              <span className="font-medium text-foreground">{t('settings:reviewFeedbackLabel')}</span>
+                            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
+                              <span className="font-medium">{t('settings:reviewFeedbackLabel')}</span>
                               {content.review_note}
                             </p>
                           )}

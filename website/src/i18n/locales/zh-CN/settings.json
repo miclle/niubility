@@ -67,6 +67,8 @@
   "visibilityBlocked": "已下线",
   "submitForReview": "提交审核",
   "revertToDraft": "撤回为草稿",
+  "confirmSubmitForReview": "提交审核后，内容会进入待审核状态，审核通过前不会出现在公开列表中。确定继续吗？",
+  "confirmRevertToDraft": "撤回为草稿后，内容会立即从公开入口移除。确定继续吗？",
   "pendingHint": "审核通过前不会出现在公开列表中。",
   "approvedPublicHint": "已在公开列表中展示。",
   "approvedUnlistedHint": "不会出现在公开列表中，但知道链接的人仍可查看。",

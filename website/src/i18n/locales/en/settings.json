@@ -67,6 +67,8 @@
   "visibilityBlocked": "Blocked",
   "submitForReview": "Submit for review",
   "revertToDraft": "Revert to draft",
+  "confirmSubmitForReview": "Submitting for review will move this content into pending review and keep it out of public lists until approved. Continue?",
+  "confirmRevertToDraft": "Reverting to draft will remove this content from public access immediately. Continue?",
   "pendingHint": "This content will not appear in public lists until it passes review.",
   "approvedPublicHint": "This content is visible in public lists.",
   "approvedUnlistedHint": "This content stays out of public lists, but anyone with the link can still view it.",

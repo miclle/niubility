@@ -36,6 +36,8 @@
   "publish": "Publish",
   "submitForReview": "Submit for review",
   "saveAndResubmit": "Save and resubmit for review",
+  "submitForReviewNotice": "After submission, the content will stay pending review and will not appear in public lists until approved.",
+  "resubmitNotice": "Editing published content will send it back to review and temporarily remove it from public surfaces.",
   "preview": "Preview",
   "uploadFailed": "Upload failed",
   "uploading": "Uploading...",
@@ -74,6 +76,7 @@
   "video": "Video",
   "saveDraft": "Save draft",
   "convertToDraft": "Convert to draft",
+  "convertToDraftConfirm": "Converting to draft will remove this content from public access immediately. Continue?",
   "cancel": "Cancel",
   "uploadingProgress": "Uploading {{progress}}%",
   "uploadingImage": "Uploading {{filename}}..."

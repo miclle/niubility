@@ -18,30 +18,46 @@ interface EditorActionsProps {
 // It adapts button labels and visibility based on whether the content is new, draft, or published.
 export default function EditorActions({ saving, isNew, contentStatus, resubmitOnSave, disabled, onSave, onCancel }: EditorActionsProps) {
   const { t } = useTranslation('editor')
+  const showSubmitNotice = isNew || contentStatus === 'draft'
+  const showResubmitNotice = !showSubmitNotice && resubmitOnSave
+
+  const handleConvertToDraft = () => {
+    if (!window.confirm(t('convertToDraftConfirm'))) return
+    onSave('draft')
+  }
+
   return (
-    <div className="border-t app-border flex items-center gap-3 pt-4" data-testid="editor-actions">
-      {(isNew || contentStatus === 'draft') ? (
-        <>
-          <Button type="button" variant="outline" disabled={saving || disabled} onClick={() => onSave('draft')}>
-            <Save size={16} />
-            {saving ? t('saving') : t('saveDraft')}
-          </Button>
-          <Button type="button" disabled={saving || disabled} onClick={() => onSave('published')} className="theme-primary-button rounded-[18px]">
-            {saving ? t('submitting') : t('submitForReview')}
-          </Button>
-        </>
-      ) : (
-        <>
-          <Button type="button" disabled={saving || disabled} onClick={() => onSave('published')} className="theme-primary-button rounded-[18px]">
-            <Save size={16} />
-            {saving ? t('saving') : (resubmitOnSave ? t('saveAndResubmit') : t('save'))}
-          </Button>
-          <Button type="button" variant="outline" disabled={saving} onClick={() => onSave('draft')}>
-            {t('convertToDraft')}
-          </Button>
-        </>
+    <div className="border-t app-border pt-4" data-testid="editor-actions">
+      {(showSubmitNotice || showResubmitNotice) && (
+        <p className="mb-3 text-sm leading-6 text-[var(--text-secondary)]">
+          {showSubmitNotice ? t('submitForReviewNotice') : t('resubmitNotice')}
+        </p>
       )}
-      <Button type="button" variant="outline" onClick={onCancel}><X size={16} />{t('cancel')}</Button>
+
+      <div className="flex items-center gap-3">
+        {showSubmitNotice ? (
+          <>
+            <Button type="button" variant="outline" disabled={saving || disabled} onClick={() => onSave('draft')}>
+              <Save size={16} />
+              {saving ? t('saving') : t('saveDraft')}
+            </Button>
+            <Button type="button" disabled={saving || disabled} onClick={() => onSave('published')} className="theme-primary-button rounded-[18px]">
+              {saving ? t('submitting') : t('submitForReview')}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button type="button" disabled={saving || disabled} onClick={() => onSave('published')} className="theme-primary-button rounded-[18px]">
+              <Save size={16} />
+              {saving ? t('saving') : (resubmitOnSave ? t('saveAndResubmit') : t('save'))}
+            </Button>
+            <Button type="button" variant="outline" disabled={saving} onClick={handleConvertToDraft}>
+              {t('convertToDraft')}
+            </Button>
+          </>
+        )}
+        <Button type="button" variant="outline" onClick={onCancel}><X size={16} />{t('cancel')}</Button>
+      </div>
     </div>
   )
 }
