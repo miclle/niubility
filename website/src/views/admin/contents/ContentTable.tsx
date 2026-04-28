@@ -2,13 +2,14 @@ import { useRef, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Trash2, Heart, MessageSquare, Play, Image, FileText, Bookmark, Mic, Search, Filter, ShieldCheck } from 'lucide-react'
+import { Pencil, Trash2, Heart, MessageSquare, Play, Image, FileText, Bookmark, Mic, Search, Filter, ShieldCheck, MoreHorizontal } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
@@ -48,6 +49,28 @@ const tdStyle: React.CSSProperties = {
   whiteSpace: 'nowrap',
   verticalAlign: 'top',
 }
+
+const contentStatusStyle = (status: Content['status']): React.CSSProperties => (
+  status === 'draft'
+    ? { background: '#fef3c7', color: '#92400e' }
+    : { background: '#d1fae5', color: '#065f46' }
+)
+
+const reviewStatusStyle = (status: ContentReviewStatus): React.CSSProperties => (
+  status === 'approved'
+    ? { background: '#dcfce7', color: '#166534' }
+    : status === 'rejected'
+      ? { background: '#fee2e2', color: '#991b1b' }
+      : { background: '#fef3c7', color: '#92400e' }
+)
+
+const visibilityStyle = (visibility: ContentVisibility): React.CSSProperties => (
+  visibility === 'public'
+    ? { background: '#dbeafe', color: '#1d4ed8' }
+    : visibility === 'blocked'
+      ? { background: '#fee2e2', color: '#991b1b' }
+      : { background: '#e5e7eb', color: '#374151' }
+)
 
 export interface ContentTableProps {
   type: ContentType
@@ -463,22 +486,14 @@ function ContentTable({ type, title }: ContentTableProps) {
           </div>
         )}
         <div className="overflow-x-auto">
-          <table className="w-full table-fixed min-w-[1612px]">
+          <table className={`w-full table-fixed ${type === 'video' ? 'min-w-[1180px]' : 'min-w-[980px]'}`}>
             <colgroup>
               <col style={{ width: '52px' }} />
-              <col style={{ width: '320px' }} />
-              <col style={{ width: '92px' }} />
-              <col style={{ width: '96px' }} />
-              <col style={{ width: '120px' }} />
-              <col style={{ width: '120px' }} />
-              <col style={{ width: '120px' }} />
+              <col style={{ width: type === 'video' ? '520px' : '560px' }} />
               <col style={{ width: '160px' }} />
-              {type === 'video' && <col style={{ width: '240px' }} />}
-              <col style={{ width: '76px' }} />
-              <col style={{ width: '76px' }} />
-              <col style={{ width: '76px' }} />
-              <col style={{ width: '120px' }} />
-              <col style={{ width: '180px' }} />
+              {type === 'video' && <col style={{ width: '180px' }} />}
+              <col style={{ width: '140px' }} />
+              <col style={{ width: '132px' }} />
             </colgroup>
             <thead>
               <tr style={{ background: 'var(--surface-muted)' }}>
@@ -492,24 +507,16 @@ function ContentTable({ type, title }: ContentTableProps) {
                   />
                 </th>
                 <th style={thStyle}>{t('admin:title')}</th>
-                <th style={thStyle}>{t('admin:type')}</th>
-                <th style={thStyle}>{t('admin:status')}</th>
-                <th style={thStyle}>{t('admin:reviewStatus')}</th>
-                <th style={thStyle}>{t('admin:visibility')}</th>
-                <th style={thStyle}>{t('admin:category')}</th>
                 <th style={thStyle}>{t('admin:author')}</th>
                 {type === 'video' && <th style={thStyle}>Speaker</th>}
-                <th style={thStyle}>{t('admin:likes')}</th>
-                <th style={thStyle}>{t('admin:comments')}</th>
-                <th style={thStyle}>{t('admin:favorites')}</th>
-                <th style={thStyle}>{t('admin:createdAt')}</th>
+                <th style={thStyle}>{t('admin:engagement')}</th>
                 <th style={thStyle}>{t('admin:actions')}</th>
               </tr>
             </thead>
             <tbody>
               {contents.length === 0 && !loading ? (
                 <tr>
-                  <td colSpan={type === 'video' ? 14 : 13} className="app-text-tertiary text-center py-8">
+                  <td colSpan={type === 'video' ? 6 : 5} className="app-text-tertiary text-center py-8">
                     {t('admin:noContent')}
                   </td>
                 </tr>
@@ -531,7 +538,7 @@ function ContentTable({ type, title }: ContentTableProps) {
                       </td>
                       <td style={{ ...tdStyle, whiteSpace: 'normal' }}>
                         <Link to={contentDetailPath(content)} target="_blank" className="flex items-center gap-3 hover:underline" style={{ color: 'var(--foreground)' }}>
-                          <div className="app-surface-muted w-[72px] h-[40px] rounded overflow-hidden flex-shrink-0">
+                          <div className="app-surface-muted h-[64px] w-[112px] rounded-xl overflow-hidden flex-shrink-0">
                             {coverUrl ? (
                               <img src={coverUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
                             ) : (
@@ -539,48 +546,41 @@ function ContentTable({ type, title }: ContentTableProps) {
                             )}
                           </div>
                           <div className="min-w-0 flex-1 overflow-hidden">
-                            <div className="font-medium line-clamp-1">{content.title}</div>
-                            {content.summary && <div className="app-text-tertiary text-xs line-clamp-1">{toPlainTextPreview(content.summary)}</div>}
+                            <div className="font-medium leading-5 line-clamp-1">{content.title}</div>
+                            {content.summary && (
+                              <div className="mt-1 app-text-tertiary text-xs leading-4 line-clamp-2">
+                                {toPlainTextPreview(content.summary)}
+                              </div>
+                            )}
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              <span className="app-surface-muted inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px]" style={{ color: 'var(--text-secondary)' }}>
+                                {typeIcons[content.type]}
+                                {tc(content.type)}
+                              </span>
+                              <span className="rounded-full px-2 py-0.5 text-[11px]" style={contentStatusStyle(content.status)}>
+                                {content.status === 'draft' ? t('admin:draft') : t('admin:published')}
+                              </span>
+                              <span className="rounded-full px-2 py-0.5 text-[11px]" style={reviewStatusStyle(content.review_status)}>
+                                {moderationLabel(content.review_status)}
+                              </span>
+                              <span className="rounded-full px-2 py-0.5 text-[11px]" style={visibilityStyle(content.visibility)}>
+                                {visibilityLabel(content.visibility)}
+                              </span>
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] leading-4 app-text-tertiary">
+                              <span>{t('admin:category')}: {categoryLabels[content.category] || content.category}</span>
+                              <span>{t('admin:createdAt')}: {dayjs(content.created_at).format('YYYY-MM-DD')}</span>
+                              {content.reviewed_at && (
+                                <span>{t('admin:reviewStatus')}: {dayjs(content.reviewed_at).format('MM-DD HH:mm')}</span>
+                              )}
+                            </div>
                             {content.review_note && (
-                              <div className="mt-1 inline-flex max-w-full rounded-full px-2 py-0.5 text-[11px]" style={{ background: 'color-mix(in srgb, #f59e0b 15%, transparent)', color: '#92400e' }}>
+                              <div className="mt-2 inline-flex max-w-full rounded-full px-2 py-0.5 text-[11px] leading-4" style={{ background: 'color-mix(in srgb, #f59e0b 15%, transparent)', color: '#92400e' }}>
                                 {t('admin:reviewNotePrefix')}{content.review_note}
                               </div>
                             )}
                           </div>
                         </Link>
-                      </td>
-                      <td style={tdStyle}>
-                        <span className="app-surface-muted inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs" style={{ color: 'var(--text-secondary)' }}>
-                          {typeIcons[content.type]}
-                          {tc(content.type)}
-                        </span>
-                      </td>
-                      <td style={tdStyle}>
-                        <span className="px-2 py-0.5 rounded text-xs" style={content.status === 'draft' ? { background: '#fef3c7', color: '#92400e' } : { background: '#d1fae5', color: '#065f46' }}>
-                          {content.status === 'draft' ? t('admin:draft') : t('admin:published')}
-                        </span>
-                      </td>
-                      <td style={tdStyle}>
-                        <div className="space-y-1">
-                          <span className="px-2 py-0.5 rounded text-xs" style={content.review_status === 'approved' ? { background: '#dcfce7', color: '#166534' } : content.review_status === 'rejected' ? { background: '#fee2e2', color: '#991b1b' } : { background: '#fef3c7', color: '#92400e' }}>
-                            {moderationLabel(content.review_status)}
-                          </span>
-                          {content.reviewed_at && (
-                            <div className="text-[11px] app-text-tertiary">
-                              {dayjs(content.reviewed_at).format('MM-DD HH:mm')}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td style={tdStyle}>
-                        <span className="px-2 py-0.5 rounded text-xs" style={content.visibility === 'public' ? { background: '#dbeafe', color: '#1d4ed8' } : content.visibility === 'blocked' ? { background: '#fee2e2', color: '#991b1b' } : { background: '#e5e7eb', color: '#374151' }}>
-                          {visibilityLabel(content.visibility)}
-                        </span>
-                      </td>
-                      <td style={tdStyle}>
-                        <span className="app-surface-muted px-2 py-0.5 rounded text-xs" style={{ color: 'var(--text-secondary)' }}>
-                          {categoryLabels[content.category] || content.category}
-                        </span>
                       </td>
                       <td style={tdStyle}>
                         <div className="flex items-center gap-2 min-w-0">
@@ -594,28 +594,16 @@ function ContentTable({ type, title }: ContentTableProps) {
                       {type === 'video' && (
                         <td style={{ ...tdStyle, whiteSpace: 'normal' }}>
                           {hasSpeakerInfo ? (
-                            <div className="flex items-start gap-2 min-w-0 max-w-[208px]">
-                              <Avatar className="w-6 h-6 flex-shrink-0">
+                            <div className="flex items-center gap-2 min-w-0 max-w-[148px]">
+                              <Avatar className="h-7 w-7 flex-shrink-0">
                                 <SiteAvatarImage src={getSpeakerAvatar(content, siteConfig)} alt={getSpeakerDisplayName(content)} />
                                 <AvatarFallback className="text-xs">{getSpeakerDisplayName(content).charAt(0) || '-'}</AvatarFallback>
                               </Avatar>
                               <div className="min-w-0 overflow-hidden">
-                                <div className="truncate">{getSpeakerDisplayName(content)}</div>
-                                {content.speaker_bio && (
-                                  <div
-                                    className="text-xs overflow-hidden"
-                                    style={{
-                                      color: 'var(--text-tertiary)',
-                                      display: '-webkit-box',
-                                      WebkitLineClamp: 2,
-                                      WebkitBoxOrient: 'vertical',
-                                      overflowWrap: 'anywhere',
-                                    }}
-                                    title={content.speaker_bio}
-                                  >
-                                    {content.speaker_bio}
-                                  </div>
-                                )}
+                                <div className="truncate text-sm text-foreground">{getSpeakerDisplayName(content)}</div>
+                                <div className="truncate text-[11px] app-text-tertiary" title={content.speaker_bio || ''}>
+                                  {content.speaker_bio || '-'}
+                                </div>
                               </div>
                             </div>
                           ) : (
@@ -624,48 +612,54 @@ function ContentTable({ type, title }: ContentTableProps) {
                         </td>
                       )}
                       <td style={tdStyle}>
-                        <span className="flex items-center gap-1 text-xs"><Heart size={12} />{content.like_count}</span>
+                        <div className="grid grid-cols-3 gap-x-2 text-xs tabular-nums text-right">
+                          <span className="inline-flex items-center justify-end gap-1"><Heart size={12} />{content.like_count}</span>
+                          <span className="inline-flex items-center justify-end gap-1"><MessageSquare size={12} />{content.comment_count}</span>
+                          <span className="inline-flex items-center justify-end gap-1"><Bookmark size={12} />{content.favorite_count}</span>
+                        </div>
                       </td>
                       <td style={tdStyle}>
-                        <span className="flex items-center gap-1 text-xs"><MessageSquare size={12} />{content.comment_count}</span>
-                      </td>
-                      <td style={tdStyle}>
-                        <span className="flex items-center gap-1 text-xs"><Bookmark size={12} />{content.favorite_count}</span>
-                      </td>
-                      <td style={tdStyle}>{dayjs(content.created_at).format('YYYY-MM-DD')}</td>
-                      <td style={tdStyle}>
-                        <div className="flex flex-wrap gap-2">
-                          <Button variant="outline" onClick={() => openModerationDialog(content)}>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button variant="outline" size="sm" onClick={() => openModerationDialog(content)}>
                             {t('admin:moderate')}
                           </Button>
-                          <Link to={contentEditPath(content)}>
-                            <Button variant="ghost" style={{ color: 'var(--text-secondary)' }}>
-                              <Pencil size={14} />
-                            </Button>
-                          </Link>
-                          <AlertDialog>
-                            <AlertDialogTrigger render={
-                              <Button variant="ghost" style={{ color: '#cc0000' }}>
-                                <Trash2 size={14} />
+                          <DropdownMenu>
+                            <DropdownMenuTrigger render={
+                              <Button variant="ghost" size="icon-xs" aria-label={t('admin:actions')} style={{ color: 'var(--text-secondary)' }}>
+                                <MoreHorizontal size={16} />
                               </Button>
                             } />
-                            <AlertDialogContent>
-                              <AlertDialogTitle>{tc('common:confirm')}</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                {t('admin:confirmDeleteContent', { title: content.title })}
-                              </AlertDialogDescription>
-                              <div className="flex justify-end gap-3 mt-4">
-                                <AlertDialogCancel>
-                                  <Button variant="outline" style={{ borderRadius: '18px' }}>{tc('common:cancel')}</Button>
-                                </AlertDialogCancel>
-                                <AlertDialogAction>
-                                  <Button variant="destructive" onClick={() => handleDelete(content.id)} style={{ borderRadius: '18px' }}>
-                                    {tc('common:confirm')}
-                                  </Button>
-                                </AlertDialogAction>
-                              </div>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                            <DropdownMenuContent align="end" className="min-w-32">
+                              <DropdownMenuItem render={<Link to={contentEditPath(content)} />}>
+                                <Pencil size={14} />
+                                {t('admin:edit')}
+                              </DropdownMenuItem>
+                              <AlertDialog>
+                                <AlertDialogTrigger render={
+                                  <DropdownMenuItem variant="destructive" onSelect={(e) => e.preventDefault()}>
+                                    <Trash2 size={14} />
+                                    {t('admin:delete')}
+                                  </DropdownMenuItem>
+                                } />
+                                <AlertDialogContent>
+                                  <AlertDialogTitle>{tc('common:confirm')}</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {t('admin:confirmDeleteContent', { title: content.title })}
+                                  </AlertDialogDescription>
+                                  <div className="flex justify-end gap-3 mt-4">
+                                    <AlertDialogCancel>
+                                      <Button variant="outline" style={{ borderRadius: '18px' }}>{tc('common:cancel')}</Button>
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction>
+                                      <Button variant="destructive" onClick={() => handleDelete(content.id)} style={{ borderRadius: '18px' }}>
+                                        {tc('common:confirm')}
+                                      </Button>
+                                    </AlertDialogAction>
+                                  </div>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </td>
                     </tr>
