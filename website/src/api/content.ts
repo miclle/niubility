@@ -1,5 +1,5 @@
 import client from './client'
-import type { Content, ListContentsArgs, ListContentsResponse, CreateContentArgs, UpdateContentArgs, ModerateContentArgs, ListCommentsResponse, Comment, LikeResponse, FavoriteResponse, ListMyCommentsResponse, ListMyLikesResponse } from 'src/types/content'
+import type { Content, ListContentsArgs, ListContentsResponse, CreateContentArgs, UpdateContentArgs, ModerateContentArgs, ListContentModerationLogsResponse, ListCommentsResponse, Comment, LikeResponse, FavoriteResponse, ListMyCommentsResponse, ListMyLikesResponse } from 'src/types/content'
 
 // listContents fetches a paginated list of contents with optional filters.
 export function listContents(params?: ListContentsArgs) {
@@ -34,6 +34,11 @@ export function updateContent(id: string, data: UpdateContentArgs) {
 // moderateContent updates moderation and visibility metadata (admin only).
 export function moderateContent(id: string, data: ModerateContentArgs) {
   return client.patch<Content>(`/admin/contents/${id}/moderation`, data)
+}
+
+// listContentModerationLogs fetches recent moderation history for one content item (admin only).
+export function listContentModerationLogs(id: string) {
+  return client.get<ListContentModerationLogsResponse>(`/admin/contents/${id}/moderation-logs`)
 }
 
 // deleteContent deletes a content by ID.

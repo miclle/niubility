@@ -74,8 +74,10 @@ type ContentDomain interface {
 	ListUserPublicContents(ctx context.Context, userID string, args entity.ListContentsArgs) ([]entity.Content, string, error)
 	ListMyContents(ctx context.Context, userID string, args entity.ListContentsArgs) ([]entity.Content, string, error)
 	GetContentByID(ctx context.Context, id string) (*entity.Content, error)
+	ListContentModerationLogs(ctx context.Context, contentID string, limit int) ([]entity.ContentModerationLog, error)
 	CreateContent(ctx context.Context, content *entity.Content, attachments []entity.CreateAttachmentArgs) error
 	UpdateContent(ctx context.Context, id string, args entity.UpdateContentArgs) (*entity.Content, error)
+	ModerateContent(ctx context.Context, id, reviewerID string, reviewStatus entity.ContentReviewStatus, visibility entity.ContentVisibility, reviewNote string) (*entity.Content, error)
 	DeleteContent(ctx context.Context, id string) error
 }
 

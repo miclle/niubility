@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Trash2, Heart, MessageSquare, Play, Image, FileText, Bookmark, Mic, Search, Filter, ShieldCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 
-import { listContents, moderateContent, deleteContent } from 'src/api/content'
+import { listContents, listContentModerationLogs, moderateContent, deleteContent } from 'src/api/content'
 import { searchUsers } from 'src/api/user'
 import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
 import { getSpeakerAvatar, getSpeakerDisplayName, getStyledContentCardCover } from 'src/lib/content-assets'
@@ -22,7 +22,7 @@ import { toPlainTextPreview } from 'src/lib/utils'
 import { useAppContext } from 'src/context/app'
 import { useIntersection } from 'src/hooks/use-intersection'
 import SiteAvatarImage from 'src/components/SiteAvatarImage'
-import type { Content, ContentReviewStatus, ContentType, ContentVisibility, ListContentsArgs } from 'src/types/content'
+import type { Content, ContentModerationLog, ContentReviewStatus, ContentType, ContentVisibility, ListContentsArgs } from 'src/types/content'
 import type { SearchUserItem } from 'src/types/user'
 
 const typeIcons: Record<ContentType, React.ReactNode> = {
@@ -91,6 +91,10 @@ function ContentTable({ type, title }: ContentTableProps) {
     return t('admin:visibilityPrivate')
   }
 
+  const moderationActorLabel = (item: ContentModerationLog) => {
+    return item.reviewer?.name || item.reviewer?.username || t('admin:system')
+  }
+
   const listParams = useMemo<ListContentsArgs>(() => ({
     limit,
     status: statusFilter,
@@ -111,7 +115,14 @@ function ContentTable({ type, title }: ContentTableProps) {
       initialPageParam: undefined as string | undefined,
     })
 
+  const { data: moderationLogsData, isLoading: moderationLogsLoading } = useQuery({
+    queryKey: ['admin-content-moderation-logs', editingContent?.id],
+    queryFn: () => listContentModerationLogs(editingContent!.id),
+    enabled: Boolean(editingContent),
+  })
+
   const contents = useMemo(() => data?.pages.flatMap((p) => p.data.items) ?? [], [data])
+  const moderationLogs = moderationLogsData?.data.items ?? []
   const contentIDs = useMemo(() => contents.map((content) => content.id), [contents])
   const selectedCount = selectedContentIDs.length
   const allVisibleSelected = contents.length > 0 && selectedCount === contents.length
@@ -790,6 +801,51 @@ function ContentTable({ type, title }: ContentTableProps) {
                 </span>
               </div>
             </div>
+
+            {editingContent && (
+              <div className="rounded-xl border app-border p-3">
+                <div className="mb-2 text-xs font-medium text-foreground">{t('admin:moderationHistory')}</div>
+                {moderationLogsLoading ? (
+                  <div className="text-xs app-text-secondary">{tc('common:loading')}</div>
+                ) : moderationLogs.length === 0 ? (
+                  <div className="text-xs app-text-secondary">{t('admin:moderationHistoryEmpty')}</div>
+                ) : (
+                  <div className="space-y-3">
+                    {moderationLogs.map((item) => (
+                      <div key={item.id} className="rounded-lg border app-border p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                          <span className="font-medium text-foreground">{moderationActorLabel(item)}</span>
+                          <span className="app-text-secondary">{dayjs(item.created_at).format('YYYY-MM-DD HH:mm')}</span>
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                          <span className="rounded-full px-2 py-1" style={item.previous_review_status === 'approved' ? { background: '#dcfce7', color: '#166534' } : item.previous_review_status === 'rejected' ? { background: '#fee2e2', color: '#991b1b' } : { background: '#fef3c7', color: '#92400e' }}>
+                            {moderationLabel(item.previous_review_status)}
+                          </span>
+                          <span className="app-text-secondary">{t('admin:to')}</span>
+                          <span className="rounded-full px-2 py-1" style={item.new_review_status === 'approved' ? { background: '#dcfce7', color: '#166534' } : item.new_review_status === 'rejected' ? { background: '#fee2e2', color: '#991b1b' } : { background: '#fef3c7', color: '#92400e' }}>
+                            {moderationLabel(item.new_review_status)}
+                          </span>
+                          <span className="app-text-secondary">{t('admin:visibility')}</span>
+                          <span className="rounded-full px-2 py-1" style={item.previous_visibility === 'public' ? { background: '#dbeafe', color: '#1d4ed8' } : item.previous_visibility === 'blocked' ? { background: '#fee2e2', color: '#991b1b' } : { background: '#e5e7eb', color: '#374151' }}>
+                            {visibilityLabel(item.previous_visibility)}
+                          </span>
+                          <span className="app-text-secondary">{t('admin:to')}</span>
+                          <span className="rounded-full px-2 py-1" style={item.new_visibility === 'public' ? { background: '#dbeafe', color: '#1d4ed8' } : item.new_visibility === 'blocked' ? { background: '#fee2e2', color: '#991b1b' } : { background: '#e5e7eb', color: '#374151' }}>
+                            {visibilityLabel(item.new_visibility)}
+                          </span>
+                        </div>
+                        {item.review_note && (
+                          <div className="mt-2 rounded-lg bg-muted/60 px-3 py-2 text-xs app-text-secondary">
+                            <span className="font-medium text-foreground">{t('admin:reviewNotePrefix')}</span>
+                            {item.review_note}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <DialogFooter>

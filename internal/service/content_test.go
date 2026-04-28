@@ -226,6 +226,119 @@ func TestService_GetContentByID(t *testing.T) {
 	}
 }
 
+func TestService_ModerateContent_CreatesModerationLog(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+	fixedNow := time.Date(2026, 4, 28, 10, 30, 0, 0, time.UTC)
+	s.now = func() time.Time { return fixedNow }
+
+	author := &entity.User{ID: entity.ID(), Username: "moderationauthor", Role: entity.RoleUser, Status: entity.UserStatusActivated}
+	admin := &entity.User{ID: entity.ID(), Username: "moderationadmin", Name: "Moderator", Role: entity.RoleAdmin, Status: entity.UserStatusActivated}
+	if err := s.db.Create(author).Error; err != nil {
+		t.Fatalf("create author: %v", err)
+	}
+	if err := s.db.Create(admin).Error; err != nil {
+		t.Fatalf("create admin: %v", err)
+	}
+
+	content := &entity.Content{
+		ID:           entity.ID(),
+		AuthorID:     author.ID,
+		Title:        "Moderation Target",
+		Type:         entity.ContentTypeArticle,
+		Category:     "test",
+		Status:       entity.ContentStatusPublished,
+		ReviewStatus: entity.ContentReviewStatusPending,
+		Visibility:   entity.ContentVisibilityPrivate,
+	}
+	if err := s.db.Create(content).Error; err != nil {
+		t.Fatalf("create content: %v", err)
+	}
+
+	updated, err := s.ModerateContent(ctx, content.ID, admin.ID, entity.ContentReviewStatusApproved, entity.ContentVisibilityPublic, "Looks good")
+	if err != nil {
+		t.Fatalf("ModerateContent() error = %v", err)
+	}
+	if updated == nil {
+		t.Fatal("ModerateContent() returned nil content")
+	}
+	if updated.ReviewStatus != entity.ContentReviewStatusApproved {
+		t.Fatalf("ReviewStatus = %q, want %q", updated.ReviewStatus, entity.ContentReviewStatusApproved)
+	}
+	if updated.Visibility != entity.ContentVisibilityPublic {
+		t.Fatalf("Visibility = %q, want %q", updated.Visibility, entity.ContentVisibilityPublic)
+	}
+	if updated.ReviewedBy != admin.ID {
+		t.Fatalf("ReviewedBy = %q, want %q", updated.ReviewedBy, admin.ID)
+	}
+	if updated.ReviewedAt == nil || !updated.ReviewedAt.Equal(fixedNow) {
+		t.Fatalf("ReviewedAt = %v, want %v", updated.ReviewedAt, fixedNow)
+	}
+
+	logs, err := s.ListContentModerationLogs(ctx, content.ID, 10)
+	if err != nil {
+		t.Fatalf("ListContentModerationLogs() error = %v", err)
+	}
+	if len(logs) != 1 {
+		t.Fatalf("len(logs) = %d, want 1", len(logs))
+	}
+	if logs[0].ReviewerID != admin.ID {
+		t.Fatalf("ReviewerID = %q, want %q", logs[0].ReviewerID, admin.ID)
+	}
+	if logs[0].PreviousReviewStatus != entity.ContentReviewStatusPending || logs[0].NewReviewStatus != entity.ContentReviewStatusApproved {
+		t.Fatalf("unexpected review status transition: %#v", logs[0])
+	}
+	if logs[0].PreviousVisibility != entity.ContentVisibilityPrivate || logs[0].NewVisibility != entity.ContentVisibilityPublic {
+		t.Fatalf("unexpected visibility transition: %#v", logs[0])
+	}
+	if logs[0].ReviewNote != "Looks good" {
+		t.Fatalf("ReviewNote = %q, want %q", logs[0].ReviewNote, "Looks good")
+	}
+	if logs[0].Reviewer == nil || logs[0].Reviewer.Username != admin.Username {
+		t.Fatalf("Reviewer preload missing: %#v", logs[0].Reviewer)
+	}
+}
+
+func TestService_ModerateContent_DoesNotLogNoop(t *testing.T) {
+	s := setupTestService(t)
+	ctx := context.Background()
+
+	author := &entity.User{ID: entity.ID(), Username: "noopauthor", Role: entity.RoleUser, Status: entity.UserStatusActivated}
+	admin := &entity.User{ID: entity.ID(), Username: "noopadmin", Role: entity.RoleAdmin, Status: entity.UserStatusActivated}
+	if err := s.db.Create(author).Error; err != nil {
+		t.Fatalf("create author: %v", err)
+	}
+	if err := s.db.Create(admin).Error; err != nil {
+		t.Fatalf("create admin: %v", err)
+	}
+
+	content := &entity.Content{
+		ID:           entity.ID(),
+		AuthorID:     author.ID,
+		Title:        "Noop Target",
+		Type:         entity.ContentTypeArticle,
+		Category:     "test",
+		Status:       entity.ContentStatusPublished,
+		ReviewStatus: entity.ContentReviewStatusPending,
+		Visibility:   entity.ContentVisibilityPrivate,
+	}
+	if err := s.db.Create(content).Error; err != nil {
+		t.Fatalf("create content: %v", err)
+	}
+
+	if _, err := s.ModerateContent(ctx, content.ID, admin.ID, entity.ContentReviewStatusPending, entity.ContentVisibilityPrivate, ""); err != nil {
+		t.Fatalf("ModerateContent() error = %v", err)
+	}
+
+	logs, err := s.ListContentModerationLogs(ctx, content.ID, 10)
+	if err != nil {
+		t.Fatalf("ListContentModerationLogs() error = %v", err)
+	}
+	if len(logs) != 0 {
+		t.Fatalf("len(logs) = %d, want 0", len(logs))
+	}
+}
+
 func TestService_UpdateContent(t *testing.T) {
 	s := setupTestService(t)
 	ctx := context.Background()

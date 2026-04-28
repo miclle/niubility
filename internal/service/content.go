@@ -379,18 +379,7 @@ func (s *Service) CreateContent(ctx context.Context, content *entity.Content, at
 	})
 }
 
-// UpdateContent updates content fields by ID, replacing attachments.
-func (s *Service) UpdateContent(ctx context.Context, id string, args entity.UpdateContentArgs) (*entity.Content, error) {
-	log := logger.NewWithContext(ctx)
-
-	content, err := s.GetContentByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	if content == nil {
-		return nil, nil
-	}
-
+func buildContentUpdates(content *entity.Content, args entity.UpdateContentArgs) (map[string]any, entity.ContentType) {
 	updates := map[string]any{}
 	if args.Title != nil {
 		updates["title"] = *args.Title
@@ -497,27 +486,120 @@ func (s *Service) UpdateContent(ctx context.Context, id string, args entity.Upda
 		updates["cover_url"] = galleryCoverURL(args.Attachments)
 	}
 
-	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if len(updates) > 0 {
-			updateColumns := make([]string, 0, len(updates))
-			for column := range updates {
-				updateColumns = append(updateColumns, column)
-			}
-			if err := tx.Model(content).Select(updateColumns).Updates(updates).Error; err != nil {
-				log.Errorf("UpdateContent: %v", err)
-				return fmt.Errorf("update content: %w", err)
+	return updates, contentType
+}
+
+func (s *Service) applyContentUpdateTx(tx *gorm.DB, content *entity.Content, args entity.UpdateContentArgs, updates map[string]any, contentType entity.ContentType) error {
+	if len(updates) > 0 {
+		updateColumns := make([]string, 0, len(updates))
+		for column := range updates {
+			updateColumns = append(updateColumns, column)
+		}
+		if err := tx.Model(content).Select(updateColumns).Updates(updates).Error; err != nil {
+			return fmt.Errorf("update content: %w", err)
+		}
+	}
+
+	// Replace attachments if provided (full replacement strategy)
+	if args.Attachments != nil {
+		if err := tx.Where("content_id = ?", content.ID).Delete(&entity.Attachment{}).Error; err != nil {
+			return fmt.Errorf("delete old attachments: %w", err)
+		}
+		if len(args.Attachments) > 0 {
+			if err := s.createAttachments(tx, content.ID, contentType, args.Attachments); err != nil {
+				return fmt.Errorf("replace content attachments: %w", err)
 			}
 		}
+	}
 
-		// Replace attachments if provided (full replacement strategy)
-		if args.Attachments != nil {
-			if err := tx.Where("content_id = ?", id).Delete(&entity.Attachment{}).Error; err != nil {
-				return fmt.Errorf("delete old attachments: %w", err)
+	return nil
+}
+
+// UpdateContent updates content fields by ID, replacing attachments.
+func (s *Service) UpdateContent(ctx context.Context, id string, args entity.UpdateContentArgs) (*entity.Content, error) {
+	log := logger.NewWithContext(ctx)
+
+	content, err := s.GetContentByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if content == nil {
+		return nil, nil
+	}
+
+	updates, contentType := buildContentUpdates(content, args)
+
+	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := s.applyContentUpdateTx(tx, content, args, updates, contentType); err != nil {
+			log.Errorf("UpdateContent: %v", err)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return s.GetContentByID(ctx, id)
+}
+
+// ModerateContent updates moderation fields and records an audit log.
+func (s *Service) ModerateContent(ctx context.Context, id, reviewerID string, reviewStatus entity.ContentReviewStatus, visibility entity.ContentVisibility, reviewNote string) (*entity.Content, error) {
+	log := logger.NewWithContext(ctx)
+
+	content, err := s.GetContentByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if content == nil {
+		return nil, nil
+	}
+
+	reviewedBy := reviewerID
+	note := reviewNote
+	previousReviewStatus := content.ReviewStatus
+	previousVisibility := content.Visibility
+	previousReviewNote := content.ReviewNote
+	var reviewedAt *time.Time
+	if reviewStatus != "" && reviewStatus != entity.ContentReviewStatusPending {
+		now := s.now()
+		reviewedAt = &now
+	}
+	if reviewStatus == entity.ContentReviewStatusPending {
+		reviewedBy = ""
+		note = ""
+	}
+
+	updates, contentType := buildContentUpdates(content, entity.UpdateContentArgs{
+		ReviewStatus: &reviewStatus,
+		Visibility:   &visibility,
+		ReviewedBy:   &reviewedBy,
+		ReviewedAt:   &reviewedAt,
+		ReviewNote:   &note,
+		ByAdmin:      true,
+	})
+
+	logChanged := previousReviewStatus != reviewStatus || previousVisibility != visibility || previousReviewNote != note
+
+	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := s.applyContentUpdateTx(tx, content, entity.UpdateContentArgs{}, updates, contentType); err != nil {
+			log.Errorf("ModerateContent: %v", err)
+			return err
+		}
+		if logChanged {
+			entry := entity.ContentModerationLog{
+				ID:                   entity.ID(),
+				ContentID:            content.ID,
+				ReviewerID:           reviewerID,
+				PreviousReviewStatus: previousReviewStatus,
+				NewReviewStatus:      reviewStatus,
+				PreviousVisibility:   previousVisibility,
+				NewVisibility:        visibility,
+				ReviewNote:           note,
 			}
-			if len(args.Attachments) > 0 {
-				if err := s.createAttachments(tx, id, contentType, args.Attachments); err != nil {
-					return fmt.Errorf("replace content attachments: %w", err)
-				}
+			if err := tx.Create(&entry).Error; err != nil {
+				log.Errorf("ModerateContent: create log: %v", err)
+				return fmt.Errorf("create moderation log: %w", err)
 			}
 		}
 		return nil
@@ -527,6 +609,31 @@ func (s *Service) UpdateContent(ctx context.Context, id string, args entity.Upda
 	}
 
 	return s.GetContentByID(ctx, id)
+}
+
+// ListContentModerationLogs returns recent moderation log entries for one content item.
+func (s *Service) ListContentModerationLogs(ctx context.Context, contentID string, limit int) ([]entity.ContentModerationLog, error) {
+	log := logger.NewWithContext(ctx)
+
+	if limit <= 0 {
+		limit = 10
+	}
+	if limit > 50 {
+		limit = 50
+	}
+
+	var items []entity.ContentModerationLog
+	if err := s.db.WithContext(ctx).
+		Where("content_id = ?", contentID).
+		Preload("Reviewer").
+		Order("created_at DESC").
+		Limit(limit).
+		Find(&items).Error; err != nil {
+		log.Errorf("ListContentModerationLogs: %v", err)
+		return nil, fmt.Errorf("list content moderation logs: %w", err)
+	}
+
+	return items, nil
 }
 
 // DeleteContent deletes a content and its attachments by ID.

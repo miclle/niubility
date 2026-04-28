@@ -139,6 +139,7 @@ func (ctrl *Ctrl) RegisterRoutes(r *fox.Engine) {
 
 	// Admin: comment moderation
 	admin.POST("/comments/:id/pin", ctrl.PinComment)
+	admin.GET("/contents/:id/moderation-logs", ctrl.ListContentModerationLogs)
 	admin.PATCH("/contents/:id/moderation", ctrl.ModerateContent)
 }
 

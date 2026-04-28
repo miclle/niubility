@@ -169,6 +169,23 @@ export interface ModerateContentArgs {
   review_note?: string
 }
 
+export interface ContentModerationLog {
+  id: string
+  content_id: string
+  reviewer_id: string
+  previous_review_status: ContentReviewStatus
+  new_review_status: ContentReviewStatus
+  previous_visibility: ContentVisibility
+  new_visibility: ContentVisibility
+  review_note: string
+  created_at: string
+  reviewer?: User
+}
+
+export interface ListContentModerationLogsResponse {
+  items: ContentModerationLog[]
+}
+
 // Comment represents a comment on a content item.
 export interface Comment {
   id: string

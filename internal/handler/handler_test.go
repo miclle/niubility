@@ -40,6 +40,7 @@ func setupTestEnv(t *testing.T) *testEnv {
 		&entity.User{},
 		&entity.UserSession{},
 		&entity.Content{},
+		&entity.ContentModerationLog{},
 		&entity.Attachment{},
 		&entity.Setting{},
 		&entity.Department{},

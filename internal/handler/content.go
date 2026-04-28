@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/fox-gonic/fox"
 	"github.com/fox-gonic/fox/httperrors"
@@ -225,6 +224,36 @@ type ModerateContentArgs struct {
 	ReviewNote   string                     `json:"review_note"`
 }
 
+// ListContentModerationLogsResponse returns recent moderation log entries for one content item.
+type ListContentModerationLogsResponse struct {
+	Items []entity.ContentModerationLog `json:"items"`
+}
+
+// ListContentModerationLogs lists recent moderation log entries for one content item (admin only).
+func (ctrl *Ctrl) ListContentModerationLogs(c *fox.Context) (*ListContentModerationLogsResponse, error) {
+	ctx := c.Logger.WithContext(c.Request.Context())
+	id := c.Param("id")
+	admin := CurrentUser(c)
+	if admin == nil || !admin.IsAdmin() {
+		return nil, httperrors.ErrForbidden
+	}
+
+	content, err := ctrl.service.GetContentByID(ctx, id)
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+	if content == nil {
+		return nil, httperrors.ErrNotFound
+	}
+
+	items, err := ctrl.service.ListContentModerationLogs(ctx, id, 5)
+	if err != nil {
+		return nil, httperrors.ErrInternalServerError
+	}
+
+	return &ListContentModerationLogsResponse{Items: items}, nil
+}
+
 // ModerateContent updates moderation and visibility metadata for a content item (admin only).
 func (ctrl *Ctrl) ModerateContent(c *fox.Context, args ModerateContentArgs) (*entity.Content, error) {
 	ctx := c.Logger.WithContext(c.Request.Context())
@@ -234,33 +263,7 @@ func (ctrl *Ctrl) ModerateContent(c *fox.Context, args ModerateContentArgs) (*en
 		return nil, httperrors.ErrForbidden
 	}
 
-	existing, err := ctrl.service.GetContentByID(ctx, id)
-	if err != nil {
-		return nil, httperrors.ErrInternalServerError
-	}
-	if existing == nil {
-		return nil, httperrors.ErrNotFound
-	}
-
-	reviewedBy := admin.ID
-	reviewNote := args.ReviewNote
-	var reviewedAt *time.Time
-	if args.ReviewStatus != "" && args.ReviewStatus != entity.ContentReviewStatusPending {
-		now := time.Now()
-		reviewedAt = &now
-	}
-	if args.ReviewStatus == entity.ContentReviewStatusPending {
-		reviewedBy = ""
-		reviewNote = ""
-	}
-
-	updated, err := ctrl.service.UpdateContent(ctx, id, entity.UpdateContentArgs{
-		ReviewStatus: &args.ReviewStatus,
-		Visibility:   &args.Visibility,
-		ReviewedBy:   &reviewedBy,
-		ReviewedAt:   &reviewedAt,
-		ReviewNote:   &reviewNote,
-	})
+	updated, err := ctrl.service.ModerateContent(ctx, id, admin.ID, args.ReviewStatus, args.Visibility, args.ReviewNote)
 	if err != nil {
 		return nil, httperrors.ErrInternalServerError
 	}

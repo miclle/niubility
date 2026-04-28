@@ -640,3 +640,61 @@ func TestDeleteContent(t *testing.T) {
 		t.Fatalf("after delete: status = %d, want %d", rec.Code, http.StatusNotFound)
 	}
 }
+
+func TestListContentModerationLogs(t *testing.T) {
+	te := setupTestEnv(t)
+	te.markInitialized(t)
+
+	author := &entity.User{Username: "log-author", Name: "Author", Role: entity.RoleUser}
+	admin := &entity.User{Username: "log-admin", Name: "Admin Reviewer", Role: entity.RoleAdmin}
+	te.createTestUser(t, author)
+	te.createTestUser(t, admin)
+	adminToken := te.issueTestToken(t, admin)
+
+	content := &entity.Content{
+		ID:           entity.ID(),
+		AuthorID:     author.ID,
+		Title:        "Log Target",
+		Type:         entity.ContentTypeArticle,
+		Category:     "test",
+		Status:       entity.ContentStatusPublished,
+		ReviewStatus: entity.ContentReviewStatusPending,
+		Visibility:   entity.ContentVisibilityPrivate,
+	}
+	if err := te.db.Create(content).Error; err != nil {
+		t.Fatalf("seed content: %v", err)
+	}
+	entry := &entity.ContentModerationLog{
+		ID:                   entity.ID(),
+		ContentID:            content.ID,
+		ReviewerID:           admin.ID,
+		PreviousReviewStatus: entity.ContentReviewStatusPending,
+		NewReviewStatus:      entity.ContentReviewStatusApproved,
+		PreviousVisibility:   entity.ContentVisibilityPrivate,
+		NewVisibility:        entity.ContentVisibilityPublic,
+		ReviewNote:           "Looks good",
+	}
+	if err := te.db.Create(entry).Error; err != nil {
+		t.Fatalf("seed moderation log: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/contents/"+content.ID+"/moderation-logs", nil)
+	req.AddCookie(authCookie(adminToken))
+	rec := te.doRequest(req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var resp ListContentModerationLogsResponse
+	decodeJSON(t, rec.Body, &resp)
+	if len(resp.Items) != 1 {
+		t.Fatalf("len(items) = %d, want 1", len(resp.Items))
+	}
+	if resp.Items[0].Reviewer == nil || resp.Items[0].Reviewer.Username != admin.Username {
+		t.Fatalf("reviewer = %#v, want username %q", resp.Items[0].Reviewer, admin.Username)
+	}
+	if resp.Items[0].ReviewNote != "Looks good" {
+		t.Fatalf("review_note = %q, want %q", resp.Items[0].ReviewNote, "Looks good")
+	}
+}

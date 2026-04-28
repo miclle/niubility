@@ -25,6 +25,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		&entity.User{},
 		&entity.UserSession{},
 		&entity.Content{},
+		&entity.ContentModerationLog{},
 		&entity.Attachment{},
 		&entity.Setting{},
 		&entity.Department{},
