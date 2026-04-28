@@ -27,6 +27,7 @@ func (ctrl *Ctrl) ListContents(c *fox.Context, args entity.ListContentsArgs) (*L
 	for i := range contents {
 		contents[i].ResolveAssetURLs()
 	}
+	sanitizePublicContents(contents)
 
 	return &ListContentsResponse{
 		Items:      contents,
@@ -54,6 +55,7 @@ func (ctrl *Ctrl) ListUserContents(c *fox.Context, args entity.ListContentsArgs)
 	for i := range contents {
 		contents[i].ResolveAssetURLs()
 	}
+	sanitizePublicContents(contents)
 	return &ListContentsResponse{Items: contents, NextCursor: nextCursor}, nil
 }
 
@@ -72,6 +74,7 @@ func (ctrl *Ctrl) ListMyContents(c *fox.Context, args entity.ListContentsArgs) (
 	for i := range contents {
 		contents[i].ResolveAssetURLs()
 	}
+	sanitizePublicContents(contents)
 	return &ListContentsResponse{Items: contents, NextCursor: nextCursor}, nil
 }
 
@@ -102,6 +105,7 @@ func (ctrl *Ctrl) GetContent(c *fox.Context) (*GetContentResponse, error) {
 	}
 
 	content.ResolveAssetURLs()
+	sanitizePublicContent(content)
 	resp := &GetContentResponse{Content: content}
 
 	if user != nil {
@@ -174,6 +178,7 @@ func (ctrl *Ctrl) CreateContent(c *fox.Context, args entity.CreateContentArgs) (
 		return nil, httperrors.ErrInternalServerError
 	}
 	created.ResolveAssetURLs()
+	sanitizePublicContent(created)
 	return created, nil
 }
 
@@ -214,6 +219,7 @@ func (ctrl *Ctrl) UpdateContent(c *fox.Context, args entity.UpdateContentArgs) (
 	}
 
 	content.ResolveAssetURLs()
+	sanitizePublicContent(content)
 	return content, nil
 }
 
@@ -272,6 +278,7 @@ func (ctrl *Ctrl) ModerateContent(c *fox.Context, args ModerateContentArgs) (*en
 	}
 
 	updated.ResolveAssetURLs()
+	sanitizePublicContent(updated)
 	return updated, nil
 }
 

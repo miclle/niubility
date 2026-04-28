@@ -70,6 +70,7 @@ func (ctrl *Ctrl) listFollowUsers(c *fox.Context, args entity.Pagination, fetche
 	for i := range users {
 		users[i].ResolveAssetURLs()
 	}
+	sanitizePublicUsers(users)
 
 	return &ListUsersResponse{Items: users, NextCursor: nextCursor}, nil
 }

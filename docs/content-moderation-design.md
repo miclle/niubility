@@ -4,6 +4,8 @@
 
 本文档为设计稿，当前仓库已部分实现这里描述的审核与可见性机制，但“已公开内容被修改后的版本策略”等规则仍需要进一步明确。
 
+配套手工验收清单见：[内容审核机制验收 Checklist](/Users/miclle/github/miclle/Niubility/docs/content-moderation-acceptance-checklist.md)
+
 当前系统只有 `draft` / `published` 两种内容状态：
 
 - 公共列表默认只展示 `published`

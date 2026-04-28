@@ -63,6 +63,7 @@ func (ctrl *Ctrl) ListCommentsQuery(c *fox.Context, args ListCommentsQueryArgs) 
 	for i := range comments {
 		comments[i].ResolveAssetURLs()
 	}
+	sanitizePublicComments(comments)
 
 	return &ListCommentsResponse{
 		Items:           comments,
@@ -129,6 +130,7 @@ func (ctrl *Ctrl) CreateCommentBody(c *fox.Context, args CreateCommentBodyArgs) 
 	// Reload with user info
 	comment.User = user
 	comment.ResolveAssetURLs()
+	sanitizePublicComment(comment)
 	return comment, nil
 }
 
@@ -217,5 +219,6 @@ func (ctrl *Ctrl) PinComment(c *fox.Context, args PinCommentRequest) (*entity.Co
 	}
 
 	comment.ResolveAssetURLs()
+	sanitizePublicComment(comment)
 	return comment, nil
 }

@@ -74,6 +74,7 @@ func (ctrl *Ctrl) GetUserProfile(c *fox.Context) (*UserProfileResponse, error) {
 	}
 
 	user.ResolveAssetURLs()
+	sanitizePublicUser(user)
 
 	return &UserProfileResponse{
 		User:                user,

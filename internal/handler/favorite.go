@@ -52,6 +52,7 @@ func (ctrl *Ctrl) ListFavorites(c *fox.Context, args entity.Pagination) (*ListCo
 	for i := range contents {
 		contents[i].ResolveAssetURLs()
 	}
+	sanitizePublicContents(contents)
 
 	return &ListContentsResponse{
 		Items:      contents,
@@ -76,6 +77,7 @@ func (ctrl *Ctrl) ListUserFavorites(c *fox.Context, args entity.Pagination) (*Li
 	for i := range contents {
 		contents[i].ResolveAssetURLs()
 	}
+	sanitizePublicContents(contents)
 
 	return &ListContentsResponse{
 		Items:      contents,

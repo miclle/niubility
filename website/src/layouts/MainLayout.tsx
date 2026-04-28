@@ -73,7 +73,8 @@ function MainLayout() {
         )
     }
     // Derive category and type from URL path only (sidebar highlighting + base filter)
-    const isHome = location.pathname === '/'
+    const isPublicContentsRoute = location.pathname === '/contents'
+    const isHome = location.pathname === '/' || isPublicContentsRoute
     const typeRouteMap: Record<string, ContentType> = { videos: 'video', galleries: 'gallery', articles: 'article', podcasts: 'podcast' }
     const firstSegment = location.pathname.split('/')[1] || ''
     const isTypeRoute = firstSegment in typeRouteMap

@@ -66,6 +66,7 @@ const routes: RouteObject[] = [
     element: <MainLayout />,
     children: [
       { index: true, element: <Home /> },
+      { path: "contents", element: <Home /> },
       { path: "videos", element: <Home /> },
       { path: "galleries", element: <Home /> },
       { path: "articles", element: <Home /> },

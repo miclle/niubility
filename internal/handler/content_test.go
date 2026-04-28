@@ -324,12 +324,35 @@ func TestPublicContentEndpoints_AllowUnauthenticatedRead(t *testing.T) {
 	if err := te.db.Create(content).Error; err != nil {
 		t.Fatalf("seed content: %v", err)
 	}
+	comment := &entity.Comment{
+		ID:        entity.ID(),
+		ContentID: content.ID,
+		UserID:    owner.ID,
+		Body:      "public comment",
+	}
+	if err := te.db.Create(comment).Error; err != nil {
+		t.Fatalf("seed comment: %v", err)
+	}
 
 	t.Run("public contents list", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/api/v1/contents", nil)
 		rec := te.doRequest(req)
 		if rec.Code != http.StatusOK {
 			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+		}
+		var resp ListContentsResponse
+		decodeJSON(t, rec.Body, &resp)
+		if len(resp.Items) != 1 {
+			t.Fatalf("len(items) = %d, want 1", len(resp.Items))
+		}
+		if resp.Items[0].Author == nil {
+			t.Fatalf("author = nil, want author")
+		}
+		if resp.Items[0].Author.Email != "" {
+			t.Fatalf("author.email = %q, want empty", resp.Items[0].Author.Email)
+		}
+		if resp.Items[0].Author.Mobile != "" {
+			t.Fatalf("author.mobile = %q, want empty", resp.Items[0].Author.Mobile)
 		}
 	})
 
@@ -339,6 +362,17 @@ func TestPublicContentEndpoints_AllowUnauthenticatedRead(t *testing.T) {
 		if rec.Code != http.StatusOK {
 			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
 		}
+		var resp GetContentResponse
+		decodeJSON(t, rec.Body, &resp)
+		if resp.Author == nil {
+			t.Fatalf("author = nil, want author")
+		}
+		if resp.Author.Email != "" {
+			t.Fatalf("author.email = %q, want empty", resp.Author.Email)
+		}
+		if resp.Author.Mobile != "" {
+			t.Fatalf("author.mobile = %q, want empty", resp.Author.Mobile)
+		}
 	})
 
 	t.Run("public user profile", func(t *testing.T) {
@@ -346,6 +380,17 @@ func TestPublicContentEndpoints_AllowUnauthenticatedRead(t *testing.T) {
 		rec := te.doRequest(req)
 		if rec.Code != http.StatusOK {
 			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+		}
+		var resp UserProfileResponse
+		decodeJSON(t, rec.Body, &resp)
+		if resp.User == nil {
+			t.Fatalf("user = nil, want user")
+		}
+		if resp.User.Email != "" {
+			t.Fatalf("user.email = %q, want empty", resp.User.Email)
+		}
+		if resp.User.Mobile != "" {
+			t.Fatalf("user.mobile = %q, want empty", resp.User.Mobile)
 		}
 	})
 
@@ -363,6 +408,15 @@ func TestPublicContentEndpoints_AllowUnauthenticatedRead(t *testing.T) {
 		if resp.Items[0].Title != "Public article" {
 			t.Fatalf("title = %q, want %q", resp.Items[0].Title, "Public article")
 		}
+		if resp.Items[0].Author == nil {
+			t.Fatalf("author = nil, want author")
+		}
+		if resp.Items[0].Author.Email != "" {
+			t.Fatalf("author.email = %q, want empty", resp.Items[0].Author.Email)
+		}
+		if resp.Items[0].Author.Mobile != "" {
+			t.Fatalf("author.mobile = %q, want empty", resp.Items[0].Author.Mobile)
+		}
 	})
 
 	t.Run("public user favorites", func(t *testing.T) {
@@ -374,6 +428,28 @@ func TestPublicContentEndpoints_AllowUnauthenticatedRead(t *testing.T) {
 		rec := te.doRequest(req)
 		if rec.Code != http.StatusOK {
 			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+		}
+	})
+
+	t.Run("public comments redact user contacts", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/comments?content_id="+content.ID, nil)
+		rec := te.doRequest(req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusOK, rec.Body.String())
+		}
+		var resp ListCommentsResponse
+		decodeJSON(t, rec.Body, &resp)
+		if len(resp.Items) != 1 {
+			t.Fatalf("len(items) = %d, want 1", len(resp.Items))
+		}
+		if resp.Items[0].User == nil {
+			t.Fatalf("comment.user = nil, want user")
+		}
+		if resp.Items[0].User.Email != "" {
+			t.Fatalf("comment.user.email = %q, want empty", resp.Items[0].User.Email)
+		}
+		if resp.Items[0].User.Mobile != "" {
+			t.Fatalf("comment.user.mobile = %q, want empty", resp.Items[0].User.Mobile)
 		}
 	})
 }
