@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, type ReactNode } from 'react'
+import { useState, useRef, useCallback, type ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
@@ -63,7 +63,7 @@ export interface MediaEditorFormProps {
   id?: string
   defaultSpeaker?: SearchUserItem
   config: MediaEditorConfig
-  renderItemContent: (props: RenderItemContentProps) => ReactNode
+  renderItemContent: ComponentType<RenderItemContentProps>
   onSaved: (contentId: string, status: ContentStatus) => void
   onCancel: () => void
   onLoadError: () => void
@@ -83,12 +83,12 @@ function newMediaItem(idPrefix: string, overrides?: Partial<MediaItem>): MediaIt
 }
 
 // SortableMediaItem renders a single draggable media item with shared uploading UI.
-function SortableMediaItem({ item, index, onChange, onRemove, renderContent }: {
+function SortableMediaItem({ item, index, onChange, onRemove, ItemContent }: {
   item: MediaItem
   index: number
   onChange: (localId: string, field: keyof MediaItem, value: string | number) => void
   onRemove: (localId: string) => void
-  renderContent: (props: RenderItemContentProps) => ReactNode
+  ItemContent: ComponentType<RenderItemContentProps>
 }) {
   const { t } = useTranslation('editor')
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.localId })
@@ -127,7 +127,7 @@ function SortableMediaItem({ item, index, onChange, onRemove, renderContent }: {
         </div>
 
         {/* Type-specific content rendered via prop */}
-        {renderContent({ item, index, onChange })}
+        <ItemContent item={item} index={index} onChange={onChange} />
       </div>
     </div>
   )
@@ -223,6 +223,7 @@ function MediaEditorForm({ id, defaultSpeaker, config, renderItemContent, onSave
     setUploadError('') // Clear previous errors
 
     for (const file of mediaFiles) {
+      let localId = ''
       try {
         // Compute checksum first to check for duplicates
         const checksum = await computeFileChecksum(file)
@@ -235,7 +236,7 @@ function MediaEditorForm({ id, defaultSpeaker, config, renderItemContent, onSave
         }
 
         const item = newMediaItem(config.idPrefix, { filename: file.name, mimeType: file.type, fileSize: file.size, checksum, uploading: true })
-        const localId = item.localId
+        localId = item.localId
         setMediaItems((prev) => [...prev, item])
 
         // Upload file
@@ -244,6 +245,9 @@ function MediaEditorForm({ id, defaultSpeaker, config, renderItemContent, onSave
         })
         setMediaItems((prev) => prev.map((m) => m.localId === localId ? { ...m, url: key, uploading: false, progress: 100 } : m))
       } catch (err) {
+        if (localId) {
+          setMediaItems((prev) => prev.filter((m) => m.localId !== localId))
+        }
         setUploadError(t(config.uploadFailedKey, { filename: file.name, error: err instanceof Error ? err.message : 'Unknown error' }))
       }
     }
@@ -386,7 +390,7 @@ function MediaEditorForm({ id, defaultSpeaker, config, renderItemContent, onSave
                     index={index}
                     onChange={handleItemChange}
                     onRemove={handleRemoveItem}
-                    renderContent={renderItemContent}
+                    ItemContent={renderItemContent}
                   />
                 ))}
               </div>
