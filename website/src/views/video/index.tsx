@@ -5,7 +5,7 @@ import dayjs from 'dayjs'
 import { useTranslation } from 'react-i18next'
 
 import { fileURL } from 'src/api/upload'
-import { contentEditPath } from 'src/lib/content-url'
+import { contentDetailPath, contentEditPath } from 'src/lib/content-url'
 import { getContentCover, getDefaultContentCover, getVideoSpeakerAvatar, getVideoSpeakerDisplayName } from 'src/lib/content-assets'
 import { formatFileSize } from 'src/lib/utils'
 import { useAppContext } from 'src/context/app'
@@ -202,7 +202,7 @@ function VideoDetail() {
             <div className="text-sm font-medium mb-3 text-foreground">{t('content:relatedVideos')}</div>
             <div className="space-y-3">
               {relatedContents.map((item) => (
-                <Link key={item.id} to={`/${item.type}s/${item.id}`} className="flex gap-2 no-underline group" style={{ color: 'inherit' }}>
+                <Link key={item.id} to={contentDetailPath(item)} className="flex gap-2 no-underline group" style={{ color: 'inherit' }}>
                   <div className="relative flex-shrink-0 rounded-lg overflow-hidden bg-zinc-100" style={{ width: 168, aspectRatio: '16/9' }}>
                     <img src={getContentCover(item, siteConfig)} alt={item.title} className="w-full h-full object-cover" />
                     {item.type === 'video' && (
