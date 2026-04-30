@@ -11,6 +11,7 @@ import (
 
 	clii18n "github.com/miclle/niubility/cli/internal/i18n"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 )
 
 // Format represents output format
@@ -107,25 +108,33 @@ func (t *Table) AddRow(cols ...string) {
 
 // Print prints the table
 func (t *Table) Print() {
-	table := tablewriter.NewWriter(t.writer)
-	table.SetHeader(t.headers)
-	table.SetAutoWrapText(false)
-	table.SetAutoFormatHeaders(true)
-	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	table.SetCenterSeparator("")
-	table.SetColumnSeparator("")
-	table.SetRowSeparator("")
-	table.SetHeaderLine(false)
-	table.SetBorder(false)
-	table.SetTablePadding("\t")
-	table.SetNoWhiteSpace(true)
+	table := tablewriter.NewTable(
+		t.writer,
+		tablewriter.WithHeaderAlignment(tw.AlignLeft),
+		tablewriter.WithRowAlignment(tw.AlignLeft),
+		tablewriter.WithHeaderAutoFormat(tw.On),
+		tablewriter.WithHeaderAutoWrap(tw.WrapNone),
+		tablewriter.WithRowAutoWrap(tw.WrapNone),
+		tablewriter.WithRendition(tw.Rendition{
+			Borders: tw.BorderNone,
+			Settings: tw.Settings{
+				Lines:      tw.LinesNone,
+				Separators: tw.SeparatorsNone,
+			},
+		}),
+	)
+	table.Header(t.headers)
 
 	for _, row := range t.rows {
-		table.Append(row)
+		if err := table.Append(row); err != nil {
+			PrintError("%v", err)
+			return
+		}
 	}
 
-	table.Render()
+	if err := table.Render(); err != nil {
+		PrintError("%v", err)
+	}
 }
 
 // Truncate truncates a string to max length
