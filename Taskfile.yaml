@@ -144,15 +144,24 @@ tasks:
       - task: check-backend
       - task: check-cli-mod-tidy
       - task: check-cli
-      - task: check-frontend-types
+      - task: check-frontend
       - task: check-mod-tidy
 
   check-backend:
     internal: true
     cmds:
-      - gofmt -l .
       - |
-        go list ./... | grep -v '/website/node_modules/' | xargs go vet -tags development
+        mapfile -t files < <(find . -type f -name '*.go' -not -path './website/node_modules/*')
+        if [ "${#files[@]}" -gt 0 ]; then
+          unformatted="$(gofmt -l "${files[@]}")"
+          if [ -n "$unformatted" ]; then
+            echo "The following Go files are not formatted:"
+            echo "$unformatted"
+            exit 1
+          fi
+        fi
+      - go vet -tags development ./...
+      - go test -trimpath -tags development ./...
       - |
         LINT_BIN=golangci-lint
         GOPATH_LINT="$(go env GOPATH)/bin/golangci-lint"
@@ -190,12 +199,15 @@ tasks:
           LINT_BIN="$GOPATH_LINT"
         fi
         "$LINT_BIN" run ./...
+      - cd cli && go test -trimpath ./...
       - cd cli && go build -trimpath .
 
-  check-frontend-types:
+  check-frontend:
     internal: true
     cmds:
-      - cd {{.WEBSITE_DIR}} && npx tsc -b
+      - cd {{.WEBSITE_DIR}} && npm ci
+      - cd {{.WEBSITE_DIR}} && npm run lint
+      - cd {{.WEBSITE_DIR}} && npm run build
 
   check-mod-tidy:
     internal: true

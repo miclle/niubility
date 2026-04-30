@@ -29,7 +29,7 @@ jobs:
       - name: Verify gofmt
         shell: bash
         run: |
-          mapfile -t files < <(find . -type f -name '*.go' -not -path './internal/website/node_modules/*')
+          mapfile -t files < <(find . -type f -name '*.go' -not -path './website/node_modules/*')
           if [ "${#files[@]}" -eq 0 ]; then
             exit 0
           fi
@@ -94,18 +94,18 @@ jobs:
         with:
           node-version: 22.14.0
           cache: npm
-          cache-dependency-path: internal/website/package-lock.json
+          cache-dependency-path: website/package-lock.json
 
       - name: Install frontend dependencies
-        working-directory: internal/website
+        working-directory: website
         run: npm ci
 
       - name: Lint frontend
-        working-directory: internal/website
+        working-directory: website
         run: npm run lint
 
       - name: Build frontend
-        working-directory: internal/website
+        working-directory: website
         run: npm run build
 
   build:
@@ -133,14 +133,14 @@ jobs:
         with:
           node-version: 22.14.0
           cache: npm
-          cache-dependency-path: internal/website/package-lock.json
+          cache-dependency-path: website/package-lock.json
 
       - name: Install frontend dependencies
-        working-directory: internal/website
+        working-directory: website
         run: npm ci
 
       - name: Build embedded web assets
-        working-directory: internal/website
+        working-directory: website
         run: npm run build
 
       - name: Build server binary

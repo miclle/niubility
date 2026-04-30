@@ -527,6 +527,9 @@ func (s *Service) UpdateContent(ctx context.Context, id string, args entity.Upda
 		return nil, nil
 	}
 
+	if args.Attachments != nil {
+		args.Attachments = normalizeAttachmentArgs(args.Attachments)
+	}
 	updates, contentType := buildContentUpdates(content, args)
 
 	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
